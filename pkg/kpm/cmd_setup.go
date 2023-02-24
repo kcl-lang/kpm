@@ -41,8 +41,9 @@ func Setup() error {
 		return err
 	}
 	kpmC.RegistryAddrPath = parse.Host
-	if tmp := os.Getenv("KPM_NESTEDMODE "); tmp == "true" {
+	if tmp := os.Getenv("KPM_NESTEDMODE"); tmp == "true" {
 		kpmC.NestedMode = true
+		println("NestedMode is true!")
 	}
 	kpmC.GitStore, err = GlobalStore.NewFileStore(GlobalStore.FileStoreConfig{
 		Root:                   kpmC.Root,
