@@ -19,7 +19,6 @@ RUN go build -trimpath -a -ldflags "-linkmode external -w -s -extldflags  -stati
 
 
 FROM alpine:3.17.2
-# runtime-env-alpine-git
 ENV TZ="Asia/Shanghai"
 WORKDIR /app
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories \
@@ -29,8 +28,7 @@ RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 && mkdir /lib64 \
 && ln -s /lib/libc.musl-x86_64.so.1 /lib64/ld-linux-x86-64.so.2 \
 && ln -sf /usr/share/zoneinfo/$TZ /etc/localtime \
-&& echo $TZ > /etc/timezone \
-# add kpm and run it
+&& echo $TZ > /etc/timezone
 COPY  --from=builder  /dist/kpm /bin/kpm
 CMD ["/bin/sh"]
 
