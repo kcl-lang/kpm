@@ -63,3 +63,8 @@ version = "0.0.1"
 source = "git+https://github.com/xxxxx"
 checksum = "d468802bab17cbc0cc575e9b0"
 ```
+
+- name — The name of the package.
+- version — The version of the package.
+- source — registry, git or path.
+- checksum - To verify the integrity of the package.
