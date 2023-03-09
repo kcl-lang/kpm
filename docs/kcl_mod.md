@@ -68,3 +68,8 @@ checksum = "d468802bab17cbc0cc575e9b0"
 - version — The version of the package.
 - source — registry, git or path.
 - checksum - To verify the integrity of the package.
+
+## kcl.mod.proto
+We provide [kcl.mod.proto](./kcl.mod.proto) to define the specification of kcl.mod.
+
+

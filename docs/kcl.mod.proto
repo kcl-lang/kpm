@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+message Package {
+  string name = 1;
+  string version = 2;
+  string edition = 3;
+  repeated Dependency dependencies = 4;
+}
+
+message Dependency {
+  oneof dependency {
+    GitDependency git = 5;
+    PathDependency path = 6;
+    RegistryDependency registry = 7;
+  }
+}
+
+message GitDependency {
+  string git = 8;
+  oneof ident {
+    string version = 9;
+    string commit = 10;
+    string branch = 11;
+  }
+}
+
+message PathDependency {
+  string path = 12;
+  string version = 13;
+}
+
+message RegistryDependency {
+  string url = 14;
+  string version = 15;
+}
