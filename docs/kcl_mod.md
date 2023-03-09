@@ -1,58 +1,53 @@
 # kcl.mod
 
-## Background
-kpm needs a configuration file for KCL project, which is responsible for marking the root directory, determining dependency versions, configuring compilation options or others.
+## The Manifest
+The `kcl.mod` file for each module is called its manifest. It is written in the TOML format. It contains metadata that is needed to compile the module.
 
-## Capacity
+In the MVP version, the sections we plan to support are as follows:
 
-- name: the name of the current project.
-- version: the version of the current project.
-- dependencies: the dependencies of the current project.
+- [package]() - Defines a package.
+  - [name]() — The name of the package.
+  - [version]() — The version of the package.
+  - [edition]() — The KCLVM edition.
+- Dependency tables:
+  - [dependencies]() - Package library dependencies.
 
-## How to write kcl.mod
-The contents of the kcl.mod file are formatted using the syntax of [toml](https://toml.io/en/).
+## package
 
-### name, version and compiler version.
-```toml
-[package]
-name = "kcl"
-version = "0.0.0"
-edition = "0.0.0"
+The first section in a Cargo.toml is [package].
 ```
+[package]
+name = "hello_world" # the name of the package
+version = "0.1.0"    # the current version, obeying semver
+edition = "0.1.1-alpha.1"    # the kclvm version
+```
+The only fields required by kpm are `name` and `version`. `edition` is an optional field that describes the version of kclvm being used. If not specified, the latest version will be selected by default.
 
-### dependencies
+## dependencies
+Your kcl package can depend on other libraries from registries, git repositories, or subdirectories on your local file system. 
 
-- Registry
-
+From registries:
 ```toml
 [dependencies]
 xxx = "0.0.1"
 ```
 
-- Local path
+From Git:
+```toml
+[dependencies]
+# git release
+xxxx = {git = "<github url>", version = "0.4.5"} 
+# git commit
+xxxx = {git = "<github url>", commit = "h87h8f78"} 
+# git branch
+xxxx = {git = "<github url>", branch = "main"} 
+```
 
+From local file system
 ```toml
 # Find the kcl.mod under "./xxx/xxx".
 [dependencies]
 xxxx = {path = "./xxx/xxx",version = "0.4.5"} 
-```
-
-- Git 
-```toml
-[dependencies]
-xxxx = {git = "<github url>", version = "0.4.5"} 
-xxxx = {git = "<github url>", commit = "h87h8f78"} 
-xxxx = {git = "<github url>", branch = "main"} 
-```
-
-## Workspaces
-```toml
-[workspace]
-members = [
-    # subdirectory relative to the current directory, 
-    # which must contains kcl.mod.
-    "xxx" 
-]
 ```
 
 ## kpm.lock
@@ -65,6 +60,6 @@ A read-only json file generated from kcl.mod to fix the dependencies version.
 [[package]]
 name = "xxx"
 version = "0.0.1"
-source = "registry+https://github.com/xxxxx"
+source = "git+https://github.com/xxxxx"
 checksum = "d468802bab17cbc0cc575e9b0"
 ```
