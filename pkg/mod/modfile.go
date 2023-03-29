@@ -102,11 +102,11 @@ func (mfile *ModFile) GetModLockFilePath() string {
 const defaultVerion = "0.0.1"
 const defaultEdition = "0.0.1"
 
-func NewModFile(opt *opt.InitOptions) *ModFile {
+func NewModFile(opts *opt.InitOptions) *ModFile {
 	return &ModFile{
-		HomePath: opt.InitPath,
+		HomePath: opts.InitPath,
 		Pkg: Package{
-			Name:    opt.Name,
+			Name:    opts.Name,
 			Version: defaultVerion,
 			Edition: defaultEdition,
 		},

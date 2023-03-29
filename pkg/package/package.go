@@ -13,10 +13,10 @@ type KclPkg struct {
 	HomePath string
 }
 
-func NewKclPkg(opt *opt.InitOptions) KclPkg {
+func NewKclPkg(opts *opt.InitOptions) KclPkg {
 	return KclPkg{
-		modFile:  *modfile.NewModFile(opt),
-		HomePath: opt.InitPath,
+		modFile:  *modfile.NewModFile(opts),
+		HomePath: opts.InitPath,
 	}
 }
 
