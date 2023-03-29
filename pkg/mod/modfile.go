@@ -29,12 +29,6 @@ type ModFile struct {
 	Dependencies
 }
 
-// // 'ModLockFile' is kcl package dependencies lock file 'kcl.mod.lock'.
-// type ModLockFile struct {
-// 	HomePath string `toml:"-"`
-// 	Dependencies
-// }
-
 // 'Dependencies' is dependencies section of 'kcl.mod'.
 type Dependencies struct {
 	Deps map[string]Dependency `toml:"dependencies,omitempty"`
