@@ -7,7 +7,8 @@ import (
 	"os"
 )
 
-func init() {
+// Init the log.
+func InitReporter() {
 	log.SetFlags(0)
 }
 

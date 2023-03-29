@@ -11,6 +11,7 @@ import (
 )
 
 func main() {
+	reporter.InitReporter()
 	app := cli.NewApp()
 	app.Name = "kpm"
 	app.Usage = "kpm is a kcl package manager"
