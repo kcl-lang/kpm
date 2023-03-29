@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	File     = "kcl.mod"
+	MOD_FILE = "kcl.mod"
 	LockFile = "kcl.mod.lock"
 )
 
@@ -60,7 +60,7 @@ type Git struct {
 
 // ModFileExists returns whether a 'kcl.mod' file exists in the path.
 func ModFileExists(path string) (bool, error) {
-	return exists(filepath.Join(path, File))
+	return exists(filepath.Join(path, MOD_FILE))
 }
 
 // ModLockFileExists returns whether a 'kcl.mod.lock' file exists in the path.
@@ -71,12 +71,12 @@ func ModLockFileExists(path string) (bool, error) {
 // LoadModFile load the contents of the 'kcl.mod' file in the path.
 func LoadModFile(homePath string) (*ModFile, error) {
 	modFile := new(ModFile)
-	err := loadFile(homePath, File, modFile)
+	err := loadFile(homePath, MOD_FILE, modFile)
 	if err != nil {
 		return nil, err
 	}
 
-	modFile.HomePath = filepath.Join(homePath, File)
+	modFile.HomePath = filepath.Join(homePath, MOD_FILE)
 
 	if modFile.Dependencies.Deps == nil {
 		modFile.Dependencies.Deps = make(map[string]Dependency)
@@ -87,7 +87,7 @@ func LoadModFile(homePath string) (*ModFile, error) {
 
 // Write the contents of 'ModFile' to 'kcl.mod' file
 func (mfile *ModFile) Store() error {
-	fullPath := filepath.Join(mfile.HomePath, File)
+	fullPath := filepath.Join(mfile.HomePath, MOD_FILE)
 	return storeToFile(fullPath, mfile)
 }
 
@@ -98,7 +98,7 @@ func (mfile *ModFile) StoreLockFile() error {
 }
 
 func (mfile *ModFile) GetModFilePath() string {
-	return filepath.Join(mfile.HomePath, File)
+	return filepath.Join(mfile.HomePath, MOD_FILE)
 }
 
 func (mfile *ModFile) GetModLockFilePath() string {
