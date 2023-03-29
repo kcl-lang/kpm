@@ -6,8 +6,10 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
+	"kusionstack.io/kpm/pkg/git"
 	"kusionstack.io/kpm/pkg/opt"
 	"kusionstack.io/kpm/pkg/reporter"
+	"kusionstack.io/kpm/pkg/utils"
 )
 
 const (
@@ -41,10 +43,37 @@ type Dependency struct {
 	Source
 }
 
+// Download will download the kcl package to localPath from registory.
+func (dep *Dependency) Download(localPath string) (*Dependency, error) {
+	if dep.Source.Git != nil {
+		_, err := dep.Source.Git.Download(localPath)
+		if err != nil {
+			return nil, err
+		}
+		dep.Sum = utils.HashDir(localPath)
+	}
+	return dep, nil
+}
+
+// Download will download the kcl package to localPath from git url.
+func (dep *Git) Download(localPath string) (string, error) {
+	repoURL := dep.Url
+	_, err := git.Clone(repoURL, localPath)
+
+	if err != nil {
+		reporter.Report("kpm: git clone error:", err)
+		return localPath, err
+	}
+
+	return localPath, err
+}
+
+// Source is the package source from registry.
 type Source struct {
 	*Git
 }
 
+// Git is the package source from git registry.
 type Git struct {
 	Url    string `toml:"url,omitempty"`
 	Branch string `toml:"branch,omitempty"`
@@ -70,7 +99,7 @@ func LoadModFile(homePath string) (*ModFile, error) {
 		return nil, err
 	}
 
-	modFile.HomePath = filepath.Join(homePath, MOD_FILE)
+	modFile.HomePath = homePath
 
 	if modFile.Dependencies.Deps == nil {
 		modFile.Dependencies.Deps = make(map[string]Dependency)
@@ -79,16 +108,25 @@ func LoadModFile(homePath string) (*ModFile, error) {
 	return modFile, nil
 }
 
+// LoadLockDeps will load all dependencies from 'kcl.mod.lock'.
+func LoadLockDeps(homePath string) (*Dependencies, error) {
+	deps := new(Dependencies)
+	err := loadFile(homePath, MOD_FILE, deps)
+	if err != nil {
+		return nil, err
+	}
+
+	if deps.Deps == nil {
+		deps.Deps = make(map[string]Dependency)
+	}
+
+	return deps, nil
+}
+
 // Write the contents of 'ModFile' to 'kcl.mod' file
 func (mfile *ModFile) Store() error {
 	fullPath := filepath.Join(mfile.HomePath, MOD_FILE)
-	return storeToFile(fullPath, mfile)
-}
-
-// Write the contents of dependencies 'ModFile' to 'kcl.mod.lock' file
-func (mfile *ModFile) StoreLockFile() error {
-	fullPath := filepath.Join(mfile.HomePath, MOD_LOCK_FILE)
-	return storeToFile(fullPath, mfile.Dependencies)
+	return StoreToFile(fullPath, mfile)
 }
 
 func (mfile *ModFile) GetModFilePath() string {
@@ -110,10 +148,12 @@ func NewModFile(opts *opt.InitOptions) *ModFile {
 			Version: defaultVerion,
 			Edition: defaultEdition,
 		},
+		Dependencies: Dependencies{Deps: make(map[string]Dependency)},
 	}
 }
 
-func storeToFile(filePath string, data interface{}) error {
+// StoreToFile will store 'data' into toml file under 'filePath'.
+func StoreToFile(filePath string, data interface{}) error {
 	file, err := os.Create(filePath)
 	if err != nil {
 		reporter.ExitWithReport("kpm: failed to create file: ", filePath, err)
@@ -154,4 +194,32 @@ func exists(path string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+/// Parse out some information for a Dependency from registry url.
+func ParseOpt(opt *opt.RegistryOption) *Dependency {
+	if opt.Git != nil {
+		gitSource := Git{
+			Url:    opt.Git.Url,
+			Branch: opt.Git.Branch,
+			Commit: opt.Git.Commit,
+			Tag:    opt.Git.Tag,
+		}
+
+		name := ParseRepoNameFromGitUrl(gitSource.Url)
+
+		return &Dependency{
+			Name: name,
+			Source: Source{
+				Git: &gitSource,
+			},
+		}
+	}
+	return nil
+}
+
+// ParseRepoNameFromGitUrl will extract the kcl package name from the git url.
+func ParseRepoNameFromGitUrl(gitUrl string) string {
+	name := filepath.Base(gitUrl)
+	return name[:len(name)-len(filepath.Ext(name))]
 }

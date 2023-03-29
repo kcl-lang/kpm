@@ -13,8 +13,5 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
-
-kcl.mod
-kcl.mod.lock
 build/
 .vscode/

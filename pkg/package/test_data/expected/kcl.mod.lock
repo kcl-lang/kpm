@@ -1,0 +1,5 @@
+[dependencies]
+  [dependencies.test]
+    name = "test"
+    version = "test_version"
+    sum = "test_sum"
