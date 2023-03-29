@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	MOD_FILE = "kcl.mod"
-	LockFile = "kcl.mod.lock"
+	MOD_FILE      = "kcl.mod"
+	MOD_LOCK_FILE = "kcl.mod.lock"
 )
 
 // 'Package' is the kcl package section of 'kcl.mod'.
@@ -65,7 +65,7 @@ func ModFileExists(path string) (bool, error) {
 
 // ModLockFileExists returns whether a 'kcl.mod.lock' file exists in the path.
 func ModLockFileExists(path string) (bool, error) {
-	return exists(filepath.Join(path, LockFile))
+	return exists(filepath.Join(path, MOD_LOCK_FILE))
 }
 
 // LoadModFile load the contents of the 'kcl.mod' file in the path.
@@ -93,7 +93,7 @@ func (mfile *ModFile) Store() error {
 
 // Write the contents of dependencies 'ModFile' to 'kcl.mod.lock' file
 func (mfile *ModFile) StoreLockFile() error {
-	fullPath := filepath.Join(mfile.HomePath, LockFile)
+	fullPath := filepath.Join(mfile.HomePath, MOD_LOCK_FILE)
 	return storeToFile(fullPath, mfile.Dependencies)
 }
 
@@ -102,7 +102,7 @@ func (mfile *ModFile) GetModFilePath() string {
 }
 
 func (mfile *ModFile) GetModLockFilePath() string {
-	return filepath.Join(mfile.HomePath, LockFile)
+	return filepath.Join(mfile.HomePath, MOD_LOCK_FILE)
 }
 
 const defaultVerion = "0.0.1"

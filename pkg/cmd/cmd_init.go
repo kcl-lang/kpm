@@ -1,6 +1,6 @@
 // Copyright 2021 The KCL Authors. All rights reserved.
 
-package command
+package cmd
 
 import (
 	"os"

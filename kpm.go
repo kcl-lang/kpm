@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/urfave/cli/v2"
-	command "kusionstack.io/kpm/cmds"
+	"kusionstack.io/kpm/pkg/cmd"
 	"kusionstack.io/kpm/pkg/reporter"
 )
 
@@ -17,7 +17,7 @@ func main() {
 	app.Version = "v0.0.1"
 	app.UsageText = "kpm  <command> [arguments]..."
 	app.Commands = []*cli.Command{
-		command.NewInitCmd(),
+		cmd.NewInitCmd(),
 	}
 	err := app.Run(os.Args)
 	if err != nil {
