@@ -197,7 +197,7 @@ func exists(path string) (bool, error) {
 }
 
 /// Parse out some information for a Dependency from registry url.
-func ParseOpt(opt *opt.RegistryOption) *Dependency {
+func ParseOpt(opt *opt.RegistryOptions) *Dependency {
 	if opt.Git != nil {
 		gitSource := Git{
 			Url:    opt.Git.Url,

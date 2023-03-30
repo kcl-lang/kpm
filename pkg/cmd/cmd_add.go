@@ -53,8 +53,8 @@ func NewAddCmd() *cli.Command {
 			if len(gitUrls) != 0 {
 				return addGitDep(&opt.AddOptions{
 					LocalPath: kpmHome,
-					RegistryOpts: opt.RegistryOption{
-						Git: &opt.GitOption{
+					RegistryOpts: opt.RegistryOptions{
+						Git: &opt.GitOptions{
 							Url: gitUrls[0],
 						},
 					},

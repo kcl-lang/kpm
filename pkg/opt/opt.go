@@ -10,14 +10,14 @@ type InitOptions struct {
 
 type AddOptions struct {
 	LocalPath    string
-	RegistryOpts RegistryOption
+	RegistryOpts RegistryOptions
 }
 
-type RegistryOption struct {
-	Git *GitOption
+type RegistryOptions struct {
+	Git *GitOptions
 }
 
-type GitOption struct {
+type GitOptions struct {
 	Url    string
 	Branch string
 	Commit string

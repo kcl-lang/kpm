@@ -72,8 +72,8 @@ func TestModFileExists(t *testing.T) {
 
 func TestParseOpt(t *testing.T) {
 
-	dep := ParseOpt(&opt.RegistryOption{
-		Git: &opt.GitOption{
+	dep := ParseOpt(&opt.RegistryOptions{
+		Git: &opt.GitOptions{
 			Url:    "test.git",
 			Branch: "test_branch",
 			Commit: "test_commit",
