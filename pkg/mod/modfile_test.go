@@ -1,6 +1,7 @@
 package modfile
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -48,7 +49,7 @@ func TestModFileExists(t *testing.T) {
 		},
 	)
 	// generate 'kcl.mod' but still no 'kcl.mod.lock'.
-	err = modFile.Store()
+	err = modFile.StoreModFile()
 
 	if err != nil {
 		t.Errorf("test 'Store' failed.")
@@ -81,18 +82,81 @@ func TestParseOpt(t *testing.T) {
 		},
 	})
 
-	assert.Equal(t, dep.Name, "test", "unexpected dep name")
-	assert.Equal(t, dep.Url, "test.git", "unexpected dep url")
-	assert.Equal(t, dep.Branch, "test_branch", "unexpected dep branch")
-	assert.Equal(t, dep.Commit, "test_commit", "unexpected dep commit")
-	assert.Equal(t, dep.Tag, "test_tag", "unexpected dep tag")
+	assert.Equal(t, dep.Name, "test")
+	assert.Equal(t, dep.FullName, "test_test_tag")
+	assert.Equal(t, dep.Url, "test.git")
+	assert.Equal(t, dep.Branch, "test_branch")
+	assert.Equal(t, dep.Commit, "test_commit")
+	assert.Equal(t, dep.Tag, "test_tag")
 }
 
-func TestParseRepoNameFromGitUrl(t *testing.T) {
-	assert.Equal(t, ParseRepoNameFromGitUrl("test"), "test", "ParseRepoNameFromGitUrl failed.")
-	assert.Equal(t, ParseRepoNameFromGitUrl("test.git"), "test", "ParseRepoNameFromGitUrl failed.")
-	assert.Equal(t, ParseRepoNameFromGitUrl("test.git.git"), "test.git", "ParseRepoNameFromGitUrl failed.")
-	assert.Equal(t, ParseRepoNameFromGitUrl("https://test.git"), "test", "ParseRepoNameFromGitUrl failed.")
-	assert.Equal(t, ParseRepoNameFromGitUrl("https://test.git.git"), "test.git", "ParseRepoNameFromGitUrl failed.")
-	assert.Equal(t, ParseRepoNameFromGitUrl("httfsdafps://test.git.git"), "test.git", "ParseRepoNameFromGitUrl failed.")
+func TestLoadModFileNotExist(t *testing.T) {
+	testPath := getTestDir("mod_not_exist")
+	isExist, err := ModFileExists(testPath)
+	assert.Equal(t, isExist, false)
+	assert.Equal(t, err, nil)
+}
+
+func TestLoadLockFileNotExist(t *testing.T) {
+	testPath := getTestDir("mod_not_exist")
+	isExist, err := ModLockFileExists(testPath)
+	assert.Equal(t, isExist, false)
+	assert.Equal(t, err, nil)
+}
+
+func TestLoadModFile(t *testing.T) {
+	testPath := getTestDir("load_mod_file")
+	modFile, err := LoadModFile(testPath)
+
+	assert.Equal(t, modFile.Pkg.Name, "test_add_deps")
+	assert.Equal(t, modFile.Pkg.Version, "0.0.1")
+	assert.Equal(t, modFile.Pkg.Edition, "0.0.1")
+
+	assert.Equal(t, len(modFile.Dependencies.Deps), 1)
+	assert.Equal(t, modFile.Dependencies.Deps["name"].Name, "name")
+	assert.Equal(t, modFile.Dependencies.Deps["name"].Source.Git.Url, "test_url")
+	assert.Equal(t, modFile.Dependencies.Deps["name"].Source.Git.Tag, "test_tag")
+	assert.Equal(t, modFile.Dependencies.Deps["name"].FullName, "test_url_test_tag")
+	assert.Equal(t, err, nil)
+}
+
+func TestLoadLockDep(t *testing.T) {
+	testPath := getTestDir("load_lock_file")
+	deps, err := LoadLockDeps(testPath)
+
+	assert.Equal(t, len(deps.Deps), 1)
+	assert.Equal(t, deps.Deps["name"].Name, "name")
+	assert.Equal(t, deps.Deps["name"].Version, "test_version")
+	assert.Equal(t, deps.Deps["name"].Sum, "test_sum")
+	assert.Equal(t, deps.Deps["name"].Source.Git.Url, "test_url")
+	assert.Equal(t, deps.Deps["name"].Source.Git.Tag, "test_tag")
+	assert.Equal(t, deps.Deps["name"].FullName, "test_version")
+	assert.Equal(t, err, nil)
+}
+
+func TestStoreModFile(t *testing.T) {
+	testPath := getTestDir("store_mod_file")
+	mfile := ModFile{
+		HomePath: testPath,
+		Pkg: Package{
+			Name:    "test_name",
+			Edition: "0.0.1",
+			Version: "0.0.1",
+		},
+	}
+
+	_ = mfile.StoreModFile()
+
+	expect, _ := ioutil.ReadFile(filepath.Join(testPath, "expected.toml"))
+	got, _ := ioutil.ReadFile(filepath.Join(testPath, "kcl.mod"))
+	assert.Equal(t, got, expect)
+}
+
+func TestGetFilePath(t *testing.T) {
+	testPath := getTestDir("store_mod_file")
+	mfile := ModFile{
+		HomePath: testPath,
+	}
+	assert.Equal(t, mfile.GetModFilePath(), filepath.Join(testPath, MOD_FILE))
+	assert.Equal(t, mfile.GetModLockFilePath(), filepath.Join(testPath, MOD_LOCK_FILE))
 }

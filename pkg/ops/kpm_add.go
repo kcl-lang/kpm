@@ -8,7 +8,8 @@ import (
 	"kusionstack.io/kpm/pkg/reporter"
 )
 
-// KpmInit initializes an empty kcl module.
+// KpmAdd will download a new dependency for current kcl package
+// and fill the file 'kcl.mod' and 'kcl.mod.lock'.
 func KpmAdd(opt *opt.AddOptions, kclPkg *pkg.KclPkg) error {
 
 	if opt.RegistryOpts.Git == nil {

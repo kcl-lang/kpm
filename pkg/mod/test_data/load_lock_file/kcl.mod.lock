@@ -1,5 +1,5 @@
 [dependencies]
-  [dependencies.test]
+  [dependencies.name]
     name = "name"
     full_name = "test_version"
     version = "test_version"

@@ -1,5 +1,8 @@
 [dependencies]
   [dependencies.test]
-    name = "test"
+    name = "name"
+    full_name = "test_version"
     version = "test_version"
     sum = "test_sum"
+    url = "test_url"
+    tag = "test_tag"

@@ -30,15 +30,15 @@ func initTestDir(subDir string) string {
 	return testDir
 }
 
-// Load the kcl package from directory containing kcl.mod and kcl.mod.lock file.
 func TestLoadKclPkg(t *testing.T) {
-	testDir := initTestDir("test_data_modfile")
+	testDir := initTestDir("test_init_empty_mod")
 	kclPkg, err := LoadKclPkg(testDir)
 	if err == nil && kclPkg != nil {
 		t.Errorf("Failed to 'LoadKclPkg'.")
 	}
 
-	_ = modfile.NewModFile(&opt.InitOptions{Name: "test_name", InitPath: testDir}).Store()
+	mfile := modfile.NewModFile(&opt.InitOptions{Name: "test_name", InitPath: testDir})
+	_ = mfile.StoreModFile()
 
 	kclPkg, err = LoadKclPkg(testDir)
 	if err != nil {
@@ -47,11 +47,12 @@ func TestLoadKclPkg(t *testing.T) {
 	assert.Equal(t, kclPkg.modFile.Pkg.Name, "test_name")
 	assert.Equal(t, kclPkg.modFile.Pkg.Version, "0.0.1")
 	assert.Equal(t, kclPkg.modFile.Pkg.Edition, "0.0.1")
+	assert.Equal(t, len(kclPkg.modFile.Dependencies.Deps), 0)
+	assert.Equal(t, len(kclPkg.Dependencies.Deps), 0)
 }
 
-// InitEmptyModule inits an empty kcl module and create a default kcl.modfile.
 func TestInitEmptyPkg(t *testing.T) {
-	testDir := initTestDir("test_data_modfile")
+	testDir := initTestDir("test_init_empty_mod")
 	kclPkg := NewKclPkg(&opt.InitOptions{Name: "test_name", InitPath: testDir})
 	err := kclPkg.InitEmptyPkg()
 	if err != nil {
@@ -68,7 +69,7 @@ func TestInitEmptyPkg(t *testing.T) {
 	assert.Equal(t, testKclPkg.modFile.Pkg.Edition, "0.0.1")
 }
 
-func TestLockDepsVersion(t *testing.T) {
+func TestUpdataKclModAndLock(t *testing.T) {
 	testDir := initTestDir("test_data_add_deps")
 	// Init an empty package
 	kclPkg := NewKclPkg(&opt.InitOptions{
@@ -78,13 +79,29 @@ func TestLockDepsVersion(t *testing.T) {
 
 	_ = kclPkg.InitEmptyPkg()
 
-	kclPkg.Dependencies.Deps["test"] = modfile.Dependency{
-		Name:    "test",
-		Version: "test_version",
-		Sum:     "test_sum",
+	dep := modfile.Dependency{
+		Name:     "name",
+		FullName: "test_version",
+		Version:  "test_version",
+		Sum:      "test_sum",
+		Source: modfile.Source{
+			Git: &modfile.Git{
+				Url: "test_url",
+				Tag: "test_tag",
+			},
+		},
 	}
 
-	err := kclPkg.LockDepsVersion()
+	kclPkg.Dependencies.Deps["test"] = dep
+	kclPkg.modFile.Dependencies.Deps["test"] = dep
+
+	err := kclPkg.modFile.StoreModFile()
+
+	if err != nil {
+		t.Errorf("failed to LockDepsVersion.")
+	}
+
+	err = kclPkg.LockDepsVersion()
 
 	if err != nil {
 		t.Errorf("failed to LockDepsVersion.")
@@ -96,7 +113,7 @@ func TestLockDepsVersion(t *testing.T) {
 		t.Errorf("failed to find kcl.mod.")
 	} else {
 		assert.Equal(t, len(kclPkg.Dependencies.Deps), 1)
-		assert.Equal(t, len(kclPkg.modFile.Deps), 0)
+		assert.Equal(t, len(kclPkg.modFile.Deps), 1)
 		expectKclMod, _ := ioutil.ReadFile(filepath.Join(expectDir, "kcl.mod"))
 		assert.Equal(t, string(gotKclMod), string(expectKclMod))
 	}
@@ -105,8 +122,21 @@ func TestLockDepsVersion(t *testing.T) {
 		t.Errorf("failed to find kcl.mod.lock.")
 	} else {
 		assert.Equal(t, len(kclPkg.Dependencies.Deps), 1)
-		assert.Equal(t, len(kclPkg.modFile.Deps), 0)
+		assert.Equal(t, len(kclPkg.modFile.Deps), 1)
 		expectKclModLock, _ := ioutil.ReadFile(filepath.Join(expectDir, "kcl.mod.lock"))
 		assert.Equal(t, string(gotKclModLock), string(expectKclModLock))
 	}
+}
+
+func TestCheck(t *testing.T) {
+	testDir := getTestDir("test_check")
+	dep := modfile.Dependency{
+		FullName: "test_full_name",
+		Sum:      "",
+	}
+	assert.Equal(t, check(dep, testDir), false)
+	dep.Sum = "sdfsldk"
+	assert.Equal(t, check(dep, testDir), false)
+	dep.Sum = "okQqHgQaR1il7vOPuZPPVostthK5nUJkZAZVgXMqU3Q="
+	assert.Equal(t, check(dep, testDir), true)
 }

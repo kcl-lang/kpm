@@ -24,6 +24,10 @@ func NewAddCmd() *cli.Command {
 				Name:  "git",
 				Usage: "Git repository location",
 			},
+			&cli.StringSliceFlag{
+				Name:  "tag",
+				Usage: "Git repository tag",
+			},
 		},
 
 		Action: func(c *cli.Context) error {
@@ -45,27 +49,44 @@ func NewAddCmd() *cli.Command {
 				reporter.Fatal("kpm: could not load `kcl.mod` in `", pwd, "`")
 			}
 
-			gitUrls := c.StringSlice("git")
-			if len(gitUrls) > 1 {
-				reporter.ExitWithReport("kpm: the argument '--git <URI>' cannot be used multiple times")
+			gitUrl, err := onlyOnceOption(c, "git")
+
+			if err != nil {
+				return nil
 			}
 
-			if len(gitUrls) != 0 {
-				return addGitDep(&opt.AddOptions{
-					LocalPath: kpmHome,
-					RegistryOpts: opt.RegistryOptions{
-						Git: &opt.GitOptions{
-							Url: gitUrls[0],
-						},
+			gitTag, err := onlyOnceOption(c, "tag")
+
+			if err != nil {
+				return err
+			}
+
+			return addGitDep(&opt.AddOptions{
+				LocalPath: kpmHome,
+				RegistryOpts: opt.RegistryOptions{
+					Git: &opt.GitOptions{
+						Url: *gitUrl,
+						Tag: *gitTag,
 					},
-				}, kclPkg)
-			} else {
-				reporter.Report("kpm: the following required arguments were not provided: --git <URI>")
-				reporter.ExitWithReport("kpm: run 'kpm add help' for more information.")
-			}
-
-			return nil
+				},
+			}, kclPkg)
 		},
+	}
+}
+
+// onlyOnceOption is used to check that the value of some parameters can only appear once.
+func onlyOnceOption(c *cli.Context, name string) (*string, error) {
+	inputOpt := c.StringSlice(name)
+	if len(inputOpt) > 1 {
+		reporter.ExitWithReport("kpm: the argument '", name, "' cannot be used multiple times")
+		reporter.ExitWithReport("kpm: run 'kpm add help' for more information.")
+		return nil, fmt.Errorf("kpm: Invalid command")
+	} else if len(inputOpt) == 1 {
+		return &inputOpt[0], nil
+	} else {
+		reporter.Report("kpm: the following required arguments were not provided: ", name)
+		reporter.ExitWithReport("kpm: run 'kpm add help' for more information.")
+		return nil, fmt.Errorf("kpm: Invalid command")
 	}
 }
 

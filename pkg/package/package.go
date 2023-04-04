@@ -37,6 +37,7 @@ func LoadKclPkg(pkgPath string) (*KclPkg, error) {
 
 	// Get dependencies from kcl.mod.lock.
 	deps, err := modfile.LoadLockDeps(pkgPath)
+
 	if err != nil {
 		return nil, err
 	}
@@ -50,12 +51,18 @@ func LoadKclPkg(pkgPath string) (*KclPkg, error) {
 
 // InitEmptyModule inits an empty kcl module and create a default kcl.modfile.
 func (kclPkg KclPkg) InitEmptyPkg() error {
-	err := createFileIfNotExist(kclPkg.modFile.GetModFilePath(), "kcl.mod", kclPkg.modFile.Store)
+	err := utils.CreateFileIfNotExist(
+		kclPkg.modFile.GetModFilePath(),
+		kclPkg.modFile.StoreModFile,
+	)
 	if err != nil {
 		return err
 	}
 
-	err = createFileIfNotExist(kclPkg.modFile.GetModLockFilePath(), "kcl.mod.lock", kclPkg.LockDepsVersion)
+	err = utils.CreateFileIfNotExist(
+		kclPkg.modFile.GetModLockFilePath(),
+		kclPkg.LockDepsVersion,
+	)
 	if err != nil {
 		return err
 	}
@@ -63,50 +70,39 @@ func (kclPkg KclPkg) InitEmptyPkg() error {
 	return nil
 }
 
-func createFileIfNotExist(filePath string, fileName string, storeFunc func() error) error {
-	_, err := os.Stat(filePath)
-	if os.IsNotExist(err) {
-		reporter.Report("kpm: creating new "+fileName+":", filePath)
-		err := storeFunc()
-		if err != nil {
-			reporter.Report("kpm: failed to create "+fileName+",", err)
-			return err
-		}
-	} else {
-		reporter.Report("kpm: '" + filePath + "' already exists")
-		return err
-	}
-	return nil
-}
-
-// InitEmptyModule inits an empty kcl module and create a default kcl.modfile.
+// AddDeps will download the corresponding dependencies and file the kcl.mod and kcl.mod.lock files.
 func (kclPkg KclPkg) AddDeps(opt *opt.AddOptions) error {
 
+	// Get the name and version of the repository from the input arguments.
 	d := modfile.ParseOpt(&opt.RegistryOpts)
 
 	if !reflect.DeepEqual(kclPkg.modFile.Dependencies.Deps[d.Name], *d) {
-		// the dep passed on the cli is different from the jsonnetFile
+		// the dep passed on the cli is different from the kcl.mod.
 		kclPkg.modFile.Dependencies.Deps[d.Name] = *d
-		// we want to install the passed version (ignore the lock)
+		// clean the kcl.mod.lock
 		delete(kclPkg.Dependencies.Deps, d.Name)
 	}
 
+	// download all the dependencies.
 	changedDeps, err := getDeps(kclPkg.modFile.Dependencies, kclPkg.Dependencies, opt.LocalPath)
 
 	if err != nil {
 		reporter.ExitWithReport("kpm: failed to download dependancies.")
 	}
 
+	// Update kcl.mod and kcl.mod.lock
 	for k, v := range changedDeps.Deps {
 		kclPkg.modFile.Dependencies.Deps[k] = v
 		kclPkg.Dependencies.Deps[k] = v
 	}
 
-	err = kclPkg.modFile.Store()
+	// Generate file kcl.mod.
+	err = kclPkg.modFile.StoreModFile()
 	if err != nil {
 		return err
 	}
 
+	// Generate file kcl.mod.lock.
 	err = kclPkg.LockDepsVersion()
 	if err != nil {
 		return err
@@ -118,35 +114,47 @@ func (kclPkg KclPkg) AddDeps(opt *opt.AddOptions) error {
 // LockDepsVersion locks the dependencies of the current kcl package into kcl.mod.lock.
 func (kclPkg KclPkg) LockDepsVersion() error {
 	fullPath := filepath.Join(kclPkg.HomePath, modfile.MOD_LOCK_FILE)
-	return modfile.StoreToFile(fullPath, kclPkg.Dependencies)
+	lockToml, err := kclPkg.Dependencies.MarshalLockTOML()
+	if err != nil {
+		return err
+	}
+
+	return utils.StoreToFile(fullPath, lockToml)
 }
 
+// getDeps will recursively download all dependencies to the 'localPath' directory,
+// and return the dependencies that need to be updated to kcl.mod and kcl.mod.lock.
 func getDeps(deps modfile.Dependencies, lockDeps modfile.Dependencies, localPath string) (*modfile.Dependencies, error) {
 	newDeps := modfile.Dependencies{
 		Deps: make(map[string]modfile.Dependency),
 	}
 
+	// Traverse all dependencies in kcl.mod
 	for _, d := range deps.Deps {
 		if len(d.Name) == 0 {
 			reporter.ExitWithReport("kpm: invalid dependencies.")
 			return nil, fmt.Errorf("kpm: invalid dependencies.")
 		}
+
 		lockDep, present := lockDeps.Deps[d.Name]
 
-		// already locked and the integrity is intact
+		// Check if the sum of this dependency in kcl.mod.lock has been chanaged.
 		if present {
-			d.Version = lockDeps.Deps[d.Name].Version
-
+			// If the dependent package does not exist locally, then method 'check' will return false.
 			if check(lockDep, localPath) {
 				newDeps.Deps[d.Name] = lockDep
 				continue
 			}
 		}
 		expectedSum := lockDeps.Deps[d.Name].Sum
-
-		dir := filepath.Join(localPath, d.Name)
+		// Clean the cache
+		if len(localPath) == 0 || len(d.FullName) == 0 {
+			return nil, fmt.Errorf("kpm: internal bug package not found, fullname is empty")
+		}
+		dir := filepath.Join(localPath, d.FullName)
 		os.RemoveAll(dir)
 
+		// download dependencies
 		lockedDep, err := d.Download(dir)
 		if err != nil {
 			return nil, fmt.Errorf("checksum mismatch")
@@ -154,12 +162,16 @@ func getDeps(deps modfile.Dependencies, lockDeps modfile.Dependencies, localPath
 		if expectedSum != "" && lockedDep.Sum != expectedSum {
 			return nil, fmt.Errorf("checksum mismatch")
 		}
+
+		// Update kcl.mod and kcl.mod.lock
 		newDeps.Deps[d.Name] = *lockedDep
 		lockDeps.Deps[d.Name] = *lockedDep
 	}
 
+	// Recursively download the dependencies of the new dependencies.
 	for _, d := range newDeps.Deps {
-		modfile, err := modfile.LoadModFile(filepath.Join(localPath, d.Name))
+		// Load kcl.mod file of the new downloaded dependencies.
+		modfile, err := modfile.LoadModFile(filepath.Join(localPath, d.FullName))
 		if err != nil {
 			if os.IsNotExist(err) {
 				continue
@@ -167,11 +179,13 @@ func getDeps(deps modfile.Dependencies, lockDeps modfile.Dependencies, localPath
 			return nil, err
 		}
 
+		// Download the dependencies.
 		nested, err := getDeps(modfile.Dependencies, lockDeps, localPath)
 		if err != nil {
 			return nil, err
 		}
 
+		// Update kcl.mod.
 		for _, d := range nested.Deps {
 			if _, ok := newDeps.Deps[d.Name]; !ok {
 				newDeps.Deps[d.Name] = d
@@ -188,7 +202,8 @@ func check(dep modfile.Dependency, vendorDir string) bool {
 		return false
 	}
 
-	dir := filepath.Join(vendorDir, dep.Name)
+	dir := filepath.Join(vendorDir, dep.FullName)
 	sum := utils.HashDir(dir)
+
 	return dep.Sum == sum
 }

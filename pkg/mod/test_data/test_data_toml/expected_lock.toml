@@ -1,0 +1,8 @@
+[dependencies]
+  [dependencies.MyKcl1]
+    name = "MyKcl1"
+    full_name = "MyKcl1_v0.0.2"
+    version = "v0.0.2"
+    sum = "hjkasdahjksdasdhjk"
+    url = "https://github.com/test/MyKcl1.git"
+    tag = "v0.0.2"
