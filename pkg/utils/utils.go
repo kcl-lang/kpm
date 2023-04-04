@@ -1,11 +1,14 @@
 package utils
 
 import (
+	"archive/tar"
 	"crypto/sha256"
 	"encoding/base64"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"kusionstack.io/kpm/pkg/reporter"
 )
@@ -102,4 +105,66 @@ func Exists(path string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+var ignores = []string{".git", ".tar"}
+
+func TarDir(srcDir string, tarPath string) error {
+
+	fw, err := os.Create(tarPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer fw.Close()
+
+	tw := tar.NewWriter(fw)
+	defer tw.Close()
+
+	err = filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		for _, ignore := range ignores {
+			if strings.Contains(path, ignore) {
+				return nil
+			}
+		}
+
+		relPath, _ := filepath.Rel(srcDir, path)
+		relPath = filepath.ToSlash(relPath)
+
+		hdr, err := tar.FileInfoHeader(info, "")
+		if err != nil {
+			return err
+		}
+		hdr.Name = relPath
+
+		if err := tw.WriteHeader(hdr); err != nil {
+			return err
+		}
+
+		if info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+			return nil
+		}
+
+		fr, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer fr.Close()
+
+		if _, err := io.Copy(tw, fr); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
+}
+
+func DirExists(path string) bool {
+	_, err := os.Stat(path)
+	return !os.IsNotExist(err)
 }

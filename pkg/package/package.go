@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"reflect"
 
+	"github.com/otiai10/copy"
 	modfile "kusionstack.io/kpm/pkg/mod"
 	"kusionstack.io/kpm/pkg/opt"
 	"kusionstack.io/kpm/pkg/reporter"
@@ -112,7 +113,7 @@ func (kclPkg KclPkg) AddDeps(opt *opt.AddOptions) error {
 }
 
 // LockDepsVersion locks the dependencies of the current kcl package into kcl.mod.lock.
-func (kclPkg KclPkg) LockDepsVersion() error {
+func (kclPkg *KclPkg) LockDepsVersion() error {
 	fullPath := filepath.Join(kclPkg.HomePath, modfile.MOD_LOCK_FILE)
 	lockToml, err := kclPkg.Dependencies.MarshalLockTOML()
 	if err != nil {
@@ -157,7 +158,7 @@ func getDeps(deps modfile.Dependencies, lockDeps modfile.Dependencies, localPath
 		// download dependencies
 		lockedDep, err := d.Download(dir)
 		if err != nil {
-			return nil, fmt.Errorf("checksum mismatch")
+			return nil, fmt.Errorf("kpm: failed download dependency")
 		}
 		if expectedSum != "" && lockedDep.Sum != expectedSum {
 			return nil, fmt.Errorf("checksum mismatch")
@@ -206,4 +207,87 @@ func check(dep modfile.Dependency, vendorDir string) bool {
 	sum := utils.HashDir(dir)
 
 	return dep.Sum == sum
+}
+
+// PackageKclPkg will save all dependencies to the 'vendor' in current pacakge
+// and package the current package into tar
+func (kclPkg *KclPkg) PackageKclPkg(srcPath string, kpmHome string, tarPath string) error {
+	// Vendor all the dependencies into the current kcl package.
+	err := kclPkg.VendorDeps(srcPath, kpmHome)
+	if err != nil {
+		reporter.ExitWithReport("kpm: failed to vendor dependencies to" + srcPath + ".")
+		return err
+	}
+
+	// Tar the current kcl package into a "*.tar" file.
+	err = utils.TarDir(srcPath, tarPath)
+	if err != nil {
+		reporter.ExitWithReport("kpm: failed to package to " + tarPath + ".")
+		return err
+	}
+	return nil
+}
+
+// Vendor all dependencies to the 'vendor' in current pacakge.
+func (kclPkg *KclPkg) VendorDeps(localPath string, cachePath string) error {
+	// Mkdir the dir "vendor".
+	vendorPath := filepath.Join(localPath, "vendor")
+	err := os.MkdirAll(vendorPath, 0755)
+	if err != nil {
+		reporter.ExitWithReport("kpm: internal bug: failed to create subdir 'vendor'.")
+	}
+
+	lockDeps := make([]modfile.Dependency, 0, len(kclPkg.Dependencies.Deps))
+
+	for _, d := range kclPkg.Dependencies.Deps {
+		lockDeps = append(lockDeps, d)
+	}
+
+	// Traverse all dependencies in kcl.mod.lock.
+	for i := 0; i < len(lockDeps); i++ {
+		d := lockDeps[i]
+		if len(d.Name) == 0 {
+			reporter.ExitWithReport("kpm: invalid dependencies.")
+			return err
+		}
+		vendorDir := filepath.Join(vendorPath, d.FullName)
+		// If the package already exists in the 'vendor', do nothing.
+		if utils.DirExists(vendorDir) && check(d, vendorPath) {
+			continue
+		} else {
+			// If not in the 'vendor', check the global cache.
+			cacheDir := filepath.Join(cachePath, d.FullName)
+			if utils.DirExists(cacheDir) && check(d, cachePath) {
+				// If there is, copy it into the 'vendor' directory.
+				err := copy.Copy(cacheDir, vendorDir)
+				if err != nil {
+					reporter.ExitWithReport("kpm: failed to vendor dependency ", d.Name)
+					return err
+				}
+			} else {
+				// re-download if not.
+				os.RemoveAll(cacheDir)
+				lockedDep, err := d.Download(cacheDir)
+				if err != nil {
+					reporter.ExitWithReport("kpm: failed download dependency", d.Name)
+					return err
+				}
+
+				if d.Sum != "" && lockedDep.Sum != d.Sum {
+					reporter.ExitWithReport("kpm: checksum mismatch")
+					return err
+				}
+				// After re-downloading, the downloaded dependencies need
+				// to be copied to the vendor directory.
+				i--
+			}
+		}
+	}
+
+	return nil
+}
+
+// GetPkgName returns name of package.
+func (kclPkg *KclPkg) GetPkgName() string {
+	return kclPkg.modFile.Pkg.Name
 }

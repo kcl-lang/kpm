@@ -140,3 +140,14 @@ func TestCheck(t *testing.T) {
 	dep.Sum = "okQqHgQaR1il7vOPuZPPVostthK5nUJkZAZVgXMqU3Q="
 	assert.Equal(t, check(dep, testDir), true)
 }
+
+func TestGetPkgName(t *testing.T) {
+	kclPkg := KclPkg{
+		modFile: modfile.ModFile{
+			Pkg: modfile.Package{
+				Name: "test",
+			},
+		},
+	}
+	assert.Equal(t, kclPkg.GetPkgName(), "test")
+}

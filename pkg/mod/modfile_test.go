@@ -120,7 +120,7 @@ func TestLoadModFile(t *testing.T) {
 	assert.Equal(t, err, nil)
 }
 
-func TestLoadLockDep(t *testing.T) {
+func TestLoadLockDeps(t *testing.T) {
 	testPath := getTestDir("load_lock_file")
 	deps, err := LoadLockDeps(testPath)
 

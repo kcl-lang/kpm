@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/urfave/cli/v2"
-	"kusionstack.io/kpm/pkg/ops"
 	"kusionstack.io/kpm/pkg/opt"
 	pkg "kusionstack.io/kpm/pkg/package"
 	"kusionstack.io/kpm/pkg/reporter"
@@ -91,5 +90,10 @@ func onlyOnceOption(c *cli.Context, name string) (*string, error) {
 }
 
 func addGitDep(opt *opt.AddOptions, kclPkg *pkg.KclPkg) error {
-	return ops.KpmAdd(opt, kclPkg)
+	if opt.RegistryOpts.Git == nil {
+		reporter.Report("kpm: a value is required for '-git <URI>' but none was supplied")
+		reporter.ExitWithReport("kpm: run 'kpm add help' for more information.")
+	}
+
+	return kclPkg.AddDeps(opt)
 }

@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/urfave/cli/v2"
-	ops "kusionstack.io/kpm/pkg/ops"
 	"kusionstack.io/kpm/pkg/opt"
+	pkg "kusionstack.io/kpm/pkg/package"
 	reporter "kusionstack.io/kpm/pkg/reporter"
 )
 
@@ -29,10 +29,10 @@ func NewInitCmd() *cli.Command {
 				reporter.Fatal("kpm: internal bugs, please contact us to fix it")
 			}
 
-			err = ops.KpmInit(&opt.InitOptions{
+			err = pkg.NewKclPkg(&opt.InitOptions{
 				Name:     modName,
 				InitPath: pwd,
-			})
+			}).InitEmptyPkg()
 
 			if err == nil {
 				reporter.Report("kpm: package '", modName, "' init finished")
