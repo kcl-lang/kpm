@@ -2,12 +2,16 @@
 package modfile
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
+	"kusionstack.io/kpm/pkg/git"
 	"kusionstack.io/kpm/pkg/opt"
 	"kusionstack.io/kpm/pkg/reporter"
+	"kusionstack.io/kpm/pkg/utils"
 )
 
 const (
@@ -35,16 +39,43 @@ type Dependencies struct {
 }
 
 type Dependency struct {
-	Name    string `toml:"name,omitempty"`
-	Version string `toml:"version,omitempty"`
-	Sum     string `toml:"sum,omitempty"`
+	Name     string `toml:"name,omitempty"`
+	FullName string `toml:"full_name,omitempty"`
+	Version  string `toml:"version,omitempty"`
+	Sum      string `toml:"sum,omitempty"`
 	Source
 }
 
+// Download will download the kcl package to localPath from registory.
+func (dep *Dependency) Download(localPath string) (*Dependency, error) {
+	if dep.Source.Git != nil {
+		_, err := dep.Source.Git.Download(localPath)
+		if err != nil {
+			return nil, err
+		}
+		dep.Sum = utils.HashDir(localPath)
+	}
+	return dep, nil
+}
+
+// Download will download the kcl package to localPath from git url.
+func (dep *Git) Download(localPath string) (string, error) {
+	_, err := git.Clone(dep.Url, dep.Tag, localPath)
+
+	if err != nil {
+		reporter.Report("kpm: git clone error:", err)
+		return localPath, err
+	}
+
+	return localPath, err
+}
+
+// Source is the package source from registry.
 type Source struct {
 	*Git
 }
 
+// Git is the package source from git registry.
 type Git struct {
 	Url    string `toml:"url,omitempty"`
 	Branch string `toml:"branch,omitempty"`
@@ -54,23 +85,23 @@ type Git struct {
 
 // ModFileExists returns whether a 'kcl.mod' file exists in the path.
 func ModFileExists(path string) (bool, error) {
-	return exists(filepath.Join(path, MOD_FILE))
+	return utils.Exists(filepath.Join(path, MOD_FILE))
 }
 
 // ModLockFileExists returns whether a 'kcl.mod.lock' file exists in the path.
 func ModLockFileExists(path string) (bool, error) {
-	return exists(filepath.Join(path, MOD_LOCK_FILE))
+	return utils.Exists(filepath.Join(path, MOD_LOCK_FILE))
 }
 
 // LoadModFile load the contents of the 'kcl.mod' file in the path.
 func LoadModFile(homePath string) (*ModFile, error) {
 	modFile := new(ModFile)
-	err := loadFile(homePath, MOD_FILE, modFile)
+	err := modFile.loadModFile(filepath.Join(homePath, MOD_FILE))
 	if err != nil {
 		return nil, err
 	}
 
-	modFile.HomePath = filepath.Join(homePath, MOD_FILE)
+	modFile.HomePath = homePath
 
 	if modFile.Dependencies.Deps == nil {
 		modFile.Dependencies.Deps = make(map[string]Dependency)
@@ -79,22 +110,35 @@ func LoadModFile(homePath string) (*ModFile, error) {
 	return modFile, nil
 }
 
+// LoadLockDeps will load all dependencies from 'kcl.mod.lock'.
+func LoadLockDeps(homePath string) (*Dependencies, error) {
+	deps := new(Dependencies)
+	deps.Deps = make(map[string]Dependency)
+	err := deps.loadLockFile(filepath.Join(homePath, MOD_LOCK_FILE))
+
+	if os.IsNotExist(err) {
+		return deps, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return deps, nil
+}
+
 // Write the contents of 'ModFile' to 'kcl.mod' file
-func (mfile *ModFile) Store() error {
+func (mfile *ModFile) StoreModFile() error {
 	fullPath := filepath.Join(mfile.HomePath, MOD_FILE)
-	return storeToFile(fullPath, mfile)
+	return utils.StoreToFile(fullPath, mfile.MarshalTOML())
 }
 
-// Write the contents of dependencies 'ModFile' to 'kcl.mod.lock' file
-func (mfile *ModFile) StoreLockFile() error {
-	fullPath := filepath.Join(mfile.HomePath, MOD_LOCK_FILE)
-	return storeToFile(fullPath, mfile.Dependencies)
-}
-
+// Returns the path to the kcl.mod file
 func (mfile *ModFile) GetModFilePath() string {
 	return filepath.Join(mfile.HomePath, MOD_FILE)
 }
 
+// Returns the path to the kcl.mod.lock file
 func (mfile *ModFile) GetModLockFilePath() string {
 	return filepath.Join(mfile.HomePath, MOD_LOCK_FILE)
 }
@@ -110,33 +154,22 @@ func NewModFile(opts *opt.InitOptions) *ModFile {
 			Version: defaultVerion,
 			Edition: defaultEdition,
 		},
+		Dependencies: Dependencies{
+			Deps: make(map[string]Dependency),
+		},
 	}
 }
 
-func storeToFile(filePath string, data interface{}) error {
-	file, err := os.Create(filePath)
+// Load the kcl.mod file.
+func (mod *ModFile) loadModFile(filepath string) error {
+
+	modData, err := ioutil.ReadFile(filepath)
 	if err != nil {
-		reporter.ExitWithReport("kpm: failed to create file: ", filePath, err)
 		return err
 	}
-	defer file.Close()
 
-	if err := toml.NewEncoder(file).Encode(data); err != nil {
-		reporter.ExitWithReport("kpm: failed to encode TOML:", err)
-		return err
-	}
-	return nil
-}
+	err = toml.Unmarshal(modData, &mod)
 
-func loadFile(homePath string, fileName string, file interface{}) error {
-	readFile, err := os.OpenFile(filepath.Join(homePath, fileName), os.O_RDWR, 0644)
-	if err != nil {
-		reporter.Report("kpm: failed to load", fileName)
-		return err
-	}
-	defer readFile.Close()
-
-	_, err = toml.NewDecoder(readFile).Decode(file)
 	if err != nil {
 		return err
 	}
@@ -144,14 +177,61 @@ func loadFile(homePath string, fileName string, file interface{}) error {
 	return nil
 }
 
-func exists(path string) (bool, error) {
-	_, err := os.Stat(path)
+// Load the kcl.mod.lock file.
+func (deps *Dependencies) loadLockFile(filepath string) error {
+	data, err := ioutil.ReadFile(filepath)
 	if os.IsNotExist(err) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
+		return err
 	}
 
-	return true, nil
+	if err != nil {
+		reporter.Report("kpm: failed to load", filepath)
+		return err
+	}
+
+	err = deps.UnmarshalLockTOML(string(data))
+
+	if err != nil {
+		reporter.Report("kpm: failed to load", filepath)
+		return err
+	}
+
+	return nil
+}
+
+/// Parse out some information for a Dependency from registry url.
+func ParseOpt(opt *opt.RegistryOptions) *Dependency {
+	if opt.Git != nil {
+		gitSource := Git{
+			Url:    opt.Git.Url,
+			Branch: opt.Git.Branch,
+			Commit: opt.Git.Commit,
+			Tag:    opt.Git.Tag,
+		}
+
+		return &Dependency{
+			Name:     ParseRepoNameFromGitSource(gitSource),
+			FullName: ParseRepoFullNameFromGitSource(gitSource),
+			Source: Source{
+				Git: &gitSource,
+			},
+			Version: gitSource.Tag,
+		}
+	}
+	return nil
+}
+
+const PKG_NAME_PATTERN = "%s_%s"
+
+// ParseRepoFullNameFromGitSource will extract the kcl package name from the git url.
+func ParseRepoFullNameFromGitSource(gitSrc Git) string {
+	if len(gitSrc.Tag) != 0 {
+		return fmt.Sprintf(PKG_NAME_PATTERN, utils.ParseRepoNameFromGitUrl(gitSrc.Url), gitSrc.Tag)
+	}
+	return utils.ParseRepoNameFromGitUrl(gitSrc.Url)
+}
+
+// ParseRepoNameFromGitSource will extract the kcl package name from the git url.
+func ParseRepoNameFromGitSource(gitSrc Git) string {
+	return utils.ParseRepoNameFromGitUrl(gitSrc.Url)
 }

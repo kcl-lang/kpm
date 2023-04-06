@@ -7,3 +7,19 @@ type InitOptions struct {
 	Name     string
 	InitPath string
 }
+
+type AddOptions struct {
+	LocalPath    string
+	RegistryOpts RegistryOptions
+}
+
+type RegistryOptions struct {
+	Git *GitOptions
+}
+
+type GitOptions struct {
+	Url    string
+	Branch string
+	Commit string
+	Tag    string
+}
