@@ -1,3 +1,6 @@
+build:
+	go build kpm.go
+
 COVER_FILE			?= coverage.out
 SOURCE_PATHS		?= ./pkg/...
 

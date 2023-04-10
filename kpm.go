@@ -21,6 +21,7 @@ func main() {
 		cmd.NewInitCmd(),
 		cmd.NewAddCmd(),
 		cmd.NewPkgCmd(),
+		cmd.NewRunCmd(),
 	}
 	err := app.Run(os.Args)
 	if err != nil {
