@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+// Copyright 2023 The KCL Authors. All rights reserved.
 
 package cmd
 
@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/urfave/cli/v2"
-	ops "kusionstack.io/kpm/pkg/ops"
 	"kusionstack.io/kpm/pkg/opt"
+	pkg "kusionstack.io/kpm/pkg/package"
 	reporter "kusionstack.io/kpm/pkg/reporter"
 )
 
@@ -29,10 +29,17 @@ func NewInitCmd() *cli.Command {
 				reporter.Fatal("kpm: internal bugs, please contact us to fix it")
 			}
 
-			err = ops.KpmInit(&opt.InitOptions{
+			initOpts := opt.InitOptions{
 				Name:     modName,
 				InitPath: pwd,
-			})
+			}
+
+			err = initOpts.Validate()
+			if err != nil {
+				return err
+			}
+
+			err = pkg.NewKclPkg(&initOpts).InitEmptyPkg()
 
 			if err == nil {
 				reporter.Report("kpm: package '", modName, "' init finished")

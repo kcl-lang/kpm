@@ -15,3 +15,6 @@
 # vendor/
 build/
 .vscode/
+
+# kpm binary
+kpm

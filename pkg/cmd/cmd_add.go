@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+// Copyright 2023 The KCL Authors. All rights reserved.
 
 package cmd
 
@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/urfave/cli/v2"
-	"kusionstack.io/kpm/pkg/ops"
 	"kusionstack.io/kpm/pkg/opt"
 	pkg "kusionstack.io/kpm/pkg/package"
 	"kusionstack.io/kpm/pkg/reporter"
@@ -61,7 +60,7 @@ func NewAddCmd() *cli.Command {
 				return err
 			}
 
-			return addGitDep(&opt.AddOptions{
+			addOpts := opt.AddOptions{
 				LocalPath: kpmHome,
 				RegistryOpts: opt.RegistryOptions{
 					Git: &opt.GitOptions{
@@ -69,7 +68,14 @@ func NewAddCmd() *cli.Command {
 						Tag: *gitTag,
 					},
 				},
-			}, kclPkg)
+			}
+
+			err = addOpts.Validate()
+			if err != nil {
+				return err
+			}
+
+			return addGitDep(&addOpts, kclPkg)
 		},
 	}
 }
@@ -91,5 +97,10 @@ func onlyOnceOption(c *cli.Context, name string) (*string, error) {
 }
 
 func addGitDep(opt *opt.AddOptions, kclPkg *pkg.KclPkg) error {
-	return ops.KpmAdd(opt, kclPkg)
+	if opt.RegistryOpts.Git == nil {
+		reporter.Report("kpm: a value is required for '-git <URI>' but none was supplied")
+		reporter.ExitWithReport("kpm: run 'kpm add help' for more information.")
+	}
+
+	return kclPkg.AddDeps(opt)
 }

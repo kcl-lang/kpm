@@ -20,6 +20,7 @@ func main() {
 	app.Commands = []*cli.Command{
 		cmd.NewInitCmd(),
 		cmd.NewAddCmd(),
+		cmd.NewPkgCmd(),
 	}
 	err := app.Run(os.Args)
 	if err != nil {

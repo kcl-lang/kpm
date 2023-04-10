@@ -63,3 +63,20 @@ func TestHashDir(t *testing.T) {
 	_ = CreateFileIfNotExist(tp.FilePath, tp.TestStore)
 	assert.Equal(t, HashDir(filepath.Dir(tp.FilePath)), "n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg=")
 }
+
+func TestTarDir(t *testing.T) {
+	testDir := getTestDir("test_tar")
+	tarPath := filepath.Join(testDir, "test.tar")
+
+	_, err := os.Stat(tarPath)
+	if !os.IsNotExist(err) {
+		os.Remove(tarPath)
+	}
+
+	err = TarDir(filepath.Join(testDir, "test_src"), tarPath)
+	assert.Equal(t, err, nil)
+
+	_, err = os.Stat(tarPath)
+	assert.Equal(t, err, nil)
+	os.Remove(tarPath)
+}
