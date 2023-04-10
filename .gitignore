@@ -15,6 +15,7 @@
 # vendor/
 build/
 .vscode/
+.kclvm/
 
 # kpm binary
 kpm
