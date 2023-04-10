@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+// Copyright 2023 The KCL Authors. All rights reserved.
 
 package cmd
 
@@ -29,10 +29,17 @@ func NewInitCmd() *cli.Command {
 				reporter.Fatal("kpm: internal bugs, please contact us to fix it")
 			}
 
-			err = pkg.NewKclPkg(&opt.InitOptions{
+			initOpts := opt.InitOptions{
 				Name:     modName,
 				InitPath: pwd,
-			}).InitEmptyPkg()
+			}
+
+			err = initOpts.Validate()
+			if err != nil {
+				return err
+			}
+
+			err = pkg.NewKclPkg(&initOpts).InitEmptyPkg()
 
 			if err == nil {
 				reporter.Report("kpm: package '", modName, "' init finished")

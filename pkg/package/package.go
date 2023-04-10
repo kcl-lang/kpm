@@ -1,15 +1,14 @@
 package pkg
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
 
 	"github.com/otiai10/copy"
+	errors "kusionstack.io/kpm/pkg/errors"
 	modfile "kusionstack.io/kpm/pkg/mod"
 	"kusionstack.io/kpm/pkg/opt"
-	"kusionstack.io/kpm/pkg/reporter"
 	"kusionstack.io/kpm/pkg/utils"
 )
 
@@ -88,7 +87,7 @@ func (kclPkg KclPkg) AddDeps(opt *opt.AddOptions) error {
 	changedDeps, err := getDeps(kclPkg.modFile.Dependencies, kclPkg.Dependencies, opt.LocalPath)
 
 	if err != nil {
-		reporter.ExitWithReport("kpm: failed to download dependancies.")
+		return errors.FailedDownloadError
 	}
 
 	// Update kcl.mod and kcl.mod.lock
@@ -133,8 +132,7 @@ func getDeps(deps modfile.Dependencies, lockDeps modfile.Dependencies, localPath
 	// Traverse all dependencies in kcl.mod
 	for _, d := range deps.Deps {
 		if len(d.Name) == 0 {
-			reporter.ExitWithReport("kpm: invalid dependencies.")
-			return nil, fmt.Errorf("kpm: invalid dependencies.")
+			return nil, errors.InvalidDependency
 		}
 
 		lockDep, present := lockDeps.Deps[d.Name]
@@ -150,7 +148,7 @@ func getDeps(deps modfile.Dependencies, lockDeps modfile.Dependencies, localPath
 		expectedSum := lockDeps.Deps[d.Name].Sum
 		// Clean the cache
 		if len(localPath) == 0 || len(d.FullName) == 0 {
-			return nil, fmt.Errorf("kpm: internal bug package not found, fullname is empty")
+			return nil, errors.InternalBug
 		}
 		dir := filepath.Join(localPath, d.FullName)
 		os.RemoveAll(dir)
@@ -158,10 +156,10 @@ func getDeps(deps modfile.Dependencies, lockDeps modfile.Dependencies, localPath
 		// download dependencies
 		lockedDep, err := d.Download(dir)
 		if err != nil {
-			return nil, fmt.Errorf("kpm: failed download dependency")
+			return nil, errors.FailedDownloadError
 		}
 		if expectedSum != "" && lockedDep.Sum != expectedSum {
-			return nil, fmt.Errorf("checksum mismatch")
+			return nil, errors.CheckSumMismatchError
 		}
 
 		// Update kcl.mod and kcl.mod.lock
@@ -215,15 +213,13 @@ func (kclPkg *KclPkg) PackageKclPkg(srcPath string, kpmHome string, tarPath stri
 	// Vendor all the dependencies into the current kcl package.
 	err := kclPkg.VendorDeps(srcPath, kpmHome)
 	if err != nil {
-		reporter.ExitWithReport("kpm: failed to vendor dependencies to" + srcPath + ".")
-		return err
+		return errors.FailedToVendorDependency
 	}
 
 	// Tar the current kcl package into a "*.tar" file.
 	err = utils.TarDir(srcPath, tarPath)
 	if err != nil {
-		reporter.ExitWithReport("kpm: failed to package to " + tarPath + ".")
-		return err
+		return errors.FailedToPackage
 	}
 	return nil
 }
@@ -234,7 +230,7 @@ func (kclPkg *KclPkg) VendorDeps(localPath string, cachePath string) error {
 	vendorPath := filepath.Join(localPath, "vendor")
 	err := os.MkdirAll(vendorPath, 0755)
 	if err != nil {
-		reporter.ExitWithReport("kpm: internal bug: failed to create subdir 'vendor'.")
+		return errors.InternalBug
 	}
 
 	lockDeps := make([]modfile.Dependency, 0, len(kclPkg.Dependencies.Deps))
@@ -247,8 +243,7 @@ func (kclPkg *KclPkg) VendorDeps(localPath string, cachePath string) error {
 	for i := 0; i < len(lockDeps); i++ {
 		d := lockDeps[i]
 		if len(d.Name) == 0 {
-			reporter.ExitWithReport("kpm: invalid dependencies.")
-			return err
+			return errors.InvalidDependency
 		}
 		vendorDir := filepath.Join(vendorPath, d.FullName)
 		// If the package already exists in the 'vendor', do nothing.
@@ -261,21 +256,18 @@ func (kclPkg *KclPkg) VendorDeps(localPath string, cachePath string) error {
 				// If there is, copy it into the 'vendor' directory.
 				err := copy.Copy(cacheDir, vendorDir)
 				if err != nil {
-					reporter.ExitWithReport("kpm: failed to vendor dependency ", d.Name)
-					return err
+					return errors.FailedToVendorDependency
 				}
 			} else {
 				// re-download if not.
 				os.RemoveAll(cacheDir)
 				lockedDep, err := d.Download(cacheDir)
 				if err != nil {
-					reporter.ExitWithReport("kpm: failed download dependency", d.Name)
-					return err
+					return errors.FailedDownloadError
 				}
 
 				if d.Sum != "" && lockedDep.Sum != d.Sum {
-					reporter.ExitWithReport("kpm: checksum mismatch")
-					return err
+					return errors.CheckSumMismatchError
 				}
 				// After re-downloading, the downloaded dependencies need
 				// to be copied to the vendor directory.

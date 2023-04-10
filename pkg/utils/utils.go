@@ -107,6 +107,7 @@ func Exists(path string) (bool, error) {
 	return true, nil
 }
 
+// todo: Consider using the OCI tarball as the standard tar format.
 var ignores = []string{".git", ".tar"}
 
 func TarDir(srcDir string, tarPath string) error {

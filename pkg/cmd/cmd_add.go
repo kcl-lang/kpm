@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+// Copyright 2023 The KCL Authors. All rights reserved.
 
 package cmd
 
@@ -60,7 +60,7 @@ func NewAddCmd() *cli.Command {
 				return err
 			}
 
-			return addGitDep(&opt.AddOptions{
+			addOpts := opt.AddOptions{
 				LocalPath: kpmHome,
 				RegistryOpts: opt.RegistryOptions{
 					Git: &opt.GitOptions{
@@ -68,7 +68,14 @@ func NewAddCmd() *cli.Command {
 						Tag: *gitTag,
 					},
 				},
-			}, kclPkg)
+			}
+
+			err = addOpts.Validate()
+			if err != nil {
+				return err
+			}
+
+			return addGitDep(&addOpts, kclPkg)
 		},
 	}
 }

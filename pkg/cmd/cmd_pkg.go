@@ -1,4 +1,4 @@
-// Copyright 2021 The KCL Authors. All rights reserved.
+// Copyright 2023 The KCL Authors. All rights reserved.
 
 package cmd
 
@@ -10,11 +10,11 @@ import (
 	"kusionstack.io/kpm/pkg/reporter"
 )
 
-// NewAddCmd new a Command for `kpm add`.
+// NewPkgCmd new a Command for `kpm pkg`.
 func NewPkgCmd() *cli.Command {
 	return &cli.Command{
 		Hidden: false,
-		Name:   "package",
+		Name:   "pkg",
 		Usage:  "package a kcl package into tar",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -46,7 +46,7 @@ func NewPkgCmd() *cli.Command {
 
 			if len(tarPath) == 0 {
 				reporter.Report("kpm: The directory where the tar is generated is required.")
-				reporter.ExitWithReport("kpm: run 'kpm package help' for more information.")
+				reporter.ExitWithReport("kpm: run 'kpm pkg help' for more information.")
 			}
 
 			err = kclPkg.PackageKclPkg(kclPkg.HomePath, kpmHome, tarPath)
