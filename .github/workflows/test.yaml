@@ -22,7 +22,6 @@ jobs:
       - run: kclvm_cli version
       - run: go build ./...
       - run: go vet ./...
-      - run: echo $PATH
 
       - name: Running go tests with coverage
         env:
