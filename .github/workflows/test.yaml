@@ -23,12 +23,9 @@ jobs:
           sudo apt -y install wget
       - run: wget -c https://github.com/KusionStack/KCLVM/releases/download/v0.4.6/kclvm-v0.4.6-linux-amd64.tar.gz -qO - | tar xz -C ./
      
-      - name: Set up environment variables
-        run: |
-          echo 'export PATH=$PATH:$(pwd)/kclvm/bin' >> $HOME/.bashrc
-          source $HOME/.bashrc
-      - run: echo $PATH
-      - run: kclvm_cli version
+      - run: |
+          export PATH=$PATH:$(pwd)/kclvm/bin
+          kclvm_cli version
       - run: go build ./...
       - run: go vet ./...
 
