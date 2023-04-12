@@ -19,7 +19,7 @@ jobs:
         with:
           go-version: 1.18
     
-      - run: kclvm_cli run --help
+      - run: kclvm_cli version
       - run: go build ./...
       - run: go vet ./...
 
