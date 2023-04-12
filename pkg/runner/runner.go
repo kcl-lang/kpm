@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"fmt"
 	"os/exec"
 
 	"kusionstack.io/kpm/pkg/opt"
@@ -34,7 +35,7 @@ func (cmd *CompileCmd) Run() string {
 	var args []string
 	args = append(args, KCLVM_COMMAND_RUN)
 	args = append(args, cmd.kclOpts.Args()...)
-
+	fmt.Printf("args: %v\n", args)
 	cmd.cmd.Args = append(cmd.cmd.Args, args...)
 	out, _ := cmd.cmd.CombinedOutput()
 	return string(out)
