@@ -75,7 +75,7 @@ func (kclPkg *KclPkg) CompileWithEntryFile(kpmHome string, kclvmCompiler *runner
 		kclvmCompiler.AddDepPath(dName, dPath)
 	}
 
-	return kclvmCompiler.Run()
+	return kclvmCompiler.Run(), nil
 }
 
 // ResolveDeps will return a map between dependency name and its local path,
