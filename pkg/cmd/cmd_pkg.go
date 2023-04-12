@@ -49,7 +49,7 @@ func NewPkgCmd() *cli.Command {
 				reporter.ExitWithReport("kpm: run 'kpm pkg help' for more information.")
 			}
 
-			err = kclPkg.PackageKclPkg(kclPkg.HomePath, kpmHome, tarPath)
+			err = kclPkg.PackageKclPkg(kpmHome, tarPath)
 
 			if err != nil {
 				reporter.ExitWithReport("kpm: failed to package pkg " + kclPkg.GetPkgName() + ".")

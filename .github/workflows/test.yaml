@@ -17,13 +17,22 @@ jobs:
         with:
           go-version: 1.18
 
+      - name: Install Wget
+        run: |
+          sudo apt update
+          sudo apt -y install wget
+      - run: wget -c https://github.com/KusionStack/KCLVM/releases/download/v0.4.6/kclvm-v0.4.6-linux-amd64.tar.gz -qO - | tar xz -C ./
+     
       - run: go build ./...
       - run: go vet ./...
 
       - name: Running go tests with coverage
         env:
           GO111MODULE: on
-        run: make cover
+        run: |
+          export PATH=$PATH:$(pwd)/kclvm/bin
+          kclvm_cli version 
+          make cover
       - name: Send coverage
         uses: shogo82148/actions-goveralls@v1
         with:

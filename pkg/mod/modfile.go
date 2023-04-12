@@ -30,6 +30,10 @@ type Package struct {
 type ModFile struct {
 	HomePath string  `toml:"-"`
 	Pkg      Package `toml:"package,omitempty"`
+	// Whether the current package uses the vendor mode
+	// In the vendor mode, kpm will look for the package in the vendor subdirectory
+	// in the current package directory.
+	VendorMode bool `toml:"-"`
 	Dependencies
 }
 
@@ -43,6 +47,10 @@ type Dependency struct {
 	FullName string `toml:"full_name,omitempty"`
 	Version  string `toml:"version,omitempty"`
 	Sum      string `toml:"sum,omitempty"`
+	// The actual local path of the package.
+	// In vendor mode is "current_kcl_package/vendor"
+	// In non-vendor mode is "$KPM_HOME"
+	LocalFullPath string `toml:"-"`
 	Source
 }
 

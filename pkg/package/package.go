@@ -9,6 +9,7 @@ import (
 	errors "kusionstack.io/kpm/pkg/errors"
 	modfile "kusionstack.io/kpm/pkg/mod"
 	"kusionstack.io/kpm/pkg/opt"
+	"kusionstack.io/kpm/pkg/runner"
 	"kusionstack.io/kpm/pkg/utils"
 )
 
@@ -49,6 +50,86 @@ func LoadKclPkg(pkgPath string) (*KclPkg, error) {
 	}, nil
 }
 
+func (kclPkg *KclPkg) IsVendorMode() bool {
+	return kclPkg.modFile.VendorMode
+}
+
+func (kclPkg *KclPkg) SetVendorMode(vendorMode bool) {
+	kclPkg.modFile.VendorMode = vendorMode
+}
+
+// Return the full vendor path.
+func (kclPkg *KclPkg) LocalVendorPath() string {
+	return filepath.Join(kclPkg.HomePath, "vendor")
+}
+
+// CompileWithEntryFile will call 'kclvm_cli' to compile the current kcl package and its dependent packages.
+func (kclPkg *KclPkg) CompileWithEntryFile(kpmHome string, kclvmCompiler *runner.CompileCmd) (string, error) {
+
+	pkgMap, err := kclPkg.ResolveDeps(kpmHome)
+	if err != nil {
+		return "", err
+	}
+
+	for dName, dPath := range pkgMap {
+		kclvmCompiler.AddDepPath(dName, dPath)
+	}
+
+	return kclvmCompiler.Run(), nil
+}
+
+// ResolveDeps will return a map between dependency name and its local path,
+// and analyze the dependencies of the current kcl package,
+// look for the package in the $KPM_HOME or kcl package vendor subdirectory,
+// if find it, ResolveDeps will remember the local path of the dependency,
+// if can’t find it, re-download the dependency and remember the local path.
+func (kclPkg *KclPkg) ResolveDeps(kpmHome string) (map[string]string, error) {
+	var pkgMap map[string]string = make(map[string]string)
+
+	var searchPath string
+	if kclPkg.IsVendorMode() {
+		// In the vendor mode, the search path is the vendor subdirectory of the current package.
+		err := kclPkg.VendorDeps(kpmHome)
+		if err != nil {
+			return nil, err
+		}
+		searchPath = kclPkg.LocalVendorPath()
+	} else {
+		// Otherwise, the search path is the $KPM_HOME.
+		searchPath = kpmHome
+	}
+
+	for name, d := range kclPkg.Dependencies.Deps {
+		if utils.DirExists(filepath.Join(searchPath, d.FullName)) && check(d, searchPath) {
+			// Find it and update the local path of the dependency.
+			pkgMap[name] = filepath.Join(searchPath, d.FullName)
+		} else {
+			// Otherwise, re-vendor it.
+			if kclPkg.IsVendorMode() {
+				err := kclPkg.VendorDeps(kpmHome)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				// Or, re-download it.
+				err := kclPkg.DownloadDep(&d, kpmHome)
+				if err != nil {
+					return nil, err
+				}
+			}
+			// After re-downloading or re-vendoring,
+			// re-resolving is required to update the dependent paths.
+			newMap, err := kclPkg.ResolveDeps(kpmHome)
+			if err != nil {
+				return nil, err
+			}
+			return newMap, nil
+		}
+	}
+
+	return pkgMap, nil
+}
+
 // InitEmptyModule inits an empty kcl module and create a default kcl.modfile.
 func (kclPkg KclPkg) InitEmptyPkg() error {
 	err := utils.CreateFileIfNotExist(
@@ -70,11 +151,23 @@ func (kclPkg KclPkg) InitEmptyPkg() error {
 	return nil
 }
 
-// AddDeps will download the corresponding dependencies and file the kcl.mod and kcl.mod.lock files.
-func (kclPkg KclPkg) AddDeps(opt *opt.AddOptions) error {
-
+// AddDeps will add the dependencies to current kcl package and update kcl.mod and kcl.mod.lock.
+func (kclPkg *KclPkg) AddDeps(opt *opt.AddOptions) error {
 	// Get the name and version of the repository from the input arguments.
 	d := modfile.ParseOpt(&opt.RegistryOpts)
+	err := kclPkg.DownloadDep(d, opt.LocalPath)
+	if err != nil {
+		return err
+	}
+	err = kclPkg.updateModAndLockFile()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// DownloadDep will download the corresponding dependency.
+func (kclPkg *KclPkg) DownloadDep(d *modfile.Dependency, localPath string) error {
 
 	if !reflect.DeepEqual(kclPkg.modFile.Dependencies.Deps[d.Name], *d) {
 		// the dep passed on the cli is different from the kcl.mod.
@@ -84,7 +177,7 @@ func (kclPkg KclPkg) AddDeps(opt *opt.AddOptions) error {
 	}
 
 	// download all the dependencies.
-	changedDeps, err := getDeps(kclPkg.modFile.Dependencies, kclPkg.Dependencies, opt.LocalPath)
+	changedDeps, err := getDeps(kclPkg.modFile.Dependencies, kclPkg.Dependencies, localPath)
 
 	if err != nil {
 		return errors.FailedDownloadError
@@ -96,8 +189,13 @@ func (kclPkg KclPkg) AddDeps(opt *opt.AddOptions) error {
 		kclPkg.Dependencies.Deps[k] = v
 	}
 
+	return err
+}
+
+// updateModAndLockFile will update kcl.mod and kcl.mod.lock
+func (kclPkg *KclPkg) updateModAndLockFile() error {
 	// Generate file kcl.mod.
-	err = kclPkg.modFile.StoreModFile()
+	err := kclPkg.modFile.StoreModFile()
 	if err != nil {
 		return err
 	}
@@ -209,15 +307,15 @@ func check(dep modfile.Dependency, vendorDir string) bool {
 
 // PackageKclPkg will save all dependencies to the 'vendor' in current pacakge
 // and package the current package into tar
-func (kclPkg *KclPkg) PackageKclPkg(srcPath string, kpmHome string, tarPath string) error {
+func (kclPkg *KclPkg) PackageKclPkg(kpmHome string, tarPath string) error {
 	// Vendor all the dependencies into the current kcl package.
-	err := kclPkg.VendorDeps(srcPath, kpmHome)
+	err := kclPkg.VendorDeps(kpmHome)
 	if err != nil {
 		return errors.FailedToVendorDependency
 	}
 
 	// Tar the current kcl package into a "*.tar" file.
-	err = utils.TarDir(srcPath, tarPath)
+	err = utils.TarDir(kclPkg.HomePath, tarPath)
 	if err != nil {
 		return errors.FailedToPackage
 	}
@@ -225,9 +323,9 @@ func (kclPkg *KclPkg) PackageKclPkg(srcPath string, kpmHome string, tarPath stri
 }
 
 // Vendor all dependencies to the 'vendor' in current pacakge.
-func (kclPkg *KclPkg) VendorDeps(localPath string, cachePath string) error {
+func (kclPkg *KclPkg) VendorDeps(cachePath string) error {
 	// Mkdir the dir "vendor".
-	vendorPath := filepath.Join(localPath, "vendor")
+	vendorPath := kclPkg.LocalVendorPath()
 	err := os.MkdirAll(vendorPath, 0755)
 	if err != nil {
 		return errors.InternalBug
@@ -245,33 +343,31 @@ func (kclPkg *KclPkg) VendorDeps(localPath string, cachePath string) error {
 		if len(d.Name) == 0 {
 			return errors.InvalidDependency
 		}
-		vendorDir := filepath.Join(vendorPath, d.FullName)
+		vendorFullPath := filepath.Join(vendorPath, d.FullName)
 		// If the package already exists in the 'vendor', do nothing.
-		if utils.DirExists(vendorDir) && check(d, vendorPath) {
+		if utils.DirExists(vendorFullPath) && check(d, vendorPath) {
 			continue
 		} else {
 			// If not in the 'vendor', check the global cache.
-			cacheDir := filepath.Join(cachePath, d.FullName)
-			if utils.DirExists(cacheDir) && check(d, cachePath) {
+			cacheFullPath := filepath.Join(cachePath, d.FullName)
+			if utils.DirExists(cacheFullPath) && check(d, cachePath) {
 				// If there is, copy it into the 'vendor' directory.
-				err := copy.Copy(cacheDir, vendorDir)
+				err := copy.Copy(cacheFullPath, vendorFullPath)
 				if err != nil {
 					return errors.FailedToVendorDependency
 				}
 			} else {
 				// re-download if not.
-				os.RemoveAll(cacheDir)
-				lockedDep, err := d.Download(cacheDir)
+				err = kclPkg.DownloadDep(&d, cachePath)
 				if err != nil {
-					return errors.FailedDownloadError
+					return errors.FailedToVendorDependency
 				}
-
-				if d.Sum != "" && lockedDep.Sum != d.Sum {
-					return errors.CheckSumMismatchError
+				// re-vendor again with new kcl.mod and kcl.mod.lock
+				err = kclPkg.VendorDeps(cachePath)
+				if err != nil {
+					return errors.FailedToVendorDependency
 				}
-				// After re-downloading, the downloaded dependencies need
-				// to be copied to the vendor directory.
-				i--
+				return nil
 			}
 		}
 	}
