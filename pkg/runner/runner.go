@@ -7,7 +7,10 @@ import (
 	"kusionstack.io/kpm/pkg/opt"
 )
 
-// KCL Compiler.
+// CompileCmd denotes a KCL Compiler,
+// it will call the kcl compiler with the command 'kclvm_cli'.
+// If 'kclvm_cli' is not found in the environment variable,
+// CompileCmd will not compile KCL properly and will throw an error.
 type CompileCmd struct {
 	kclOpts *opt.KclvmOptions
 	cmd     *exec.Cmd
