@@ -23,34 +23,15 @@
 
 `kpm` 将调用 KCLVM 来编译 KCL 程序。在使用 `kpm` 之前，您需要确保 KCLVM 已经成功安装。
 
-[如需了解如何安装KCLVM的更多信息，请参考此处。](https://kcl-lang.io/docs/user_docs/getting-started/install)
+[如需了解如何安装 KCLVM 的更多信息，请参考此处。](https://kcl-lang.io/docs/user_docs/getting-started/install)
 
 使用以下命令来确保您已成功安装KCLVM。
 
 ```shell
-kclvm_cli --help
+kclvm_cli version
 ```
 
-如果您获得了以下输出，则说明您已经成功安装了KCLVM，可以继续进行后面的步骤。
-
-```shell
-kclvm_cli
-
-USAGE:
-    kclvm_cli [SUBCOMMAND]
-
-OPTIONS:
-    -h, --help    Print help information
-
-SUBCOMMANDS:
-    fmt
-    help       Print this message or the help of the given subcommand(s)
-    lint
-    run
-    server
-    version
-    vet
-```
+如果上面的命令能为您正常展示 KCLVM 的版本信息，意味着您已经成功安装了 KCLVM 您就可以继续下一步操作。
 
 ### 安装 `kpm`
 
@@ -119,10 +100,10 @@ kpm init mykcl
 `kpm` 将会在执行`kpm init mykcl`命令的目录下创建两个默认的配置文件 `kcl.mod` 和 `kcl.mod.lock`。
 
 ```shell
-- my_kcl
-   |- kcl.mod
-   |- kcl.mod.lock
-   |- # 你可以直接在这个目录下写你的kcl程序。
+- my_package
+        |- kcl.mod
+        |- kcl.mod.lock
+        |- # 你可以直接在这个目录下写你的kcl程序。
 ```
 
 `kcl.mod.lock` 是 `kpm` 用来固定依赖版本的文件，是自动生成的，请不要人工修改这个文件。
@@ -131,7 +112,7 @@ kpm init mykcl
 
 ```shell
 [package]
-name = "my_kcl"
+name = "my_package"
 edition = "0.0.1"
 version = "0.0.1"
 ```
@@ -155,7 +136,7 @@ kpm add -git https://github.com/awesome-kusion/konfig.git -tag v0.0.1
 
 ```shell
 [package]
-name = "my_kcl"
+name = "my_package"
 edition = "0.0.1"
 version = "0.0.1"
 
@@ -171,10 +152,10 @@ konfig = { git = "https://github.com/awesome-kusion/konfig.git", tag = "v0.0.1" 
 在当前包中创建 `main.k`。
 
 ```shell
-- my_kcl
-   |- kcl.mod
-   |- kcl.mod.lock
-   |- main.k # Your KCL program.
+- my_package
+        |- kcl.mod
+        |- kcl.mod.lock
+        |- main.k # Your KCL program.
 ```
 
 并且将下面的内容写入 `main.k` 文件中。
@@ -190,7 +171,7 @@ demo = nd.demo
 你可以使用 kpm 编译刚才编写的 `main.k` 文件。
 
 ```shell
-kpm run --input /my_kcl/main.k
+kpm run --input /my_package/main.k
 ```
 
 如果你得到如下输出，恭喜你！你成功使用 `kpm` 编译了一个 kcl 包。
@@ -223,17 +204,17 @@ demo:
 你可以使用 `kpm pkg` 将您的包与其对应的依赖打包在一起.
 
 ```shell
-kpm pkg --target /my_kcl/my_kcl.tar
+kpm pkg --target /my_package/my_package.tar
 ```
 
-这个命令执行后，您可以看到您的 kcl 包已经被打包到了 `/my_kcl/my_kcl.tar` 文件中，并且 `my_kcl` 的依赖也都被复制到了当前包的 `vendor` 子目录下。
+这个命令执行后，您可以看到您的 kcl 包已经被打包到了 `/my_package/my_package.tar` 文件中，并且 `my_package` 的依赖也都被复制到了当前包的 `vendor` 子目录下。
 
 ```shell
-- my_kcl
-   |- kcl.mod
-   |- kcl.mod.lock
-   |- main.k
-   |- my_kcl.tar # `kpm pkg` 命令生成的 tar 包。
-   |- vendor # 当前包所有的依赖都将被复制到 `vendor`中。 
-        |- konfig_v0.0.1
+- my_package
+        |- kcl.mod
+        |- kcl.mod.lock
+        |- main.k
+        |- my_package.tar # `kpm pkg` 命令生成的 tar 包。
+        |- vendor # 当前包所有的依赖都将被复制到 `vendor`中。 
+             |- konfig_v0.0.1
 ```
