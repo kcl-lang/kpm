@@ -54,7 +54,7 @@ SUBCOMMANDS:
 
 ### Install `kpm`
 
-You can get `kpm` from the github release and set the `kpm` binary to the environment variable PATH.
+You can get `kpm` from the github release and set the `kpm` binary path to the environment variable PATH.
 
 ```shell
 # KPM_INSTALLATION_PATH is the path of the `kpm` binary.
