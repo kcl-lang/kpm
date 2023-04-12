@@ -54,7 +54,7 @@ SUBCOMMANDS:
 
 ### 安装 `kpm`
 
-您可以从 Github release 中获取 `kpm` ，并将 `kpm` 的二进制文件设置到环境变量 PATH 中。
+您可以从 Github release 中获取 `kpm` ，并将 `kpm` 的二进制文件路径设置到环境变量 PATH 中。
 
 ```shell
 # KPM_INSTALLATION_PATH 是 `kpm` 二进制文件的所在目录.
