@@ -13,7 +13,7 @@ func TestCompilerNotFound(t *testing.T) {
 
 	// Call the kclvm_cli.
 	compiler := NewCompileCmd(compileOpts)
-	compiler.cmd.Env = make([]string, 0)
+	compiler.cmd.Path = ""
 	result := compiler.Run()
 	assert.Equal(t, result, "")
 }
