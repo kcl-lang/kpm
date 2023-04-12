@@ -21,8 +21,6 @@
 
 ### 安装 KCLVM
 
-Use the following command to ensure that you install KCLVM successfully.
-
 `kpm` 将调用 KCLVM 来编译 KCL 程序。在使用 `kpm` 之前，您需要确保 KCLVM 已经成功安装。
 
 [如需了解如何安装KCLVM的更多信息，请参考此处。](https://kcl-lang.io/docs/user_docs/getting-started/install)
