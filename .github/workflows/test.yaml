@@ -27,7 +27,7 @@ jobs:
         run: |
           echo 'export PATH=$PATH:$(pwd)/kclvm/bin' >> $HOME/.bashrc
           source $HOME/.bashrc
-
+      - run: echo $PATH
       - run: kclvm_cli version
       - run: go build ./...
       - run: go vet ./...
