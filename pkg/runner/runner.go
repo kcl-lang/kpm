@@ -5,6 +5,7 @@ import (
 
 	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/opt"
+	"kusionstack.io/kpm/pkg/reporter"
 )
 
 // CompileCmd denotes a KCL Compiler,
@@ -39,6 +40,7 @@ func (cmd *CompileCmd) Run() (string, error) {
 	cmd.cmd.Args = append(cmd.cmd.Args, args...)
 	out, err := cmd.cmd.CombinedOutput()
 	if err != nil {
+		reporter.Report("kpm: kclvm_cli error: ", err, ",", string(out))
 		return "", errors.CompileFailed
 	}
 	return string(out), nil
