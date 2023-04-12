@@ -89,7 +89,10 @@ func (kclPkg *KclPkg) ResolveDeps(kpmHome string) (map[string]string, error) {
 	var searchPath string
 	if kclPkg.IsVendorMode() {
 		// In the vendor mode, the search path is the vendor subdirectory of the current package.
-		kclPkg.VendorDeps(kpmHome)
+		err := kclPkg.VendorDeps(kpmHome)
+		if err != nil {
+			return nil, err
+		}
 		searchPath = kclPkg.LocalVendorPath()
 	} else {
 		// Otherwise, the search path is the $KPM_HOME.
@@ -103,7 +106,10 @@ func (kclPkg *KclPkg) ResolveDeps(kpmHome string) (map[string]string, error) {
 		} else {
 			// Otherwise, re-vendor it.
 			if kclPkg.IsVendorMode() {
-				kclPkg.VendorDeps(kpmHome)
+				err := kclPkg.VendorDeps(kpmHome)
+				if err != nil {
+					return nil, err
+				}
 			} else {
 				// Or, re-download it.
 				err := kclPkg.DownloadDep(&d, kpmHome)
@@ -352,7 +358,10 @@ func (kclPkg *KclPkg) VendorDeps(cachePath string) error {
 				}
 			} else {
 				// re-download if not.
-				kclPkg.DownloadDep(&d, cachePath)
+				err = kclPkg.DownloadDep(&d, cachePath)
+				if err != nil {
+					return errors.FailedToVendorDependency
+				}
 				// re-vendor again with new kcl.mod and kcl.mod.lock
 				err = kclPkg.VendorDeps(cachePath)
 				if err != nil {
