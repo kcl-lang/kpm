@@ -3,9 +3,7 @@ package runner
 import (
 	"os/exec"
 
-	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/opt"
-	"kusionstack.io/kpm/pkg/reporter"
 )
 
 // CompileCmd denotes a KCL Compiler,
@@ -32,16 +30,12 @@ func (cmd *CompileCmd) AddDepPath(depName string, depPath string) {
 }
 
 // Call KCL Compiler and return the result.
-func (cmd *CompileCmd) Run() (string, error) {
+func (cmd *CompileCmd) Run() string {
 	var args []string
 	args = append(args, KCLVM_COMMAND_RUN)
 	args = append(args, cmd.kclOpts.Args()...)
 
 	cmd.cmd.Args = append(cmd.cmd.Args, args...)
-	out, err := cmd.cmd.CombinedOutput()
-	if err != nil {
-		reporter.Report("kpm: kclvm_cli error: ", err, ",", string(out))
-		return "", errors.CompileFailed
-	}
-	return string(out), nil
+	out, _ := cmd.cmd.CombinedOutput()
+	return string(out)
 }
