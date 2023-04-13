@@ -109,3 +109,14 @@ func TestCreateSymbolLink(t *testing.T) {
 	assert.Equal(t, linkTarget, need_linked)
 	_ = os.Remove(linkPath)
 }
+
+func TestDefaultKpmHome(t *testing.T) {
+	homeDir, _ := os.UserHomeDir()
+
+	filePath := filepath.Join(homeDir, ".kpm")
+
+	kpmHome, err := CreateDefaultKpmHome()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, kpmHome, filePath)
+	assert.Equal(t, DirExists(kpmHome), true)
+}
