@@ -72,29 +72,21 @@ GLOBAL OPTIONS:
    --version, -v  print the version
 ```
 
-### Set environment variables
-
-You need to set an environment variable `KPM_HOME` to hold the KCL packages downloaded by `kpm`.
-
-```shell
-# The directory to save the packages downloaded by Kpm. 
-export KPM_HOME="/user/xxx/xxx/path" 
-```
-
-To ensure that KCLVM can find the packages downloaded by `kpm`, you need to set the environment variables `$KCLVM_VENDOR_HOME` and point it to `$KPM_HOME` for KCLVM after downloading KCLVM.
-
-```shell
-export KCLVM_VENDOR_HOME=$KPM_HOME
-```
-
 ## Quick Start
 
 ### Init an empty kcl package
 
-Create a new kcl package named `mykcl`.
+First, create an empty folder for the KCL package and go into that folder.
 
 ```shell
-kpm init mykcl
+mkdir my_package # create an empty folder 'my_package'
+cd my_package # go into the folder 'my_package'
+```
+
+Create a new kcl package named `my_package`.
+
+```shell
+kpm init my_package
 ```
 
 `kpm` will create two kcl package configuration files: `kcl.mod` and `kcl.mod.lock` in the directory where you executed the command.
@@ -125,14 +117,7 @@ If you need to use the KCL model in [Konfig](https://github.com/awesome-kusion/k
 kpm add -git https://github.com/awesome-kusion/konfig.git -tag v0.0.1
 ```
 
-In this directory `$KPM_HOME`, you will be able to see the kcl package you downloaded.
-
-```shell
-- $KPM_HOME
-      | - konfig_v0.0.1
-```
-
-You can also see that `kpm` adds the dependency you just added to kcl.mod.
+You can see that `kpm` adds the dependency you just added to kcl.mod.
 
 ```shell
 [package]
@@ -171,7 +156,7 @@ demo = nd.demo
 You can use `kpm` to compile the `main.k` file you just wrote.
 
 ```shell
-kpm run --input /my_package/main.k
+kpm run --input main.k
 ```
 
 If you get the following output, congratulations !, you have successfully compiled your kcl package with `kpm`.
@@ -204,10 +189,10 @@ demo:
 You can use the command `kpm pkg` to package your current kcl package with its dependencies.
 
 ```shell
-kpm pkg --target /my_package/my_package.tar
+kpm pkg --target my_package.tar
 ```
 
-After this command is executed, a tar package will be packaged in the `/my_package/my_package.tar` directory. And all the dependencies for `my_package` will be stored in the `vendor` subdirectory.
+After this command is executed, a tar package will be packaged in the `my_package.tar` directory. And all the dependencies for `my_package` will be stored in the `vendor` subdirectory.
 
 ```shell
 - my_package
