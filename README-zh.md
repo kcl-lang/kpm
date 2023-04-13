@@ -72,32 +72,24 @@ GLOBAL OPTIONS:
    --version, -v  print the version
 ```
 
-### 设置环境变量
-
-你需要设置一个环境变量 KPM_HOME 来声明 `kpm` 下载的 KCL 包的位置。
-
-```shell
-# Kpm 下载的包将会保存在 /user/xxx/xxx/path 目录下. 
-export KPM_HOME="/user/xxx/xxx/path" 
-```
-
-在成功安装 KCLVM 后，为了确保 KCLVM 可以找到 `kpm` 下载的包，你需要设置环境变量 $KCLVM_VENDOR_HOME 并将其指向 $KPM_HOME。
-
-```shell
-export KCLVM_VENDOR_HOME=$KPM_HOME
-```
-
 ## 快速开始
 
 ### 初始化一个空的 KCL 包
 
-创建一个叫做 `mykcl` 的包。
+首先，先为 KCL 包创建一个空的文件夹, 并且进入到这个文件夹中。
 
 ```shell
-kpm init mykcl
+mkdir my_package # 创建一个新的文件夹 'my_package'
+cd my_package # 进入这个文件夹中 'my_package'
 ```
 
-`kpm` 将会在执行`kpm init mykcl`命令的目录下创建两个默认的配置文件 `kcl.mod` 和 `kcl.mod.lock`。
+创建一个叫做 `my_package` 的包。
+
+```shell
+kpm init my_package
+```
+
+`kpm` 将会在执行`kpm init my_package`命令的目录下创建两个默认的配置文件 `kcl.mod` 和 `kcl.mod.lock`。
 
 ```shell
 - my_package
@@ -125,14 +117,7 @@ version = "0.0.1"
 kpm add -git https://github.com/awesome-kusion/konfig.git -tag v0.0.1
 ```
 
-在环境变量 `$KPM_HOME` 描述的目录下, 你可以看到被下载的包。
-
-```shell
-- $KPM_HOME
-      | - konfig_v0.0.1
-```
-
-并且 `kpm` 会为您将依赖添加到 kcl.mod 文件中.
+`kpm` 会为您将依赖添加到 kcl.mod 文件中.
 
 ```shell
 [package]
@@ -171,7 +156,7 @@ demo = nd.demo
 你可以使用 kpm 编译刚才编写的 `main.k` 文件。
 
 ```shell
-kpm run --input /my_package/main.k
+kpm run --input main.k
 ```
 
 如果你得到如下输出，恭喜你！你成功使用 `kpm` 编译了一个 kcl 包。
@@ -204,10 +189,10 @@ demo:
 你可以使用 `kpm pkg` 将您的包与其对应的依赖打包在一起.
 
 ```shell
-kpm pkg --target /my_package/my_package.tar
+kpm pkg --target my_package.tar
 ```
 
-这个命令执行后，您可以看到您的 kcl 包已经被打包到了 `/my_package/my_package.tar` 文件中，并且 `my_package` 的依赖也都被复制到了当前包的 `vendor` 子目录下。
+这个命令执行后，您可以看到您的 kcl 包已经被打包到了 `my_package.tar` 文件中，并且 `my_package` 的依赖也都被复制到了当前包的 `vendor` 子目录下。
 
 ```shell
 - my_package
