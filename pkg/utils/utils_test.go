@@ -102,10 +102,10 @@ func TestCreateSymbolLink(t *testing.T) {
 	linkPath := filepath.Join(testDir, "linked")
 
 	_ = os.Remove(linkPath)
-	CreateSymlink(need_linked, linkPath)
+	err := CreateSymlink(need_linked, linkPath)
 
 	linkTarget, _ := os.Readlink(linkPath)
-
+	assert.Equal(t, err, nil)
 	assert.Equal(t, linkTarget, need_linked)
 	_ = os.Remove(linkPath)
 }
