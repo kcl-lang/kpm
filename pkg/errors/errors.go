@@ -21,3 +21,6 @@ var InvalidAddOptionsInvalidGitTag = errors.New("kpm: invalid 'kpm add' argument
 // Invalid 'kpm run'
 var InvalidRunOptionsWithoutEntryFiles = errors.New("kpm: invalid 'kpm run' argument, you must provide an entry file.")
 var CompileFailed = errors.New("kpm: failed to compile kcl, please check the command 'kclvm_cli run' is still works.")
+
+// invalid KPM_HOME
+var InvalidKpmHomeInCurrentPkg = errors.New("kpm: environment variable KPM_HOME cannot be set to the same path as the current KCL package.")

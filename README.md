@@ -76,7 +76,7 @@ GLOBAL OPTIONS:
 
 You need to set an environment variable `KPM_HOME` to hold the KCL packages downloaded by `kpm`.
 
-Note: `kpm` does not support downloading external packages into the current kcl package directory, so make sure there is no `kcl.mod` file in the $KPM_HOME directory.
+Note: `kpm` does not support downloading external packages into the current kcl package directory, so make sure that '$KPM_HOME' is not in the same directory as the current KCL package.
 
 ```shell
 # The directory to save the packages downloaded by Kpm. 

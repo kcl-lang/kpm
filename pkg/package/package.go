@@ -379,6 +379,14 @@ func (kclPkg *KclPkg) VendorDeps(cachePath string) error {
 	return nil
 }
 
+// Verify that the environment variable KPM HOME is set correctly
+func (kclPkg *KclPkg) ValidateKpmHome(kpmHome string) error {
+	if kclPkg.HomePath == kpmHome {
+		return errors.InvalidKpmHomeInCurrentPkg
+	}
+	return nil
+}
+
 // GetPkgName returns name of package.
 func (kclPkg *KclPkg) GetPkgName() string {
 	return kclPkg.modFile.Pkg.Name

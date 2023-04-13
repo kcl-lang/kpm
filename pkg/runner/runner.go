@@ -3,6 +3,7 @@ package runner
 import (
 	"os/exec"
 
+	errors "kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/opt"
 )
 
@@ -18,15 +19,32 @@ type CompileCmd struct {
 const KCLVM_CLI = "kclvm_cli"
 const KCLVM_COMMAND_RUN = "run"
 
-func NewCompileCmd(kclOpts *opt.KclvmOptions) *CompileCmd {
-	return &CompileCmd{
+func NewCompileCmd(kclOpts *opt.KclvmOptions) (*CompileCmd, error) {
+
+	cmd := CompileCmd{
 		kclOpts: kclOpts,
 		cmd:     exec.Command(KCLVM_CLI),
 	}
+
+	err := cmd.Validate()
+	if err != nil {
+		return nil, err
+	}
+
+	return &cmd, nil
 }
 
 func (cmd *CompileCmd) AddDepPath(depName string, depPath string) {
 	cmd.kclOpts.Deps[depName] = depPath
+}
+
+// Validate will check that the compiler is working well.
+func (cmd *CompileCmd) Validate() error {
+	_, lookErr := exec.LookPath(KCLVM_CLI)
+	if lookErr != nil {
+		return errors.CompileFailed
+	}
+	return nil
 }
 
 // Call KCL Compiler and return the result.
