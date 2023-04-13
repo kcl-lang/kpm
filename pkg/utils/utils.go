@@ -177,24 +177,37 @@ func DirExists(path string) bool {
 	return !os.IsNotExist(err)
 }
 
-const DEFAULT_KPM_HOME = "."
-
-// GetAbsKpmHome will return the absolute path of $KPM_HOME,
-// or the absolute path of the current path if $KPM_HOME does not exist.
-func GetAbsKpmHome() (string, error) {
-	defaultHome, err := filepath.Abs(DEFAULT_KPM_HOME)
+// DefaultKpmHome create the '.kpm' in the user home and return the path of ".kpm".
+func CreateDefaultKpmHome() (string, error) {
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", errors.InternalBug
 	}
 
-	kpmHome := os.Getenv("KPM_HOME")
-	if kpmHome == "" {
-		reporter.Report("kpm: KPM_HOME environment variable is not set")
-		reporter.Report("kpm: `add` will be downloaded to directory: ", defaultHome)
-		return defaultHome, nil
+	dirPath := filepath.Join(homeDir, ".kpm")
+	if !DirExists(dirPath) {
+		err = os.Mkdir(dirPath, 0755)
+		if err != nil {
+			return "", errors.InternalBug
+		}
 	}
 
-	kpmHome, err = filepath.Abs(kpmHome)
+	return dirPath, nil
+}
+
+// GetAbsKpmHome will return the absolute path of $KPM_HOME,
+// or the absolute path of the current path if $KPM_HOME does not exist.
+func GetAbsKpmHome() (string, error) {
+	kpmHome := os.Getenv("KPM_HOME")
+	if kpmHome == "" {
+		defaultHome, err := CreateDefaultKpmHome()
+		if err != nil {
+			return "", errors.InternalBug
+		}
+		kpmHome = defaultHome
+	}
+
+	kpmHome, err := filepath.Abs(kpmHome)
 	if err != nil {
 		return "", errors.InternalBug
 	}
