@@ -11,6 +11,7 @@ import (
 	pkg "kusionstack.io/kpm/pkg/package"
 	"kusionstack.io/kpm/pkg/reporter"
 	"kusionstack.io/kpm/pkg/runner"
+	"kusionstack.io/kpm/pkg/utils"
 )
 
 // NewRunCmd new a Command for `kpm run`.
@@ -48,10 +49,9 @@ func NewRunCmd() *cli.Command {
 
 			kclPkg.SetVendorMode(c.Bool("vendor"))
 
-			kpmHome := os.Getenv("KPM_HOME")
-			if kpmHome == "" {
-				reporter.Report("kpm: KPM_HOME environment variable is not set")
-				reporter.Report("kpm: dependencies will be downloaded to directory: ", pwd)
+			kpmHome, err := utils.GetAbsKpmHome()
+			if err != nil {
+				return err
 			}
 
 			entryFile := c.String("input")

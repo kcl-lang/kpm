@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/reporter"
 )
 
@@ -174,4 +175,29 @@ func TarDir(srcDir string, tarPath string) error {
 func DirExists(path string) bool {
 	_, err := os.Stat(path)
 	return !os.IsNotExist(err)
+}
+
+const DEFAULT_KPM_HOME = "."
+
+// GetAbsKpmHome will return the absolute path of $KPM_HOME,
+// or the absolute path of the current path if $KPM_HOME does not exist.
+func GetAbsKpmHome() (string, error) {
+	defaultHome, err := filepath.Abs(DEFAULT_KPM_HOME)
+	if err != nil {
+		return "", errors.InternalBug
+	}
+
+	kpmHome := os.Getenv("KPM_HOME")
+	if kpmHome == "" {
+		reporter.Report("kpm: KPM_HOME environment variable is not set")
+		reporter.Report("kpm: `add` will be downloaded to directory: ", defaultHome)
+		return defaultHome, nil
+	}
+
+	kpmHome, err = filepath.Abs(kpmHome)
+	if err != nil {
+		return "", errors.InternalBug
+	}
+
+	return kpmHome, nil
 }

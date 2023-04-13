@@ -80,3 +80,16 @@ func TestTarDir(t *testing.T) {
 	assert.Equal(t, err, nil)
 	os.Remove(tarPath)
 }
+
+func TestGetAbsKpmHome(t *testing.T) {
+	os.Setenv("KPM_HOME", ".")
+	got, err := GetAbsKpmHome()
+	expect, _ := filepath.Abs(".")
+	assert.Equal(t, err, nil)
+	assert.Equal(t, got, expect)
+
+	os.Setenv("KPM_HOME", "test_subdir")
+	got, err = GetAbsKpmHome()
+	assert.Equal(t, got, filepath.Join(expect, "test_subdir"))
+	assert.Equal(t, err, nil)
+}

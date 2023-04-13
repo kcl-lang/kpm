@@ -8,6 +8,7 @@ import (
 	"github.com/urfave/cli/v2"
 	pkg "kusionstack.io/kpm/pkg/package"
 	"kusionstack.io/kpm/pkg/reporter"
+	"kusionstack.io/kpm/pkg/utils"
 )
 
 // NewPkgCmd new a Command for `kpm pkg`.
@@ -36,10 +37,9 @@ func NewPkgCmd() *cli.Command {
 				return err
 			}
 
-			kpmHome := os.Getenv("KPM_HOME")
-			if kpmHome == "" {
-				reporter.Report("kpm: KPM_HOME environment variable is not set")
-				reporter.Report("kpm: dependencies will be downloaded to directory: ", pwd)
+			kpmHome, err := utils.GetAbsKpmHome()
+			if err != nil {
+				return err
 			}
 
 			tarPath := c.String("target")
