@@ -158,17 +158,19 @@ func TestVendorDeps(t *testing.T) {
 	testDir := getTestDir("resolve_deps")
 	kpm_home := filepath.Join(testDir, "kpm_home")
 	os.RemoveAll(filepath.Join(testDir, "my_kcl"))
+	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1"))
+	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
 
 	depKcl1 := modfile.Dependency{
 		Name:     "kcl1",
 		FullName: "kcl1",
-		Sum:      utils.HashDir(filepath.Join(kpm_home, "kcl1")),
+		Sum:      kcl1Sum,
 	}
 
 	depKcl2 := modfile.Dependency{
 		Name:     "kcl2",
 		FullName: "kcl2",
-		Sum:      utils.HashDir(filepath.Join(kpm_home, "kcl2")),
+		Sum:      kcl2Sum,
 	}
 
 	kclPkg := KclPkg{
@@ -216,17 +218,19 @@ func TestResolveDepsVendorMode(t *testing.T) {
 	kpm_home := filepath.Join(testDir, "kpm_home")
 	home_path := filepath.Join(testDir, "my_kcl_resolve_deps_vendor_mode")
 	os.RemoveAll(home_path)
+	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1"))
+	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
 
 	depKcl1 := modfile.Dependency{
 		Name:     "kcl1",
 		FullName: "kcl1",
-		Sum:      utils.HashDir(filepath.Join(kpm_home, "kcl1")),
+		Sum:      kcl1Sum,
 	}
 
 	depKcl2 := modfile.Dependency{
 		Name:     "kcl2",
 		FullName: "kcl2",
-		Sum:      utils.HashDir(filepath.Join(kpm_home, "kcl2")),
+		Sum:      kcl2Sum,
 	}
 
 	kclPkg := KclPkg{
@@ -283,16 +287,17 @@ func TestCompileWithEntryFile(t *testing.T) {
 	entry_file := filepath.Join(home_path, "main.k")
 	os.RemoveAll(vendor_path)
 
+	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1"))
 	depKcl1 := modfile.Dependency{
 		Name:     "kcl1",
 		FullName: "kcl1",
-		Sum:      utils.HashDir(filepath.Join(kpm_home, "kcl1")),
+		Sum:      kcl1Sum,
 	}
-
+	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
 	depKcl2 := modfile.Dependency{
 		Name:     "kcl2",
 		FullName: "kcl2",
-		Sum:      utils.HashDir(filepath.Join(kpm_home, "kcl2")),
+		Sum:      kcl2Sum,
 	}
 
 	kclPkg := KclPkg{

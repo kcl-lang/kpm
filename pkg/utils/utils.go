@@ -16,7 +16,7 @@ import (
 
 // HashDir computes the checksum of a directory by concatenating all files and
 // hashing them by sha256.
-func HashDir(dir string) string {
+func HashDir(dir string) (string, error) {
 	hasher := sha256.New()
 
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -48,10 +48,10 @@ func HashDir(dir string) string {
 	})
 
 	if err != nil {
-		reporter.ExitWithReport("kpm: internal bug, failed to hash directory")
+		return "", err
 	}
 
-	return base64.StdEncoding.EncodeToString(hasher.Sum(nil))
+	return base64.StdEncoding.EncodeToString(hasher.Sum(nil)), nil
 }
 
 // StoreToFile will store 'data' into toml file under 'filePath'.
@@ -200,4 +200,21 @@ func GetAbsKpmHome() (string, error) {
 	}
 
 	return kpmHome, nil
+}
+
+// CreateSymlink will create symbolic link named 'newName' for 'oldName',
+// and if the symbolic link already exists, it will be deleted and recreated.
+func CreateSymlink(oldName, newName string) error {
+	if DirExists(newName) {
+		err := os.Remove(oldName)
+		if err != nil {
+			return errors.InternalBug
+		}
+	}
+
+	err := os.Symlink(oldName, newName)
+	if err != nil {
+		return err
+	}
+	return nil
 }

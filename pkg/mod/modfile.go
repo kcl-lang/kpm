@@ -61,7 +61,16 @@ func (dep *Dependency) Download(localPath string) (*Dependency, error) {
 		if err != nil {
 			return nil, err
 		}
-		dep.Sum = utils.HashDir(localPath)
+
+		dep.Sum, err = utils.HashDir(localPath)
+		if err != nil {
+			return nil, err
+		}
+		dep.LocalFullPath = localPath
+		err = utils.CreateSymlink(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
+		if err != nil {
+			return nil, err
+		}
 	}
 	return dep, nil
 }

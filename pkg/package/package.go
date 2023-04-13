@@ -300,7 +300,11 @@ func check(dep modfile.Dependency, vendorDir string) bool {
 	}
 
 	dir := filepath.Join(vendorDir, dep.FullName)
-	sum := utils.HashDir(dir)
+	sum, err := utils.HashDir(dir)
+
+	if err != nil {
+		return false
+	}
 
 	return dep.Sum == sum
 }

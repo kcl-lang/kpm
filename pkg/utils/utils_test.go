@@ -61,7 +61,9 @@ func TestHashDir(t *testing.T) {
 	}
 
 	_ = CreateFileIfNotExist(tp.FilePath, tp.TestStore)
-	assert.Equal(t, HashDir(filepath.Dir(tp.FilePath)), "n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg=")
+	res, err := HashDir(filepath.Dir(tp.FilePath))
+	assert.Equal(t, err, nil)
+	assert.Equal(t, res, "n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg=")
 }
 
 func TestTarDir(t *testing.T) {
@@ -92,4 +94,18 @@ func TestGetAbsKpmHome(t *testing.T) {
 	got, err = GetAbsKpmHome()
 	assert.Equal(t, got, filepath.Join(expect, "test_subdir"))
 	assert.Equal(t, err, nil)
+}
+
+func TestCreateSymbolLink(t *testing.T) {
+	testDir := getTestDir("test_link")
+	need_linked := filepath.Join(testDir, "need_be_linked_v1")
+	linkPath := filepath.Join(testDir, "linked")
+
+	_ = os.Remove(linkPath)
+	CreateSymlink(need_linked, linkPath)
+
+	linkTarget, _ := os.Readlink(linkPath)
+
+	assert.Equal(t, linkTarget, need_linked)
+	_ = os.Remove(linkPath)
 }
