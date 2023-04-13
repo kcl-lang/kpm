@@ -54,6 +54,11 @@ func NewRunCmd() *cli.Command {
 				return err
 			}
 
+			err = kclPkg.ValidateKpmHome(kpmHome)
+			if err != nil {
+				return err
+			}
+
 			entryFile := c.String("input")
 			if len(entryFile) == 0 {
 				reporter.Report("kpm: a compiler entry file need to specified by using '--input'")
@@ -68,8 +73,14 @@ func NewRunCmd() *cli.Command {
 				return err
 			}
 
+			kclvmCmd, err := runner.NewCompileCmd(compileOpts)
+
+			if err != nil {
+				return err
+			}
+
 			// Call the kclvm_cli.
-			compileResult, err := kclPkg.CompileWithEntryFile(kpmHome, runner.NewCompileCmd(compileOpts))
+			compileResult, err := kclPkg.CompileWithEntryFile(kpmHome, kclvmCmd)
 
 			if err != nil {
 				return err

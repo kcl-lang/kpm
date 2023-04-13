@@ -42,6 +42,11 @@ func NewPkgCmd() *cli.Command {
 				return err
 			}
 
+			err = kclPkg.ValidateKpmHome(kpmHome)
+			if err != nil {
+				return err
+			}
+
 			tarPath := c.String("target")
 
 			if len(tarPath) == 0 {

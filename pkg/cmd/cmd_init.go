@@ -39,7 +39,15 @@ func NewInitCmd() *cli.Command {
 				return err
 			}
 
-			err = pkg.NewKclPkg(&initOpts).InitEmptyPkg()
+			kclPkg := pkg.NewKclPkg(&initOpts)
+
+			err = kclPkg.ValidateKpmHome(os.Getenv("KPM_HOME"))
+
+			if err != nil {
+				return err
+			}
+
+			err = kclPkg.InitEmptyPkg()
 
 			if err == nil {
 				reporter.Report("kpm: package '", modName, "' init finished")

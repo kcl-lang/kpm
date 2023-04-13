@@ -76,7 +76,7 @@ GLOBAL OPTIONS:
 
 你需要设置一个环境变量 KPM_HOME 来声明 `kpm` 下载的 KCL 包的位置。
 
-注意: 目前 `kpm` 不支持将外部的包下载到包的内部，所以请确保 `$KPM_HOME` 目录下没有 `kcl.mod` 文件。
+注意: 目前 `kpm` 不支持将外部的包下载到包的内部，所以请确保 `$KPM_HOME` 不要与当前 KCL 包为同一个目录。
 
 ```shell
 # Kpm 下载的包将会保存在 /user/xxx/xxx/path 目录下. 

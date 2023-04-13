@@ -43,9 +43,13 @@ func NewAddCmd() *cli.Command {
 			}
 
 			kclPkg, err := pkg.LoadKclPkg(pwd)
-
 			if err != nil {
 				reporter.Fatal("kpm: could not load `kcl.mod` in `", pwd, "`")
+			}
+
+			err = kclPkg.ValidateKpmHome(kpmHome)
+			if err != nil {
+				return err
 			}
 
 			gitUrl, err := onlyOnceOption(c, "git")

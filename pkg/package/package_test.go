@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"kusionstack.io/kpm/pkg/errors"
 	modfile "kusionstack.io/kpm/pkg/mod"
 	"kusionstack.io/kpm/pkg/opt"
 	"kusionstack.io/kpm/pkg/runner"
@@ -329,7 +330,9 @@ func TestCompileWithEntryFile(t *testing.T) {
 
 	compileOpts := opt.NewKclvmOpts()
 	compileOpts.EntryFiles = append(compileOpts.EntryFiles, entry_file)
-	result, err := kclPkg.CompileWithEntryFile(kpm_home, runner.NewCompileCmd(compileOpts))
+	cmd, err := runner.NewCompileCmd(compileOpts)
+	assert.Equal(t, err, nil)
+	result, err := kclPkg.CompileWithEntryFile(kpm_home, cmd)
 	assert.Equal(t, utils.DirExists(filepath.Join(vendor_path, "kcl1")), true)
 	assert.Equal(t, utils.DirExists(filepath.Join(vendor_path, "kcl2")), true)
 	assert.Equal(t, err, nil)
@@ -338,9 +341,22 @@ func TestCompileWithEntryFile(t *testing.T) {
 
 	kclPkg.SetVendorMode(false)
 	assert.Equal(t, utils.DirExists(vendor_path), false)
-	result, err = kclPkg.CompileWithEntryFile(kpm_home, runner.NewCompileCmd(compileOpts))
+	cmd, err = runner.NewCompileCmd(compileOpts)
+	assert.Equal(t, err, nil)
+	result, err = kclPkg.CompileWithEntryFile(kpm_home, cmd)
 	assert.Equal(t, utils.DirExists(vendor_path), false)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, result, "c1: 1\nc2: 2\n")
 	os.RemoveAll(vendor_path)
+}
+
+func TestValidateKpmHome(t *testing.T) {
+	kclPkg := NewKclPkg(&opt.InitOptions{
+		Name:     "test_name",
+		InitPath: "test_home_path",
+	})
+
+	os.Setenv("KPM_HOME", "test_home_path")
+	err := kclPkg.ValidateKpmHome(os.Getenv("KPM_HOME"))
+	assert.Equal(t, err, errors.InvalidKpmHomeInCurrentPkg)
 }
