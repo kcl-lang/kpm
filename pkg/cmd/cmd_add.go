@@ -10,6 +10,7 @@ import (
 	"kusionstack.io/kpm/pkg/opt"
 	pkg "kusionstack.io/kpm/pkg/package"
 	"kusionstack.io/kpm/pkg/reporter"
+	"kusionstack.io/kpm/pkg/utils"
 )
 
 // NewAddCmd new a Command for `kpm add`.
@@ -32,14 +33,13 @@ func NewAddCmd() *cli.Command {
 		Action: func(c *cli.Context) error {
 			pwd, err := os.Getwd()
 
-			kpmHome := os.Getenv("KPM_HOME")
-			if kpmHome == "" {
-				fmt.Println("kpm: KPM_HOME environment variable is not set")
-				fmt.Println("kpm: `add` will be downloaded to directory: ", pwd)
-			}
-
 			if err != nil {
 				reporter.Fatal("kpm: internal bugs, please contact us to fix it")
+			}
+
+			kpmHome, err := utils.GetAbsKpmHome()
+			if err != nil {
+				return err
 			}
 
 			kclPkg, err := pkg.LoadKclPkg(pwd)
