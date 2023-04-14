@@ -107,10 +107,7 @@ func ExecKpmWithInDirWithEnv(cli, dir, env string) (string, string, error) {
 
 	// Set the env
 	envLines := strings.FieldsFunc(env, func(c rune) bool { return c == '\n' })
-	for _, envline := range envLines {
-		command.Env = append(command.Env, envline)
-	}
-
+	command.Env = append(command.Env, envLines...)
 	session, err := gexec.Start(command, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 	if err != nil {
 		return string(output), string(output), err
@@ -145,7 +142,10 @@ func ExecKpmWithStdin(cli, dir, input string) (string, error) {
 	if err != nil {
 		return string(output), err
 	}
-	io.WriteString(subStdin, input)
+	_, err = io.WriteString(subStdin, input)
+	if err != nil {
+		return string(output), err
+	}
 	session, err := gexec.Start(command, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 	if err != nil {
 		return string(output), err

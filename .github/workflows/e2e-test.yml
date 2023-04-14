@@ -15,4 +15,4 @@ jobs:
         with:
           go-version: 1.18
       - name: run e2e
-        run: make e2e-test
+        run: make e2e
