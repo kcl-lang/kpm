@@ -9,3 +9,6 @@ test:  ## Run the tests
 
 cover:  ## Generates coverage report
 	go test -gcflags=all=-l -timeout=10m `go list $(SOURCE_PATHS)` -coverprofile $(COVER_FILE) ${TEST_FLAGS} -v
+
+e2e: ## Run e2e test
+	scripts/e2e.sh
