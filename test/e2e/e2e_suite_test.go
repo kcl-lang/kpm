@@ -30,8 +30,9 @@ var _ = ginkgo.AfterSuite(func() {
 	ginkgo.By("clean up kpm bin", func() {
 		path := filepath.Join(GetWorkDir(), "../..", "bin")
 		cli := fmt.Sprintf("rm -rf %s", path)
-		output, err := Exec(cli)
+		stdout, stderr, err := Exec(cli)
 		gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
-		gomega.Expect(output).To(gomega.BeEmpty())
+		gomega.Expect(stdout).To(gomega.BeEmpty())
+		gomega.Expect(stderr).To(gomega.BeEmpty())
 	})
 })

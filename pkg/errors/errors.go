@@ -8,6 +8,7 @@ var FailedToVendorDependency = errors.New("kpm: failed to vendor dependency")
 var FailedToPackage = errors.New("kpm: failed to package.")
 var InvalidDependency = errors.New("kpm: invalid dependency.")
 var InternalBug = errors.New("kpm: internal bug, please contact us and we will fix the problem.")
+var FailedToLoadPackage = errors.New("kpm: failed to load package, please check the package path is valid.")
 
 // Invalid Options Format Errors
 // Invalid 'kpm init'
@@ -20,7 +21,11 @@ var InvalidAddOptionsInvalidGitTag = errors.New("kpm: invalid 'kpm add' argument
 
 // Invalid 'kpm run'
 var InvalidRunOptionsWithoutEntryFiles = errors.New("kpm: invalid 'kpm run' argument, you must provide an entry file.")
+var EntryFileNotFound = errors.New("kpm: entry file cannot be found, please make sure the '--input' entry file can be found")
 var CompileFailed = errors.New("kpm: failed to compile kcl, please check the command 'kclvm_cli run' is still works.")
+var FailedUnTarKclPackage = errors.New("kpm: failed to untar kcl package, please re-download")
+var UnknownTarFormat = errors.New("kpm: unknown tar format.")
+var InvalidKclPacakgeTar = errors.New("kpm: the '--tar' path is an invalid *.tar file")
 
-// invalid KPM_HOME
+// Invalid KPM_HOME
 var InvalidKpmHomeInCurrentPkg = errors.New("kpm: environment variable KPM_HOME cannot be set to the same path as the current KCL package.")

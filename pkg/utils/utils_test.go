@@ -83,6 +83,19 @@ func TestTarDir(t *testing.T) {
 	os.Remove(tarPath)
 }
 
+func TestUnTarDir(t *testing.T) {
+	testDir := getTestDir("test_un_tar")
+	tarPath := filepath.Join(testDir, "test.tar")
+	testSrc := filepath.Join(testDir, "test_src")
+
+	err := UnTarDir(tarPath, testSrc)
+	assert.Equal(t, err, nil)
+
+	_, err = os.Stat(testSrc)
+	assert.Equal(t, err, nil)
+	_ = os.RemoveAll(testSrc)
+}
+
 func TestGetAbsKpmHome(t *testing.T) {
 	os.Setenv("KPM_HOME", ".")
 	got, err := GetAbsKpmHome()

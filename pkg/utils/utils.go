@@ -172,6 +172,48 @@ func TarDir(srcDir string, tarPath string) error {
 	return err
 }
 
+// UnTarDir will extract tar from 'tarPath' to 'destDir'.
+func UnTarDir(tarPath string, destDir string) error {
+	file, err := os.Open(tarPath)
+	if err != nil {
+		return errors.FailedUnTarKclPackage
+	}
+	defer file.Close()
+
+	tarReader := tar.NewReader(file)
+
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return errors.FailedUnTarKclPackage
+		}
+
+		destFilePath := filepath.Join(destDir, header.Name)
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(destFilePath, 0755); err != nil {
+				return errors.FailedUnTarKclPackage
+			}
+		case tar.TypeReg:
+			outFile, err := os.Create(destFilePath)
+			if err != nil {
+				return errors.FailedUnTarKclPackage
+			}
+			defer outFile.Close()
+
+			if _, err := io.Copy(outFile, tarReader); err != nil {
+				return errors.FailedUnTarKclPackage
+			}
+		default:
+			return errors.UnknownTarFormat
+		}
+	}
+	return nil
+}
+
 func DirExists(path string) bool {
 	_, err := os.Stat(path)
 	return !os.IsNotExist(err)
@@ -219,7 +261,7 @@ func GetAbsKpmHome() (string, error) {
 // and if the symbolic link already exists, it will be deleted and recreated.
 func CreateSymlink(oldName, newName string) error {
 	if DirExists(newName) {
-		err := os.Remove(oldName)
+		err := os.Remove(newName)
 		if err != nil {
 			return errors.InternalBug
 		}

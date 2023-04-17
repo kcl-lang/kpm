@@ -1,0 +1,1 @@
+kpm run --input no_exist --vendor

@@ -19,3 +19,6 @@ build/
 
 # kpm binary
 kpm
+
+# e2e test cases dir
+!kpm/
