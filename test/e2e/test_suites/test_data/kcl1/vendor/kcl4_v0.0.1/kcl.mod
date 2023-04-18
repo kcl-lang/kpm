@@ -1,2 +1,4 @@
-[expected]
-kclvm_version="v0.4.3"
+[package]
+name = "kcl4"
+edition = "0.0.1"
+version = "0.0.1"
