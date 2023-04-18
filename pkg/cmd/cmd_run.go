@@ -79,7 +79,8 @@ func NewRunCmd() *cli.Command {
 					return compileErr
 				}
 				fmt.Print(compileResult)
-			} else { // If no tar packages specified by "--tar" to run
+			} else {
+				// If no tar packages specified by "--tar" to run
 				// kpm will take the current directory ($PWD) as the root of the kcl package and compile.
 				pwd, err := os.Getwd()
 
