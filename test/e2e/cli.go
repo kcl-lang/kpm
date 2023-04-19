@@ -57,16 +57,16 @@ func GetKpmCLIBin() string {
 }
 
 // Exec execute common command
-func Exec(cli string) (string, error) {
+func Exec(cli string) (string, string, error) {
 	var output []byte
 	c := strings.Fields(cli)
 	command := exec.Command(c[0], c[1:]...)
 	session, err := gexec.Start(command, ginkgo.GinkgoWriter, ginkgo.GinkgoWriter)
 	if err != nil {
-		return string(output), err
+		return string(output), string(output), err
 	}
 	s := session.Wait(300 * time.Second)
-	return string(s.Out.Contents()) + string(s.Err.Contents()), nil
+	return string(s.Out.Contents()), string(s.Err.Contents()), nil
 }
 
 // Exec execute common command
