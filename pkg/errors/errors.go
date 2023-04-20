@@ -29,3 +29,6 @@ var InvalidKclPacakgeTar = errors.New("kpm: the '--tar' path is an invalid *.tar
 
 // Invalid KPM_HOME
 var InvalidKpmHomeInCurrentPkg = errors.New("kpm: environment variable KPM_HOME cannot be set to the same path as the current KCL package.")
+
+// Invalid oci
+var FailedLogin = errors.New("kpm: failed to login, please check registry, username and password is valid.")
