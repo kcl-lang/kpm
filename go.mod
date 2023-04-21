@@ -6,7 +6,6 @@ require (
 	github.com/BurntSushi/toml v1.2.1
 	github.com/otiai10/copy v1.9.0
 	github.com/urfave/cli/v2 v2.25.0
-	kusionstack.io/kclvm-go v0.4.6
 )
 
 require (
@@ -17,7 +16,6 @@ require (
 	github.com/acomagu/bufpipe v1.0.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/chai2010/protorpc v1.1.4 // indirect
 	github.com/cloudflare/circl v1.1.0 // indirect
 	github.com/containerd/containerd v1.7.0 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
@@ -37,7 +35,6 @@ require (
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/golang/snappy v0.0.3 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/pprof v0.0.0-20210407192527-94a9f03dee38 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
