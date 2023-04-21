@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"kusionstack.io/kpm/pkg/errors"
+	"kusionstack.io/kpm/pkg/utils"
 )
 
 const testDataDir = "test_data"
@@ -30,7 +31,7 @@ func TestGetAbsInputPath(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, path, filepath.Join(filepath.Join(pkgPath, "test_pkg_path"), "test_input"))
 
-	path, err = getAbsInputPath(pkgPath, filepath.Join(pkgPath, "test_input_outside"))
+	path, err = getAbsInputPath(pkgPath, "test_input_outside")
 	assert.Equal(t, err, nil)
 	assert.Equal(t, path, filepath.Join(pkgPath, "test_input_outside"))
 
@@ -78,4 +79,25 @@ func TestRunPkgInPathInvalidPkg(t *testing.T) {
 	assert.NotEqual(t, err, nil)
 	assert.Equal(t, err, errors.FailedToLoadPackage)
 	assert.Equal(t, result, "")
+}
+
+func TestRunTar(t *testing.T) {
+	pkgPath := getTestDir("test_run_tar_in_path")
+	tarPath, _ := filepath.Abs(filepath.Join(pkgPath, "test.tar"))
+	untarPath := filepath.Join(pkgPath, "test")
+	expectPath := filepath.Join(pkgPath, "expected")
+
+	if utils.DirExists(untarPath) {
+		os.RemoveAll(untarPath)
+	}
+
+	expectedResult, _ := ioutil.ReadFile(expectPath)
+	gotResult, err := runTar(tarPath, "", true)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, string(expectedResult), gotResult)
+	assert.Equal(t, utils.DirExists(untarPath), true)
+
+	if utils.DirExists(untarPath) {
+		os.RemoveAll(untarPath)
+	}
 }

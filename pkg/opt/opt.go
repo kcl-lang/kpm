@@ -4,8 +4,12 @@ package opt
 
 import (
 	"fmt"
+	"net/url"
+	"path/filepath"
+	"strings"
 
 	"kusionstack.io/kpm/pkg/errors"
+	"kusionstack.io/kpm/pkg/reporter"
 )
 
 // Input options of 'kpm init'.
@@ -54,9 +58,121 @@ func (opts *GitOptions) Validate() error {
 	if len(opts.Url) == 0 {
 		return errors.InvalidAddOptionsInvalidGitUrl
 	} else if len(opts.Tag) == 0 {
-		return errors.InvalidAddOptionsInvalidGitTag
+		return errors.InvalidAddOptionsInvalidTag
 	}
 	return nil
+}
+
+const DEFAULT_REGISTRY = "docker.io"
+const DEFAULT_OCI_TAG = "latest"
+
+func GetOCIReg() string {
+	return DEFAULT_REGISTRY
+}
+
+func GetDefaultOCITag() string {
+	return DEFAULT_OCI_TAG
+}
+
+type OciOptions struct {
+	Reg  string
+	Repo string
+	Tag  string
+}
+
+func (opts *OciOptions) Validate() error {
+	opts.Reg = GetOCIReg()
+	if len(opts.Repo) == 0 {
+		return errors.InvalidAddOptionsInvalidOciRepo
+	} else if len(opts.Tag) == 0 {
+		return errors.InvalidAddOptionsInvalidTag
+	}
+	return nil
+}
+
+const OCI_SEPARATOR = ":"
+
+// ParseOciOptionFromString will parser '<repo_name>:<repo_tag>' into an 'OciOptions' with an OCI registry.
+// the default OCI registry is 'docker.io'.
+// if the 'ociUrl' is only '<repo_name>', ParseOciOptionFromString will take 'latest' as the default tag.
+func ParseOciOptionFromString(oci string, tag string) (*OciOptions, error) {
+	ociOpt, err := ParseOciUrl(oci)
+	if err == errors.IsOciRef {
+		ociOpt, err = ParseOciRef(oci)
+		if err != nil {
+			return nil, err
+		}
+		if len(tag) != 0 {
+			reporter.Report("kpm: kpm get version from oci reference '<repo_name>:<repo_tag>'")
+			reporter.Report("kpm: arg '--tag' is invalid for oci reference")
+		}
+	} else if err == errors.NotOciUrl {
+		return nil, err
+	} else {
+		if len(tag) == 0 {
+			reporter.Report("kpm: using default tag: latest")
+			ociOpt.Tag = GetDefaultOCITag()
+		} else {
+			ociOpt.Tag = tag
+		}
+	}
+	return ociOpt, nil
+}
+
+// ParseOciRef will parse 'repoName:repoTag' into OciOptions,
+// with default registry host 'docker.io'.
+func ParseOciRef(ociRef string) (*OciOptions, error) {
+	oci_address := strings.Split(ociRef, OCI_SEPARATOR)
+	if len(oci_address) == 1 {
+		reporter.Report("kpm: using default tag: latest")
+		return &OciOptions{
+			Reg:  GetOCIReg(),
+			Repo: oci_address[0],
+			Tag:  GetDefaultOCITag(),
+		}, nil
+	} else if len(oci_address) == 2 {
+		return &OciOptions{
+			Reg:  GetOCIReg(),
+			Repo: oci_address[0],
+			Tag:  oci_address[1],
+		}, nil
+	} else {
+		return nil, errors.InvalidOciRef
+	}
+}
+
+// ParseOciUrl will parse 'oci://hostName/repoName:repoTag' into OciOptions without tag.
+func ParseOciUrl(ociUrl string) (*OciOptions, error) {
+	u, err := url.Parse(ociUrl)
+	if err != nil {
+		return nil, errors.IsOciRef
+	}
+
+	if len(u.Scheme) != 0 && u.Scheme != "oci" {
+		return nil, errors.NotOciUrl
+	} else if len(u.Scheme) == 0 {
+		return nil, errors.IsOciRef
+	}
+
+	return &OciOptions{
+		Reg:  u.Host,
+		Repo: u.Path,
+	}, nil
+}
+
+// AddStoragePathSuffix will take 'Registry/Repo/Tag' as a path suffix.
+// e.g. Take '/usr/test' as input,
+// and oci options is
+//
+// OciOptions {
+//   Reg: 'docker.io',
+//   Repo: 'test/testRepo',
+//   Tag: 'v0.0.1'
+// }
+//
+// You will get a path '/usr/test/docker.io/test/testRepo/v0.0.1'.
+func (oci *OciOptions) AddStoragePathSuffix(pathPrefix string) string {
+	return filepath.Join(filepath.Join(filepath.Join(pathPrefix, oci.Reg), oci.Repo), oci.Tag)
 }
 
 // The parameters needed to compile the kcl program.

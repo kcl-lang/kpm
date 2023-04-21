@@ -17,7 +17,10 @@ var InvalidInitOptions = errors.New("kpm: invalid 'kpm init' argument, you must 
 // Invalid 'kpm add'
 var InvalidAddOptionsWithoutRegistry = errors.New("kpm: invalid 'kpm add' argument, you must provide a registry url for the package.")
 var InvalidAddOptionsInvalidGitUrl = errors.New("kpm: invalid 'kpm add' argument, you must provide a Git Url for the package.")
-var InvalidAddOptionsInvalidGitTag = errors.New("kpm: invalid 'kpm add' argument, you must provide a Git Tag for the package.")
+
+var InvalidAddOptionsInvalidTag = errors.New("kpm: invalid 'kpm add' argument, you must provide a Tag for the package.")
+var InvalidAddOptionsInvalidOciReg = errors.New("kpm: invalid 'kpm add' argument, you must provide a Reg for the package.")
+var InvalidAddOptionsInvalidOciRepo = errors.New("kpm: invalid 'kpm add' argument, you must provide a Repo for the package.")
 
 // Invalid 'kpm run'
 var InvalidRunOptionsWithoutEntryFiles = errors.New("kpm: invalid 'kpm run' argument, you must provide an entry file.")
@@ -25,7 +28,8 @@ var EntryFileNotFound = errors.New("kpm: entry file cannot be found, please make
 var CompileFailed = errors.New("kpm: failed to compile kcl, please check the command 'kclvm_cli run' is still works.")
 var FailedUnTarKclPackage = errors.New("kpm: failed to untar kcl package, please re-download")
 var UnknownTarFormat = errors.New("kpm: unknown tar format.")
-var InvalidKclPacakgeTar = errors.New("kpm: the '--tar' path is an invalid *.tar file")
+var KclPacakgeTarNotFound = errors.New("kpm: the kcl package tar path is not found")
+var InvalidKclPacakgeTar = errors.New("kpm: the kcl package tar path is an invalid *.tar file")
 
 // Invalid KPM_HOME
 var InvalidKpmHomeInCurrentPkg = errors.New("kpm: environment variable KPM_HOME cannot be set to the same path as the current KCL package.")
@@ -33,3 +37,7 @@ var InvalidKpmHomeInCurrentPkg = errors.New("kpm: environment variable KPM_HOME 
 // Invalid oci
 var FailedLogin = errors.New("kpm: failed to login, please check registry, username and password is valid.")
 var FailedLogout = errors.New("kpm: failed to logout, the registry not logged in.")
+var FailedPullFromOci = errors.New("kpm: failed to pull kcl package tar from oci.")
+var InvalidOciRef = errors.New("kpm: invalid oci reference.")
+var NotOciUrl = errors.New("kpm: url is not an oci url.")
+var IsOciRef = errors.New("kpm: oci ref is not an url.")

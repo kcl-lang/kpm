@@ -84,4 +84,5 @@ require (
 	github.com/stretchr/testify v1.8.2
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	oras.land/oras-go v1.2.3
+	oras.land/oras-go/v2 v2.0.2
 )

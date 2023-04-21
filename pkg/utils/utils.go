@@ -176,7 +176,7 @@ func TarDir(srcDir string, tarPath string) error {
 func UnTarDir(tarPath string, destDir string) error {
 	file, err := os.Open(tarPath)
 	if err != nil {
-		return errors.FailedUnTarKclPackage
+		return errors.KclPacakgeTarNotFound
 	}
 	defer file.Close()
 
