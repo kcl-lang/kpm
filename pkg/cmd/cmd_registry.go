@@ -60,6 +60,24 @@ func NewRegCmd(settings *settings.Settings) *cli.Command {
 					return nil
 				},
 			},
+			{
+				Name:  "logout",
+				Usage: "logout from a registry",
+				Action: func(c *cli.Context) error {
+					if c.NArg() == 0 {
+						reporter.Report("kpm: registry must be specified.")
+						reporter.ExitWithReport("kpm: run 'kpm registry help' for more information.")
+					}
+					registry := c.Args().First()
+
+					err := oci.Logout(registry, settings)
+					if err != nil {
+						return err
+					}
+
+					return nil
+				},
+			},
 		},
 	}
 }

@@ -1,6 +1,8 @@
 package oci
 
 import (
+	"context"
+
 	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/reporter"
 	"kusionstack.io/kpm/pkg/settings"
@@ -30,5 +32,24 @@ func Login(hostname, username, password string, setting *settings.Settings) erro
 	}
 
 	reporter.Report("kpm: Login Succeeded")
+	return nil
+}
+
+// Logout will logout from registry.
+func Logout(hostname string, setting *settings.Settings) error {
+
+	authClient, err := dockerauth.NewClientWithDockerFallback(setting.CredentialsFile)
+
+	if err != nil {
+		return errors.FailedLogout
+	}
+
+	err = authClient.Logout(context.Background(), hostname)
+
+	if err != nil {
+		return errors.FailedLogout
+	}
+
+	reporter.Report("kpm: Logout Succeeded")
 	return nil
 }

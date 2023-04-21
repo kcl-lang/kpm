@@ -32,3 +32,4 @@ var InvalidKpmHomeInCurrentPkg = errors.New("kpm: environment variable KPM_HOME 
 
 // Invalid oci
 var FailedLogin = errors.New("kpm: failed to login, please check registry, username and password is valid.")
+var FailedLogout = errors.New("kpm: failed to logout, the registry not logged in.")
