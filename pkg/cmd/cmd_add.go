@@ -79,7 +79,12 @@ func NewAddCmd() *cli.Command {
 				return err
 			}
 
-			return addGitDep(&addOpts, kclPkg)
+			err = addGitDep(&addOpts, kclPkg)
+			if err != nil {
+				return err
+			}
+			reporter.Report("kpm: add dependency '", *gitUrl, "'", "with tag '", *gitTag, "' successfully.")
+			return nil
 		},
 	}
 }

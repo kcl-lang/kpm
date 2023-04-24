@@ -5,8 +5,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/otiai10/copy"
+	"github.com/thoas/go-funk"
 	"kusionstack.io/kpm/pkg/reporter"
 )
 
@@ -57,4 +59,22 @@ func CopyDir(srcDir, dstDir string) {
 	if err != nil {
 		reporter.ExitWithReport("kpm_e2e: failed to copy dir.")
 	}
+}
+
+var KEYS = []string{"<workspace>", "<ignore>"}
+
+// IsIgnore will reture whether the expected result in 'expectedStr' should be ignored.
+func IsIgnore(expectedStr string) bool {
+	return strings.Contains(expectedStr, "<ignore>")
+}
+
+// ReplaceAllKeyByValue will replace all 'key's by 'value' in 'originStr'.
+func ReplaceAllKeyByValue(originStr, key, value string) string {
+	if !funk.Contains(KEYS, key) {
+		reporter.ExitWithReport("kpm_e2e: unknown key.", key)
+	} else {
+		return strings.ReplaceAll(originStr, key, value)
+	}
+
+	return originStr
 }

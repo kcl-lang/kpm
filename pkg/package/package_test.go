@@ -137,11 +137,14 @@ func TestCheck(t *testing.T) {
 		FullName: "test_full_name",
 		Sum:      "",
 	}
-	assert.Equal(t, check(dep, testDir), false)
+
+	testFullDir := filepath.Join(testDir, "test_full_name")
+
+	assert.Equal(t, check(dep, testFullDir), false)
 	dep.Sum = "sdfsldk"
-	assert.Equal(t, check(dep, testDir), false)
+	assert.Equal(t, check(dep, testFullDir), false)
 	dep.Sum = "okQqHgQaR1il7vOPuZPPVostthK5nUJkZAZVgXMqU3Q="
-	assert.Equal(t, check(dep, testDir), true)
+	assert.Equal(t, check(dep, testFullDir), true)
 }
 
 func TestGetPkgName(t *testing.T) {
