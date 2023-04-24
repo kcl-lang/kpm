@@ -19,6 +19,10 @@ import (
 	"kusionstack.io/kpm/pkg/utils"
 )
 
+const FLAG_INPUT = "input"
+const FLAG_VENDOR = "vendor"
+const FLAG_TAG = "tag"
+
 // NewRunCmd new a Command for `kpm run`.
 func NewRunCmd(settings *settings.Settings) *cli.Command {
 	return &cli.Command{
@@ -28,18 +32,18 @@ func NewRunCmd(settings *settings.Settings) *cli.Command {
 		Flags: []cli.Flag{
 			// The entry kcl file.
 			&cli.StringFlag{
-				Name:  "input",
+				Name:  FLAG_INPUT,
 				Usage: "a kcl file as the compile entry file",
 			},
 			&cli.StringFlag{
-				Name:  "tag",
-				Usage: "the tag for oci repo",
+				Name:  FLAG_TAG,
+				Usage: "the tag for oci artifact",
 			},
 			// '--vendor' will trigger the vendor mode
 			// In the vendor mode, the package search path is the subdirectory 'vendor' in current package.
 			// In the non-vendor mode, the package search path is the $KPM_HOME.
 			&cli.BoolFlag{
-				Name:  "vendor",
+				Name:  FLAG_VENDOR,
 				Usage: "run in vendor mode",
 			},
 		},
@@ -48,16 +52,16 @@ func NewRunCmd(settings *settings.Settings) *cli.Command {
 
 			// 'kpm run' compile the current package undor '$pwd'.
 			if len(pkgWillBeCompiled) == 0 {
-				compileResult, err := runPkg(c.String("input"), c.Bool("vendor"))
+				compileResult, err := runPkg(c.String(FLAG_INPUT), c.Bool(FLAG_VENDOR))
 				if err != nil {
 					return err
 				}
 				fmt.Print(compileResult)
 			} else {
 				// 'kpm run <package source>' compile the kcl package from the <package source>.
-				compileResult, err := runTar(pkgWillBeCompiled, c.String("input"), c.Bool("vendor"))
+				compileResult, err := runTar(pkgWillBeCompiled, c.String(FLAG_INPUT), c.Bool(FLAG_VENDOR))
 				if err == errors.InvalidKclPacakgeTar {
-					compileResult, err = runOci(pkgWillBeCompiled, c.String("tag"), c.String("input"), c.Bool("vendor"), settings)
+					compileResult, err = runOci(pkgWillBeCompiled, c.String(FLAG_TAG), c.String(FLAG_INPUT), c.Bool(FLAG_VENDOR), settings)
 					if err != nil {
 						return err
 					}
