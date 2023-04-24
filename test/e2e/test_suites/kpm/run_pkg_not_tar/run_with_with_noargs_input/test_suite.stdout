@@ -11,6 +11,6 @@ COMMANDS:
 
 OPTIONS:
    --input value  a kcl file as the compile entry file
-   --tag value    the tag for oci repo
+   --tag value    the tag for oci artifact
    --vendor       run in vendor mode (default: false)
    --help, -h     show help
