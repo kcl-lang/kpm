@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"io/ioutil"
 	"path/filepath"
 
 	"github.com/onsi/ginkgo/v2"
@@ -79,6 +80,37 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 				gomega.Expect(stdout).To(gomega.Equal(ts.ExpectStdout))
 				gomega.Expect(stderr).To(gomega.Equal(ts.ExpectStderr))
+			})
+		}
+	})
+
+	ginkgo.Context("testing kpm workflows", func() {
+		testSuitesRoot := filepath.Join(filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "kpm"), "workflows")
+
+		files, _ := ioutil.ReadDir(testSuitesRoot)
+		for _, file := range files {
+			ginkgo.It(filepath.Join(testSuitesRoot, file.Name()), func() {
+				if file.IsDir() {
+					testSuites := LoadAllTestSuites(filepath.Join(testSuitesRoot, file.Name()))
+					for _, ts := range testSuites {
+						ts := ts
+
+						workspace := GetWorkspace()
+
+						stdout, stderr, err := ExecKpmWithWorkDir(ts.Input, workspace)
+
+						expectedStdout := ReplaceAllKeyByValue(ts.ExpectStdout, "<workspace>", workspace)
+						expectedStderr := ReplaceAllKeyByValue(ts.ExpectStderr, "<workspace>", workspace)
+
+						gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+						if !IsIgnore(expectedStdout) {
+							gomega.Expect(stdout).To(gomega.Equal(expectedStdout))
+						}
+						if !IsIgnore(expectedStderr) {
+							gomega.Expect(stderr).To(gomega.Equal(expectedStderr))
+						}
+					}
+				}
 			})
 		}
 	})

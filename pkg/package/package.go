@@ -100,9 +100,10 @@ func (kclPkg *KclPkg) ResolveDeps(kpmHome string) (map[string]string, error) {
 	}
 
 	for name, d := range kclPkg.Dependencies.Deps {
-		if utils.DirExists(filepath.Join(searchPath, d.FullName)) && check(d, searchPath) {
+		searchFullPath := filepath.Join(searchPath, d.FullName)
+		if utils.DirExists(searchFullPath) && check(d, searchFullPath) {
 			// Find it and update the local path of the dependency.
-			pkgMap[name] = filepath.Join(searchPath, d.FullName)
+			pkgMap[name] = searchFullPath
 		} else {
 			// Otherwise, re-vendor it.
 			if kclPkg.IsVendorMode() {
@@ -172,8 +173,6 @@ func (kclPkg *KclPkg) DownloadDep(d *modfile.Dependency, localPath string) error
 	if !reflect.DeepEqual(kclPkg.modFile.Dependencies.Deps[d.Name], *d) {
 		// the dep passed on the cli is different from the kcl.mod.
 		kclPkg.modFile.Dependencies.Deps[d.Name] = *d
-		// clean the kcl.mod.lock
-		delete(kclPkg.Dependencies.Deps, d.Name)
 	}
 
 	// download all the dependencies.
@@ -238,7 +237,7 @@ func getDeps(deps modfile.Dependencies, lockDeps modfile.Dependencies, localPath
 		// Check if the sum of this dependency in kcl.mod.lock has been chanaged.
 		if present {
 			// If the dependent package does not exist locally, then method 'check' will return false.
-			if check(lockDep, localPath) {
+			if check(lockDep, filepath.Join(localPath, d.FullName)) {
 				newDeps.Deps[d.Name] = lockDep
 				continue
 			}
@@ -256,7 +255,7 @@ func getDeps(deps modfile.Dependencies, lockDeps modfile.Dependencies, localPath
 		if err != nil {
 			return nil, errors.FailedDownloadError
 		}
-		if expectedSum != "" && lockedDep.Sum != expectedSum {
+		if expectedSum != "" && lockedDep.Sum != expectedSum && lockDep.FullName == d.FullName {
 			return nil, errors.CheckSumMismatchError
 		}
 
@@ -294,13 +293,12 @@ func getDeps(deps modfile.Dependencies, lockDeps modfile.Dependencies, localPath
 }
 
 // check sum for a Dependency.
-func check(dep modfile.Dependency, vendorDir string) bool {
+func check(dep modfile.Dependency, newDepPath string) bool {
 	if dep.Sum == "" {
 		return false
 	}
 
-	dir := filepath.Join(vendorDir, dep.FullName)
-	sum, err := utils.HashDir(dir)
+	sum, err := utils.HashDir(newDepPath)
 
 	if err != nil {
 		return false
@@ -349,12 +347,12 @@ func (kclPkg *KclPkg) VendorDeps(cachePath string) error {
 		}
 		vendorFullPath := filepath.Join(vendorPath, d.FullName)
 		// If the package already exists in the 'vendor', do nothing.
-		if utils.DirExists(vendorFullPath) && check(d, vendorPath) {
+		if utils.DirExists(vendorFullPath) && check(d, vendorFullPath) {
 			continue
 		} else {
 			// If not in the 'vendor', check the global cache.
 			cacheFullPath := filepath.Join(cachePath, d.FullName)
-			if utils.DirExists(cacheFullPath) && check(d, cachePath) {
+			if utils.DirExists(cacheFullPath) && check(d, cacheFullPath) {
 				// If there is, copy it into the 'vendor' directory.
 				err := copy.Copy(cacheFullPath, vendorFullPath)
 				if err != nil {
