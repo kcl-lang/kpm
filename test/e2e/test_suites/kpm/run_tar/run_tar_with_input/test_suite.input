@@ -1,1 +1,1 @@
-kpm run --tar kcl1.tar --input kcl1.k --vendor
+kpm run --input kcl1.k --vendor kcl1.tar

@@ -26,7 +26,7 @@ func main() {
 		cmd.NewInitCmd(),
 		cmd.NewAddCmd(),
 		cmd.NewPkgCmd(),
-		cmd.NewRunCmd(),
+		cmd.NewRunCmd(setting),
 		cmd.NewRegCmd(setting),
 	}
 	err = app.Run(os.Args)

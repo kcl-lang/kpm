@@ -42,7 +42,7 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 		}
 	})
 
-	ginkgo.Context("testing 'kpm run --tar <tar_name> --input <entry_file>'", func() {
+	ginkgo.Context("testing 'kpm run --input <entry_file> <tar_path>'", func() {
 		testSuitesRoot := filepath.Join(filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "kpm"), "run_tar")
 		testSuites := LoadAllTestSuites(testSuitesRoot)
 		testDataRoot := filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "test_data")
@@ -56,7 +56,6 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 				Copy(filepath.Join(testDataRoot, "exist_but_not_tar"), filepath.Join(workspace, "exist_but_not_tar"))
 
 				stdout, stderr, err := ExecKpmWithWorkDir(ts.Input, workspace)
-
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 				gomega.Expect(stdout).To(gomega.Equal(ts.ExpectStdout))
 				gomega.Expect(stderr).To(gomega.Equal(ts.ExpectStderr))
@@ -73,9 +72,9 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 			ginkgo.It(ts.GetTestSuiteInfo(), func() {
 				workspace := GetWorkspace()
 
-				CopyDir(filepath.Join(testDataRoot, "kcl1"), filepath.Join(workspace, "kcl1"))
+				CopyDir(filepath.Join(testDataRoot, "test_kcl"), filepath.Join(workspace, "test_kcl"))
 
-				stdout, stderr, err := ExecKpmWithWorkDir(ts.Input, filepath.Join(workspace, "kcl1"))
+				stdout, stderr, err := ExecKpmWithWorkDir(ts.Input, filepath.Join(workspace, "test_kcl"))
 
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 				gomega.Expect(stdout).To(gomega.Equal(ts.ExpectStdout))
