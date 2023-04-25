@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/urfave/cli/v2"
+	"kusionstack.io/kpm/pkg/env"
 	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/oci"
 	"kusionstack.io/kpm/pkg/opt"
@@ -41,7 +42,7 @@ func NewRunCmd(settings *settings.Settings) *cli.Command {
 			},
 			// '--vendor' will trigger the vendor mode
 			// In the vendor mode, the package search path is the subdirectory 'vendor' in current package.
-			// In the non-vendor mode, the package search path is the $KPM_HOME.
+			// In the non-vendor mode, the package search path is the $KCL_PKG_PATH.
 			&cli.BoolFlag{
 				Name:  FLAG_VENDOR,
 				Usage: "run in vendor mode",
@@ -161,12 +162,12 @@ func runPkgInPath(pkgPath, entryFilePath string, vendorMode bool) (string, error
 
 	kclPkg.SetVendorMode(vendorMode)
 
-	kpmHome, err := utils.GetAbsKpmHome()
+	globalPkgPath, err := env.GetAbsPkgPath()
 	if err != nil {
 		return "", err
 	}
 
-	err = kclPkg.ValidateKpmHome(kpmHome)
+	err = kclPkg.ValidateKpmHome(globalPkgPath)
 	if err != nil {
 		return "", err
 	}
@@ -192,7 +193,7 @@ func runPkgInPath(pkgPath, entryFilePath string, vendorMode bool) (string, error
 	}
 
 	// Call the kclvm_cli.
-	compileResult, err := kclPkg.CompileWithEntryFile(kpmHome, kclvmCmd)
+	compileResult, err := kclPkg.CompileWithEntryFile(globalPkgPath, kclvmCmd)
 
 	if err != nil {
 		return "", err
