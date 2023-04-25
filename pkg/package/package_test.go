@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"kusionstack.io/kpm/pkg/env"
 	"kusionstack.io/kpm/pkg/errors"
 	modfile "kusionstack.io/kpm/pkg/mod"
 	"kusionstack.io/kpm/pkg/opt"
@@ -359,7 +360,7 @@ func TestValidateKpmHome(t *testing.T) {
 		InitPath: "test_home_path",
 	})
 
-	os.Setenv("KPM_HOME", "test_home_path")
-	err := kclPkg.ValidateKpmHome(os.Getenv("KPM_HOME"))
+	os.Setenv(env.PKG_PATH, "test_home_path")
+	err := kclPkg.ValidateKpmHome(os.Getenv(env.PKG_PATH))
 	assert.Equal(t, err, errors.InvalidKpmHomeInCurrentPkg)
 }

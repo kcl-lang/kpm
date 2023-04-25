@@ -96,19 +96,6 @@ func TestUnTarDir(t *testing.T) {
 	_ = os.RemoveAll(testSrc)
 }
 
-func TestGetAbsKpmHome(t *testing.T) {
-	os.Setenv("KPM_HOME", ".")
-	got, err := GetAbsKpmHome()
-	expect, _ := filepath.Abs(".")
-	assert.Equal(t, err, nil)
-	assert.Equal(t, got, expect)
-
-	os.Setenv("KPM_HOME", "test_subdir")
-	got, err = GetAbsKpmHome()
-	assert.Equal(t, got, filepath.Join(expect, "test_subdir"))
-	assert.Equal(t, err, nil)
-}
-
 func TestCreateSymbolLink(t *testing.T) {
 	testDir := getTestDir("test_link")
 	need_linked := filepath.Join(testDir, "need_be_linked_v1")
@@ -128,7 +115,7 @@ func TestDefaultKpmHome(t *testing.T) {
 
 	filePath := filepath.Join(homeDir, ".kpm")
 
-	kpmHome, err := CreateDefaultKpmHome()
+	kpmHome, err := CreateSubdirInUserHome(".kpm")
 	assert.Equal(t, err, nil)
 	assert.Equal(t, kpmHome, filePath)
 	assert.Equal(t, DirExists(kpmHome), true)

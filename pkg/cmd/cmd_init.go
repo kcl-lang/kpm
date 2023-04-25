@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/urfave/cli/v2"
+	"kusionstack.io/kpm/pkg/env"
 	"kusionstack.io/kpm/pkg/opt"
 	pkg "kusionstack.io/kpm/pkg/package"
 	reporter "kusionstack.io/kpm/pkg/reporter"
@@ -41,7 +42,13 @@ func NewInitCmd() *cli.Command {
 
 			kclPkg := pkg.NewKclPkg(&initOpts)
 
-			err = kclPkg.ValidateKpmHome(os.Getenv("KPM_HOME"))
+			globalPkgPath, err := env.GetAbsPkgPath()
+
+			if err != nil {
+				return err
+			}
+
+			err = kclPkg.ValidateKpmHome(globalPkgPath)
 
 			if err != nil {
 				return err

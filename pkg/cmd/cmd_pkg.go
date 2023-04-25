@@ -6,9 +6,9 @@ import (
 	"os"
 
 	"github.com/urfave/cli/v2"
+	"kusionstack.io/kpm/pkg/env"
 	pkg "kusionstack.io/kpm/pkg/package"
 	"kusionstack.io/kpm/pkg/reporter"
-	"kusionstack.io/kpm/pkg/utils"
 )
 
 // NewPkgCmd new a Command for `kpm pkg`.
@@ -37,12 +37,12 @@ func NewPkgCmd() *cli.Command {
 				return err
 			}
 
-			kpmHome, err := utils.GetAbsKpmHome()
+			globalPkgPath, err := env.GetAbsPkgPath()
 			if err != nil {
 				return err
 			}
 
-			err = kclPkg.ValidateKpmHome(kpmHome)
+			err = kclPkg.ValidateKpmHome(globalPkgPath)
 			if err != nil {
 				return err
 			}
@@ -54,7 +54,7 @@ func NewPkgCmd() *cli.Command {
 				reporter.ExitWithReport("kpm: run 'kpm pkg help' for more information.")
 			}
 
-			err = kclPkg.PackageKclPkg(kpmHome, tarPath)
+			err = kclPkg.PackageKclPkg(globalPkgPath, tarPath)
 
 			if err != nil {
 				reporter.ExitWithReport("kpm: failed to package pkg " + kclPkg.GetPkgName() + ".")

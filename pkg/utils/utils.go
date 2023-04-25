@@ -220,41 +220,21 @@ func DirExists(path string) bool {
 }
 
 // DefaultKpmHome create the '.kpm' in the user home and return the path of ".kpm".
-func CreateDefaultKpmHome() (string, error) {
+func CreateSubdirInUserHome(subdir string) (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", errors.InternalBug
 	}
 
-	dirPath := filepath.Join(homeDir, ".kpm")
+	dirPath := filepath.Join(homeDir, subdir)
 	if !DirExists(dirPath) {
-		err = os.Mkdir(dirPath, 0755)
+		err = os.MkdirAll(dirPath, 0755)
 		if err != nil {
 			return "", errors.InternalBug
 		}
 	}
 
 	return dirPath, nil
-}
-
-// GetAbsKpmHome will return the absolute path of $KPM_HOME,
-// or the absolute path of the current path if $KPM_HOME does not exist.
-func GetAbsKpmHome() (string, error) {
-	kpmHome := os.Getenv("KPM_HOME")
-	if kpmHome == "" {
-		defaultHome, err := CreateDefaultKpmHome()
-		if err != nil {
-			return "", errors.InternalBug
-		}
-		kpmHome = defaultHome
-	}
-
-	kpmHome, err := filepath.Abs(kpmHome)
-	if err != nil {
-		return "", errors.InternalBug
-	}
-
-	return kpmHome, nil
 }
 
 // CreateSymlink will create symbolic link named 'newName' for 'oldName',

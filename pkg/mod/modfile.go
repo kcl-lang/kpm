@@ -49,7 +49,7 @@ type Dependency struct {
 	Sum      string `toml:"sum,omitempty"`
 	// The actual local path of the package.
 	// In vendor mode is "current_kcl_package/vendor"
-	// In non-vendor mode is "$KPM_HOME"
+	// In non-vendor mode is "$KCL_PKG_PATH"
 	LocalFullPath string `toml:"-"`
 	Source
 }

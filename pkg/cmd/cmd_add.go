@@ -7,10 +7,10 @@ import (
 	"os"
 
 	"github.com/urfave/cli/v2"
+	"kusionstack.io/kpm/pkg/env"
 	"kusionstack.io/kpm/pkg/opt"
 	pkg "kusionstack.io/kpm/pkg/package"
 	"kusionstack.io/kpm/pkg/reporter"
-	"kusionstack.io/kpm/pkg/utils"
 )
 
 // NewAddCmd new a Command for `kpm add`.
@@ -37,7 +37,7 @@ func NewAddCmd() *cli.Command {
 				reporter.Fatal("kpm: internal bugs, please contact us to fix it")
 			}
 
-			kpmHome, err := utils.GetAbsKpmHome()
+			globalPkgPath, err := env.GetAbsPkgPath()
 			if err != nil {
 				return err
 			}
@@ -47,7 +47,7 @@ func NewAddCmd() *cli.Command {
 				reporter.Fatal("kpm: could not load `kcl.mod` in `", pwd, "`")
 			}
 
-			err = kclPkg.ValidateKpmHome(kpmHome)
+			err = kclPkg.ValidateKpmHome(globalPkgPath)
 			if err != nil {
 				return err
 			}
@@ -65,7 +65,7 @@ func NewAddCmd() *cli.Command {
 			}
 
 			addOpts := opt.AddOptions{
-				LocalPath: kpmHome,
+				LocalPath: globalPkgPath,
 				RegistryOpts: opt.RegistryOptions{
 					Git: &opt.GitOptions{
 						Url: *gitUrl,

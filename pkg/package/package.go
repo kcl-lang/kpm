@@ -80,7 +80,7 @@ func (kclPkg *KclPkg) CompileWithEntryFile(kpmHome string, kclvmCompiler *runner
 
 // ResolveDeps will return a map between dependency name and its local path,
 // and analyze the dependencies of the current kcl package,
-// look for the package in the $KPM_HOME or kcl package vendor subdirectory,
+// look for the package in the $KCL_PKG_PATH or kcl package vendor subdirectory,
 // if find it, ResolveDeps will remember the local path of the dependency,
 // if can’t find it, re-download the dependency and remember the local path.
 func (kclPkg *KclPkg) ResolveDeps(kpmHome string) (map[string]string, error) {
@@ -95,7 +95,7 @@ func (kclPkg *KclPkg) ResolveDeps(kpmHome string) (map[string]string, error) {
 		}
 		searchPath = kclPkg.LocalVendorPath()
 	} else {
-		// Otherwise, the search path is the $KPM_HOME.
+		// Otherwise, the search path is the $KCL_PKG_PATH.
 		searchPath = kpmHome
 	}
 

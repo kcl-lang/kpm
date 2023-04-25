@@ -31,8 +31,8 @@ var UnknownTarFormat = errors.New("kpm: unknown tar format.")
 var KclPacakgeTarNotFound = errors.New("kpm: the kcl package tar path is not found")
 var InvalidKclPacakgeTar = errors.New("kpm: the kcl package tar path is an invalid *.tar file")
 
-// Invalid KPM_HOME
-var InvalidKpmHomeInCurrentPkg = errors.New("kpm: environment variable KPM_HOME cannot be set to the same path as the current KCL package.")
+// Invalid KCL_PKG_PATH
+var InvalidKpmHomeInCurrentPkg = errors.New("kpm: environment variable KCL_PKG_PATH cannot be set to the same path as the current KCL package.")
 
 // Invalid oci
 var FailedLogin = errors.New("kpm: failed to login, please check registry, username and password is valid.")

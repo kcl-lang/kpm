@@ -6,6 +6,7 @@ require (
 	github.com/BurntSushi/toml v1.2.1
 	github.com/otiai10/copy v1.9.0
 	github.com/urfave/cli/v2 v2.25.0
+	gotest.tools/v3 v3.4.0
 )
 
 require (
