@@ -67,8 +67,13 @@ func (dep *Dependency) Download(localPath string) (*Dependency, error) {
 			return nil, err
 		}
 		dep.LocalFullPath = localPath
-		// Creating symbolic links in a global cache can cause impacts between different kcl packages.
-		// Therefore, symbolic links are not created here.
+		// Creating symbolic links in a global cache is not an optimal solution.
+		// This allows kclvm to locate the package by default.
+		// This feature is unstable and will be removed soon.
+		err = utils.CreateSymlink(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
+		if err != nil {
+			return nil, err
+		}
 	}
 	return dep, nil
 }
