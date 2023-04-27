@@ -119,7 +119,7 @@ func ExecKpmWithInDirWithEnv(cli, dir, env string) (string, string, error) {
 // ExecKpmWithWorkDir executes kpm command in work directory
 func ExecKpmWithWorkDir(cli, dir string) (string, string, error) {
 	var output []byte
-	c := strings.Fields(cli)
+	c := SplitCommand(cli)
 	commandName := filepath.Join(GetKpmCLIBin(), c[0])
 	command := exec.Command(commandName, c[1:]...)
 	command.Dir = dir

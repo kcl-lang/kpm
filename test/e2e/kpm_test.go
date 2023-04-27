@@ -57,6 +57,7 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 				Copy(filepath.Join(testDataRoot, "exist_but_not_tar"), filepath.Join(workspace, "exist_but_not_tar"))
 
 				stdout, stderr, err := ExecKpmWithWorkDir(ts.Input, workspace)
+
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 				gomega.Expect(stdout).To(gomega.Equal(ts.ExpectStdout))
 				gomega.Expect(stderr).To(gomega.Equal(ts.ExpectStderr))

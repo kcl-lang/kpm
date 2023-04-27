@@ -78,3 +78,28 @@ func ReplaceAllKeyByValue(originStr, key, value string) string {
 
 	return originStr
 }
+
+// SplitCommand will spilt command string into []string,
+// but the string in quotes will not be cut.
+// If 'command' is 'aaa bbb "ccc ddd"', SplitCommand will return ["aaa", "bbb", "ccc ddd"].
+func SplitCommand(command string) []string {
+	var args []string
+	var currentArg string
+	inQuotes := false
+	for _, char := range command {
+		if char == '"' {
+			inQuotes = !inQuotes
+			continue
+		}
+		if char == ' ' && !inQuotes {
+			args = append(args, currentArg)
+			currentArg = ""
+			continue
+		}
+		currentArg += string(char)
+	}
+	if currentArg != "" {
+		args = append(args, currentArg)
+	}
+	return args
+}
