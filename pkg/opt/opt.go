@@ -177,15 +177,16 @@ func (oci *OciOptions) AddStoragePathSuffix(pathPrefix string) string {
 
 // The parameters needed to compile the kcl program.
 type KclvmOptions struct {
-	Deps       map[string]string
-	EntryFiles []string
-	// todo: add all kclvm options.
+	Deps         map[string]string
+	EntryFiles   []string
+	KclvmCliArgs string
 }
 
 func (opts *KclvmOptions) Validate() error {
 	if len(opts.EntryFiles) == 0 {
 		return errors.InvalidRunOptionsWithoutEntryFiles
 	}
+
 	return nil
 }
 
@@ -201,6 +202,10 @@ func (kclOpts *KclvmOptions) Args() []string {
 	var args []string
 	args = append(args, kclOpts.EntryFiles...)
 	args = append(args, kclOpts.PkgPathMapArgs()...)
+	if len(kclOpts.KclvmCliArgs) != 0 {
+		args = append(args, strings.Split(kclOpts.KclvmCliArgs, " ")...)
+	}
+
 	return args
 }
 
