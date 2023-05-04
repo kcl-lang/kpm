@@ -365,20 +365,32 @@ func TestValidateKpmHome(t *testing.T) {
 	assert.Equal(t, err, errors.InvalidKpmHomeInCurrentPkg)
 }
 
+<<<<<<< HEAD
 func TestPackageCurrentPkgPath(t *testing.T) {
+=======
+func TestPackageCurrentPkg(t *testing.T) {
+>>>>>>> c1a736a (Feat: add 'kpm push' to push the kcl package to oci registry.)
 	testDir := getTestDir("tar_kcl_pkg")
 
 	kclPkg, err := LoadKclPkg(testDir)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, kclPkg.GetPkgTag(), "0.0.1")
+<<<<<<< HEAD
 	assert.Equal(t, kclPkg.GetOciPkgTag(), "v0.0.1")
+=======
+	assert.Equal(t, kclPkg.GetPkgTagForOci(), "v0.0.1")
+>>>>>>> c1a736a (Feat: add 'kpm push' to push the kcl package to oci registry.)
 	assert.Equal(t, kclPkg.GetPkgName(), "test_tar")
 	assert.Equal(t, kclPkg.GetPkgFullName(), "test_tar-v0.0.1")
 	assert.Equal(t, kclPkg.GetPkgTarName(), "test_tar-v0.0.1.tar")
 
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, kclPkg.GetPkgTarName())), false)
 
+<<<<<<< HEAD
 	path, err := kclPkg.PackageCurrentPkgPath()
+=======
+	path, err := kclPkg.PackageCurrentPkg()
+>>>>>>> c1a736a (Feat: add 'kpm push' to push the kcl package to oci registry.)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, path, filepath.Join(testDir, kclPkg.GetPkgTarName()))
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, kclPkg.GetPkgTarName())), true)
@@ -411,7 +423,11 @@ func TestLoadKclPkgFromTar(t *testing.T) {
 	assert.Equal(t, kclPkg.Deps["konfig"].Sum, "XFvHdBAoY/+qpJWmj8cjwOwZO8a3nX/7SE35cTxQOFU=")
 
 	assert.Equal(t, kclPkg.GetPkgTag(), "0.0.3")
+<<<<<<< HEAD
 	assert.Equal(t, kclPkg.GetOciPkgTag(), "v0.0.3")
+=======
+	assert.Equal(t, kclPkg.GetPkgTagForOci(), "v0.0.3")
+>>>>>>> c1a736a (Feat: add 'kpm push' to push the kcl package to oci registry.)
 	assert.Equal(t, kclPkg.GetPkgName(), "kcl1")
 	assert.Equal(t, kclPkg.GetPkgFullName(), "kcl1-v0.0.3")
 	assert.Equal(t, kclPkg.GetPkgTarName(), "kcl1-v0.0.3.tar")
