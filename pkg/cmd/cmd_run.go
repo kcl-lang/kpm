@@ -20,11 +20,6 @@ import (
 	"kusionstack.io/kpm/pkg/utils"
 )
 
-const FLAG_INPUT = "input"
-const FLAG_VENDOR = "vendor"
-const FLAG_KCL = "kcl_args"
-const FLAG_TAG = "tag"
-
 // NewRunCmd new a Command for `kpm run`.
 func NewRunCmd(settings *settings.Settings) *cli.Command {
 	return &cli.Command{

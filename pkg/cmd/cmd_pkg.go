@@ -4,11 +4,13 @@ package cmd
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/urfave/cli/v2"
-	"kusionstack.io/kpm/pkg/env"
+	"kusionstack.io/kpm/pkg/errors"
 	pkg "kusionstack.io/kpm/pkg/package"
 	"kusionstack.io/kpm/pkg/reporter"
+	"kusionstack.io/kpm/pkg/utils"
 )
 
 // NewPkgCmd new a Command for `kpm pkg`.
@@ -24,6 +26,13 @@ func NewPkgCmd() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
+			tarPath := c.String("target")
+
+			if len(tarPath) == 0 {
+				reporter.Report("kpm: The directory where the tar is generated is required.")
+				reporter.ExitWithReport("kpm: run 'kpm pkg help' for more information.")
+			}
+
 			pwd, err := os.Getwd()
 
 			if err != nil {
@@ -37,30 +46,15 @@ func NewPkgCmd() *cli.Command {
 				return err
 			}
 
-			globalPkgPath, err := env.GetAbsPkgPath()
-			if err != nil {
-				return err
+			// If the file path used to save the package tar file does not exist, create this file path.
+			if !utils.DirExists(tarPath) {
+				err := os.MkdirAll(tarPath, os.ModePerm)
+				if err != nil {
+					return errors.InternalBug
+				}
 			}
-
-			err = kclPkg.ValidateKpmHome(globalPkgPath)
-			if err != nil {
-				return err
-			}
-
-			tarPath := c.String("target")
-
-			if len(tarPath) == 0 {
-				reporter.Report("kpm: The directory where the tar is generated is required.")
-				reporter.ExitWithReport("kpm: run 'kpm pkg help' for more information.")
-			}
-
-			err = kclPkg.PackageKclPkg(globalPkgPath, tarPath)
-
-			if err != nil {
-				reporter.ExitWithReport("kpm: failed to package pkg " + kclPkg.GetPkgName() + ".")
-				return err
-			}
-			return nil
+			// The method for packaging kcl package should be a member method of KclPkg.
+			return kclPkg.PackageCurrentPkgIntoTar(filepath.Join(tarPath, kclPkg.GetPkgTarName()))
 		},
 	}
 }

@@ -4,11 +4,14 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 
 	"github.com/otiai10/copy"
+	"kusionstack.io/kpm/pkg/env"
 	errors "kusionstack.io/kpm/pkg/errors"
 	modfile "kusionstack.io/kpm/pkg/mod"
 	"kusionstack.io/kpm/pkg/opt"
+	"kusionstack.io/kpm/pkg/reporter"
 	"kusionstack.io/kpm/pkg/runner"
 	"kusionstack.io/kpm/pkg/utils"
 )
@@ -48,6 +51,16 @@ func LoadKclPkg(pkgPath string) (*KclPkg, error) {
 		HomePath:     pkgPath,
 		Dependencies: *deps,
 	}, nil
+}
+
+// LoadKclPkgFromTar will load a kcl package from a tar path.
+func LoadKclPkgFromTar(pkgTarPath string) (*KclPkg, error) {
+	destDir := strings.TrimSuffix(pkgTarPath, filepath.Ext(pkgTarPath))
+	err := utils.UnTarDir(pkgTarPath, destDir)
+	if err != nil {
+		return nil, err
+	}
+	return LoadKclPkg(destDir)
 }
 
 func (kclPkg *KclPkg) IsVendorMode() bool {
@@ -307,6 +320,60 @@ func check(dep modfile.Dependency, newDepPath string) bool {
 	return dep.Sum == sum
 }
 
+// PackageCurrentPkg will package the current kcl package into the current path and return the tar path.
+// And the tar will be named "<package_name>-<package_version>.tar"
+// <package_name> is the package name specified in kcl.mod.
+// <package_version> is the package version specified in kcl.mod.
+func (kclPkg *KclPkg) PackageCurrentPkg() (string, error) {
+	globalPkgPath, err := env.GetAbsPkgPath()
+	if err != nil {
+		return "", err
+	}
+
+	err = kclPkg.ValidateKpmHome(globalPkgPath)
+	if err != nil {
+		return "", err
+	}
+
+	err = kclPkg.PackageKclPkg(globalPkgPath, kclPkg.DefaultTarPath())
+
+	if err != nil {
+		reporter.ExitWithReport("kpm: failed to package pkg " + kclPkg.GetPkgName() + ".")
+		return "", err
+	}
+	return kclPkg.DefaultTarPath(), nil
+}
+
+const TAR_SUFFIX = ".tar"
+const VERSION_PREFFIX = "v"
+
+// DefaultTarPath will return "<kcl_package_path>/<package_name>-<package_version>.tar"
+func (kclPkg *KclPkg) DefaultTarPath() string {
+	return filepath.Join(kclPkg.HomePath, kclPkg.GetPkgTarName())
+}
+
+// PkgCurrentPackageIntoTarPath will package the current kcl package into 'tarPath'.
+func (kclPkg *KclPkg) PackageCurrentPkgIntoTar(tarPath string) error {
+
+	globalPkgPath, err := env.GetAbsPkgPath()
+	if err != nil {
+		return err
+	}
+
+	err = kclPkg.ValidateKpmHome(globalPkgPath)
+	if err != nil {
+		return err
+	}
+
+	err = kclPkg.PackageKclPkg(globalPkgPath, tarPath)
+
+	if err != nil {
+		reporter.ExitWithReport("kpm: failed to package pkg " + kclPkg.GetPkgName() + ".")
+		return err
+	}
+	return nil
+}
+
 // PackageKclPkg will save all dependencies to the 'vendor' in current pacakge
 // and package the current package into tar
 func (kclPkg *KclPkg) PackageKclPkg(kpmHome string, tarPath string) error {
@@ -385,7 +452,32 @@ func (kclPkg *KclPkg) ValidateKpmHome(kpmHome string) error {
 	return nil
 }
 
+// GetPkgFullName returns the full name of package.
+// The full name is "<pkg_name>-<pkg_version>",
+// <pkg_name> is the name of package.
+// <pkg_version> is the version of package
+func (kclPkg *KclPkg) GetPkgFullName() string {
+	return kclPkg.modFile.Pkg.Name + "-" + VERSION_PREFFIX + kclPkg.modFile.Pkg.Version
+}
+
 // GetPkgName returns name of package.
 func (kclPkg *KclPkg) GetPkgName() string {
 	return kclPkg.modFile.Pkg.Name
+}
+
+// GetPkgTag returns version of package.
+func (kclPkg *KclPkg) GetPkgTag() string {
+	return kclPkg.modFile.Pkg.Version
+}
+
+// GetPkgTagForOci returns version of package in OCI format.
+// The version of a package is "0.0.1".
+// The version of a package in OCI format is "v0.0.1"
+func (kclPkg *KclPkg) GetPkgTagForOci() string {
+	return "v" + kclPkg.GetPkgTag()
+}
+
+// GetPkgTarName returns the kcl package tar name "<package_name>-v<package_version>.tar"
+func (kclPkg *KclPkg) GetPkgTarName() string {
+	return kclPkg.GetPkgFullName() + TAR_SUFFIX
 }
