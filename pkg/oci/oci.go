@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/reporter"
 	"kusionstack.io/kpm/pkg/settings"
@@ -16,6 +17,8 @@ import (
 	"oras.land/oras-go/v2/registry/remote"
 	"oras.land/oras-go/v2/registry/remote/retry"
 )
+
+const DEFAULT_OCI_ARTIFACT_TYPE = "application/vnd.oci.image.layer.v1.tar"
 
 // Login will login 'hostname' by 'username' and 'password'.
 func Login(hostname, username, password string, setting *settings.Settings) error {
@@ -63,7 +66,7 @@ func Logout(hostname string, setting *settings.Settings) error {
 
 const KCP_PKG_TAR = "*.tar"
 
-// Pull will pull the oci atrifacts from oci registry to local path.
+// Pull will pull the oci artifacts from oci registry to local path.
 func Pull(localPath, hostName, repoName, tag string, settings *settings.Settings) (string, error) {
 	// 0. Create a file store
 	fs, err := file.New(localPath)
@@ -103,6 +106,63 @@ func Pull(localPath, hostName, repoName, tag string, settings *settings.Settings
 	}
 
 	return matches[0], nil
+}
+
+// Push will push the oci artifacts to oci registry from local path
+func Push(localPath, hostName, repoName, tag string, settings *settings.Settings) error {
+	// 0. Create a file store
+	fs, err := file.New(filepath.Dir(localPath))
+	if err != nil {
+		return err
+	}
+	defer fs.Close()
+	ctx := context.Background()
+
+	// 1. Add files to a file store
+
+	fileNames := []string{localPath}
+	fileDescriptors := make([]v1.Descriptor, 0, len(fileNames))
+	for _, name := range fileNames {
+		fileDescriptor, err := fs.Add(ctx, name, DEFAULT_OCI_ARTIFACT_TYPE, "")
+		if err != nil {
+			return err
+		}
+		fileDescriptors = append(fileDescriptors, fileDescriptor)
+	}
+
+	// 2. Pack the files and tag the packed manifest
+	manifestDescriptor, err := oras.Pack(ctx, fs, DEFAULT_OCI_ARTIFACT_TYPE, fileDescriptors, oras.PackOptions{
+		PackImageManifest: true,
+	})
+	if err != nil {
+		return err
+	}
+
+	if err = fs.Tag(ctx, manifestDescriptor, tag); err != nil {
+		return err
+	}
+
+	// 3. Connect to a remote repository
+
+	repo, err := remote.NewRepository(filepath.Join(hostName, repoName))
+	if err != nil {
+		panic(err)
+	}
+
+	// 4. Login
+	credential, err := loadCredential(hostName, settings)
+	if err != nil {
+		return errors.FailedPushToOci
+	}
+	repo.Client = &remoteauth.Client{
+		Client:     retry.DefaultClient,
+		Cache:      remoteauth.DefaultCache,
+		Credential: remoteauth.StaticCredential(repo.Reference.Host(), *credential),
+	}
+
+	// 5. Copy from the file store to the remote repository
+	_, err = oras.Copy(ctx, fs, tag, repo, tag, oras.DefaultCopyOptions)
+	return err
 }
 
 func loadCredential(hostName string, settings *settings.Settings) (*remoteauth.Credential, error) {

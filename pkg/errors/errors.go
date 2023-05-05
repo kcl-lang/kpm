@@ -38,6 +38,7 @@ var InvalidKpmHomeInCurrentPkg = errors.New("kpm: environment variable KCL_PKG_P
 var FailedLogin = errors.New("kpm: failed to login, please check registry, username and password is valid.")
 var FailedLogout = errors.New("kpm: failed to logout, the registry not logged in.")
 var FailedPullFromOci = errors.New("kpm: failed to pull kcl package tar from oci.")
+var FailedPushToOci = errors.New("kpm: failed to push kcl package tar to oci.")
 var InvalidOciRef = errors.New("kpm: invalid oci reference.")
 var NotOciUrl = errors.New("kpm: url is not an oci url.")
 var IsOciRef = errors.New("kpm: oci ref is not an url.")

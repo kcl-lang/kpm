@@ -364,3 +364,59 @@ func TestValidateKpmHome(t *testing.T) {
 	err := kclPkg.ValidateKpmHome(os.Getenv(env.PKG_PATH))
 	assert.Equal(t, err, errors.InvalidKpmHomeInCurrentPkg)
 }
+
+func TestPackageCurrentPkgPath(t *testing.T) {
+	testDir := getTestDir("tar_kcl_pkg")
+
+	kclPkg, err := LoadKclPkg(testDir)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, kclPkg.GetPkgTag(), "0.0.1")
+	assert.Equal(t, kclPkg.GetOciPkgTag(), "v0.0.1")
+	assert.Equal(t, kclPkg.GetPkgName(), "test_tar")
+	assert.Equal(t, kclPkg.GetPkgFullName(), "test_tar-v0.0.1")
+	assert.Equal(t, kclPkg.GetPkgTarName(), "test_tar-v0.0.1.tar")
+
+	assert.Equal(t, utils.DirExists(filepath.Join(testDir, kclPkg.GetPkgTarName())), false)
+
+	path, err := kclPkg.PackageCurrentPkgPath()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, path, filepath.Join(testDir, kclPkg.GetPkgTarName()))
+	assert.Equal(t, utils.DirExists(filepath.Join(testDir, kclPkg.GetPkgTarName())), true)
+	err = os.RemoveAll(filepath.Join(testDir, kclPkg.GetPkgTarName()))
+	assert.Equal(t, err, nil)
+}
+
+func TestLoadKclPkgFromTar(t *testing.T) {
+	testDir := getTestDir("load_kcl_tar")
+	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl1-v0.0.3")), false)
+
+	kclPkg, err := LoadKclPkgFromTar(filepath.Join(testDir, "kcl1-v0.0.3.tar"))
+	assert.Equal(t, err, nil)
+	assert.Equal(t, kclPkg.HomePath, filepath.Join(testDir, "kcl1-v0.0.3"))
+	assert.Equal(t, kclPkg.modFile.Pkg.Name, "kcl1")
+	assert.Equal(t, kclPkg.modFile.Pkg.Edition, "0.0.1")
+	assert.Equal(t, kclPkg.modFile.Pkg.Version, "0.0.3")
+
+	assert.Equal(t, len(kclPkg.modFile.Deps), 1)
+	assert.Equal(t, kclPkg.modFile.Deps["konfig"].Name, "konfig")
+	assert.Equal(t, kclPkg.modFile.Deps["konfig"].FullName, "konfig_v0.0.1")
+	assert.Equal(t, kclPkg.modFile.Deps["konfig"].Git.Url, "https://github.com/awesome-kusion/konfig.git")
+	assert.Equal(t, kclPkg.modFile.Deps["konfig"].Git.Tag, "v0.0.1")
+
+	assert.Equal(t, len(kclPkg.Deps), 1)
+	assert.Equal(t, kclPkg.Deps["konfig"].Name, "konfig")
+	assert.Equal(t, kclPkg.Deps["konfig"].FullName, "konfig_v0.0.1")
+	assert.Equal(t, kclPkg.Deps["konfig"].Git.Url, "https://github.com/awesome-kusion/konfig.git")
+	assert.Equal(t, kclPkg.Deps["konfig"].Git.Tag, "v0.0.1")
+	assert.Equal(t, kclPkg.Deps["konfig"].Sum, "XFvHdBAoY/+qpJWmj8cjwOwZO8a3nX/7SE35cTxQOFU=")
+
+	assert.Equal(t, kclPkg.GetPkgTag(), "0.0.3")
+	assert.Equal(t, kclPkg.GetOciPkgTag(), "v0.0.3")
+	assert.Equal(t, kclPkg.GetPkgName(), "kcl1")
+	assert.Equal(t, kclPkg.GetPkgFullName(), "kcl1-v0.0.3")
+	assert.Equal(t, kclPkg.GetPkgTarName(), "kcl1-v0.0.3.tar")
+
+	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl1-v0.0.3")), true)
+	err = os.RemoveAll(filepath.Join(testDir, "kcl1-v0.0.3"))
+	assert.Equal(t, err, nil)
+}
