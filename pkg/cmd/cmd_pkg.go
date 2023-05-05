@@ -54,7 +54,7 @@ func NewPkgCmd() *cli.Command {
 				}
 			}
 			// The method for packaging kcl package should be a member method of KclPkg.
-			return kclPkg.PackageCurrentPkgIntoTar(filepath.Join(tarPath, kclPkg.GetPkgTarName()))
+			return kclPkg.PackageToTarball(filepath.Join(tarPath, kclPkg.GetPkgTarName()))
 		},
 	}
 }

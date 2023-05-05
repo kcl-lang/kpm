@@ -85,13 +85,13 @@ func pushCurrentPackage(ociUrl string, settings *settings.Settings) (string, err
 	reporter.Report("kpm: the current package '" + kclPkg.GetPkgName() + "' will be pushed.")
 
 	// 2. Package the current kcl package into default tar path.
-	tarPath, err := kclPkg.PackageCurrentPkg()
+	tarPath, err := kclPkg.PackageCurrentPkgPath()
 	if err != nil {
 		return tarPath, err
 	}
 
 	// 3. Generate the OCI options from oci url and the version of current kcl package.
-	ociOpts, err := opt.ParseOciOptionFromOciUrl(ociUrl, kclPkg.GetPkgTagForOci())
+	ociOpts, err := opt.ParseOciOptionFromOciUrl(ociUrl, kclPkg.GetOciPkgTag())
 	if err != nil {
 		return tarPath, err
 	}
@@ -128,7 +128,7 @@ func pushTarPackage(ociUrl, localTarPath string, settings *settings.Settings) er
 	}
 
 	// 2. Generate the OCI options from oci url and the version of current kcl package.
-	ociOpts, err := opt.ParseOciOptionFromOciUrl(ociUrl, kclPkg.GetPkgTagForOci())
+	ociOpts, err := opt.ParseOciOptionFromOciUrl(ociUrl, kclPkg.GetOciPkgTag())
 	if err != nil {
 		return err
 	}

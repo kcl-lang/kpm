@@ -324,7 +324,7 @@ func check(dep modfile.Dependency, newDepPath string) bool {
 // And the tar will be named "<package_name>-<package_version>.tar"
 // <package_name> is the package name specified in kcl.mod.
 // <package_version> is the package version specified in kcl.mod.
-func (kclPkg *KclPkg) PackageCurrentPkg() (string, error) {
+func (kclPkg *KclPkg) PackageCurrentPkgPath() (string, error) {
 	globalPkgPath, err := env.GetAbsPkgPath()
 	if err != nil {
 		return "", err
@@ -353,7 +353,7 @@ func (kclPkg *KclPkg) DefaultTarPath() string {
 }
 
 // PkgCurrentPackageIntoTarPath will package the current kcl package into 'tarPath'.
-func (kclPkg *KclPkg) PackageCurrentPkgIntoTar(tarPath string) error {
+func (kclPkg *KclPkg) PackageToTarball(tarPath string) error {
 
 	globalPkgPath, err := env.GetAbsPkgPath()
 	if err != nil {
@@ -473,8 +473,12 @@ func (kclPkg *KclPkg) GetPkgTag() string {
 // GetPkgTagForOci returns version of package in OCI format.
 // The version of a package is "0.0.1".
 // The version of a package in OCI format is "v0.0.1"
-func (kclPkg *KclPkg) GetPkgTagForOci() string {
-	return "v" + kclPkg.GetPkgTag()
+func (kclPkg *KclPkg) GetOciPkgTag() string {
+	if !strings.HasPrefix(kclPkg.GetPkgTag(), VERSION_PREFFIX) {
+		return VERSION_PREFFIX + kclPkg.GetPkgTag()
+	} else {
+		return kclPkg.GetPkgTag()
+	}
 }
 
 // GetPkgTarName returns the kcl package tar name "<package_name>-v<package_version>.tar"
