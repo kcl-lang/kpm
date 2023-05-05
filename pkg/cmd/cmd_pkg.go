@@ -54,11 +54,7 @@ func NewPkgCmd() *cli.Command {
 				}
 			}
 			// The method for packaging kcl package should be a member method of KclPkg.
-<<<<<<< HEAD
 			return kclPkg.PackageToTarball(filepath.Join(tarPath, kclPkg.GetPkgTarName()))
-=======
-			return kclPkg.PackageCurrentPkgIntoTar(filepath.Join(tarPath, kclPkg.GetPkgTarName()))
->>>>>>> c1a736a (Feat: add 'kpm push' to push the kcl package to oci registry.)
 		},
 	}
 }

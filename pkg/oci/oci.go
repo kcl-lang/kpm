@@ -64,14 +64,12 @@ func Logout(hostname string, setting *settings.Settings) error {
 	return nil
 }
 
-const KCP_PKG_TAR = "*.tar"
-
 // Pull will pull the oci artifacts from oci registry to local path.
-func Pull(localPath, hostName, repoName, tag string, settings *settings.Settings) (string, error) {
+func Pull(localPath, hostName, repoName, tag string, settings *settings.Settings) error {
 	// 0. Create a file store
 	fs, err := file.New(localPath)
 	if err != nil {
-		return "", errors.FailedPullFromOci
+		return errors.FailedPullFromOci
 	}
 	defer fs.Close()
 
@@ -79,13 +77,13 @@ func Pull(localPath, hostName, repoName, tag string, settings *settings.Settings
 	ctx := context.Background()
 	repo, err := remote.NewRepository(filepath.Join(hostName, repoName))
 	if err != nil {
-		return "", errors.FailedPullFromOci
+		return errors.FailedPullFromOci
 	}
 
 	// 2. Login
 	credential, err := loadCredential(hostName, settings)
 	if err != nil {
-		return "", errors.FailedPullFromOci
+		return errors.FailedPullFromOci
 	}
 	repo.Client = &remoteauth.Client{
 		Client:     retry.DefaultClient,
@@ -96,16 +94,10 @@ func Pull(localPath, hostName, repoName, tag string, settings *settings.Settings
 	// 3. Copy from the remote repository to the file store
 	_, err = oras.Copy(ctx, repo, tag, fs, tag, oras.DefaultCopyOptions)
 	if err != nil {
-		return "", errors.FailedPullFromOci
+		return errors.FailedPullFromOci
 	}
 
-	// 4.Get the (*.tar) file path.
-	matches, err := filepath.Glob(filepath.Join(localPath, KCP_PKG_TAR))
-	if err != nil && len(matches) != 1 {
-		return "", errors.FailedPullFromOci
-	}
-
-	return matches[0], nil
+	return nil
 }
 
 // Push will push the oci artifacts to oci registry from local path
@@ -123,7 +115,11 @@ func Push(localPath, hostName, repoName, tag string, settings *settings.Settings
 	fileNames := []string{localPath}
 	fileDescriptors := make([]v1.Descriptor, 0, len(fileNames))
 	for _, name := range fileNames {
-		fileDescriptor, err := fs.Add(ctx, name, DEFAULT_OCI_ARTIFACT_TYPE, "")
+		// The file name of the pushed file cannot be a file path,
+		// If the file name is a path, the path will be created during pulling.
+		// During pulling, a file should be downloaded separately,
+		// and a file path is created for each download, which is not good.
+		fileDescriptor, err := fs.Add(ctx, filepath.Base(name), DEFAULT_OCI_ARTIFACT_TYPE, "")
 		if err != nil {
 			return err
 		}

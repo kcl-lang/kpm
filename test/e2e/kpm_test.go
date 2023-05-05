@@ -37,8 +37,13 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 				stdout, stderr, err := ExecKpmWithWorkDir(ts.Input, workspace)
 
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
-				gomega.Expect(stdout).To(gomega.MatchRegexp(ts.ExpectStdout))
-				gomega.Expect(stderr).To(gomega.MatchRegexp(ts.ExpectStderr))
+				// Using regular expressions may miss some cases where the string is empty.
+				//
+				// Since the login/logout-related test cases will output time information,
+				// they cannot be compared with method 'Equal',
+				// so 'ContainSubstring' is used to compare the results.
+				gomega.Expect(stdout).To(gomega.ContainSubstring(ts.ExpectStdout))
+				gomega.Expect(stderr).To(gomega.ContainSubstring(ts.ExpectStderr))
 			})
 		}
 	})
