@@ -19,23 +19,35 @@
 
 ## 安装
 
-### 安装 KCLVM
+### 安装 KCL
 
-`kpm` 将调用 KCLVM 来编译 KCL 程序。在使用 `kpm` 之前，您需要确保 KCLVM 已经成功安装。
+`kpm` 将调用 [KCL 编译器](https://github.com/KusionStack/KCLVM) 来编译 KCL 程序。在使用 `kpm` 之前，您需要确保 KCL编译器 已经成功安装。
 
-[如需了解如何安装 KCLVM 的更多信息，请参考此处。](https://kcl-lang.io/docs/user_docs/getting-started/install)
+[如需了解如何安装 KCL 的更多信息，请参考此处。](https://kcl-lang.io/docs/user_docs/getting-started/install)
 
-使用以下命令来确保您已成功安装KCLVM。
+使用以下命令来确保您已成功安装 `KCL`。
 
 ```shell
 kclvm_cli version
 ```
 
-如果上面的命令能为您正常展示 KCLVM 的版本信息，意味着您已经成功安装了 KCLVM 您就可以继续下一步操作。
+如果上面的命令能为您正常展示 `KCL` 的版本信息，意味着您已经成功安装了 `KCL` 您就可以继续下一步操作。
+
+<img src="./docs/gifs/kclvm_cli_version.gif" width="600" align="center" />
 
 ### 安装 `kpm`
 
-您可以从 Github release 中获取 `kpm` ，并将 `kpm` 的二进制文件路径设置到环境变量 PATH 中。
+#### 使用 `go install` 安装
+
+您可以使用 `go install` 命令安装 `kpm`。
+
+```shell
+go install kusionstack.io/kpm@latest
+```
+
+#### 从 Github release 页面手动安装
+
+您也可以从 Github release 中获取 `kpm` ，并将 `kpm` 的二进制文件路径设置到环境变量 PATH 中。
 
 ```shell
 # KPM_INSTALLATION_PATH 是 `kpm` 二进制文件的所在目录.
@@ -50,44 +62,7 @@ kpm --help
 
 如果你看到以下输出信息，那么你已经成功安装了`kpm`，可以继续执行下一步操作。
 
-```shell
-NAME:
-   kpm - kpm is a kcl package manager
-
-USAGE:
-   kpm  <command> [arguments]...
-
-VERSION:
-   v0.0.1
-
-COMMANDS:
-   init     initialize new module in current directory
-   add      add new dependancy
-   pkg      package a kcl package into tar
-   run      compile kcl package.
-   help, h  Shows a list of commands or help for one command
-
-GLOBAL OPTIONS:
-   --help, -h     show help
-   --version, -v  print the version
-```
-
-### 设置环境变量
-
-你需要设置一个环境变量 KPM_HOME 来声明 `kpm` 下载的 KCL 包的位置。
-
-注意: 目前 `kpm` 不支持将外部的包下载到包的内部，所以请确保 `$KPM_HOME` 不要与当前 KCL 包为同一个目录。
-
-```shell
-# Kpm 下载的包将会保存在 /user/xxx/xxx/path 目录下. 
-export KPM_HOME="/user/xxx/xxx/path" 
-```
-
-在成功安装 KCLVM 后，为了确保 KCLVM 可以找到 `kpm` 下载的包，你需要设置环境变量 $KCLVM_VENDOR_HOME 并将其指向 $KPM_HOME。
-
-```shell
-export KCLVM_VENDOR_HOME=$KPM_HOME
-```
+<img src="./docs/gifs/kpm_help.gif" width="600" align="center" />
 
 ## 快速开始
 
@@ -105,6 +80,8 @@ cd my_package # 进入这个文件夹中 'my_package'
 ```shell
 kpm init my_package
 ```
+
+<img src="./docs/gifs/kpm_init.gif" width="600" align="center" />
 
 `kpm` 将会在执行`kpm init my_package`命令的目录下创建两个默认的配置文件 `kcl.mod` 和 `kcl.mod.lock`。
 
@@ -133,6 +110,8 @@ version = "0.0.1"
 ```shell
 kpm add -git https://github.com/awesome-kusion/konfig.git -tag v0.0.1
 ```
+
+<img src="./docs/gifs/kpm_add_git.gif" width="600" align="center" />
 
 `kpm` 会为您将依赖添加到 kcl.mod 文件中.
 
@@ -173,43 +152,31 @@ demo = nd.demo
 你可以使用 kpm 编译刚才编写的 `main.k` 文件。
 
 ```shell
-kpm run --input main.k
+kpm run
 ```
+<img src="./docs/gifs/kpm_run.gif" width="600" align="center" />
 
-如果你得到如下输出，恭喜你！你成功使用 `kpm` 编译了一个 kcl 包。
+如果你想要使用 `KCL` 的某些编译选项来编译当前 kcl 包，你可以通过 kpm 的参数 `--kcl_args` 来将这个参数传递给 `KCL`。
+
+如下所示，我们将使用 `KCL` 编译选项 `-S demo` 来编译 kcl 包。
 
 ```shell
-demo:
-  apiVersion: apps/v1
-  kind: Deployment
-  metadata:
-    name: nginx-deployment
-  spec:
-    replicas: 3
-    selector:
-      matchLabels:
-        app: nginx
-    template:
-      metadata:
-        labels:
-          app: nginx
-      spec:
-        containers:
-          - image: "nginx:1.14.2"
-            name: nginx
-            ports:
-              - containerPort: 80
+kpm run --kcl_args '-S demo'
 ```
+
+<img src="./docs/gifs/kpm_run_with_args.gif" width="600" align="center" />
 
 ### 打包您的 kcl 包
 
 你可以使用 `kpm pkg` 将您的包与其对应的依赖打包在一起.
 
 ```shell
-kpm pkg --target my_package.tar
+kpm pkg --target my_package_tar
 ```
 
-这个命令执行后，您可以看到您的 kcl 包已经被打包到了 `my_package.tar` 文件中，并且 `my_package` 的依赖也都被复制到了当前包的 `vendor` 子目录下。
+<img src="./docs/gifs/kpm_pkg.gif" width="600" align="center" />
+
+这个命令执行后，您可以看到您的 kcl 包已经被打包到了 `my_package_tar` 文件目录下，并且 `my_package` 的依赖也都被复制到了当前包的 `vendor` 子目录下。
 
 ```shell
 - my_package
@@ -220,3 +187,9 @@ kpm pkg --target my_package.tar
         |- vendor # 当前包所有的依赖都将被复制到 `vendor`中。 
              |- konfig_v0.0.1
 ```
+
+## OCI Registry 的支持
+
+从 kpm v0.2.0 版本开始，kpm 支持通过 OCI Registries 保存和分享 KCL 包。
+
+了解更多如何在 kpm 中使用，查看 [OCI registry 支持](./docs/kpm_oci-zh.md).
