@@ -29,6 +29,7 @@ func main() {
 		cmd.NewRunCmd(setting),
 		cmd.NewRegCmd(setting),
 		cmd.NewPushCmd(setting),
+		cmd.NewPullCmd(setting),
 	}
 	err = app.Run(os.Args)
 	if err != nil {

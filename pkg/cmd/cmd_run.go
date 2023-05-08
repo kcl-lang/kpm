@@ -106,6 +106,8 @@ func runTar(tarPath, entryFile string, vendorMode bool, kclArgs string) (string,
 	return compileResult, nil
 }
 
+const KCL_PKG_TAR = "*.tar"
+
 // runOci will compile the kcl package from an OCI reference.
 func runOci(ociRef, version, entryFile string, vendorMode bool, settings *settings.Settings, kclArgs string) (string, error) {
 	ociOpts, err := opt.ParseOciOptionFromString(ociRef, version)
@@ -114,20 +116,30 @@ func runOci(ociRef, version, entryFile string, vendorMode bool, settings *settin
 		return "", err
 	}
 
-	pwd, err := os.Getwd()
-
+	// 1. Create the temporary directory to pull the tar.
+	tmpDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return "", errors.InternalBug
 	}
+	// clean the temp dir.
+	defer os.RemoveAll(tmpDir)
 
-	localPath := ociOpts.AddStoragePathSuffix(pwd)
-	localTarPath, err := oci.Pull(localPath, ociOpts.Reg, ociOpts.Repo, ociOpts.Tag, settings)
+	localPath := ociOpts.AddStoragePathSuffix(tmpDir)
+
+	// 2. Pull the tar.
+	err = oci.Pull(localPath, ociOpts.Reg, ociOpts.Repo, ociOpts.Tag, settings)
 
 	if err != nil {
 		return "", err
 	}
 
-	return runTar(localTarPath, entryFile, vendorMode, kclArgs)
+	// 3.Get the (*.tar) file path.
+	matches, err := filepath.Glob(filepath.Join(localPath, KCL_PKG_TAR))
+	if err != nil || len(matches) != 1 {
+		return "", errors.FailedPullFromOci
+	}
+
+	return runTar(matches[0], entryFile, vendorMode, kclArgs)
 }
 
 // runPkg will compile current kcl package.
