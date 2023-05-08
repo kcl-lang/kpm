@@ -2,14 +2,19 @@ package utils
 
 import (
 	"archive/tar"
+	"bufio"
 	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
+	goerrors "errors"
+
+	"github.com/moby/term"
 	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/reporter"
 )
@@ -252,4 +257,72 @@ func CreateSymlink(oldName, newName string) error {
 		return err
 	}
 	return nil
+}
+
+// Copied/Adapted from https://github.com/helm/helm
+func GetUsernamePassword(usernameOpt string, passwordOpt string, passwordFromStdinOpt bool) (string, string, error) {
+	var err error
+	username := usernameOpt
+	password := passwordOpt
+
+	if password == "" {
+		if username == "" {
+			username, err = readLine("Username: ", false)
+			if err != nil {
+				return "", "", err
+			}
+			username = strings.TrimSpace(username)
+		}
+		if username == "" {
+			password, err = readLine("Token: ", true)
+			if err != nil {
+				return "", "", err
+			} else if password == "" {
+				return "", "", goerrors.New("token required")
+			}
+		} else {
+			password, err = readLine("Password: ", true)
+			if err != nil {
+				return "", "", err
+			} else if password == "" {
+				return "", "", goerrors.New("password required")
+			}
+		}
+	}
+
+	return username, password, nil
+}
+
+// Copied/adapted from https://github.com/helm/helm
+func readLine(prompt string, silent bool) (string, error) {
+	fmt.Print(prompt)
+	if silent {
+		fd := os.Stdin.Fd()
+		state, err := term.SaveState(fd)
+		if err != nil {
+			return "", err
+		}
+		err = term.DisableEcho(fd, state)
+		if err != nil {
+			return "", err
+		}
+
+		defer func() {
+			restoreErr := term.RestoreTerminal(fd, state)
+			if err == nil {
+				err = restoreErr
+			}
+		}()
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	line, _, err := reader.ReadLine()
+	if err != nil {
+		return "", err
+	}
+	if silent {
+		fmt.Println()
+	}
+
+	return string(line), nil
 }
