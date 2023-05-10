@@ -19,23 +19,35 @@
 
 ## Installation
 
-### Install KCLVM
+### Install KCL
 
-`kpm` will call [KCLVM](https://github.com/KusionStack/KCLVM) to compile the kcl program. Before using `kpm`, you need to ensure that KCLVM is installed successfully.
+`kpm` will call [KCL compiler](https://github.com/KusionStack/KCLVM) to compile the kcl program. Before using `kpm`, you need to ensure that `KCL compiler` is installed successfully.
 
-[For more information about how to install KCLVM.](https://kcl-lang.io/docs/user_docs/getting-started/install)
+[For more information about how to install KCL compiler.](https://kcl-lang.io/docs/user_docs/getting-started/install)
 
-Use the following command to ensure that you install KCLVM successfully.
+Use the following command to ensure that you install `KCL compiler` successfully.
 
 ```shell
 kclvm_cli version
 ```
 
-If the above command shows the version information of KCLVM normally, it means that you have successfully installed KCLVM and you can do the next step.
+If the above command shows the version information of `KCL compiler` normally, it means that you have successfully installed `KCL compiler` and you can do the next step.
+
+<img src="./docs/gifs/kclvm_cli_version.gif" width="600" align="center" />
 
 ### Install `kpm`
 
-You can get `kpm` from the github release and set the `kpm` binary path to the environment variable PATH.
+#### Go install
+
+You can download `kpm` via `go install`.
+
+```shell
+go install kusionstack.io/kpm@latest
+```
+
+#### Download from GITHUB release page
+
+You can also get `kpm` from the github release and set the `kpm` binary path to the environment variable PATH.
 
 ```shell
 # KPM_INSTALLATION_PATH is the path of the `kpm` binary.
@@ -50,44 +62,7 @@ kpm --help
 
 If you get the following output, you have successfully installed `kpm` and you can proceed to the following steps.
 
-```shell
-NAME:
-   kpm - kpm is a kcl package manager
-
-USAGE:
-   kpm  <command> [arguments]...
-
-VERSION:
-   v0.0.1
-
-COMMANDS:
-   init     initialize new module in current directory
-   add      add new dependancy
-   pkg      package a kcl package into tar
-   run      compile kcl package.
-   help, h  Shows a list of commands or help for one command
-
-GLOBAL OPTIONS:
-   --help, -h     show help
-   --version, -v  print the version
-```
-
-### Set environment variables
-
-You need to set an environment variable `KPM_HOME` to hold the KCL packages downloaded by `kpm`.
-
-Note: `kpm` does not support downloading external packages into the current kcl package directory, so make sure that '$KPM_HOME' is not in the same directory as the current KCL package.
-
-```shell
-# The directory to save the packages downloaded by Kpm. 
-export KPM_HOME="/user/xxx/xxx/path" 
-```
-
-To ensure that KCLVM can find the packages downloaded by `kpm`, you need to set the environment variables `$KCLVM_VENDOR_HOME` and point it to `$KPM_HOME` for KCLVM after downloading KCLVM.
-
-```shell
-export KCLVM_VENDOR_HOME=$KPM_HOME
-```
+<img src="./docs/gifs/kpm_help.gif" width="600" align="center" />
 
 ## Quick Start
 
@@ -105,6 +80,8 @@ Create a new kcl package named `my_package`.
 ```shell
 kpm init my_package
 ```
+
+<img src="./docs/gifs/kpm_init.gif" width="600" align="center" />
 
 `kpm` will create two kcl package configuration files: `kcl.mod` and `kcl.mod.lock` in the directory where you executed the command.
 
@@ -133,6 +110,8 @@ If you need to use the KCL model in [Konfig](https://github.com/awesome-kusion/k
 ```shell
 kpm add -git https://github.com/awesome-kusion/konfig.git -tag v0.0.1
 ```
+
+<img src="./docs/gifs/kpm_add_git.gif" width="600" align="center" />
 
 You can see that `kpm` adds the dependency you just added to kcl.mod.
 
@@ -170,53 +149,49 @@ demo = nd.demo
 
 ### Use the `kpm` compile the kcl package
 
-You can use `kpm` to compile the `main.k` file you just wrote.
+In the `my_package` directory, you can use `kpm` to compile the `main.k` file you just wrote.
 
 ```shell
-kpm run --input main.k
+kpm run
 ```
 
-If you get the following output, congratulations !, you have successfully compiled your kcl package with `kpm`.
+<img src="./docs/gifs/kpm_run.gif" width="600" align="center" />
+
+If you want to use some kcl compilation options, you can pass the arguments to  through the `--kcl_args` provided by kpm.  
+
+As shown below, you can pass the arguments `-S demo` to ignore the `demo` in the output result.
 
 ```shell
-demo:
-  apiVersion: apps/v1
-  kind: Deployment
-  metadata:
-    name: nginx-deployment
-  spec:
-    replicas: 3
-    selector:
-      matchLabels:
-        app: nginx
-    template:
-      metadata:
-        labels:
-          app: nginx
-      spec:
-        containers:
-          - image: "nginx:1.14.2"
-            name: nginx
-            ports:
-              - containerPort: 80
+kpm run --kcl_args '-S demo'
 ```
+
+<img src="./docs/gifs/kpm_run_with_args.gif" width="600" align="center" />
 
 ### Package your current kcl package with its dependencies
 
 You can use the command `kpm pkg` to package your current kcl package with its dependencies.
 
 ```shell
-kpm pkg --target my_package.tar
+kpm pkg --target my_package_tar
 ```
 
-After this command is executed, a tar package will be packaged in the `my_package.tar` directory. And all the dependencies for `my_package` will be stored in the `vendor` subdirectory.
+<img src="./docs/gifs/kpm_pkg.gif" width="600" align="center" />
+
+After this command is executed, a tar package will be packaged in the `my_package_tar` directory. And all the dependencies for `my_package` will be stored in the `vendor` subdirectory.
 
 ```shell
 - my_package
       |- kcl.mod
       |- kcl.mod.lock
       |- main.k
-      |- my_package.tar # The file (*.tar) packaged by kpm.
+      |- my_package_tar 
+            |- my_package-v0.0.1.tar # The file (*.tar) packaged by kpm.
       |- vendor # All the dependencies for `my_package` will be stored in the `vendor` 
             |- konfig_v0.0.1
 ```
+
+## Supports OCI Registry
+
+Beginning in kpm v0.2.0, you can use container registries with OCI support to store and share kcl packages.
+
+For more information about [OCI registry support](./docs/kpm_oci.md).
