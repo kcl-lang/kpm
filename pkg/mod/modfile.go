@@ -39,19 +39,19 @@ type ModFile struct {
 
 // 'Dependencies' is dependencies section of 'kcl.mod'.
 type Dependencies struct {
-	Deps map[string]Dependency `toml:"dependencies,omitempty"`
+	Deps map[string]Dependency `json:"packages" toml:"dependencies,omitempty"`
 }
 
 type Dependency struct {
-	Name     string `toml:"name,omitempty"`
-	FullName string `toml:"full_name,omitempty"`
-	Version  string `toml:"version,omitempty"`
-	Sum      string `toml:"sum,omitempty"`
+	Name     string `json:"name" toml:"name,omitempty"`
+	FullName string `json:"-" toml:"full_name,omitempty"`
+	Version  string `json:"-" toml:"version,omitempty"`
+	Sum      string `json:"-" toml:"sum,omitempty"`
 	// The actual local path of the package.
 	// In vendor mode is "current_kcl_package/vendor"
 	// In non-vendor mode is "$KCL_PKG_PATH"
-	LocalFullPath string `toml:"-"`
-	Source
+	LocalFullPath string `json:"manifest_path" toml:"-"`
+	Source        `json:"-"`
 }
 
 // Download will download the kcl package to localPath from registory.
@@ -219,7 +219,7 @@ func (deps *Dependencies) loadLockFile(filepath string) error {
 	return nil
 }
 
-/// Parse out some information for a Dependency from registry url.
+// Parse out some information for a Dependency from registry url.
 func ParseOpt(opt *opt.RegistryOptions) *Dependency {
 	if opt.Git != nil {
 		gitSource := Git{

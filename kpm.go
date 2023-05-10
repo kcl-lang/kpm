@@ -26,6 +26,7 @@ func main() {
 		cmd.NewInitCmd(),
 		cmd.NewAddCmd(),
 		cmd.NewPkgCmd(),
+		cmd.NewMetadataCmd(),
 		cmd.NewRunCmd(setting),
 		cmd.NewLoginCmd(setting),
 		cmd.NewLogoutCmd(setting),
