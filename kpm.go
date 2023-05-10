@@ -27,7 +27,8 @@ func main() {
 		cmd.NewAddCmd(),
 		cmd.NewPkgCmd(),
 		cmd.NewRunCmd(setting),
-		cmd.NewRegCmd(setting),
+		cmd.NewLoginCmd(setting),
+		cmd.NewLogoutCmd(setting),
 		cmd.NewPushCmd(setting),
 		cmd.NewPullCmd(setting),
 	}

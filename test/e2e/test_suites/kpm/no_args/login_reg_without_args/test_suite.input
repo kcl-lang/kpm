@@ -1,1 +1,1 @@
-kpm registry login ghcr.io
+kpm login ghcr.io
