@@ -1,5 +1,8 @@
+VERSION := $(shell git describe --tags)
+LDFLAGS := -X main.version=$(VERSION)
+
 build:
-	go build kpm.go
+	go build -ldflags "$(LDFLAGS)" kpm.go
 
 COVER_FILE			?= coverage.out
 SOURCE_PATHS		?= ./pkg/...

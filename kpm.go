@@ -11,6 +11,8 @@ import (
 	"kusionstack.io/kpm/pkg/settings"
 )
 
+var version string
+
 func main() {
 	reporter.InitReporter()
 	setting, err := settings.Init()
@@ -20,7 +22,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "kpm"
 	app.Usage = "kpm is a kcl package manager"
-	app.Version = "v0.0.1"
+	app.Version = version
 	app.UsageText = "kpm  <command> [arguments]..."
 	app.Commands = []*cli.Command{
 		cmd.NewInitCmd(),
