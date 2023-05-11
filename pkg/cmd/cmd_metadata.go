@@ -26,6 +26,13 @@ func NewMetadataCmd() *cli.Command {
 				Name:  FLAG_VENDOR,
 				Usage: "get metadata in vendor mode",
 			},
+			// '--update' will trigger the auto-update mode
+			// In the auto-update mode, `kpm metadata` will automatically check the local package, update and download the package.
+			// In the non-auto-update mode, `kpm metadata`` will only return the metadata of the existing packages.
+			&cli.BoolFlag{
+				Name:  FLAG_UPDATE,
+				Usage: "check the local package and update and download the local package.",
+			},
 		},
 		Action: func(c *cli.Context) error {
 			pwd, err := os.Getwd()
@@ -50,14 +57,17 @@ func NewMetadataCmd() *cli.Command {
 				return err
 			}
 
-			jsonStr, err := kclPkg.ResolveDepsMetadataInJsonStr(globalPkgPath)
+			autoUpdate := c.Bool(FLAG_UPDATE)
+			jsonStr, err := kclPkg.ResolveDepsMetadataInJsonStr(globalPkgPath, autoUpdate)
 			if err != nil {
 				return err
 			}
 
-			err = kclPkg.UpdateModAndLockFile()
-			if err != nil {
-				return err
+			if autoUpdate {
+				err = kclPkg.UpdateModAndLockFile()
+				if err != nil {
+					return err
+				}
 			}
 
 			fmt.Println(jsonStr)

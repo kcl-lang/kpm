@@ -428,7 +428,7 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	globalPkgPath, _ := env.GetAbsPkgPath()
-	res, err := pkg.ResolveDepsMetadataInJsonStr(globalPkgPath)
+	res, err := pkg.ResolveDepsMetadataInJsonStr(globalPkgPath, true)
 	assert.Equal(t, err, nil)
 
 	expectedStr := fmt.Sprintf("{\"packages\":{\"konfig\":{\"name\":\"konfig\",\"manifest_path\":\"%s\"}}}", filepath.Join(globalPkgPath, "konfig_v0.0.1"))
@@ -440,7 +440,7 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 		assert.Equal(t, err, nil)
 	}
 	pkg.SetVendorMode(true)
-	res, err = pkg.ResolveDepsMetadataInJsonStr(globalPkgPath)
+	res, err = pkg.ResolveDepsMetadataInJsonStr(globalPkgPath, true)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(vendorDir), true)
 	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "konfig_v0.0.1")), true)
@@ -451,4 +451,13 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 		err = os.RemoveAll(vendorDir)
 		assert.Equal(t, err, nil)
 	}
+
+	pkg, err = LoadKclPkg(testDir)
+	assert.Equal(t, err, nil)
+	res, err = pkg.ResolveDepsMetadataInJsonStr("not_exist", false)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, utils.DirExists(vendorDir), false)
+	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "konfig_v0.0.1")), false)
+	expectedStr = "{\"packages\":{\"konfig\":{\"name\":\"konfig\",\"manifest_path\":\"\"}}}"
+	assert.Equal(t, res, expectedStr)
 }
