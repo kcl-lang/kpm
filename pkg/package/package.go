@@ -99,7 +99,7 @@ func (kclPkg *KclPkg) CompileWithEntryFile(kpmHome string, kclvmCompiler *runner
 // if can’t find it, re-download the dependency and remember the local path.
 func (kclPkg *KclPkg) ResolveDeps(kpmHome string) (map[string]string, error) {
 
-	err := kclPkg.ResolveDepsMetadata(kpmHome)
+	err := kclPkg.ResolveDepsMetadata(kpmHome, true)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (kclPkg *KclPkg) ResolveDeps(kpmHome string) (map[string]string, error) {
 // ResolveDepsMetadata will calculate the local storage path of the external package,
 // and check whether the package exists locally.
 // If the package does not exist, it will re-download to the local.
-func (kclPkg *KclPkg) ResolveDepsMetadata(kpmHome string) error {
+func (kclPkg *KclPkg) ResolveDepsMetadata(kpmHome string, update bool) error {
 	var searchPath string
 	if kclPkg.IsVendorMode() {
 		// In the vendor mode, the search path is the vendor subdirectory of the current package.
@@ -131,31 +131,39 @@ func (kclPkg *KclPkg) ResolveDepsMetadata(kpmHome string) error {
 
 	for name, d := range kclPkg.Dependencies.Deps {
 		searchFullPath := filepath.Join(searchPath, d.FullName)
-		if utils.DirExists(searchFullPath) && check(d, searchFullPath) {
-			// Find it and update the local path of the dependency.
-			d.LocalFullPath = searchFullPath
-			kclPkg.Dependencies.Deps[name] = d
+		if !update {
+			if utils.DirExists(searchFullPath) {
+				// Find it and update the local path of the dependency.
+				d.LocalFullPath = searchFullPath
+				kclPkg.Dependencies.Deps[name] = d
+			}
 		} else {
-			// Otherwise, re-vendor it.
-			if kclPkg.IsVendorMode() {
-				err := kclPkg.VendorDeps(kpmHome)
-				if err != nil {
-					return err
-				}
+			if utils.DirExists(searchFullPath) && check(d, searchFullPath) {
+				// Find it and update the local path of the dependency.
+				d.LocalFullPath = searchFullPath
+				kclPkg.Dependencies.Deps[name] = d
 			} else {
-				// Or, re-download it.
-				err := kclPkg.DownloadDep(&d, kpmHome)
+				// Otherwise, re-vendor it.
+				if kclPkg.IsVendorMode() {
+					err := kclPkg.VendorDeps(kpmHome)
+					if err != nil {
+						return err
+					}
+				} else {
+					// Or, re-download it.
+					err := kclPkg.DownloadDep(&d, kpmHome)
+					if err != nil {
+						return err
+					}
+				}
+				// After re-downloading or re-vendoring,
+				// re-resolving is required to update the dependent paths.
+				err := kclPkg.ResolveDepsMetadata(kpmHome, update)
 				if err != nil {
 					return err
 				}
+				return nil
 			}
-			// After re-downloading or re-vendoring,
-			// re-resolving is required to update the dependent paths.
-			err := kclPkg.ResolveDepsMetadata(kpmHome)
-			if err != nil {
-				return err
-			}
-			return nil
 		}
 	}
 
@@ -165,10 +173,10 @@ func (kclPkg *KclPkg) ResolveDepsMetadata(kpmHome string) error {
 // ResolveDepsMetadataInJsonStr will calculate the local storage path of the external package,
 // and check whether the package exists locally. If the package does not exist, it will re-download to the local.
 // Finally, the calculated metadata of the dependent packages is serialized into a json string and returned.
-func (kclPkg *KclPkg) ResolveDepsMetadataInJsonStr(kpmHome string) (string, error) {
+func (kclPkg *KclPkg) ResolveDepsMetadataInJsonStr(kpmHome string, update bool) (string, error) {
 	// 1. Calculate the dependency path, check whether the dependency exists
 	// and re-download the dependency that does not exist.
-	err := kclPkg.ResolveDepsMetadata(kpmHome)
+	err := kclPkg.ResolveDepsMetadata(kpmHome, update)
 	if err != nil {
 		return "", err
 	}
