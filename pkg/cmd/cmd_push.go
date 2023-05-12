@@ -91,7 +91,7 @@ func pushCurrentPackage(ociUrl string, settings *settings.Settings) (string, err
 	}
 
 	// 3. Generate the OCI options from oci url and the version of current kcl package.
-	ociOpts, err := opt.ParseOciOptionFromOciUrl(ociUrl, kclPkg.GetOciPkgTag())
+	ociOpts, err := opt.ParseOciOptionFromOciUrl(ociUrl, kclPkg.GetPkgTag())
 	if err != nil {
 		return tarPath, err
 	}
@@ -128,7 +128,7 @@ func pushTarPackage(ociUrl, localTarPath string, settings *settings.Settings) er
 	}
 
 	// 2. Generate the OCI options from oci url and the version of current kcl package.
-	ociOpts, err := opt.ParseOciOptionFromOciUrl(ociUrl, kclPkg.GetOciPkgTag())
+	ociOpts, err := opt.ParseOciOptionFromOciUrl(ociUrl, kclPkg.GetPkgTag())
 	if err != nil {
 		return err
 	}

@@ -1,8 +1,16 @@
 [dependencies]
+  [dependencies.oci_test]
+    name = "oci_name"
+    full_name = "test_version"
+    version = "test_version"
+    sum = "test_sum"
+    reg = "test_reg"
+    repo = "test_repo"
+    oci_tag = "test_tag"
   [dependencies.test]
     name = "name"
     full_name = "test_version"
     version = "test_version"
     sum = "test_sum"
     url = "test_url"
-    tag = "test_tag"
+    git_tag = "test_tag"

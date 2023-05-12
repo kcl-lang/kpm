@@ -8,9 +8,12 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
+	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/git"
+	"kusionstack.io/kpm/pkg/oci"
 	"kusionstack.io/kpm/pkg/opt"
 	"kusionstack.io/kpm/pkg/reporter"
+	"kusionstack.io/kpm/pkg/settings"
 	"kusionstack.io/kpm/pkg/utils"
 )
 
@@ -37,6 +40,18 @@ type ModFile struct {
 	Dependencies
 }
 
+// FillDependenciesInfo will fill registry information for all dependencies in a kcl.mod.
+func (modFile *ModFile) FillDependenciesInfo() error {
+	for k, v := range modFile.Deps {
+		err := v.FillDepInfo()
+		if err != nil {
+			return err
+		}
+		modFile.Deps[k] = v
+	}
+	return nil
+}
+
 // 'Dependencies' is dependencies section of 'kcl.mod'.
 type Dependencies struct {
 	Deps map[string]Dependency `json:"packages" toml:"dependencies,omitempty"`
@@ -54,27 +69,50 @@ type Dependency struct {
 	Source        `json:"-"`
 }
 
+// FillDepInfo will fill registry information for a dependency.
+func (dep *Dependency) FillDepInfo() error {
+	if dep.Source.Oci != nil {
+		settings, err := settings.GetSettings()
+		if err != nil {
+			return err
+		}
+		dep.Source.Oci.Reg = settings.DefaultOciRegistry()
+		dep.Source.Oci.Repo = filepath.Join(settings.DefaultOciRepo(), dep.Name)
+	}
+	return nil
+}
+
 // Download will download the kcl package to localPath from registory.
 func (dep *Dependency) Download(localPath string) (*Dependency, error) {
+	reporter.Report("kpm: adding dependency", dep.Name, "with", dep.Version)
 	if dep.Source.Git != nil {
 		_, err := dep.Source.Git.Download(localPath)
 		if err != nil {
 			return nil, err
 		}
+	}
 
-		dep.Sum, err = utils.HashDir(localPath)
-		if err != nil {
-			return nil, err
-		}
-		dep.LocalFullPath = localPath
-		// Creating symbolic links in a global cache is not an optimal solution.
-		// This allows kclvm to locate the package by default.
-		// This feature is unstable and will be removed soon.
-		err = utils.CreateSymlink(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
+	if dep.Source.Oci != nil {
+		_, err := dep.Source.Oci.Download(localPath)
 		if err != nil {
 			return nil, err
 		}
 	}
+
+	var err error
+	dep.Sum, err = utils.HashDir(localPath)
+	if err != nil {
+		return nil, err
+	}
+	dep.LocalFullPath = localPath
+	// Creating symbolic links in a global cache is not an optimal solution.
+	// This allows kclvm to locate the package by default.
+	// This feature is unstable and will be removed soon.
+	err = utils.CreateSymlink(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
+	if err != nil {
+		return nil, err
+	}
+
 	return dep, nil
 }
 
@@ -90,9 +128,36 @@ func (dep *Git) Download(localPath string) (string, error) {
 	return localPath, err
 }
 
+func (dep *Oci) Download(localPath string) (string, error) {
+	err := oci.Pull(localPath, dep.Reg, dep.Repo, dep.Tag)
+	if err != nil {
+		return "", err
+	}
+
+	matches, err := filepath.Glob(filepath.Join(localPath, "*.tar"))
+	if err != nil || len(matches) != 1 {
+		return "", errors.FailedPullFromOci
+	}
+
+	tarPath := matches[0]
+	err = utils.UnTarDir(tarPath, localPath)
+	if err != nil {
+		return "", err
+	}
+
+	return localPath, nil
+}
+
 // Source is the package source from registry.
 type Source struct {
 	*Git
+	*Oci
+}
+
+type Oci struct {
+	Reg  string `toml:"reg,omitempty"`
+	Repo string `toml:"repo,omitempty"`
+	Tag  string `toml:"oci_tag,omitempty"`
 }
 
 // Git is the package source from git registry.
@@ -100,7 +165,7 @@ type Git struct {
 	Url    string `toml:"url,omitempty"`
 	Branch string `toml:"branch,omitempty"`
 	Commit string `toml:"commit,omitempty"`
-	Tag    string `toml:"tag,omitempty"`
+	Tag    string `toml:"git_tag,omitempty"`
 }
 
 // ModFileExists returns whether a 'kcl.mod' file exists in the path.
@@ -125,6 +190,10 @@ func LoadModFile(homePath string) (*ModFile, error) {
 
 	if modFile.Dependencies.Deps == nil {
 		modFile.Dependencies.Deps = make(map[string]Dependency)
+	}
+	err = modFile.FillDependenciesInfo()
+	if err != nil {
+		return nil, err
 	}
 
 	return modFile, nil
@@ -236,6 +305,22 @@ func ParseOpt(opt *opt.RegistryOptions) *Dependency {
 				Git: &gitSource,
 			},
 			Version: gitSource.Tag,
+		}
+	}
+	if opt.Oci != nil {
+		ociSource := Oci{
+			Reg:  opt.Oci.Reg,
+			Repo: filepath.Join(opt.Oci.Repo, opt.Oci.PkgName),
+			Tag:  opt.Oci.Tag,
+		}
+
+		return &Dependency{
+			Name:     opt.Oci.PkgName,
+			FullName: opt.Oci.PkgName + "_" + opt.Oci.Tag,
+			Source: Source{
+				Oci: &ociSource,
+			},
+			Version: opt.Oci.Tag,
 		}
 	}
 	return nil

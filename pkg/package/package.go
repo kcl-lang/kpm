@@ -413,7 +413,6 @@ func (kclPkg *KclPkg) PackageCurrentPkgPath() (string, error) {
 }
 
 const TAR_SUFFIX = ".tar"
-const VERSION_PREFFIX = "v"
 
 // DefaultTarPath will return "<kcl_package_path>/<package_name>-<package_version>.tar"
 func (kclPkg *KclPkg) DefaultTarPath() string {
@@ -525,7 +524,7 @@ func (kclPkg *KclPkg) ValidateKpmHome(kpmHome string) error {
 // <pkg_name> is the name of package.
 // <pkg_version> is the version of package
 func (kclPkg *KclPkg) GetPkgFullName() string {
-	return kclPkg.modFile.Pkg.Name + "-" + VERSION_PREFFIX + kclPkg.modFile.Pkg.Version
+	return kclPkg.modFile.Pkg.Name + "-" + kclPkg.modFile.Pkg.Version
 }
 
 // GetPkgName returns name of package.
@@ -536,17 +535,6 @@ func (kclPkg *KclPkg) GetPkgName() string {
 // GetPkgTag returns version of package.
 func (kclPkg *KclPkg) GetPkgTag() string {
 	return kclPkg.modFile.Pkg.Version
-}
-
-// GetPkgTagForOci returns version of package in OCI format.
-// The version of a package is "0.0.1".
-// The version of a package in OCI format is "v0.0.1"
-func (kclPkg *KclPkg) GetOciPkgTag() string {
-	if !strings.HasPrefix(kclPkg.GetPkgTag(), VERSION_PREFFIX) {
-		return VERSION_PREFFIX + kclPkg.GetPkgTag()
-	} else {
-		return kclPkg.GetPkgTag()
-	}
 }
 
 // GetPkgTarName returns the kcl package tar name "<package_name>-v<package_version>.tar"

@@ -16,12 +16,11 @@ import (
 	pkg "kusionstack.io/kpm/pkg/package"
 	"kusionstack.io/kpm/pkg/reporter"
 	"kusionstack.io/kpm/pkg/runner"
-	"kusionstack.io/kpm/pkg/settings"
 	"kusionstack.io/kpm/pkg/utils"
 )
 
 // NewRunCmd new a Command for `kpm run`.
-func NewRunCmd(settings *settings.Settings) *cli.Command {
+func NewRunCmd() *cli.Command {
 	return &cli.Command{
 		Hidden: false,
 		Name:   "run",
@@ -64,7 +63,7 @@ func NewRunCmd(settings *settings.Settings) *cli.Command {
 				// 'kpm run <package source>' compile the kcl package from the <package source>.
 				compileResult, err := runTar(pkgWillBeCompiled, c.String(FLAG_INPUT), c.Bool(FLAG_VENDOR), c.String(FLAG_KCL))
 				if err == errors.InvalidKclPacakgeTar {
-					compileResult, err = runOci(pkgWillBeCompiled, c.String(FLAG_TAG), c.String(FLAG_INPUT), c.Bool(FLAG_VENDOR), settings, c.String(FLAG_KCL))
+					compileResult, err = runOci(pkgWillBeCompiled, c.String(FLAG_TAG), c.String(FLAG_INPUT), c.Bool(FLAG_VENDOR), c.String(FLAG_KCL))
 					if err != nil {
 						return err
 					}
@@ -109,7 +108,7 @@ func runTar(tarPath, entryFile string, vendorMode bool, kclArgs string) (string,
 const KCL_PKG_TAR = "*.tar"
 
 // runOci will compile the kcl package from an OCI reference.
-func runOci(ociRef, version, entryFile string, vendorMode bool, settings *settings.Settings, kclArgs string) (string, error) {
+func runOci(ociRef, version, entryFile string, vendorMode bool, kclArgs string) (string, error) {
 	ociOpts, err := opt.ParseOciOptionFromString(ociRef, version)
 
 	if err != nil {
@@ -127,7 +126,7 @@ func runOci(ociRef, version, entryFile string, vendorMode bool, settings *settin
 	localPath := ociOpts.AddStoragePathSuffix(tmpDir)
 
 	// 2. Pull the tar.
-	err = oci.Pull(localPath, ociOpts.Reg, ociOpts.Repo, ociOpts.Tag, settings)
+	err = oci.Pull(localPath, ociOpts.Reg, ociOpts.Repo, ociOpts.Tag)
 
 	if err != nil {
 		return "", err

@@ -29,11 +29,11 @@ func main() {
 		cmd.NewAddCmd(),
 		cmd.NewPkgCmd(),
 		cmd.NewMetadataCmd(),
-		cmd.NewRunCmd(setting),
+		cmd.NewRunCmd(),
 		cmd.NewLoginCmd(setting),
 		cmd.NewLogoutCmd(setting),
 		cmd.NewPushCmd(setting),
-		cmd.NewPullCmd(setting),
+		cmd.NewPullCmd(),
 	}
 	err = app.Run(os.Args)
 	if err != nil {

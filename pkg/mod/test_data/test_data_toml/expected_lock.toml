@@ -5,4 +5,12 @@
     version = "v0.0.2"
     sum = "hjkasdahjksdasdhjk"
     url = "https://github.com/test/MyKcl1.git"
-    tag = "v0.0.2"
+    git_tag = "v0.0.2"
+  [dependencies.MyOciKcl1]
+    name = "MyOciKcl1"
+    full_name = "MyOciKcl1_0.0.1"
+    version = "0.0.1"
+    sum = "hjkasdahjksdasdhjk"
+    reg = "test_reg"
+    repo = "test_repo"
+    oci_tag = "0.0.1"
