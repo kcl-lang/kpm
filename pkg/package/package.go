@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -191,7 +192,7 @@ func (kclPkg *KclPkg) ResolveDepsMetadataInJsonStr(kpmHome string, update bool) 
 }
 
 // InitEmptyModule inits an empty kcl module and create a default kcl.modfile.
-func (kclPkg KclPkg) InitEmptyPkg() error {
+func (kclPkg *KclPkg) InitEmptyPkg() error {
 	err := utils.CreateFileIfNotExist(
 		kclPkg.modFile.GetModFilePath(),
 		kclPkg.modFile.StoreModFile,
@@ -208,6 +209,27 @@ func (kclPkg KclPkg) InitEmptyPkg() error {
 		return err
 	}
 
+	// create the default kcl program.
+	err = kclPkg.CreateDefaultKclProgram()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+const DEFAULT_KCL_FILE_NAME = "main.k"
+const DEFAULT_KCL_FILE_CONTENT = "The_first_kcl_program = 'Hello World!'"
+
+// CreateDefaultKclProgram will create a default kcl program "The_first_kcl_program = 'Hello World!'" in 'main.k'.
+func (kclPkg *KclPkg) CreateDefaultKclProgram() error {
+	mainProgPath := filepath.Join(kclPkg.HomePath, DEFAULT_KCL_FILE_NAME)
+	if !utils.DirExists(mainProgPath) {
+		err := ioutil.WriteFile(mainProgPath, []byte(DEFAULT_KCL_FILE_CONTENT), 0644)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

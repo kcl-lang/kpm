@@ -1,2 +1,1 @@
-kpm: module name must be specified.
-kpm: run 'kpm init help' for more information.
+kpm: package ' test_kpm_workspace ' init finished
