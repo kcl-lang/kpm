@@ -14,11 +14,12 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 		for _, ts := range testSuites {
 			ts := ts
 			ginkgo.It(ts.GetTestSuiteInfo(), func() {
-				stdout, stderr, err := Exec(ts.Input)
+				_, stderr, err := Exec(ts.Input)
 
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
-				gomega.Expect(stdout).To(gomega.MatchRegexp(ts.ExpectStdout))
-				gomega.Expect(stderr).To(gomega.MatchRegexp(ts.ExpectStderr))
+				// The version of kclvm may be changed,
+				// so the stderr output is not null to judge whether the kclvm installation was successful
+				gomega.Expect(stderr).To(gomega.Equal(ts.ExpectStderr))
 			})
 		}
 	})
