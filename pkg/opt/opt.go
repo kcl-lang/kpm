@@ -71,6 +71,8 @@ func GetDefaultOCITag() string {
 	return DEFAULT_OCI_TAG
 }
 
+// OciOptions for download oci packages.
+// kpm will download packages from oci registry by '{Reg}/{Repo}/{PkgName}:{Tag}'.
 type OciOptions struct {
 	Reg     string
 	Repo    string

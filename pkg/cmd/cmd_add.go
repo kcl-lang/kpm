@@ -12,6 +12,7 @@ import (
 	"github.com/gofrs/flock"
 	"github.com/urfave/cli/v2"
 	"kusionstack.io/kpm/pkg/env"
+	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/opt"
 	pkg "kusionstack.io/kpm/pkg/package"
 	"kusionstack.io/kpm/pkg/reporter"
@@ -75,6 +76,11 @@ func NewAddCmd() *cli.Command {
 			locked, err := fileLock.TryLockContext(lockCtx, time.Second)
 			if err == nil && locked {
 				defer fileLock.Unlock()
+				defer func() {
+					if unlockErr := fileLock.Unlock(); unlockErr != nil && err == nil {
+						err = errors.InternalBug
+					}
+				}()
 			}
 			if err != nil {
 				reporter.Report("kpm: sorry, the program encountered an issue while trying to add a dependency.")
@@ -129,7 +135,6 @@ func parseAddOptions(c *cli.Context, localPath string) (*opt.AddOptions, error) 
 			RegistryOpts: *ociReg,
 		}, nil
 	}
-
 }
 
 // parseGitRegistryOptions will parse the git registry information from user cli inputs.
