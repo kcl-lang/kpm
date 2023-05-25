@@ -75,7 +75,6 @@ func NewAddCmd() *cli.Command {
 			defer cancel()
 			locked, err := fileLock.TryLockContext(lockCtx, time.Second)
 			if err == nil && locked {
-				defer fileLock.Unlock()
 				defer func() {
 					if unlockErr := fileLock.Unlock(); unlockErr != nil && err == nil {
 						err = errors.InternalBug
