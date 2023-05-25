@@ -26,7 +26,7 @@ func getTestDir(subDir string) string {
 func TestSettingInit(t *testing.T) {
 	kpmHome, err := env.GetAbsPkgPath()
 	assert.Equal(t, err, nil)
-	settings, err := Init()
+	settings, err := GetSettings()
 	assert.Equal(t, err, nil)
 	assert.Equal(t, settings.CredentialsFile, filepath.Join(kpmHome, CONFIG_JSON_PATH))
 }

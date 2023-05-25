@@ -15,7 +15,7 @@ var version string
 
 func main() {
 	reporter.InitReporter()
-	setting, err := settings.Init()
+	setting, err := settings.GetSettings()
 	if err != nil {
 		reporter.Fatal(err)
 	}

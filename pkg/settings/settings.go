@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"kusionstack.io/kpm/pkg/env"
 	"kusionstack.io/kpm/pkg/errors"
@@ -27,7 +28,8 @@ const DEFAULT_REPO = "KusionStack"
 
 // This is a singleton that loads kpm settings from 'kpm.json'
 // and is only initialized on the first call by 'Init()' or 'GetSettings()'
-var kpm_settings *Settings = nil
+var kpm_settings *Settings
+var once sync.Once
 
 // DefaultKpmConf create a default configuration for kpm.
 func DefaultKpmConf() KpmConf {
@@ -63,38 +65,27 @@ func GetFullJsonPath(jsonFileName string) (string, error) {
 	return filepath.Join(home, jsonFileName), nil
 }
 
-// Init returns default kpm settings load from '$KCL_PKG_PATH/.kpm/config/kpm.json'
-// and '$KCL_PKG_PATH/.kpm/config/config.json'.
-func Init() (*Settings, error) {
-	if kpm_settings == nil {
+// GetSettings will return the kpm setting singleton.
+func GetSettings() (*Settings, error) {
+	var err error
+	once.Do(func() {
 		credentialsFile, err := GetFullJsonPath(CONFIG_JSON_PATH)
 		if err != nil {
-			return nil, err
+			return
 		}
 
 		conf, err := loadOrCreateDefaultKpmJson()
 		if err != nil {
-			return nil, err
+			return
 		}
 
 		kpm_settings = &Settings{
 			CredentialsFile: credentialsFile,
 			Conf:            *conf,
 		}
+	})
 
-		return kpm_settings, nil
-	} else {
-		return kpm_settings, nil
-	}
-}
-
-// GetSettings will return the kpm setting singleton.
-func GetSettings() (*Settings, error) {
-	if kpm_settings == nil {
-		return Init()
-	} else {
-		return kpm_settings, nil
-	}
+	return kpm_settings, err
 }
 
 // loadOrCreateDefaultKpmJson will load the 'kpm.json' file from '$KCL_PKG_PATH/.kpm/config',

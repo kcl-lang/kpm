@@ -3,10 +3,13 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/gofrs/flock"
 	"github.com/urfave/cli/v2"
 	"kusionstack.io/kpm/pkg/env"
 	"kusionstack.io/kpm/pkg/opt"
@@ -62,6 +65,20 @@ func NewAddCmd() *cli.Command {
 
 			err = addOpts.Validate()
 			if err != nil {
+				return err
+			}
+
+			// Lock the kcl.mod.lock.
+			fileLock := flock.New(kclPkg.GetLockFilePath())
+			lockCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			locked, err := fileLock.TryLockContext(lockCtx, time.Second)
+			if err == nil && locked {
+				defer fileLock.Unlock()
+			}
+			if err != nil {
+				reporter.Report("kpm: sorry, the program encountered an issue while trying to add a project dependency.")
+				reporter.Report("kpm: please try again later")
 				return err
 			}
 

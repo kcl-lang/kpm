@@ -541,3 +541,10 @@ func (kclPkg *KclPkg) GetPkgTag() string {
 func (kclPkg *KclPkg) GetPkgTarName() string {
 	return kclPkg.GetPkgFullName() + TAR_SUFFIX
 }
+
+const LOCK_FILE_NAME = "kcl.mod.lock"
+
+// GetLockFilePath returns the abs path of kcl.mod.lock.
+func (kclPkg *KclPkg) GetLockFilePath() string {
+	return filepath.Join(kclPkg.HomePath, LOCK_FILE_NAME)
+}
