@@ -77,7 +77,7 @@ func NewAddCmd() *cli.Command {
 				defer fileLock.Unlock()
 			}
 			if err != nil {
-				reporter.Report("kpm: sorry, the program encountered an issue while trying to add a project dependency.")
+				reporter.Report("kpm: sorry, the program encountered an issue while trying to add a dependency.")
 				reporter.Report("kpm: please try again later")
 				return err
 			}
