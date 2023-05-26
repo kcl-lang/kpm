@@ -191,12 +191,12 @@ func parseOciRegistryOptions(c *cli.Context) (*opt.RegistryOptions, error) {
 func parseOciPkgNameAndVersion(s string) (string, string, error) {
 	parts := strings.Split(s, ":")
 	if len(parts) == 1 {
-		return parts[0], "", errors.InvalidAddOptionsInvalidOciRef
+		return parts[0], "", nil
 	}
 
 	if len(parts) > 2 {
 		return "", "", errors.InvalidAddOptionsInvalidOciRef
 	}
 
-	return parts[0], parts[1], errors.InvalidAddOptionsInvalidOciRef
+	return parts[0], parts[1], nil
 }
