@@ -146,7 +146,7 @@ func Push(localPath, hostName, repoName, tag string, settings *settings.Settings
 
 	repo, err := remote.NewRepository(filepath.Join(hostName, repoName))
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// 4. Login
