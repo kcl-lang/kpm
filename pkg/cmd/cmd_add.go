@@ -198,5 +198,9 @@ func parseOciPkgNameAndVersion(s string) (string, string, error) {
 		return "", "", errors.InvalidAddOptionsInvalidOciRef
 	}
 
+	if parts[1] == "" {
+		return "", "", errors.InvalidAddOptionsInvalidOciRef
+	}
+
 	return parts[0], parts[1], nil
 }
