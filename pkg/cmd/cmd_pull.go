@@ -9,11 +9,10 @@ import (
 	"kusionstack.io/kpm/pkg/oci"
 	"kusionstack.io/kpm/pkg/opt"
 	"kusionstack.io/kpm/pkg/reporter"
-	"kusionstack.io/kpm/pkg/settings"
 )
 
 // NewPullCmd new a Command for `kpm pull`.
-func NewPullCmd(settings *settings.Settings) *cli.Command {
+func NewPullCmd() *cli.Command {
 	return &cli.Command{
 		Hidden: false,
 		Name:   "pull",
@@ -44,7 +43,7 @@ func NewPullCmd(settings *settings.Settings) *cli.Command {
 				return err
 			}
 
-			err = oci.Pull(absPullPath, ociOpt.Reg, ociOpt.Repo, ociOpt.Tag, settings)
+			err = oci.Pull(absPullPath, ociOpt.Reg, ociOpt.Repo, ociOpt.Tag)
 			if err != nil {
 				return err
 			}

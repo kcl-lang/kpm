@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -74,7 +73,7 @@ func TestInitEmptyPkg(t *testing.T) {
 	assert.Equal(t, testKclPkg.modFile.Pkg.Edition, "0.0.1")
 }
 
-func TestUpdataKclModAndLock(t *testing.T) {
+func TestUpdateKclModAndLock(t *testing.T) {
 	testDir := initTestDir("test_data_add_deps")
 	// Init an empty package
 	kclPkg := NewKclPkg(&opt.InitOptions{
@@ -97,6 +96,23 @@ func TestUpdataKclModAndLock(t *testing.T) {
 		},
 	}
 
+	oci_dep := modfile.Dependency{
+		Name:     "oci_name",
+		FullName: "test_version",
+		Version:  "test_version",
+		Sum:      "test_sum",
+		Source: modfile.Source{
+			Oci: &modfile.Oci{
+				Reg:  "test_reg",
+				Repo: "test_repo",
+				Tag:  "test_tag",
+			},
+		},
+	}
+
+	kclPkg.Dependencies.Deps["oci_test"] = oci_dep
+	kclPkg.modFile.Dependencies.Deps["oci_test"] = oci_dep
+
 	kclPkg.Dependencies.Deps["test"] = dep
 	kclPkg.modFile.Dependencies.Deps["test"] = dep
 
@@ -114,21 +130,21 @@ func TestUpdataKclModAndLock(t *testing.T) {
 
 	expectDir := getTestDir("expected")
 
-	if gotKclMod, err := ioutil.ReadFile(filepath.Join(testDir, "kcl.mod")); os.IsNotExist(err) {
+	if gotKclMod, err := os.ReadFile(filepath.Join(testDir, "kcl.mod")); os.IsNotExist(err) {
 		t.Errorf("failed to find kcl.mod.")
 	} else {
-		assert.Equal(t, len(kclPkg.Dependencies.Deps), 1)
-		assert.Equal(t, len(kclPkg.modFile.Deps), 1)
-		expectKclMod, _ := ioutil.ReadFile(filepath.Join(expectDir, "kcl.mod"))
+		assert.Equal(t, len(kclPkg.Dependencies.Deps), 2)
+		assert.Equal(t, len(kclPkg.modFile.Deps), 2)
+		expectKclMod, _ := os.ReadFile(filepath.Join(expectDir, "kcl.mod"))
 		assert.Equal(t, string(gotKclMod), string(expectKclMod))
 	}
 
-	if gotKclModLock, err := ioutil.ReadFile(filepath.Join(testDir, "kcl.mod.lock")); os.IsNotExist(err) {
+	if gotKclModLock, err := os.ReadFile(filepath.Join(testDir, "kcl.mod.lock")); os.IsNotExist(err) {
 		t.Errorf("failed to find kcl.mod.lock.")
 	} else {
-		assert.Equal(t, len(kclPkg.Dependencies.Deps), 1)
-		assert.Equal(t, len(kclPkg.modFile.Deps), 1)
-		expectKclModLock, _ := ioutil.ReadFile(filepath.Join(expectDir, "kcl.mod.lock"))
+		assert.Equal(t, len(kclPkg.Dependencies.Deps), 2)
+		assert.Equal(t, len(kclPkg.modFile.Deps), 2)
+		expectKclModLock, _ := os.ReadFile(filepath.Join(expectDir, "kcl.mod.lock"))
 		assert.Equal(t, string(gotKclModLock), string(expectKclModLock))
 	}
 }
@@ -360,10 +376,11 @@ func TestValidateKpmHome(t *testing.T) {
 		Name:     "test_name",
 		InitPath: "test_home_path",
 	})
-
+	oldValue := os.Getenv(env.PKG_PATH)
 	os.Setenv(env.PKG_PATH, "test_home_path")
 	err := kclPkg.ValidateKpmHome(os.Getenv(env.PKG_PATH))
 	assert.Equal(t, err, errors.InvalidKpmHomeInCurrentPkg)
+	os.Setenv(env.PKG_PATH, oldValue)
 }
 
 func TestPackageCurrentPkgPath(t *testing.T) {
@@ -372,10 +389,9 @@ func TestPackageCurrentPkgPath(t *testing.T) {
 	kclPkg, err := LoadKclPkg(testDir)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, kclPkg.GetPkgTag(), "0.0.1")
-	assert.Equal(t, kclPkg.GetOciPkgTag(), "v0.0.1")
 	assert.Equal(t, kclPkg.GetPkgName(), "test_tar")
-	assert.Equal(t, kclPkg.GetPkgFullName(), "test_tar-v0.0.1")
-	assert.Equal(t, kclPkg.GetPkgTarName(), "test_tar-v0.0.1.tar")
+	assert.Equal(t, kclPkg.GetPkgFullName(), "test_tar-0.0.1")
+	assert.Equal(t, kclPkg.GetPkgTarName(), "test_tar-0.0.1.tar")
 
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, kclPkg.GetPkgTarName())), false)
 
@@ -398,32 +414,61 @@ func TestLoadKclPkgFromTar(t *testing.T) {
 	assert.Equal(t, kclPkg.modFile.Pkg.Edition, "0.0.1")
 	assert.Equal(t, kclPkg.modFile.Pkg.Version, "0.0.3")
 
-	assert.Equal(t, len(kclPkg.modFile.Deps), 1)
+	assert.Equal(t, len(kclPkg.modFile.Deps), 2)
 	assert.Equal(t, kclPkg.modFile.Deps["konfig"].Name, "konfig")
 	assert.Equal(t, kclPkg.modFile.Deps["konfig"].FullName, "konfig_v0.0.1")
 	assert.Equal(t, kclPkg.modFile.Deps["konfig"].Git.Url, "https://github.com/awesome-kusion/konfig.git")
 	assert.Equal(t, kclPkg.modFile.Deps["konfig"].Git.Tag, "v0.0.1")
 
-	assert.Equal(t, len(kclPkg.Deps), 1)
+	assert.Equal(t, kclPkg.modFile.Deps["oci_konfig"].Name, "oci_konfig")
+	assert.Equal(t, kclPkg.modFile.Deps["oci_konfig"].FullName, "oci_konfig_0.0.1")
+	assert.Equal(t, kclPkg.modFile.Deps["oci_konfig"].Oci.Tag, "0.0.1")
+
+	assert.Equal(t, len(kclPkg.Deps), 2)
 	assert.Equal(t, kclPkg.Deps["konfig"].Name, "konfig")
 	assert.Equal(t, kclPkg.Deps["konfig"].FullName, "konfig_v0.0.1")
 	assert.Equal(t, kclPkg.Deps["konfig"].Git.Url, "https://github.com/awesome-kusion/konfig.git")
 	assert.Equal(t, kclPkg.Deps["konfig"].Git.Tag, "v0.0.1")
 	assert.Equal(t, kclPkg.Deps["konfig"].Sum, "XFvHdBAoY/+qpJWmj8cjwOwZO8a3nX/7SE35cTxQOFU=")
 
+	assert.Equal(t, kclPkg.Deps["oci_konfig"].Name, "oci_konfig")
+	assert.Equal(t, kclPkg.Deps["oci_konfig"].FullName, "oci_konfig_0.0.1")
+	assert.Equal(t, kclPkg.Deps["oci_konfig"].Oci.Reg, "ghcr.io")
+	assert.Equal(t, kclPkg.Deps["oci_konfig"].Oci.Repo, "awesome-kusion/oci_konfig")
+	assert.Equal(t, kclPkg.Deps["oci_konfig"].Oci.Tag, "0.0.1")
+	assert.Equal(t, kclPkg.Deps["oci_konfig"].Sum, "sLr3e6W4RPrXYyswdOSiKqkHes1QHX2tk6SwxAPDqqo=")
+
 	assert.Equal(t, kclPkg.GetPkgTag(), "0.0.3")
-	assert.Equal(t, kclPkg.GetOciPkgTag(), "v0.0.3")
 	assert.Equal(t, kclPkg.GetPkgName(), "kcl1")
-	assert.Equal(t, kclPkg.GetPkgFullName(), "kcl1-v0.0.3")
-	assert.Equal(t, kclPkg.GetPkgTarName(), "kcl1-v0.0.3.tar")
+	assert.Equal(t, kclPkg.GetPkgFullName(), "kcl1-0.0.3")
+	assert.Equal(t, kclPkg.GetPkgTarName(), "kcl1-0.0.3.tar")
 
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl1-v0.0.3")), true)
 	err = os.RemoveAll(filepath.Join(testDir, "kcl1-v0.0.3"))
 	assert.Equal(t, err, nil)
 }
 
+func prepareKpmHomeInPath(path string) {
+	dirPath := filepath.Join(filepath.Join(path, ".kpm"), "config")
+	_ = os.MkdirAll(dirPath, 0755)
+
+	filePath := filepath.Join(dirPath, "kpm.json")
+
+	_ = os.WriteFile(filePath, []byte("{\"DefaultOciRegistry\":\"ghcr.io\",\"DefaultOciRepo\":\"awesome-kusion\"}"), 0644)
+}
+
 func TestResolveMetadataInJsonStr(t *testing.T) {
+	originalValue := os.Getenv(env.PKG_PATH)
+	defer os.Setenv(env.PKG_PATH, originalValue)
+
 	testDir := getTestDir("resolve_metadata")
+
+	testHomePath := filepath.Join(filepath.Dir(testDir), "test_home_path")
+	prepareKpmHomeInPath(testHomePath)
+	defer os.RemoveAll(testHomePath)
+
+	os.Setenv(env.PKG_PATH, testHomePath)
+
 	pkg, err := LoadKclPkg(testDir)
 	assert.Equal(t, err, nil)
 
@@ -431,7 +476,11 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	res, err := pkg.ResolveDepsMetadataInJsonStr(globalPkgPath, true)
 	assert.Equal(t, err, nil)
 
-	expectedStr := fmt.Sprintf("{\"packages\":{\"konfig\":{\"name\":\"konfig\",\"manifest_path\":\"%s\"}}}", filepath.Join(globalPkgPath, "konfig_v0.0.1"))
+	expectedStr := fmt.Sprintf(
+		"{\"packages\":{\"konfig\":{\"name\":\"konfig\",\"manifest_path\":\"%s\"}}}",
+		filepath.Join(globalPkgPath, "konfig_v0.0.1"),
+	)
+
 	assert.Equal(t, res, expectedStr)
 
 	vendorDir := filepath.Join(testDir, "vendor")
@@ -445,7 +494,11 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	assert.Equal(t, utils.DirExists(vendorDir), true)
 	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "konfig_v0.0.1")), true)
 
-	expectedStr = fmt.Sprintf("{\"packages\":{\"konfig\":{\"name\":\"konfig\",\"manifest_path\":\"%s\"}}}", filepath.Join(vendorDir, "konfig_v0.0.1"))
+	expectedStr = fmt.Sprintf(
+		"{\"packages\":{\"konfig\":{\"name\":\"konfig\",\"manifest_path\":\"%s\"}}}",
+		filepath.Join(vendorDir, "konfig_v0.0.1"),
+	)
+
 	assert.Equal(t, res, expectedStr)
 	if utils.DirExists(vendorDir) {
 		err = os.RemoveAll(vendorDir)

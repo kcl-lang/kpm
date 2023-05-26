@@ -3,14 +3,20 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"strings"
+	"time"
 
+	"github.com/gofrs/flock"
 	"github.com/urfave/cli/v2"
 	"kusionstack.io/kpm/pkg/env"
+	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/opt"
 	pkg "kusionstack.io/kpm/pkg/package"
 	"kusionstack.io/kpm/pkg/reporter"
+	"kusionstack.io/kpm/pkg/settings"
 )
 
 // NewAddCmd new a Command for `kpm add`.
@@ -31,6 +37,7 @@ func NewAddCmd() *cli.Command {
 		},
 
 		Action: func(c *cli.Context) error {
+
 			pwd, err := os.Getwd()
 
 			if err != nil {
@@ -52,26 +59,9 @@ func NewAddCmd() *cli.Command {
 				return err
 			}
 
-			gitUrl, err := onlyOnceOption(c, "git")
-
-			if err != nil {
-				return nil
-			}
-
-			gitTag, err := onlyOnceOption(c, "tag")
-
+			addOpts, err := parseAddOptions(c, globalPkgPath)
 			if err != nil {
 				return err
-			}
-
-			addOpts := opt.AddOptions{
-				LocalPath: globalPkgPath,
-				RegistryOpts: opt.RegistryOptions{
-					Git: &opt.GitOptions{
-						Url: *gitUrl,
-						Tag: *gitTag,
-					},
-				},
 			}
 
 			err = addOpts.Validate()
@@ -79,11 +69,29 @@ func NewAddCmd() *cli.Command {
 				return err
 			}
 
-			err = addGitDep(&addOpts, kclPkg)
+			// Lock the kcl.mod.lock.
+			fileLock := flock.New(kclPkg.GetLockFilePath())
+			lockCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			locked, err := fileLock.TryLockContext(lockCtx, time.Second)
+			if err == nil && locked {
+				defer func() {
+					if unlockErr := fileLock.Unlock(); unlockErr != nil && err == nil {
+						err = errors.InternalBug
+					}
+				}()
+			}
+			if err != nil {
+				reporter.Report("kpm: sorry, the program encountered an issue while trying to add a dependency.")
+				reporter.Report("kpm: please try again later")
+				return err
+			}
+
+			err = kclPkg.AddDeps(addOpts)
 			if err != nil {
 				return err
 			}
-			reporter.Report("kpm: add dependency '", *gitUrl, "'", "with tag '", *gitTag, "' successfully.")
+			reporter.Report("kpm: add dependency successfully.")
 			return nil
 		},
 	}
@@ -99,17 +107,100 @@ func onlyOnceOption(c *cli.Context, name string) (*string, error) {
 	} else if len(inputOpt) == 1 {
 		return &inputOpt[0], nil
 	} else {
-		reporter.Report("kpm: the following required arguments were not provided: ", name)
-		reporter.ExitWithReport("kpm: run 'kpm add help' for more information.")
-		return nil, fmt.Errorf("kpm: Invalid command")
+		return nil, nil
 	}
 }
 
-func addGitDep(opt *opt.AddOptions, kclPkg *pkg.KclPkg) error {
-	if opt.RegistryOpts.Git == nil {
-		reporter.Report("kpm: a value is required for '-git <URI>' but none was supplied")
-		reporter.ExitWithReport("kpm: run 'kpm add help' for more information.")
+// parseAddOptions will parse the user cli inputs.
+func parseAddOptions(c *cli.Context, localPath string) (*opt.AddOptions, error) {
+	// parse from 'kpm add -git https://xxx/xxx.git -tag v0.0.1'.
+	if c.NArg() == 0 {
+		gitOpts, err := parseGitRegistryOptions(c)
+		if err != nil {
+			return nil, err
+		}
+		return &opt.AddOptions{
+			LocalPath:    localPath,
+			RegistryOpts: *gitOpts,
+		}, nil
+	} else {
+		// parse from 'kpm add xxx:0.0.1'.
+		ociReg, err := parseOciRegistryOptions(c)
+		if err != nil {
+			return nil, err
+		}
+		return &opt.AddOptions{
+			LocalPath:    localPath,
+			RegistryOpts: *ociReg,
+		}, nil
+	}
+}
+
+// parseGitRegistryOptions will parse the git registry information from user cli inputs.
+func parseGitRegistryOptions(c *cli.Context) (*opt.RegistryOptions, error) {
+	gitUrl, err := onlyOnceOption(c, "git")
+
+	if err != nil {
+		return nil, nil
 	}
 
-	return kclPkg.AddDeps(opt)
+	gitTag, err := onlyOnceOption(c, "tag")
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &opt.RegistryOptions{
+		Git: &opt.GitOptions{
+			Url: *gitUrl,
+			Tag: *gitTag,
+		},
+	}, nil
+}
+
+// parseOciRegistryOptions will parse the oci registry information from user cli inputs.
+func parseOciRegistryOptions(c *cli.Context) (*opt.RegistryOptions, error) {
+	ociPkgRef := c.Args().First()
+	name, version, err := parseOciPkgNameAndVersion(ociPkgRef)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(version) == 0 {
+		reporter.Report("kpm: default version 'latest' of the package will be downloaded.")
+		version = opt.DEFAULT_OCI_TAG
+	}
+
+	settings, err := settings.GetSettings()
+	if err != nil {
+		return nil, err
+	}
+
+	return &opt.RegistryOptions{
+		Oci: &opt.OciOptions{
+			Reg:     settings.DefaultOciRegistry(),
+			Repo:    settings.DefaultOciRepo(),
+			PkgName: name,
+			Tag:     version,
+		},
+	}, nil
+}
+
+// parseOciPkgNameAndVersion will parse package name and version
+// from string "<pkg_name>:<pkg_version>".
+func parseOciPkgNameAndVersion(s string) (string, string, error) {
+	parts := strings.Split(s, ":")
+	if len(parts) == 1 {
+		return parts[0], "", nil
+	}
+
+	if len(parts) > 2 {
+		return "", "", errors.InvalidAddOptionsInvalidOciRef
+	}
+
+	if parts[1] == "" {
+		return "", "", errors.InvalidAddOptionsInvalidOciRef
+	}
+
+	return parts[0], parts[1], nil
 }

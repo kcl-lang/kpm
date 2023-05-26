@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -61,7 +60,7 @@ func TestRunPkgInPath(t *testing.T) {
 	pkgPath := getTestDir("test_run_pkg_in_path")
 	result, err := runPkgInPath(filepath.Join(pkgPath, "test_kcl"), "main.k", false, "")
 	assert.Equal(t, err, nil)
-	expected, _ := ioutil.ReadFile(filepath.Join(pkgPath, "expected"))
+	expected, _ := os.ReadFile(filepath.Join(pkgPath, "expected"))
 	assert.Equal(t, string(result), string(expected))
 }
 
@@ -91,7 +90,7 @@ func TestRunTar(t *testing.T) {
 		os.RemoveAll(untarPath)
 	}
 
-	expectedResult, _ := ioutil.ReadFile(expectPath)
+	expectedResult, _ := os.ReadFile(expectPath)
 	gotResult, err := runTar(tarPath, "", true, "")
 	assert.Equal(t, err, nil)
 	assert.Equal(t, string(expectedResult), gotResult)

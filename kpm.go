@@ -15,7 +15,7 @@ var version string
 
 func main() {
 	reporter.InitReporter()
-	setting, err := settings.Init()
+	setting, err := settings.GetSettings()
 	if err != nil {
 		reporter.Fatal(err)
 	}
@@ -29,11 +29,11 @@ func main() {
 		cmd.NewAddCmd(),
 		cmd.NewPkgCmd(),
 		cmd.NewMetadataCmd(),
-		cmd.NewRunCmd(setting),
+		cmd.NewRunCmd(),
 		cmd.NewLoginCmd(setting),
 		cmd.NewLogoutCmd(setting),
 		cmd.NewPushCmd(setting),
-		cmd.NewPullCmd(setting),
+		cmd.NewPullCmd(),
 	}
 	err = app.Run(os.Args)
 	if err != nil {

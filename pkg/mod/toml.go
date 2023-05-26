@@ -80,11 +80,21 @@ func (dep *Dependency) MarshalTOML() string {
 const SOURCE_PATTERN = "{ %s }"
 
 func (source *Source) MarshalTOML() string {
-	gitToml := source.Git.MarshalTOML()
 	var sb strings.Builder
-	if len(gitToml) != 0 {
-		sb.WriteString(fmt.Sprintf(SOURCE_PATTERN, gitToml))
+	if source.Git != nil {
+		gitToml := source.Git.MarshalTOML()
+		if len(gitToml) != 0 {
+			sb.WriteString(fmt.Sprintf(SOURCE_PATTERN, gitToml))
+		}
 	}
+
+	if source.Oci != nil {
+		ociToml := source.Oci.MarshalTOML()
+		if len(ociToml) != 0 {
+			sb.WriteString(ociToml)
+		}
+	}
+
 	return sb.String()
 }
 
@@ -100,6 +110,14 @@ func (git *Git) MarshalTOML() string {
 	if len(git.Tag) != 0 {
 		sb.WriteString(SEPARATOR)
 		sb.WriteString(fmt.Sprintf(GTI_TAG_PATTERN, git.Tag))
+	}
+	return sb.String()
+}
+
+func (oci *Oci) MarshalTOML() string {
+	var sb strings.Builder
+	if len(oci.Tag) != 0 {
+		sb.WriteString(fmt.Sprintf(`"%s"`, oci.Tag))
 	}
 	return sb.String()
 }
@@ -168,11 +186,12 @@ func (deps *Dependencies) UnmarshalModTOML(data interface{}) error {
 
 	for k, v := range meta {
 		dep := Dependency{}
+		dep.Name = k
+
 		err := dep.UnmarshalModTOML(v)
 		if err != nil {
 			return err
 		}
-		dep.Name = k
 		deps.Deps[k] = dep
 	}
 
@@ -185,18 +204,42 @@ func (dep *Dependency) UnmarshalModTOML(data interface{}) error {
 	if err != nil {
 		return err
 	}
+
 	dep.Source = source
-	dep.FullName = ParseRepoFullNameFromGitSource(*source.Git)
+	var version string
+	if source.Git != nil {
+		version = source.Git.Tag
+	}
+	if source.Oci != nil {
+		version = source.Oci.Tag
+	}
+
+	dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, dep.Name, version)
+	dep.Version = version
 	return nil
 }
 
 func (source *Source) UnmarshalModTOML(data interface{}) error {
-	git := Git{}
-	err := git.UnmarshalModTOML(data)
-	if err != nil {
-		return err
+	_, ok := data.(map[string]interface{})
+	if ok {
+		git := Git{}
+		err := git.UnmarshalModTOML(data)
+		if err != nil {
+			return err
+		}
+		source.Git = &git
 	}
-	source.Git = &git
+
+	_, ok = data.(string)
+	if ok {
+		oci := Oci{}
+		err := oci.UnmarshalModTOML(data)
+		if err != nil {
+			return err
+		}
+		source.Oci = &oci
+	}
+
 	return nil
 }
 
@@ -216,6 +259,17 @@ func (git *Git) UnmarshalModTOML(data interface{}) error {
 	if v, ok := meta[GTI_TAG_FLAG].(string); ok {
 		git.Tag = v
 	}
+
+	return nil
+}
+
+func (oci *Oci) UnmarshalModTOML(data interface{}) error {
+	meta, ok := data.(string)
+	if !ok {
+		return fmt.Errorf("expected string, got %T", data)
+	}
+
+	oci.Tag = meta
 
 	return nil
 }

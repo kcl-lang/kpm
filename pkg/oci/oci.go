@@ -65,7 +65,7 @@ func Logout(hostname string, setting *settings.Settings) error {
 }
 
 // Pull will pull the oci artifacts from oci registry to local path.
-func Pull(localPath, hostName, repoName, tag string, settings *settings.Settings) error {
+func Pull(localPath, hostName, repoName, tag string) error {
 	// 0. Create a file store
 	fs, err := file.New(localPath)
 	if err != nil {
@@ -81,6 +81,10 @@ func Pull(localPath, hostName, repoName, tag string, settings *settings.Settings
 	}
 
 	// 2. Login
+	settings, err := settings.GetSettings()
+	if err != nil {
+		return err
+	}
 	credential, err := loadCredential(hostName, settings)
 	if err != nil {
 		return errors.FailedPullFromOci

@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -225,7 +224,7 @@ const DEFAULT_KCL_FILE_CONTENT = "The_first_kcl_program = 'Hello World!'"
 func (kclPkg *KclPkg) CreateDefaultKclProgram() error {
 	mainProgPath := filepath.Join(kclPkg.HomePath, DEFAULT_KCL_FILE_NAME)
 	if !utils.DirExists(mainProgPath) {
-		err := ioutil.WriteFile(mainProgPath, []byte(DEFAULT_KCL_FILE_CONTENT), 0644)
+		err := os.WriteFile(mainProgPath, []byte(DEFAULT_KCL_FILE_CONTENT), 0644)
 		if err != nil {
 			return err
 		}
@@ -413,7 +412,6 @@ func (kclPkg *KclPkg) PackageCurrentPkgPath() (string, error) {
 }
 
 const TAR_SUFFIX = ".tar"
-const VERSION_PREFFIX = "v"
 
 // DefaultTarPath will return "<kcl_package_path>/<package_name>-<package_version>.tar"
 func (kclPkg *KclPkg) DefaultTarPath() string {
@@ -525,7 +523,7 @@ func (kclPkg *KclPkg) ValidateKpmHome(kpmHome string) error {
 // <pkg_name> is the name of package.
 // <pkg_version> is the version of package
 func (kclPkg *KclPkg) GetPkgFullName() string {
-	return kclPkg.modFile.Pkg.Name + "-" + VERSION_PREFFIX + kclPkg.modFile.Pkg.Version
+	return kclPkg.modFile.Pkg.Name + "-" + kclPkg.modFile.Pkg.Version
 }
 
 // GetPkgName returns name of package.
@@ -538,18 +536,14 @@ func (kclPkg *KclPkg) GetPkgTag() string {
 	return kclPkg.modFile.Pkg.Version
 }
 
-// GetPkgTagForOci returns version of package in OCI format.
-// The version of a package is "0.0.1".
-// The version of a package in OCI format is "v0.0.1"
-func (kclPkg *KclPkg) GetOciPkgTag() string {
-	if !strings.HasPrefix(kclPkg.GetPkgTag(), VERSION_PREFFIX) {
-		return VERSION_PREFFIX + kclPkg.GetPkgTag()
-	} else {
-		return kclPkg.GetPkgTag()
-	}
-}
-
 // GetPkgTarName returns the kcl package tar name "<package_name>-v<package_version>.tar"
 func (kclPkg *KclPkg) GetPkgTarName() string {
 	return kclPkg.GetPkgFullName() + TAR_SUFFIX
+}
+
+const LOCK_FILE_NAME = "kcl.mod.lock"
+
+// GetLockFilePath returns the abs path of kcl.mod.lock.
+func (kclPkg *KclPkg) GetLockFilePath() string {
+	return filepath.Join(kclPkg.HomePath, LOCK_FILE_NAME)
 }

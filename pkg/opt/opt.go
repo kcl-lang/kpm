@@ -10,6 +10,7 @@ import (
 
 	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/reporter"
+	"kusionstack.io/kpm/pkg/settings"
 )
 
 // Input options of 'kpm init'.
@@ -37,14 +38,15 @@ func (opts *AddOptions) Validate() error {
 		return errors.InternalBug
 	} else if opts.RegistryOpts.Git != nil {
 		return opts.RegistryOpts.Git.Validate()
-	} else if opts.RegistryOpts.Git == nil {
-		return errors.InvalidAddOptionsWithoutRegistry
+	} else if opts.RegistryOpts.Oci != nil {
+		return opts.RegistryOpts.Oci.Validate()
 	}
 	return nil
 }
 
 type RegistryOptions struct {
 	Git *GitOptions
+	Oci *OciOptions
 }
 
 type GitOptions struct {
@@ -63,25 +65,22 @@ func (opts *GitOptions) Validate() error {
 	return nil
 }
 
-const DEFAULT_REGISTRY = "docker.io"
 const DEFAULT_OCI_TAG = "latest"
-
-func GetOCIReg() string {
-	return DEFAULT_REGISTRY
-}
 
 func GetDefaultOCITag() string {
 	return DEFAULT_OCI_TAG
 }
 
+// OciOptions for download oci packages.
+// kpm will download packages from oci registry by '{Reg}/{Repo}/{PkgName}:{Tag}'.
 type OciOptions struct {
-	Reg  string
-	Repo string
-	Tag  string
+	Reg     string
+	Repo    string
+	Tag     string
+	PkgName string
 }
 
 func (opts *OciOptions) Validate() error {
-	opts.Reg = GetOCIReg()
 	if len(opts.Repo) == 0 {
 		return errors.InvalidAddOptionsInvalidOciRepo
 	} else if len(opts.Tag) == 0 {
@@ -140,16 +139,20 @@ func ParseOciOptionFromOciUrl(url, tag string) (*OciOptions, error) {
 // with default registry host 'docker.io'.
 func ParseOciRef(ociRef string) (*OciOptions, error) {
 	oci_address := strings.Split(ociRef, OCI_SEPARATOR)
+	settings, err := settings.GetSettings()
+	if err != nil {
+		return nil, err
+	}
 	if len(oci_address) == 1 {
 		reporter.Report("kpm: using default tag: latest")
 		return &OciOptions{
-			Reg:  GetOCIReg(),
+			Reg:  settings.DefaultOciRegistry(),
 			Repo: oci_address[0],
 			Tag:  GetDefaultOCITag(),
 		}, nil
 	} else if len(oci_address) == 2 {
 		return &OciOptions{
-			Reg:  GetOCIReg(),
+			Reg:  settings.DefaultOciRegistry(),
 			Repo: oci_address[0],
 			Tag:  oci_address[1],
 		}, nil
