@@ -23,7 +23,7 @@ type KpmConf struct {
 }
 
 const DEFAULT_REGISTRY = "ghcr.io"
-const DEFAULT_REPO = "KusionStack"
+const DEFAULT_REPO = "kusionstack"
 
 // This is a singleton that loads kpm settings from 'kpm.json'
 // and is only initialized on the first call by 'Init()' or 'GetSettings()'
