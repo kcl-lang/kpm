@@ -161,7 +161,11 @@ func parseGitRegistryOptions(c *cli.Context) (*opt.RegistryOptions, error) {
 // parseOciRegistryOptions will parse the oci registry information from user cli inputs.
 func parseOciRegistryOptions(c *cli.Context) (*opt.RegistryOptions, error) {
 	ociPkgRef := c.Args().First()
-	name, version := parseOciPkgNameAndVersion(ociPkgRef)
+	name, version, err := parseOciPkgNameAndVersion(ociPkgRef)
+	if err != nil {
+		return nil, err
+	}
+
 	if len(version) == 0 {
 		reporter.Report("kpm: default version 'latest' of the package will be downloaded.")
 		version = opt.DEFAULT_OCI_TAG
@@ -184,15 +188,15 @@ func parseOciRegistryOptions(c *cli.Context) (*opt.RegistryOptions, error) {
 
 // parseOciPkgNameAndVersion will parse package name and version
 // from string "<pkg_name>:<pkg_version>".
-func parseOciPkgNameAndVersion(s string) (string, string) {
+func parseOciPkgNameAndVersion(s string) (string, string, error) {
 	parts := strings.Split(s, ":")
 	if len(parts) == 1 {
-		return parts[0], ""
+		return parts[0], "", errors.InvalidAddOptionsInvalidOciRef
 	}
 
 	if len(parts) > 2 {
-		return "", ""
+		return "", "", errors.InvalidAddOptionsInvalidOciRef
 	}
 
-	return parts[0], parts[1]
+	return parts[0], parts[1], errors.InvalidAddOptionsInvalidOciRef
 }

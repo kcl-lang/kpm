@@ -21,7 +21,7 @@ func LoadFirstFileWithExt(dir string, ext string) string {
 
 	for _, file := range files {
 		if filepath.Ext(file.Name()) == ext {
-			data, err := ioutil.ReadFile(filepath.Join(dir, file.Name()))
+			data, err := os.ReadFile(filepath.Join(dir, file.Name()))
 			if err != nil {
 				reporter.ExitWithReport("kpm_e2e: the file exists, but failed to read file.")
 			}

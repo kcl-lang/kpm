@@ -1,7 +1,6 @@
 package modfile
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -159,8 +158,8 @@ func TestStoreModFile(t *testing.T) {
 
 	_ = mfile.StoreModFile()
 
-	expect, _ := ioutil.ReadFile(filepath.Join(testPath, "expected.toml"))
-	got, _ := ioutil.ReadFile(filepath.Join(testPath, "kcl.mod"))
+	expect, _ := os.ReadFile(filepath.Join(testPath, "expected.toml"))
+	got, _ := os.ReadFile(filepath.Join(testPath, "kcl.mod"))
 	assert.Equal(t, got, expect)
 }
 

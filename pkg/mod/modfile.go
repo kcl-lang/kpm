@@ -3,7 +3,6 @@ package modfile
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -252,7 +251,7 @@ func NewModFile(opts *opt.InitOptions) *ModFile {
 // Load the kcl.mod file.
 func (mod *ModFile) loadModFile(filepath string) error {
 
-	modData, err := ioutil.ReadFile(filepath)
+	modData, err := os.ReadFile(filepath)
 	if err != nil {
 		return err
 	}
@@ -268,7 +267,7 @@ func (mod *ModFile) loadModFile(filepath string) error {
 
 // Load the kcl.mod.lock file.
 func (deps *Dependencies) loadLockFile(filepath string) error {
-	data, err := ioutil.ReadFile(filepath)
+	data, err := os.ReadFile(filepath)
 	if os.IsNotExist(err) {
 		return err
 	}

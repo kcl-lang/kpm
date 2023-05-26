@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -225,7 +224,7 @@ const DEFAULT_KCL_FILE_CONTENT = "The_first_kcl_program = 'Hello World!'"
 func (kclPkg *KclPkg) CreateDefaultKclProgram() error {
 	mainProgPath := filepath.Join(kclPkg.HomePath, DEFAULT_KCL_FILE_NAME)
 	if !utils.DirExists(mainProgPath) {
-		err := ioutil.WriteFile(mainProgPath, []byte(DEFAULT_KCL_FILE_CONTENT), 0644)
+		err := os.WriteFile(mainProgPath, []byte(DEFAULT_KCL_FILE_CONTENT), 0644)
 		if err != nil {
 			return err
 		}

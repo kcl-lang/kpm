@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -131,21 +130,21 @@ func TestUpdateKclModAndLock(t *testing.T) {
 
 	expectDir := getTestDir("expected")
 
-	if gotKclMod, err := ioutil.ReadFile(filepath.Join(testDir, "kcl.mod")); os.IsNotExist(err) {
+	if gotKclMod, err := os.ReadFile(filepath.Join(testDir, "kcl.mod")); os.IsNotExist(err) {
 		t.Errorf("failed to find kcl.mod.")
 	} else {
 		assert.Equal(t, len(kclPkg.Dependencies.Deps), 2)
 		assert.Equal(t, len(kclPkg.modFile.Deps), 2)
-		expectKclMod, _ := ioutil.ReadFile(filepath.Join(expectDir, "kcl.mod"))
+		expectKclMod, _ := os.ReadFile(filepath.Join(expectDir, "kcl.mod"))
 		assert.Equal(t, string(gotKclMod), string(expectKclMod))
 	}
 
-	if gotKclModLock, err := ioutil.ReadFile(filepath.Join(testDir, "kcl.mod.lock")); os.IsNotExist(err) {
+	if gotKclModLock, err := os.ReadFile(filepath.Join(testDir, "kcl.mod.lock")); os.IsNotExist(err) {
 		t.Errorf("failed to find kcl.mod.lock.")
 	} else {
 		assert.Equal(t, len(kclPkg.Dependencies.Deps), 2)
 		assert.Equal(t, len(kclPkg.modFile.Deps), 2)
-		expectKclModLock, _ := ioutil.ReadFile(filepath.Join(expectDir, "kcl.mod.lock"))
+		expectKclModLock, _ := os.ReadFile(filepath.Join(expectDir, "kcl.mod.lock"))
 		assert.Equal(t, string(gotKclModLock), string(expectKclModLock))
 	}
 }
@@ -455,7 +454,7 @@ func prepareKpmHomeInPath(path string) {
 
 	filePath := filepath.Join(dirPath, "kpm.json")
 
-	_ = ioutil.WriteFile(filePath, []byte("{\"DefaultOciRegistry\":\"ghcr.io\",\"DefaultOciRepo\":\"awesome-kusion\"}"), 0644)
+	_ = os.WriteFile(filePath, []byte("{\"DefaultOciRegistry\":\"ghcr.io\",\"DefaultOciRepo\":\"awesome-kusion\"}"), 0644)
 }
 
 func TestResolveMetadataInJsonStr(t *testing.T) {

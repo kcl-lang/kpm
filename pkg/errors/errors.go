@@ -17,6 +17,7 @@ var InvalidInitOptions = errors.New("kpm: invalid 'kpm init' argument, you must 
 // Invalid 'kpm add'
 var InvalidAddOptionsWithoutRegistry = errors.New("kpm: invalid 'kpm add' argument, you must provide a registry url for the package.")
 var InvalidAddOptionsInvalidGitUrl = errors.New("kpm: invalid 'kpm add' argument, you must provide a Git Url for the package.")
+var InvalidAddOptionsInvalidOciRef = errors.New("kpm: invalid 'kpm add' argument, you must provide a valid Oci Ref for the package.")
 
 var InvalidAddOptionsInvalidTag = errors.New("kpm: invalid 'kpm add' argument, you must provide a Tag for the package.")
 var InvalidAddOptionsInvalidOciReg = errors.New("kpm: invalid 'kpm add' argument, you must provide a Reg for the package.")

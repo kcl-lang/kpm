@@ -2,7 +2,6 @@ package settings
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -98,7 +97,7 @@ func loadOrCreateDefaultKpmJson() (*KpmConf, error) {
 
 	defaultKpmConf := DefaultKpmConf()
 
-	b, err := ioutil.ReadFile(kpmConfpath)
+	b, err := os.ReadFile(kpmConfpath)
 	// if the file '$KCL_PKG_PATH/.kpm/config/kpm.json' does not exist
 	if os.IsNotExist(err) {
 		// create the default kpm.json.
@@ -111,7 +110,7 @@ func loadOrCreateDefaultKpmJson() (*KpmConf, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = ioutil.WriteFile(kpmConfpath, b, 0644)
+		err = os.WriteFile(kpmConfpath, b, 0644)
 		if err != nil {
 			return nil, err
 		}

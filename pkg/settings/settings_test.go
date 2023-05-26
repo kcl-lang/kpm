@@ -2,7 +2,6 @@ package settings
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -62,10 +61,10 @@ func TestLoadOrCreateDefaultKpmJson(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(kpmPath), true)
 
-	expectedJson, err := ioutil.ReadFile(testDir)
+	expectedJson, err := os.ReadFile(testDir)
 	assert.Equal(t, err, nil)
 
-	gotJson, err := ioutil.ReadFile(kpmPath)
+	gotJson, err := os.ReadFile(kpmPath)
 	assert.Equal(t, err, nil)
 
 	var expected interface{}

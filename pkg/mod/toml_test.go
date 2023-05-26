@@ -2,7 +2,7 @@ package modfile
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -49,7 +49,7 @@ func TestMarshalTOML(t *testing.T) {
 	modfile.Dependencies.Deps["MyOciKcl1_0.0.1"] = ociDep
 	modfile.Dependencies.Deps["MyKcl1_v0.0.2"] = dep
 
-	expected_data, _ := ioutil.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected.toml"))
+	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected.toml"))
 	expected_toml := string(expected_data)
 
 	assert.Equal(t, expected_toml, modfile.MarshalTOML())
@@ -57,7 +57,7 @@ func TestMarshalTOML(t *testing.T) {
 
 func TestUnMarshalTOML(t *testing.T) {
 	modfile := ModFile{}
-	expected_data, _ := ioutil.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected.toml"))
+	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected.toml"))
 
 	_ = toml.Unmarshal(expected_data, &modfile)
 	fmt.Printf("modfile: %v\n", modfile)
@@ -115,7 +115,7 @@ func TestMarshalLockToml(t *testing.T) {
 	deps.Deps[dep.Name] = dep
 	deps.Deps[ociDep.Name] = ociDep
 	tomlStr, _ := deps.MarshalLockTOML()
-	expected_data, _ := ioutil.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected_lock.toml"))
+	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected_lock.toml"))
 	expected_toml := string(expected_data)
 	assert.Equal(t, expected_toml, tomlStr)
 }
@@ -125,7 +125,7 @@ func TestUnmarshalLockToml(t *testing.T) {
 		make(map[string]Dependency),
 	}
 
-	expected_data, _ := ioutil.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected_lock.toml"))
+	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected_lock.toml"))
 	expected_toml := string(expected_data)
 	_ = deps.UnmarshalLockTOML(expected_toml)
 
