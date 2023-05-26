@@ -44,7 +44,7 @@ func TestDefaultKpmConf(t *testing.T) {
 		Conf: DefaultKpmConf(),
 	}
 	assert.Equal(t, settings.DefaultOciRegistry(), "ghcr.io")
-	assert.Equal(t, settings.DefaultOciRepo(), "KusionStack")
+	assert.Equal(t, settings.DefaultOciRepo(), "kusionstack")
 }
 
 func TestLoadOrCreateDefaultKpmJson(t *testing.T) {
@@ -57,7 +57,7 @@ func TestLoadOrCreateDefaultKpmJson(t *testing.T) {
 
 	kpmConf, err := loadOrCreateDefaultKpmJson()
 	assert.Equal(t, kpmConf.DefaultOciRegistry, "ghcr.io")
-	assert.Equal(t, kpmConf.DefaultOciRepo, "KusionStack")
+	assert.Equal(t, kpmConf.DefaultOciRepo, "kusionstack")
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(kpmPath), true)
 

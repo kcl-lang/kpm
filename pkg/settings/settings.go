@@ -49,7 +49,7 @@ func (settings *Settings) DefaultOciRegistry() string {
 	return settings.Conf.DefaultOciRegistry
 }
 
-// DefaultOciRepo return the default OCI repo 'KusionStack'.
+// DefaultOciRepo return the default OCI repo 'kusionstack'.
 func (settings *Settings) DefaultOciRepo() string {
 	return settings.Conf.DefaultOciRepo
 }
