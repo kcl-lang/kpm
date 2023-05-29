@@ -46,13 +46,33 @@ func TestMarshalTOML(t *testing.T) {
 		},
 	}
 
-	modfile.Dependencies.Deps["MyOciKcl1_0.0.1"] = ociDep
-	modfile.Dependencies.Deps["MyKcl1_v0.0.2"] = dep
+	modfile.Dependencies.Deps["MyOciKcl1"] = ociDep
+	modfile.Dependencies.Deps["MyKcl1"] = dep
 
-	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected.toml"))
-	expected_toml := string(expected_data)
+	expectedModfile := new(ModFile)
+	err := expectedModfile.loadModFile(filepath.Join(getTestDir(testTomlDir), "expected.toml"))
+	assert.Equal(t, err, nil)
 
-	assert.Equal(t, expected_toml, modfile.MarshalTOML())
+	// Compare Pkg Info
+	assert.Equal(t, expectedModfile.Pkg.Name, modfile.Pkg.Name)
+	assert.Equal(t, expectedModfile.Pkg.Edition, modfile.Pkg.Edition)
+	assert.Equal(t, expectedModfile.Pkg.Version, modfile.Pkg.Version)
+
+	// Compare deps
+	assert.Equal(t, len(expectedModfile.Deps), len(modfile.Deps))
+	assert.Equal(t, len(modfile.Deps), 2)
+	assert.Equal(t, expectedModfile.Deps["MyOciKcl1"].Name, modfile.Deps["MyOciKcl1"].Name)
+	assert.Equal(t, expectedModfile.Deps["MyOciKcl1"].FullName, modfile.Deps["MyOciKcl1"].FullName)
+	assert.Equal(t, expectedModfile.Deps["MyOciKcl1"].Source.Oci, modfile.Deps["MyOciKcl1"].Source.Oci)
+	assert.Equal(t, expectedModfile.Deps["MyOciKcl1"].Source.Oci.Tag, modfile.Deps["MyOciKcl1"].Source.Oci.Tag)
+	assert.Equal(t, expectedModfile.Deps["MyOciKcl1"].Source.Git, modfile.Deps["MyOciKcl1"].Source.Git)
+
+	assert.Equal(t, expectedModfile.Deps["MyKcl1"].Name, modfile.Deps["MyKcl1"].Name)
+	assert.Equal(t, expectedModfile.Deps["MyKcl1"].FullName, modfile.Deps["MyKcl1"].FullName)
+	assert.Equal(t, expectedModfile.Deps["MyKcl1"].Source.Oci, modfile.Deps["MyKcl1"].Source.Oci)
+	assert.Equal(t, expectedModfile.Deps["MyKcl1"].Source.Git.Url, modfile.Deps["MyKcl1"].Source.Git.Url)
+	assert.Equal(t, expectedModfile.Deps["MyKcl1"].Source.Git.Tag, modfile.Deps["MyKcl1"].Source.Git.Tag)
+	assert.Equal(t, expectedModfile.Deps["MyKcl1"].Source.Git, modfile.Deps["MyKcl1"].Source.Git)
 }
 
 func TestUnMarshalTOML(t *testing.T) {
