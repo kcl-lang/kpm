@@ -136,7 +136,8 @@ k8s = "1.27.2" # The dependency 'k8s' with version '1.27.2'
 ```kcl
 # 导入并使用外部依赖 `k8s` 包中的内容。
 import k8s.api.core.v1 as k8core
-nginx = k8core.Pod {
+
+k8core.Pod {
     metadata.name = "web-app"
     spec.containers = [{
         name = "main-container"
@@ -144,6 +145,7 @@ nginx = k8core.Pod {
         ports = [{containerPort = 80}]
     }]
 }
+
 ```
 
 ### 使用 `kpm` 编译 kcl 包

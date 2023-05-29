@@ -137,7 +137,7 @@ And write the following into the `main.k` file.
 # Import and use the contents of the external dependency 'k8s'.
 import k8s.api.core.v1 as k8core
 
-nginx = k8core.Pod {
+k8core.Pod {
     metadata.name = "web-app"
     spec.containers = [{
         name = "main-container"
@@ -145,6 +145,7 @@ nginx = k8core.Pod {
         ports = [{containerPort = 80}]
     }]
 }
+
 ```
 
 ### Use the `kpm` compile the kcl package
