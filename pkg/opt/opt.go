@@ -106,10 +106,10 @@ func ParseOciOptionFromString(oci string, tag string) (*OciOptions, error) {
 // If the 'tag' is empty, ParseOciOptionFromOciUrl will take 'latest' as the default tag.
 func ParseOciOptionFromOciUrl(url, tag string) (*OciOptions, error) {
 	ociOpt, err := ParseOciUrl(url)
-	ociOpt.Tag = tag
 	if err != nil {
 		return nil, err
 	}
+	ociOpt.Tag = tag
 	return ociOpt, nil
 }
 
