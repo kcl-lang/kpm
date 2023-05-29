@@ -1,0 +1,8 @@
+[package]
+name = "MyKcl"
+edition = "v0.0.1"
+version = "v0.0.1"
+
+[dependencies]
+MyKcl1 = { git = "https://github.com/test/MyKcl1.git", tag = "v0.0.2" }
+MyOciKcl1 = "0.0.1"
