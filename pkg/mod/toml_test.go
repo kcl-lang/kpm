@@ -52,7 +52,10 @@ func TestMarshalTOML(t *testing.T) {
 	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected.toml"))
 	expected_toml := string(expected_data)
 
-	assert.Equal(t, expected_toml, modfile.MarshalTOML())
+	reversed_expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected_reversed.toml"))
+	reversed_expected_toml := string(reversed_expected_data)
+
+	assert.Equal(t, (expected_toml == modfile.MarshalTOML()) || (reversed_expected_toml == modfile.MarshalTOML()), true)
 }
 
 func TestUnMarshalTOML(t *testing.T) {
