@@ -59,16 +59,8 @@ type GitOptions struct {
 func (opts *GitOptions) Validate() error {
 	if len(opts.Url) == 0 {
 		return errors.InvalidAddOptionsInvalidGitUrl
-	} else if len(opts.Tag) == 0 {
-		return errors.InvalidAddOptionsInvalidTag
 	}
 	return nil
-}
-
-const DEFAULT_OCI_TAG = "latest"
-
-func GetDefaultOCITag() string {
-	return DEFAULT_OCI_TAG
 }
 
 // OciOptions for download oci packages.
@@ -83,8 +75,6 @@ type OciOptions struct {
 func (opts *OciOptions) Validate() error {
 	if len(opts.Repo) == 0 {
 		return errors.InvalidAddOptionsInvalidOciRepo
-	} else if len(opts.Tag) == 0 {
-		return errors.InvalidAddOptionsInvalidTag
 	}
 	return nil
 }
@@ -107,14 +97,8 @@ func ParseOciOptionFromString(oci string, tag string) (*OciOptions, error) {
 		}
 	} else if err == errors.NotOciUrl {
 		return nil, err
-	} else {
-		if len(tag) == 0 {
-			reporter.Report("kpm: using default tag: latest")
-			ociOpt.Tag = GetDefaultOCITag()
-		} else {
-			ociOpt.Tag = tag
-		}
 	}
+
 	return ociOpt, nil
 }
 
@@ -124,14 +108,8 @@ func ParseOciOptionFromOciUrl(url, tag string) (*OciOptions, error) {
 	ociOpt, err := ParseOciUrl(url)
 	if err != nil {
 		return nil, err
-	} else {
-		if len(tag) == 0 {
-			reporter.Report("kpm: using default tag: latest")
-			ociOpt.Tag = GetDefaultOCITag()
-		} else {
-			ociOpt.Tag = tag
-		}
 	}
+	ociOpt.Tag = tag
 	return ociOpt, nil
 }
 
@@ -144,11 +122,9 @@ func ParseOciRef(ociRef string) (*OciOptions, error) {
 		return nil, err
 	}
 	if len(oci_address) == 1 {
-		reporter.Report("kpm: using default tag: latest")
 		return &OciOptions{
 			Reg:  settings.DefaultOciRegistry(),
 			Repo: oci_address[0],
-			Tag:  GetDefaultOCITag(),
 		}, nil
 	} else if len(oci_address) == 2 {
 		return &OciOptions{

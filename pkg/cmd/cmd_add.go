@@ -166,11 +166,6 @@ func parseOciRegistryOptions(c *cli.Context) (*opt.RegistryOptions, error) {
 		return nil, err
 	}
 
-	if len(version) == 0 {
-		reporter.Report("kpm: default version 'latest' of the package will be downloaded.")
-		version = opt.DEFAULT_OCI_TAG
-	}
-
 	settings, err := settings.GetSettings()
 	if err != nil {
 		return nil, err

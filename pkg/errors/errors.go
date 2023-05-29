@@ -19,7 +19,6 @@ var InvalidAddOptionsWithoutRegistry = errors.New("kpm: invalid 'kpm add' argume
 var InvalidAddOptionsInvalidGitUrl = errors.New("kpm: invalid 'kpm add' argument, you must provide a Git Url for the package.")
 var InvalidAddOptionsInvalidOciRef = errors.New("kpm: invalid 'kpm add' argument, you must provide a valid Oci Ref for the package.")
 
-var InvalidAddOptionsInvalidTag = errors.New("kpm: invalid 'kpm add' argument, you must provide a Tag for the package.")
 var InvalidAddOptionsInvalidOciReg = errors.New("kpm: invalid 'kpm add' argument, you must provide a Reg for the package.")
 var InvalidAddOptionsInvalidOciRepo = errors.New("kpm: invalid 'kpm add' argument, you must provide a Repo for the package.")
 
@@ -43,3 +42,6 @@ var FailedPushToOci = errors.New("kpm: failed to push kcl package tar to oci.")
 var InvalidOciRef = errors.New("kpm: invalid oci reference.")
 var NotOciUrl = errors.New("kpm: url is not an oci url.")
 var IsOciRef = errors.New("kpm: oci ref is not an url.")
+
+// Invalid Version
+var InvalidVersionFormat = errors.New("kpm: failed to parse version.")

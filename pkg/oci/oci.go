@@ -7,6 +7,7 @@ import (
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/reporter"
+	"kusionstack.io/kpm/pkg/semver"
 	"kusionstack.io/kpm/pkg/settings"
 	"oras.land/oras-go/pkg/auth"
 	dockerauth "oras.land/oras-go/pkg/auth/docker"
@@ -64,30 +65,31 @@ func Logout(hostname string, setting *settings.Settings) error {
 	return nil
 }
 
-// Pull will pull the oci artifacts from oci registry to local path.
-func Pull(localPath, hostName, repoName, tag string) error {
-	// 0. Create a file store
-	fs, err := file.New(localPath)
-	if err != nil {
-		return errors.FailedPullFromOci
-	}
-	defer fs.Close()
+// OciClient is mainly responsible for interacting with OCI registry
+type OciClient struct {
+	repo *remote.Repository
+	ctx  *context.Context
+}
 
-	// 1. Connect to a remote repository
+// NewOciClient will new an OciClient.
+// regName is the registry. e.g. ghcr.io or docker.io.
+// repoName is the repo name on registry.
+func NewOciClient(regName, repoName string) (*OciClient, error) {
+	repo, err := remote.NewRepository(filepath.Join(regName, repoName))
+	if err != nil {
+		return nil, errors.FailedPullFromOci
+	}
 	ctx := context.Background()
-	repo, err := remote.NewRepository(filepath.Join(hostName, repoName))
-	if err != nil {
-		return errors.FailedPullFromOci
-	}
 
-	// 2. Login
 	settings, err := settings.GetSettings()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	credential, err := loadCredential(hostName, settings)
+
+	// Login
+	credential, err := loadCredential(regName, settings)
 	if err != nil {
-		return errors.FailedPullFromOci
+		return nil, errors.FailedPushToOci
 	}
 	repo.Client = &remoteauth.Client{
 		Client:     retry.DefaultClient,
@@ -95,8 +97,23 @@ func Pull(localPath, hostName, repoName, tag string) error {
 		Credential: remoteauth.StaticCredential(repo.Reference.Host(), *credential),
 	}
 
-	// 3. Copy from the remote repository to the file store
-	_, err = oras.Copy(ctx, repo, tag, fs, tag, oras.DefaultCopyOptions)
+	return &OciClient{
+		repo: repo,
+		ctx:  &ctx,
+	}, nil
+}
+
+// Pull will pull the oci artifacts from oci registry to local path.
+func (ociClient *OciClient) Pull(localPath, tag string) error {
+	// Create a file store
+	fs, err := file.New(localPath)
+	if err != nil {
+		return errors.FailedPullFromOci
+	}
+	defer fs.Close()
+
+	// Copy from the remote repository to the file store
+	_, err = oras.Copy(*ociClient.ctx, ociClient.repo, tag, fs, tag, oras.DefaultCopyOptions)
 	if err != nil {
 		return errors.FailedPullFromOci
 	}
@@ -104,15 +121,35 @@ func Pull(localPath, hostName, repoName, tag string) error {
 	return nil
 }
 
+// TheLatestTag will return the latest tag of the kcl packages.
+func (ociClient *OciClient) TheLatestTag() (string, error) {
+	var tagSelected string
+
+	err := ociClient.repo.Tags(*ociClient.ctx, "", func(tags []string) error {
+		var err error
+		tagSelected, err = semver.LatestVersion(tags)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return "", errors.FailedDownloadError
+	}
+
+	return tagSelected, nil
+}
+
 // Push will push the oci artifacts to oci registry from local path
-func Push(localPath, hostName, repoName, tag string, settings *settings.Settings) error {
+func (ociClient *OciClient) Push(localPath, tag string) error {
 	// 0. Create a file store
 	fs, err := file.New(filepath.Dir(localPath))
 	if err != nil {
 		return err
 	}
 	defer fs.Close()
-	ctx := context.Background()
 
 	// 1. Add files to a file store
 
@@ -123,7 +160,7 @@ func Push(localPath, hostName, repoName, tag string, settings *settings.Settings
 		// If the file name is a path, the path will be created during pulling.
 		// During pulling, a file should be downloaded separately,
 		// and a file path is created for each download, which is not good.
-		fileDescriptor, err := fs.Add(ctx, filepath.Base(name), DEFAULT_OCI_ARTIFACT_TYPE, "")
+		fileDescriptor, err := fs.Add(*ociClient.ctx, filepath.Base(name), DEFAULT_OCI_ARTIFACT_TYPE, "")
 		if err != nil {
 			return err
 		}
@@ -131,37 +168,19 @@ func Push(localPath, hostName, repoName, tag string, settings *settings.Settings
 	}
 
 	// 2. Pack the files and tag the packed manifest
-	manifestDescriptor, err := oras.Pack(ctx, fs, DEFAULT_OCI_ARTIFACT_TYPE, fileDescriptors, oras.PackOptions{
+	manifestDescriptor, err := oras.Pack(*ociClient.ctx, fs, DEFAULT_OCI_ARTIFACT_TYPE, fileDescriptors, oras.PackOptions{
 		PackImageManifest: true,
 	})
 	if err != nil {
 		return err
 	}
 
-	if err = fs.Tag(ctx, manifestDescriptor, tag); err != nil {
+	if err = fs.Tag(*ociClient.ctx, manifestDescriptor, tag); err != nil {
 		return err
 	}
 
-	// 3. Connect to a remote repository
-
-	repo, err := remote.NewRepository(filepath.Join(hostName, repoName))
-	if err != nil {
-		return err
-	}
-
-	// 4. Login
-	credential, err := loadCredential(hostName, settings)
-	if err != nil {
-		return errors.FailedPushToOci
-	}
-	repo.Client = &remoteauth.Client{
-		Client:     retry.DefaultClient,
-		Cache:      remoteauth.DefaultCache,
-		Credential: remoteauth.StaticCredential(repo.Reference.Host(), *credential),
-	}
-
-	// 5. Copy from the file store to the remote repository
-	_, err = oras.Copy(ctx, fs, tag, repo, tag, oras.DefaultCopyOptions)
+	// 3. Copy from the file store to the remote repository
+	_, err = oras.Copy(*ociClient.ctx, fs, tag, ociClient.repo, tag, oras.DefaultCopyOptions)
 	return err
 }
 
@@ -180,4 +199,37 @@ func loadCredential(hostName string, settings *settings.Settings) (*remoteauth.C
 		Username: username,
 		Password: password,
 	}, nil
+}
+
+// Pull will pull the oci artifacts from oci registry to local path.
+func Pull(localPath, hostName, repoName, tag string) error {
+	ociClient, err := NewOciClient(hostName, repoName)
+	if err != nil {
+		return err
+	}
+
+	var tagSelected string
+	if len(tag) == 0 {
+		tagSelected, err = ociClient.TheLatestTag()
+		if err != nil {
+			return err
+		}
+		reporter.Report("kpm: the lastest version", tagSelected, "will be pulled.")
+	} else {
+		tagSelected = tag
+	}
+
+	return ociClient.Pull(localPath, tagSelected)
+}
+
+// Push will push the oci artifacts to oci registry from local path
+func Push(localPath, hostName, repoName, tag string, settings *settings.Settings) error {
+	// Create an oci client.
+	ociClient, err := NewOciClient(hostName, repoName)
+	if err != nil {
+		return err
+	}
+
+	// Push the oci package by the oci client.
+	return ociClient.Push(localPath, tag)
 }

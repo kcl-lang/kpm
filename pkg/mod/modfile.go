@@ -83,7 +83,7 @@ func (dep *Dependency) FillDepInfo() error {
 
 // Download will download the kcl package to localPath from registory.
 func (dep *Dependency) Download(localPath string) (*Dependency, error) {
-	reporter.Report("kpm: adding dependency", dep.Name, "with", dep.Version)
+	reporter.Report("kpm: adding dependency", dep.Name)
 	if dep.Source.Git != nil {
 		_, err := dep.Source.Git.Download(localPath)
 		if err != nil {
@@ -128,7 +128,25 @@ func (dep *Git) Download(localPath string) (string, error) {
 }
 
 func (dep *Oci) Download(localPath string) (string, error) {
-	err := oci.Pull(localPath, dep.Reg, dep.Repo, dep.Tag)
+	ociClient, err := oci.NewOciClient(dep.Reg, dep.Repo)
+	if err != nil {
+		return "", err
+	}
+	// Select the latest tag, if the tag, the user inputed, is empty.
+	var tagSelected string
+	if len(dep.Tag) == 0 {
+		tagSelected, err = ociClient.TheLatestTag()
+		if err != nil {
+			return "", err
+		}
+		reporter.Report("kpm: the lastest version", tagSelected, "will be pulled.")
+		dep.Tag = tagSelected
+	} else {
+		tagSelected = dep.Tag
+	}
+
+	// Pull the package with the tag.
+	err = ociClient.Pull(localPath, tagSelected)
 	if err != nil {
 		return "", err
 	}
