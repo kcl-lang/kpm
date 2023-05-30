@@ -28,12 +28,8 @@
 使用以下命令来确保您已成功安装 `KCL`。
 
 ```shell
-kclvm_cli version
+kcl -V
 ```
-
-如果上面的命令能为您正常展示 `KCL` 的版本信息，意味着您已经成功安装了 `KCL` 您就可以继续下一步操作。
-
-<img src="./docs/gifs/kclvm_cli_version.gif" width="600" align="center" />
 
 ### 安装 `kpm`
 
