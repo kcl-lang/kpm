@@ -68,14 +68,7 @@ If you get the following output, you have successfully installed `kpm` and you c
 
 ### Init an empty kcl package
 
-First, create an empty folder for the KCL package and go into that folder.
-
-```shell
-mkdir my_package # create an empty folder 'my_package'
-cd my_package # go into the folder 'my_package'
-```
-
-Create a new kcl package named `my_package`.
+Create a new kcl package named `my_package`. And after we have created the package `my_package`, we need to go inside the package by `cd my_package` to complete the following operations.
 
 ```shell
 kpm init my_package
@@ -105,13 +98,15 @@ version = "0.0.1"
 
 ### Add a dependency from Git Registry
 
-If you need to use the KCL model in [Konfig](https://github.com/awesome-kusion/konfig.git) to write the kcl program.
+You can then add a dependency to the current kcl package using the `kpm add` command
+
+As shown below, taking the example of adding a package dependency named `k8s`, the version of the package is `1.27.2`.
 
 ```shell
-kpm add -git https://github.com/awesome-kusion/konfig.git -tag v0.0.1
+kpm add k8s:1.27.2
 ```
 
-<img src="./docs/gifs/kpm_add_git.gif" width="600" align="center" />
+<img src="./docs/gifs/kpm_add_k8s.gif" width="600" align="center" />
 
 You can see that `kpm` adds the dependency you just added to kcl.mod.
 
@@ -122,13 +117,10 @@ edition = "0.0.1"
 version = "0.0.1"
 
 [dependencies]
-# 'konfig' is the package name
-# If you want to use the contents of this package, 
-# you need to write the import statment with the package name 'konfig' as the prefix.
-konfig = { git = "https://github.com/awesome-kusion/konfig.git", tag = "v0.0.1" }
+k8s = "1.27.2" # The dependency 'k8s' with version '1.27.2'
 ```
 
-### Write a kcl program that uses the content in `konfig`
+### Write a kcl program that uses the content in `k8s`
 
 Create the `main.k` file in the current package.
 
@@ -142,9 +134,18 @@ Create the `main.k` file in the current package.
 And write the following into the `main.k` file.
 
 ```kcl
-import konfig.base.examples.native.nginx_deployment as nd
+# Import and use the contents of the external dependency 'k8s'.
+import k8s.api.core.v1 as k8core
 
-demo = nd.demo
+k8core.Pod {
+    metadata.name = "web-app"
+    spec.containers = [{
+        name = "main-container"
+        image = "nginx"
+        ports = [{containerPort = 80}]
+    }]
+}
+
 ```
 
 ### Use the `kpm` compile the kcl package
@@ -156,39 +157,6 @@ kpm run
 ```
 
 <img src="./docs/gifs/kpm_run.gif" width="600" align="center" />
-
-If you want to use some kcl compilation options, you can pass the arguments to  through the `--kcl_args` provided by kpm.  
-
-As shown below, you can pass the arguments `-S demo` to ignore the `demo` in the output result.
-
-```shell
-kpm run --kcl_args '-S demo'
-```
-
-<img src="./docs/gifs/kpm_run_with_args.gif" width="600" align="center" />
-
-### Package your current kcl package with its dependencies
-
-You can use the command `kpm pkg` to package your current kcl package with its dependencies.
-
-```shell
-kpm pkg --target my_package_tar
-```
-
-<img src="./docs/gifs/kpm_pkg.gif" width="600" align="center" />
-
-After this command is executed, a tar package will be packaged in the `my_package_tar` directory. And all the dependencies for `my_package` will be stored in the `vendor` subdirectory.
-
-```shell
-- my_package
-      |- kcl.mod
-      |- kcl.mod.lock
-      |- main.k
-      |- my_package_tar 
-            |- my_package-v0.0.1.tar # The file (*.tar) packaged by kpm.
-      |- vendor # All the dependencies for `my_package` will be stored in the `vendor` 
-            |- konfig_v0.0.1
-```
 
 ## Supports OCI Registry
 

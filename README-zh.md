@@ -68,14 +68,7 @@ kpm --help
 
 ### 初始化一个空的 KCL 包
 
-首先，先为 KCL 包创建一个空的文件夹, 并且进入到这个文件夹中。
-
-```shell
-mkdir my_package # 创建一个新的文件夹 'my_package'
-cd my_package # 进入这个文件夹中 'my_package'
-```
-
-创建一个叫做 `my_package` 的包。
+使用 `kpm init` 命令创建一个名为 `my_package` 的 kcl 程序包, 并且在我们创建完成一个名为 `my_package` 的包后，我们需要通过命令 `cd my_package` 进入这个包来进行后续的操作。
 
 ```shell
 kpm init my_package
@@ -105,13 +98,15 @@ version = "0.0.1"
 
 ### 为 KCL 包添加依赖
 
-如果你想要使用 [Konfig](https://github.com/awesome-kusion/konfig.git) 中的 KCL 程序.
+然后，您可以通过 `kpm add` 命令来为您当前的库添加一个外部依赖。
+
+如下面的命令所示，为当前包添加一个版本号为 `1.27.2` 并且名为 `k8s` 的依赖包。
 
 ```shell
-kpm add -git https://github.com/awesome-kusion/konfig.git -tag v0.0.1
+kpm add k8s:1.27.2
 ```
 
-<img src="./docs/gifs/kpm_add_git.gif" width="600" align="center" />
+<img src="./docs/gifs/kpm_add_k8s.gif" width="600" align="center" />
 
 `kpm` 会为您将依赖添加到 kcl.mod 文件中.
 
@@ -122,10 +117,7 @@ edition = "0.0.1"
 version = "0.0.1"
 
 [dependencies]
-# 'konfig' 是依赖的包的名称
-# 如果你想在你的 kcl 程序中使用包 'konfig' 中的内容，
-# 你需要在 import 语句中使用包名 'konfig' 作为导入内容的前缀。
-konfig = { git = "https://github.com/awesome-kusion/konfig.git", tag = "v0.0.1" }
+k8s = "1.27.2" # The dependency 'k8s' with version '1.27.2'
 ```
 
 ### 编写一个程序使用包 `konfig` 中的内容
@@ -142,51 +134,28 @@ konfig = { git = "https://github.com/awesome-kusion/konfig.git", tag = "v0.0.1" 
 并且将下面的内容写入 `main.k` 文件中。
 
 ```kcl
-import konfig.base.examples.native.nginx_deployment as nd
+# 导入并使用外部依赖 `k8s` 包中的内容。
+import k8s.api.core.v1 as k8core
 
-demo = nd.demo
+k8core.Pod {
+    metadata.name = "web-app"
+    spec.containers = [{
+        name = "main-container"
+        image = "nginx"
+        ports = [{containerPort = 80}]
+    }]
+}
+
 ```
 
 ### 使用 `kpm` 编译 kcl 包
 
-你可以使用 kpm 编译刚才编写的 `main.k` 文件。
+你可以使用 kpm 编译刚才编写的 `main.k` 文件, 得到编译后的结果。
 
 ```shell
 kpm run
 ```
 <img src="./docs/gifs/kpm_run.gif" width="600" align="center" />
-
-如果你想要使用 `KCL` 的某些编译选项来编译当前 kcl 包，你可以通过 kpm 的参数 `--kcl_args` 来将这个参数传递给 `KCL`。
-
-如下所示，我们将使用 `KCL` 编译选项 `-S demo` 来编译 kcl 包。
-
-```shell
-kpm run --kcl_args '-S demo'
-```
-
-<img src="./docs/gifs/kpm_run_with_args.gif" width="600" align="center" />
-
-### 打包您的 kcl 包
-
-你可以使用 `kpm pkg` 将您的包与其对应的依赖打包在一起.
-
-```shell
-kpm pkg --target my_package_tar
-```
-
-<img src="./docs/gifs/kpm_pkg.gif" width="600" align="center" />
-
-这个命令执行后，您可以看到您的 kcl 包已经被打包到了 `my_package_tar` 文件目录下，并且 `my_package` 的依赖也都被复制到了当前包的 `vendor` 子目录下。
-
-```shell
-- my_package
-        |- kcl.mod
-        |- kcl.mod.lock
-        |- main.k
-        |- my_package.tar # `kpm pkg` 命令生成的 tar 包。
-        |- vendor # 当前包所有的依赖都将被复制到 `vendor`中。 
-             |- konfig_v0.0.1
-```
 
 ## OCI Registry 的支持
 
