@@ -23,17 +23,13 @@
 
 `kpm` will call [KCL compiler](https://github.com/KusionStack/KCLVM) to compile the kcl program. Before using `kpm`, you need to ensure that `KCL compiler` is installed successfully.
 
-[For more information about how to install KCL compiler.](https://kcl-lang.io/docs/user_docs/getting-started/install)
+[For more information about how to install KCL.](https://kcl-lang.io/docs/user_docs/getting-started/install)
 
 Use the following command to ensure that you install `KCL compiler` successfully.
 
 ```shell
-kclvm_cli version
+kcl -V
 ```
-
-If the above command shows the version information of `KCL compiler` normally, it means that you have successfully installed `KCL compiler` and you can do the next step.
-
-<img src="./docs/gifs/kclvm_cli_version.gif" width="600" align="center" />
 
 ### Install `kpm`
 
