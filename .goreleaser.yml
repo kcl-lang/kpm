@@ -8,4 +8,4 @@ builds:
   - id: kpm
     main: ./kpm.go
     ldflags:
-      - "-X main.version={{.Version}}"
+      - "-X kusionstack.io/kpm/pkg/version.version={{.Version}}"

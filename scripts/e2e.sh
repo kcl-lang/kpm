@@ -11,7 +11,7 @@ set -o pipefail
 GO111MODULE=on go install github.com/onsi/ginkgo/v2/ginkgo@v2.0.0
 
 # Build kpm binary
-LDFLAGS="-X main.version=test_version"
+LDFLAGS="-X kusionstack.io/kpm/pkg/version.version=test_version"
 go build -ldflags "$LDFLAGS" -o ./bin/kpm
 
 # Run e2e
