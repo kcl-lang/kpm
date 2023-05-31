@@ -9,9 +9,8 @@ import (
 	"kusionstack.io/kpm/pkg/cmd"
 	"kusionstack.io/kpm/pkg/reporter"
 	"kusionstack.io/kpm/pkg/settings"
+	"kusionstack.io/kpm/pkg/version"
 )
-
-var version string
 
 func main() {
 	reporter.InitReporter()
@@ -22,7 +21,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "kpm"
 	app.Usage = "kpm is a kcl package manager"
-	app.Version = version
+	app.Version = version.GetVersionInStr()
 	app.UsageText = "kpm  <command> [arguments]..."
 	app.Commands = []*cli.Command{
 		cmd.NewInitCmd(),
