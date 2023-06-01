@@ -49,6 +49,8 @@ func TestMarshalTOML(t *testing.T) {
 	modfile.Dependencies.Deps["MyOciKcl1_0.0.1"] = ociDep
 	modfile.Dependencies.Deps["MyKcl1_v0.0.2"] = dep
 
+	got_data := modfile.MarshalTOML()
+
 	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected.toml"))
 	expected_toml := string(expected_data)
 
@@ -56,10 +58,10 @@ func TestMarshalTOML(t *testing.T) {
 	reversed_expected_toml := string(reversed_expected_data)
 	fmt.Printf("expected_toml: '%q'\n", expected_toml)
 	fmt.Printf("reversed_expected_toml: '%q'\n", reversed_expected_toml)
-	fmt.Printf("modfile: '%q'\n", modfile.MarshalTOML())
-	fmt.Printf("expected_toml == modfile.MarshalTOML(): '%t'\n", expected_toml == modfile.MarshalTOML())
-	fmt.Printf("reversed_expected_toml == modfile.MarshalTOML(): '%t'\n", reversed_expected_toml == modfile.MarshalTOML())
-	assert.Equal(t, (expected_toml == modfile.MarshalTOML()) || (reversed_expected_toml == modfile.MarshalTOML()), true)
+	fmt.Printf("modfile: '%q'\n", got_data)
+	fmt.Printf("expected_toml == got_data: '%t'\n", expected_toml == got_data)
+	fmt.Printf("reversed_expected_toml == got_data: '%t'\n", reversed_expected_toml == got_data)
+	assert.Equal(t, (expected_toml == got_data) || (reversed_expected_toml == got_data), true)
 }
 
 func TestUnMarshalTOML(t *testing.T) {
