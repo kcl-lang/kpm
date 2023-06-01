@@ -162,6 +162,14 @@ func (dep *Oci) Download(localPath string) (string, error) {
 		return "", err
 	}
 
+	// After untar the downloaded kcl package tar file, remove the tar file.
+	if utils.DirExists(tarPath) {
+		err = os.Remove(tarPath)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	return localPath, nil
 }
 

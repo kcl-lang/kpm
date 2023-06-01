@@ -7,6 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"kusionstack.io/kpm/pkg/opt"
+	"kusionstack.io/kpm/pkg/settings"
+	"kusionstack.io/kpm/pkg/utils"
 )
 
 const testDataDir = "test_data"
@@ -170,4 +172,40 @@ func TestGetFilePath(t *testing.T) {
 	}
 	assert.Equal(t, mfile.GetModFilePath(), filepath.Join(testPath, MOD_FILE))
 	assert.Equal(t, mfile.GetModLockFilePath(), filepath.Join(testPath, MOD_LOCK_FILE))
+}
+
+func TestDownloadOci(t *testing.T) {
+	testPath := filepath.Join(getTestDir("download"), "k8s_1.27.2")
+	err := os.MkdirAll(testPath, 0755)
+	assert.Equal(t, err, nil)
+
+	depFromOci := Dependency{
+		Name:    "k8s",
+		Version: "1.27.2",
+		Source: Source{
+			Oci: &Oci{
+				Reg:  settings.DEFAULT_REGISTRY,
+				Repo: filepath.Join(settings.DEFAULT_REPO, "k8s"),
+				Tag:  "1.27.2",
+			},
+		},
+	}
+
+	dep, err := depFromOci.Download(testPath)
+	assert.Equal(t, dep.Name, "k8s")
+	assert.Equal(t, dep.FullName, "")
+	assert.Equal(t, dep.Version, "1.27.2")
+	assert.Equal(t, dep.Sum, "ZI7L/uz53aDOIgVgxBbEPG7wGCWR+Gd3hhgYYRLoIY4=")
+	assert.NotEqual(t, dep.Source.Oci, nil)
+	assert.Equal(t, dep.Source.Oci.Reg, settings.DEFAULT_REGISTRY)
+	assert.Equal(t, dep.Source.Oci.Repo, filepath.Join(settings.DEFAULT_REPO, "k8s"))
+	assert.Equal(t, dep.Source.Oci.Tag, "1.27.2")
+	assert.Equal(t, dep.LocalFullPath, testPath)
+	assert.Equal(t, err, nil)
+
+	// Check whether the tar downloaded by `kpm add` has been deleted.
+	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "k8s_1.27.2.tar")), false)
+
+	err = os.RemoveAll(getTestDir("download"))
+	assert.Equal(t, err, nil)
 }
