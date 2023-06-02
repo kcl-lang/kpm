@@ -81,6 +81,13 @@ func (dep *Dependency) FillDepInfo() error {
 	return nil
 }
 
+// GenDepFullName will generate the full name of a dependency by its name and version
+// based on the '<package_name>_<package_tag>' format.
+func (dep *Dependency) GenDepFullName() string {
+	dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, dep.Name, dep.Version)
+	return dep.FullName
+}
+
 // Download will download the kcl package to localPath from registory.
 func (dep *Dependency) Download(localPath string) (*Dependency, error) {
 	reporter.Report("kpm: adding dependency", dep.Name)
@@ -89,25 +96,31 @@ func (dep *Dependency) Download(localPath string) (*Dependency, error) {
 		if err != nil {
 			return nil, err
 		}
+		dep.Version = dep.Source.Git.Tag
+		dep.LocalFullPath = localPath
+		dep.FullName = dep.GenDepFullName()
 	}
 
 	if dep.Source.Oci != nil {
-		_, err := dep.Source.Oci.Download(localPath)
+		localPath, err := dep.Source.Oci.Download(localPath)
 		if err != nil {
 			return nil, err
 		}
+		dep.Version = dep.Source.Oci.Tag
+		dep.LocalFullPath = localPath
+		dep.FullName = dep.GenDepFullName()
 	}
 
 	var err error
-	dep.Sum, err = utils.HashDir(localPath)
+	dep.Sum, err = utils.HashDir(dep.LocalFullPath)
 	if err != nil {
 		return nil, err
 	}
-	dep.LocalFullPath = localPath
+
 	// Creating symbolic links in a global cache is not an optimal solution.
 	// This allows kclvm to locate the package by default.
 	// This feature is unstable and will be removed soon.
-	err = utils.CreateSymlink(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
+	err = utils.CreateSymlink(dep.LocalFullPath, filepath.Join(filepath.Dir(dep.LocalFullPath), dep.Name))
 	if err != nil {
 		return nil, err
 	}
@@ -141,6 +154,7 @@ func (dep *Oci) Download(localPath string) (string, error) {
 		}
 		reporter.Report("kpm: the lastest version", tagSelected, "will be pulled.")
 		dep.Tag = tagSelected
+		localPath = localPath + dep.Tag
 	} else {
 		tagSelected = dep.Tag
 	}
