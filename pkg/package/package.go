@@ -373,7 +373,7 @@ func getDeps(deps modfile.Dependencies, lockDeps modfile.Dependencies, localPath
 	// Recursively download the dependencies of the new dependencies.
 	for _, d := range newDeps.Deps {
 		// Load kcl.mod file of the new downloaded dependencies.
-		modfile, err := modfile.LoadModFile(d.LocalFullPath)
+		modfile, err := modfile.LoadModFile(filepath.Join(localPath, d.FullName))
 		if err != nil {
 			if os.IsNotExist(err) {
 				continue
