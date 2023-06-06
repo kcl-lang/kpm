@@ -95,9 +95,11 @@ func ParseOciOptionFromString(oci string, tag string) (*OciOptions, error) {
 			reporter.Report("kpm: kpm get version from oci reference '<repo_name>:<repo_tag>'")
 			reporter.Report("kpm: arg '--tag' is invalid for oci reference")
 		}
+		return ociOpt, nil
 	} else if err == errors.NotOciUrl {
 		return nil, err
 	}
+	ociOpt.Tag = tag
 
 	return ociOpt, nil
 }
