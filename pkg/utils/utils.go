@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -325,4 +326,29 @@ func readLine(prompt string, silent bool) (string, error) {
 	}
 
 	return string(line), nil
+}
+
+// FindKFiles will find all the '.k' files in the 'path' directory.
+func FindKFiles(path string) ([]string, error) {
+	var files []string
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+	if !info.IsDir() {
+		if strings.HasSuffix(path, ".k") {
+			files = append(files, path)
+		}
+		return files, nil
+	}
+	entries, err := ioutil.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".k") {
+			files = append(files, filepath.Join(path, entry.Name()))
+		}
+	}
+	return files, nil
 }

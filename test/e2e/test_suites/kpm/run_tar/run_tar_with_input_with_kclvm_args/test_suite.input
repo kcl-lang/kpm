@@ -1,1 +1,0 @@
-kpm run --input kcl1.k --vendor --kcl_args "-S demo" kcl1.tar

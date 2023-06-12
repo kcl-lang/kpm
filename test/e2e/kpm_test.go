@@ -121,4 +121,24 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 			})
 		}
 	})
+
+	ginkgo.Context("testing 'kpm run '", func() {
+		testSuitesRoot := filepath.Join(filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "kpm"), "kpm_run")
+		testSuites := LoadAllTestSuites(testSuitesRoot)
+		testDataRoot := filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "test_data")
+		for _, ts := range testSuites {
+			ts := ts
+			ginkgo.It(ts.GetTestSuiteInfo(), func() {
+				workspace := GetWorkspace()
+
+				CopyDir(filepath.Join(testDataRoot, ts.Name), filepath.Join(workspace, ts.Name))
+
+				stdout, stderr, err := ExecKpmWithWorkDir(ts.Input, filepath.Join(workspace, ts.Name))
+
+				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+				gomega.Expect(stdout).To(gomega.Equal(ts.ExpectStdout))
+				gomega.Expect(stderr).To(gomega.Equal(ts.ExpectStderr))
+			})
+		}
+	})
 })

@@ -58,7 +58,7 @@ func NewRunCmd() *cli.Command {
 				if err != nil {
 					return err
 				}
-				fmt.Print(compileResult)
+				fmt.Println(compileResult)
 			} else {
 				// 'kpm run <package source>' compile the kcl package from the <package source>.
 				compileResult, err := runTar(pkgWillBeCompiled, c.String(FLAG_INPUT), c.Bool(FLAG_VENDOR), c.String(FLAG_KCL))
@@ -70,7 +70,7 @@ func NewRunCmd() *cli.Command {
 				} else if err != nil {
 					return err
 				}
-				fmt.Print(compileResult)
+				fmt.Println(compileResult)
 			}
 			return nil
 		},
@@ -194,28 +194,19 @@ func runPkgInPath(pkgPath, entryFilePath string, vendorMode bool, kclArgs string
 
 	// Set the entry file into compile options.
 	compileOpts := opt.NewKclvmOpts()
-	compileOpts.EntryFiles = append(compileOpts.EntryFiles, entryFilePath)
+	compileOpts.EntryFile = entryFilePath
 	compileOpts.KclvmCliArgs = kclArgs
 
-	err = compileOpts.Validate()
-	if err != nil {
-		return "", err
-	}
-
-	kclvmCmd, err := runner.NewCompileCmd(compileOpts)
-
-	if err != nil {
-		return "", err
-	}
+	kclvmCompiler := runner.NewCompiler(compileOpts)
 
 	// Call the kclvm_cli.
-	compileResult, err := kclPkg.CompileWithEntryFile(globalPkgPath, kclvmCmd)
+	compileResult, err := kclPkg.CompileWithEntryFile(globalPkgPath, kclvmCompiler)
 
 	if err != nil {
 		return "", err
 	}
 
-	return compileResult, nil
+	return compileResult.GetRawYamlResult(), nil
 }
 
 // absTarPath checks whether path 'tarPath' exists and whether path 'tarPath' ends with '.tar'

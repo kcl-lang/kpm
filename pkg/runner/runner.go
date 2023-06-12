@@ -1,58 +1,56 @@
 package runner
 
 import (
-	"os/exec"
+	"os"
+	"strings"
 
-	errors "kusionstack.io/kpm/pkg/errors"
+	"kusionstack.io/kclvm-go/pkg/kcl"
+	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/opt"
 )
 
-// CompileCmd denotes a KCL Compiler,
-// it will call the kcl compiler with the command 'kclvm_cli'.
-// If 'kclvm_cli' is not found in the environment variable,
-// CompileCmd will not compile KCL properly and will throw an error.
-type CompileCmd struct {
+// Compiler is a wrapper of kclvm compiler.
+type Compiler struct {
 	kclOpts *opt.KclvmOptions
-	cmd     *exec.Cmd
 }
 
-const KCLVM_CLI = "kclvm_cli"
-const KCLVM_COMMAND_RUN = "run"
-
-func NewCompileCmd(kclOpts *opt.KclvmOptions) (*CompileCmd, error) {
-
-	cmd := CompileCmd{
-		kclOpts: kclOpts,
-		cmd:     exec.Command(KCLVM_CLI),
+// NewCompiler will create a new compiler.
+func NewCompiler(kclOpts *opt.KclvmOptions) *Compiler {
+	return &Compiler{
+		kclOpts,
 	}
+}
 
-	err := cmd.Validate()
+// AddDep will add a file path to the dependency list.
+func (compiler *Compiler) AddDepPath(depName string, depPath string) {
+	compiler.kclOpts.AddDep(depName, depPath)
+}
+
+// Call KCL Compiler and return the result.
+func (compiler *Compiler) Run() (*kcl.KCLResultList, error) {
+	// Parse all the kclvm options.
+	kclFlags, err := ParseArgs(strings.Fields(compiler.kclOpts.KclvmCliArgs))
 	if err != nil {
 		return nil, err
 	}
 
-	return &cmd, nil
-}
+	// Transform the flags into kclvm options.
+	kclOpts := kclFlags.IntoKclOptions()
 
-func (cmd *CompileCmd) AddDepPath(depName string, depPath string) {
-	cmd.kclOpts.Deps[depName] = depPath
-}
-
-// Validate will check that the compiler is working well.
-func (cmd *CompileCmd) Validate() error {
-	_, lookErr := exec.LookPath(KCLVM_CLI)
-	if lookErr != nil {
-		return errors.CompileFailed
+	entry := compiler.kclOpts.EntryFile
+	info, err := os.Stat(entry)
+	if err != nil {
+		return nil, err
 	}
-	return nil
-}
 
-// Call KCL Compiler and return the result.
-func (cmd *CompileCmd) Run() string {
-	var args []string
-	args = append(args, KCLVM_COMMAND_RUN)
-	args = append(args, cmd.kclOpts.Args()...)
-	cmd.cmd.Args = append(cmd.cmd.Args, args...)
-	out, _ := cmd.cmd.CombinedOutput()
-	return string(out)
+	// If the entry is a k file, then compile it directly.
+	if !info.IsDir() && strings.HasSuffix(entry, ".k") {
+		return kcl.Run(entry, kclOpts)
+	} else if info.IsDir() {
+		// If the entry is a directory, then compile all the k files in it.
+		workDiropt := kcl.WithWorkDir(entry)
+		workDiropt.Merge(kclOpts)
+		return kcl.Run("", workDiropt)
+	}
+	return nil, errors.CompileFailed
 }
