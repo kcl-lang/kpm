@@ -43,6 +43,10 @@ func (compiler *Compiler) Run() (*kcl.KCLResultList, error) {
 		return nil, err
 	}
 
+	// Dependency options.
+	depsOpts := compiler.kclOpts.GetDepOpts()
+	kclOpts.Merge(*depsOpts)
+
 	// If the entry is a k file, then compile it directly.
 	if !info.IsDir() && strings.HasSuffix(entry, ".k") {
 		return kcl.Run(entry, kclOpts)

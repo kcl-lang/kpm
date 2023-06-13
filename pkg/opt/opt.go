@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"kusionstack.io/kclvm-go/pkg/kcl"
+	"kusionstack.io/kclvm-go/pkg/spec/gpyrpc"
 	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/reporter"
 	"kusionstack.io/kpm/pkg/settings"
@@ -187,6 +189,21 @@ const EXTERNAL_PKGS_ARG_PATTERN = "%s=%s"
 // AddDep will add a file path to the dependency list.
 func (kclOpts *KclvmOptions) AddDep(depName string, depPath string) {
 	kclOpts.Deps = append(kclOpts.Deps, fmt.Sprintf(EXTERNAL_PKGS_ARG_PATTERN, depName, depPath))
+}
+
+// GetDepOpts will return the dependency options.
+func (kclOpts *KclvmOptions) GetDepOpts() *kcl.Option {
+	if kclOpts == nil {
+		return nil
+	}
+	opts := &kcl.Option{
+		ExecProgram_Args: new(gpyrpc.ExecProgram_Args),
+	}
+	for _, dep := range kclOpts.Deps {
+		opts.Merge(kcl.WithExternalPkgs(dep))
+	}
+
+	return opts
 }
 
 func NewKclvmOpts() *KclvmOptions {
