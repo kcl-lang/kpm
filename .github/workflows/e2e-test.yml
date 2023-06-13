@@ -17,6 +17,4 @@ jobs:
   
       - name: run e2e
         run: |
-          export PATH=$PATH:$(pwd)/kclvm/bin
-          kclvm_cli version 
           make e2e
