@@ -349,7 +349,7 @@ func TestCompileWithEntryFile(t *testing.T) {
 
 	assert.Equal(t, utils.DirExists(vendor_path), false)
 
-	compileOpts := opt.NewKclvmOpts()
+	compileOpts := opt.NewKclOpts()
 	compileOpts.EntryFile = entry_file
 	cmd := runner.NewCompiler(compileOpts)
 	result, err := kclPkg.CompileWithEntryFile(kpm_home, cmd)

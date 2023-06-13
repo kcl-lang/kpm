@@ -25,7 +25,7 @@ var InvalidAddOptionsInvalidOciRepo = errors.New("kpm: invalid 'kpm add' argumen
 // Invalid 'kpm run'
 var InvalidRunOptionsWithoutEntryFiles = errors.New("kpm: invalid 'kpm run' argument, you must provide an entry file.")
 var EntryFileNotFound = errors.New("kpm: entry file cannot be found, please make sure the '--input' entry file can be found")
-var CompileFailed = errors.New("kpm: failed to compile kcl, please check the command 'kclvm_cli run' is still works.")
+var CompileFailed = errors.New("kpm: failed to compile kcl.")
 var FailedUnTarKclPackage = errors.New("kpm: failed to untar kcl package, please re-download")
 var UnknownTarFormat = errors.New("kpm: unknown tar format.")
 var KclPacakgeTarNotFound = errors.New("kpm: the kcl package tar path is not found")

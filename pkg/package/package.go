@@ -79,7 +79,7 @@ func (kclPkg *KclPkg) LocalVendorPath() string {
 	return filepath.Join(kclPkg.HomePath, "vendor")
 }
 
-// CompileWithEntryFile will call 'kclvm_cli' to compile the current kcl package and its dependent packages.
+// CompileWithEntryFile will call kcl compiler to compile the current kcl package and its dependent packages.
 func (kclPkg *KclPkg) CompileWithEntryFile(kpmHome string, kclvmCompiler *runner.Compiler) (*kcl.KCLResultList, error) {
 
 	pkgMap, err := kclPkg.ResolveDeps(kpmHome)

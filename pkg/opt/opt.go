@@ -177,22 +177,22 @@ func (oci *OciOptions) AddStoragePathSuffix(pathPrefix string) string {
 }
 
 // The parameters needed to compile the kcl program.
-type KclvmOptions struct {
-	Deps         []string
-	EntryFile    string
-	KclvmCliArgs string
+type KclOptions struct {
+	Deps       []string
+	EntryFile  string
+	KclCliArgs string
 }
 
 // The pattern of the external package argument.
 const EXTERNAL_PKGS_ARG_PATTERN = "%s=%s"
 
 // AddDep will add a file path to the dependency list.
-func (kclOpts *KclvmOptions) AddDep(depName string, depPath string) {
+func (kclOpts *KclOptions) AddDep(depName string, depPath string) {
 	kclOpts.Deps = append(kclOpts.Deps, fmt.Sprintf(EXTERNAL_PKGS_ARG_PATTERN, depName, depPath))
 }
 
 // GetDepOpts will return the dependency options.
-func (kclOpts *KclvmOptions) GetDepOpts() *kcl.Option {
+func (kclOpts *KclOptions) GetDepOpts() *kcl.Option {
 	if kclOpts == nil {
 		return nil
 	}
@@ -206,15 +206,15 @@ func (kclOpts *KclvmOptions) GetDepOpts() *kcl.Option {
 	return opts
 }
 
-func NewKclvmOpts() *KclvmOptions {
-	return &KclvmOptions{
+func NewKclOpts() *KclOptions {
+	return &KclOptions{
 		Deps:      make([]string, 0),
 		EntryFile: "",
 	}
 }
 
 // FindAllKFiles will find all the '.k' files in the entry file list.
-func (kclOpts *KclvmOptions) FindAllKFiles() ([]string, error) {
+func (kclOpts *KclOptions) FindAllKFiles() ([]string, error) {
 	var kFiles []string
 
 	kfilesByEntryfile, err := utils.FindKFiles(kclOpts.EntryFile)

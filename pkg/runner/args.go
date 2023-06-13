@@ -29,7 +29,7 @@ func ParseArgs(arguments []string) (Flag, error) {
 	return flag, nil
 }
 
-// IntoKclvmOptions converts the flag into kclvm options.
+// IntoKclOptions converts the flag into kcl options.
 func (flag *Flag) IntoKclOptions() kcl.Option {
 	if flag == nil {
 		return kcl.Option{}

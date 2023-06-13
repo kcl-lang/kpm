@@ -43,11 +43,11 @@ func NewRunCmd() *cli.Command {
 				Usage: "run in vendor mode",
 			},
 
-			// '--kcl' will pass the arguments to kclvm_cli.
+			// '--kcl' will pass the arguments to kcl.
 			&cli.StringFlag{
 				Name:  FLAG_KCL,
 				Value: "",
-				Usage: "Arguments for kclvm_cli",
+				Usage: "Arguments for kcl",
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -193,14 +193,12 @@ func runPkgInPath(pkgPath, entryFilePath string, vendorMode bool, kclArgs string
 	}
 
 	// Set the entry file into compile options.
-	compileOpts := opt.NewKclvmOpts()
+	compileOpts := opt.NewKclOpts()
 	compileOpts.EntryFile = entryFilePath
-	compileOpts.KclvmCliArgs = kclArgs
+	compileOpts.KclCliArgs = kclArgs
 
-	kclvmCompiler := runner.NewCompiler(compileOpts)
-
-	// Call the kclvm_cli.
-	compileResult, err := kclPkg.CompileWithEntryFile(globalPkgPath, kclvmCompiler)
+	// Call the kcl compiler.
+	compileResult, err := kclPkg.CompileWithEntryFile(globalPkgPath, runner.NewCompiler(compileOpts))
 
 	if err != nil {
 		return "", err

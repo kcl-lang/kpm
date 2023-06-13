@@ -9,13 +9,13 @@ import (
 	"kusionstack.io/kpm/pkg/opt"
 )
 
-// Compiler is a wrapper of kclvm compiler.
+// Compiler is a wrapper of kcl compiler.
 type Compiler struct {
-	kclOpts *opt.KclvmOptions
+	kclOpts *opt.KclOptions
 }
 
 // NewCompiler will create a new compiler.
-func NewCompiler(kclOpts *opt.KclvmOptions) *Compiler {
+func NewCompiler(kclOpts *opt.KclOptions) *Compiler {
 	return &Compiler{
 		kclOpts,
 	}
@@ -28,13 +28,13 @@ func (compiler *Compiler) AddDepPath(depName string, depPath string) {
 
 // Call KCL Compiler and return the result.
 func (compiler *Compiler) Run() (*kcl.KCLResultList, error) {
-	// Parse all the kclvm options.
-	kclFlags, err := ParseArgs(strings.Fields(compiler.kclOpts.KclvmCliArgs))
+	// Parse all the kcl options.
+	kclFlags, err := ParseArgs(strings.Fields(compiler.kclOpts.KclCliArgs))
 	if err != nil {
 		return nil, err
 	}
 
-	// Transform the flags into kclvm options.
+	// Transform the flags into kcl options.
 	kclOpts := kclFlags.IntoKclOptions()
 
 	entry := compiler.kclOpts.EntryFile
