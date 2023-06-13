@@ -9,21 +9,6 @@ import (
 )
 
 var _ = ginkgo.Describe("Kpm CLI Testing", func() {
-	ginkgo.Context("testing kclvm_cli", func() {
-		testSuites := LoadAllTestSuites(filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "kclvm_cli"))
-		for _, ts := range testSuites {
-			ts := ts
-			ginkgo.It(ts.GetTestSuiteInfo(), func() {
-				_, stderr, err := Exec(ts.Input)
-
-				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
-				// The version of kclvm may be changed,
-				// so the stderr output is not null to judge whether the kclvm installation was successful
-				gomega.Expect(stderr).To(gomega.Equal(ts.ExpectStderr))
-			})
-		}
-	})
-
 	ginkgo.Context("testing no args", func() {
 		testSuites := LoadAllTestSuites(filepath.Join(filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "kpm"), "no_args"))
 		for _, ts := range testSuites {
@@ -118,6 +103,26 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 						}
 					}
 				}
+			})
+		}
+	})
+
+	ginkgo.Context("testing 'kpm run '", func() {
+		testSuitesRoot := filepath.Join(filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "kpm"), "kpm_run")
+		testSuites := LoadAllTestSuites(testSuitesRoot)
+		testDataRoot := filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "test_data")
+		for _, ts := range testSuites {
+			ts := ts
+			ginkgo.It(ts.GetTestSuiteInfo(), func() {
+				workspace := GetWorkspace()
+
+				CopyDir(filepath.Join(testDataRoot, ts.Name), filepath.Join(workspace, ts.Name))
+
+				stdout, stderr, err := ExecKpmWithWorkDir(ts.Input, filepath.Join(workspace, ts.Name))
+
+				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+				gomega.Expect(stdout).To(gomega.Equal(ts.ExpectStdout))
+				gomega.Expect(stderr).To(gomega.Equal(ts.ExpectStderr))
 			})
 		}
 	})

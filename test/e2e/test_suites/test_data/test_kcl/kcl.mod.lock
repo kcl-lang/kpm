@@ -5,4 +5,4 @@
     version = "v0.1.0"
     sum = "ecdMCD96+8by5Ml0l/V0b7W24CS250rvD5VdlqqR6OU="
     url = "https://github.com/zong-zhe/kcl4.git"
-    tag = "v0.1.0"
+    git_tag = "v0.1.0"

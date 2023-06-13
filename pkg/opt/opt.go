@@ -8,9 +8,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"kusionstack.io/kclvm-go/pkg/kcl"
+	"kusionstack.io/kclvm-go/pkg/spec/gpyrpc"
 	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/reporter"
 	"kusionstack.io/kpm/pkg/settings"
+	"kusionstack.io/kpm/pkg/utils"
 )
 
 // Input options of 'kpm init'.
@@ -174,48 +177,51 @@ func (oci *OciOptions) AddStoragePathSuffix(pathPrefix string) string {
 }
 
 // The parameters needed to compile the kcl program.
-type KclvmOptions struct {
-	Deps         map[string]string
-	EntryFiles   []string
-	KclvmCliArgs string
+type KclOptions struct {
+	Deps       []string
+	EntryFile  string
+	KclCliArgs string
 }
 
-func (opts *KclvmOptions) Validate() error {
-	if len(opts.EntryFiles) == 0 {
-		return errors.InvalidRunOptionsWithoutEntryFiles
-	}
+// The pattern of the external package argument.
+const EXTERNAL_PKGS_ARG_PATTERN = "%s=%s"
 
-	return nil
+// AddDep will add a file path to the dependency list.
+func (kclOpts *KclOptions) AddDep(depName string, depPath string) {
+	kclOpts.Deps = append(kclOpts.Deps, fmt.Sprintf(EXTERNAL_PKGS_ARG_PATTERN, depName, depPath))
 }
 
-func NewKclvmOpts() *KclvmOptions {
-	return &KclvmOptions{
-		Deps:       make(map[string]string),
-		EntryFiles: make([]string, 0),
+// GetDepOpts will return the dependency options.
+func (kclOpts *KclOptions) GetDepOpts() *kcl.Option {
+	if kclOpts == nil {
+		return nil
+	}
+	opts := &kcl.Option{
+		ExecProgram_Args: new(gpyrpc.ExecProgram_Args),
+	}
+	for _, dep := range kclOpts.Deps {
+		opts.Merge(kcl.WithExternalPkgs(dep))
+	}
+
+	return opts
+}
+
+func NewKclOpts() *KclOptions {
+	return &KclOptions{
+		Deps:      make([]string, 0),
+		EntryFile: "",
 	}
 }
 
-// Generate the kcl compile command arguments based on 'KclvmOptions'.
-func (kclOpts *KclvmOptions) Args() []string {
-	var args []string
-	args = append(args, kclOpts.EntryFiles...)
-	args = append(args, kclOpts.PkgPathMapArgs()...)
-	if len(kclOpts.KclvmCliArgs) != 0 {
-		args = append(args, strings.Split(kclOpts.KclvmCliArgs, " ")...)
+// FindAllKFiles will find all the '.k' files in the entry file list.
+func (kclOpts *KclOptions) FindAllKFiles() ([]string, error) {
+	var kFiles []string
+
+	kfilesByEntryfile, err := utils.FindKFiles(kclOpts.EntryFile)
+	if err != nil {
+		return nil, err
 	}
+	kFiles = append(kFiles, kfilesByEntryfile...)
 
-	return args
-}
-
-const EXTERNAL_ARG = "-E"
-const EXTERNAL_ARG_PATTERN = "%s=%s"
-
-// Generate the kcl compile command arguments '-E <pkg_name>=<pkg_path>'.
-func (kclOpts *KclvmOptions) PkgPathMapArgs() []string {
-	var args []string
-	for k, v := range kclOpts.Deps {
-		args = append(args, EXTERNAL_ARG)
-		args = append(args, fmt.Sprintf(EXTERNAL_ARG_PATTERN, k, v))
-	}
-	return args
+	return kFiles, nil
 }

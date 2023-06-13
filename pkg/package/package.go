@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/otiai10/copy"
+	"kusionstack.io/kclvm-go/pkg/kcl"
 	"kusionstack.io/kpm/pkg/env"
 	errors "kusionstack.io/kpm/pkg/errors"
 	modfile "kusionstack.io/kpm/pkg/mod"
@@ -78,19 +79,19 @@ func (kclPkg *KclPkg) LocalVendorPath() string {
 	return filepath.Join(kclPkg.HomePath, "vendor")
 }
 
-// CompileWithEntryFile will call 'kclvm_cli' to compile the current kcl package and its dependent packages.
-func (kclPkg *KclPkg) CompileWithEntryFile(kpmHome string, kclvmCompiler *runner.CompileCmd) (string, error) {
+// CompileWithEntryFile will call kcl compiler to compile the current kcl package and its dependent packages.
+func (kclPkg *KclPkg) CompileWithEntryFile(kpmHome string, kclvmCompiler *runner.Compiler) (*kcl.KCLResultList, error) {
 
 	pkgMap, err := kclPkg.ResolveDeps(kpmHome)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	for dName, dPath := range pkgMap {
 		kclvmCompiler.AddDepPath(dName, dPath)
 	}
 
-	return kclvmCompiler.Run(), nil
+	return kclvmCompiler.Run()
 }
 
 // ResolveDeps will return a map between dependency name and its local path,

@@ -24,7 +24,7 @@ const (
 // 'Package' is the kcl package section of 'kcl.mod'.
 type Package struct {
 	Name    string `toml:"name,omitempty"`    // kcl package name
-	Edition string `toml:"edition,omitempty"` // kclvm version
+	Edition string `toml:"edition,omitempty"` // kcl compiler version
 	Version string `toml:"version,omitempty"` // kcl package version
 }
 
@@ -118,7 +118,7 @@ func (dep *Dependency) Download(localPath string) (*Dependency, error) {
 	}
 
 	// Creating symbolic links in a global cache is not an optimal solution.
-	// This allows kclvm to locate the package by default.
+	// This allows kcl compiler to locate the package by default.
 	// This feature is unstable and will be removed soon.
 	err = utils.CreateSymlink(dep.LocalFullPath, filepath.Join(filepath.Dir(dep.LocalFullPath), dep.Name))
 	if err != nil {

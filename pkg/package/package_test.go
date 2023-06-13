@@ -349,25 +349,23 @@ func TestCompileWithEntryFile(t *testing.T) {
 
 	assert.Equal(t, utils.DirExists(vendor_path), false)
 
-	compileOpts := opt.NewKclvmOpts()
-	compileOpts.EntryFiles = append(compileOpts.EntryFiles, entry_file)
-	cmd, err := runner.NewCompileCmd(compileOpts)
-	assert.Equal(t, err, nil)
+	compileOpts := opt.NewKclOpts()
+	compileOpts.EntryFile = entry_file
+	cmd := runner.NewCompiler(compileOpts)
 	result, err := kclPkg.CompileWithEntryFile(kpm_home, cmd)
 	assert.Equal(t, utils.DirExists(filepath.Join(vendor_path, "kcl1")), true)
 	assert.Equal(t, utils.DirExists(filepath.Join(vendor_path, "kcl2")), true)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, result, "c1: 1\nc2: 2\n")
+	assert.Equal(t, result.GetRawYamlResult(), "c1: 1\nc2: 2")
 	os.RemoveAll(vendor_path)
 
 	kclPkg.SetVendorMode(false)
 	assert.Equal(t, utils.DirExists(vendor_path), false)
-	cmd, err = runner.NewCompileCmd(compileOpts)
-	assert.Equal(t, err, nil)
+	cmd = runner.NewCompiler(compileOpts)
 	result, err = kclPkg.CompileWithEntryFile(kpm_home, cmd)
 	assert.Equal(t, utils.DirExists(vendor_path), false)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, result, "c1: 1\nc2: 2\n")
+	assert.Equal(t, result.GetRawYamlResult(), "c1: 1\nc2: 2")
 	os.RemoveAll(vendor_path)
 }
 

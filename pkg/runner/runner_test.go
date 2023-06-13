@@ -1,34 +1,23 @@
 package runner
 
 import (
-	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"kusionstack.io/kpm/pkg/errors"
-	"kusionstack.io/kpm/pkg/opt"
+	"kusionstack.io/kclvm-go/pkg/kcl"
 )
 
-func TestCompilerNotFound(t *testing.T) {
-	// Set the entry file into compile options.
-	compileOpts := opt.NewKclvmOpts()
-
-	// Call the kclvm_cli.
-	compiler, err := NewCompileCmd(compileOpts)
+func TestKclRun(t *testing.T) {
+	absPath, err := filepath.Abs("./testdata_external/external/")
 	assert.Equal(t, err, nil)
-	compiler.cmd.Path = ""
-	result := compiler.Run()
-	assert.Equal(t, result, "")
-}
-
-func TestCompilerValidate(t *testing.T) {
-	os.Setenv("PATH", "")
-	// Set the entry file into compile options.
-	compileOpts := opt.NewKclvmOpts()
-
-	// Call the kclvm_cli.
-	compiler, err := NewCompileCmd(compileOpts)
-	assert.Equal(t, err, errors.CompileFailed)
-	err = compiler.Validate()
-	assert.Equal(t, err, errors.CompileFailed)
+	absPath1, err := filepath.Abs("./testdata_external/external_1/")
+	assert.Equal(t, err, nil)
+	opt := kcl.WithExternalPkgs("external="+absPath, "external_1="+absPath1)
+	result, err := kcl.Run("./testdata/import_external.k", opt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, "[{\"a\": \"Hello External World!\", \"a1\": \"Hello External_1 World!\"}]", result.GetRawJsonResult())
+	assert.Equal(t, "a: Hello External World!\na1: Hello External_1 World!", result.GetRawYamlResult())
 }

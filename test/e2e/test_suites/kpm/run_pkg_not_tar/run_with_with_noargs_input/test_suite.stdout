@@ -13,5 +13,5 @@ OPTIONS:
    --input value     a kcl file as the compile entry file
    --tag value       the tag for oci artifact
    --vendor          run in vendor mode (default: false)
-   --kcl_args value  Arguments for kclvm_cli
+   --kcl_args value  Arguments for kcl
    --help, -h        show help

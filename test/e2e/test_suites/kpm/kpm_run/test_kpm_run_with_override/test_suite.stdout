@@ -1,0 +1,6 @@
+a1:
+  image: default
+  name: a1-app
+a2:
+  image: "new-a2-image:v123"
+  name: app
