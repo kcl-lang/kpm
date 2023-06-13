@@ -21,7 +21,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt -y install wget
-      - run: wget -c https://github.com/KusionStack/KCLVM/releases/download/v0.4.6/kclvm-v0.4.6-linux-amd64.tar.gz -qO - | tar xz -C ./
+      - run: wget -c https://github.com/KusionStack/KCLVM/releases/download/v0.5.0-alpha.3/kclvm-v0.5.0-alpha.3-linux-amd64.tar.gz -qO - | tar xz -C ./
      
       - run: go build ./...
       - run: go vet ./...
