@@ -8,7 +8,7 @@ require (
 	github.com/otiai10/copy v1.9.0
 	github.com/urfave/cli/v2 v2.25.0
 	gotest.tools/v3 v3.4.0
-	kusionstack.io/kclvm-go v0.5.0-alpha.2.0.20230612090654-3ef08f2dc94b
+	kusionstack.io/kclvm-go v0.5.0-alpha.3
 )
 
 require (
