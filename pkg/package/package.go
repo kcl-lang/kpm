@@ -35,6 +35,16 @@ func NewKclPkg(opts *opt.InitOptions) KclPkg {
 	}
 }
 
+// GetKclOpts will return the kcl options from kcl.mod.
+func (kclPkg *KclPkg) GetKclOpts() *kcl.Option {
+	return kclPkg.modFile.Profiles.IntoKclOptions()
+}
+
+// GetEntryKclFilesFromModFile will return the entry kcl files from kcl.mod.
+func (kclPkg *KclPkg) GetEntryKclFilesFromModFile() []string {
+	return kclPkg.modFile.Profiles.Entries
+}
+
 // Load the kcl package from directory containing kcl.mod and kcl.mod.lock file.
 func LoadKclPkg(pkgPath string) (*KclPkg, error) {
 	modFile, err := modfile.LoadModFile(pkgPath)
@@ -80,16 +90,20 @@ func (kclPkg *KclPkg) LocalVendorPath() string {
 }
 
 // CompileWithEntryFile will call kcl compiler to compile the current kcl package and its dependent packages.
-func (kclPkg *KclPkg) CompileWithEntryFile(kpmHome string, kclvmCompiler *runner.Compiler) (*kcl.KCLResultList, error) {
+func (kclPkg *KclPkg) Compile(kpmHome string, kclvmCompiler *runner.Compiler) (*kcl.KCLResultList, error) {
 
 	pkgMap, err := kclPkg.ResolveDeps(kpmHome)
 	if err != nil {
 		return nil, err
 	}
 
+	// Fill the dependency path.
 	for dName, dPath := range pkgMap {
 		kclvmCompiler.AddDepPath(dName, dPath)
 	}
+
+	// Add kcl options from kcl.mod.
+	kclvmCompiler.AddKclOption(*kclPkg.GetKclOpts())
 
 	return kclvmCompiler.Run()
 }

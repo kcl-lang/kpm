@@ -349,10 +349,9 @@ func TestCompileWithEntryFile(t *testing.T) {
 
 	assert.Equal(t, utils.DirExists(vendor_path), false)
 
-	compileOpts := opt.NewKclOpts()
-	compileOpts.EntryFile = entry_file
-	cmd := runner.NewCompiler(compileOpts)
-	result, err := kclPkg.CompileWithEntryFile(kpm_home, cmd)
+	compiler := runner.DefaultCompiler()
+	compiler.AddKFile(entry_file)
+	result, err := kclPkg.Compile(kpm_home, compiler)
 	assert.Equal(t, utils.DirExists(filepath.Join(vendor_path, "kcl1")), true)
 	assert.Equal(t, utils.DirExists(filepath.Join(vendor_path, "kcl2")), true)
 	assert.Equal(t, err, nil)
@@ -361,8 +360,8 @@ func TestCompileWithEntryFile(t *testing.T) {
 
 	kclPkg.SetVendorMode(false)
 	assert.Equal(t, utils.DirExists(vendor_path), false)
-	cmd = runner.NewCompiler(compileOpts)
-	result, err = kclPkg.CompileWithEntryFile(kpm_home, cmd)
+
+	result, err = kclPkg.Compile(kpm_home, compiler)
 	assert.Equal(t, utils.DirExists(vendor_path), false)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, result.GetRawYamlResult(), "c1: 1\nc2: 2")

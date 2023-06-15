@@ -8,7 +8,7 @@ require (
 	github.com/otiai10/copy v1.9.0
 	github.com/urfave/cli/v2 v2.25.0
 	gotest.tools/v3 v3.4.0
-	kusionstack.io/kclvm-go v0.5.0-alpha.3
+	kusionstack.io/kclvm-go v0.5.0-alpha.4
 )
 
 require (
@@ -81,7 +81,7 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	kusionstack.io/kclvm-artifact-go v0.5.0-alpha.3 // indirect
+	kusionstack.io/kclvm-artifact-go v0.5.0-alpha.4 // indirect
 )
 
 require (

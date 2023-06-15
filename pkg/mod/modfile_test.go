@@ -162,7 +162,7 @@ func TestStoreModFile(t *testing.T) {
 
 	expect, _ := os.ReadFile(filepath.Join(testPath, "expected.toml"))
 	got, _ := os.ReadFile(filepath.Join(testPath, "kcl.mod"))
-	assert.Equal(t, got, expect)
+	assert.Equal(t, string(got), string(expect))
 }
 
 func TestGetFilePath(t *testing.T) {
