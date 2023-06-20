@@ -2,75 +2,110 @@
 
 Beginning in kpm v0.2.0, you can use container registries with OCI support to store and share kcl packages.
 
+## kpm registry
+
+kpm supports using OCI registries to store and share kcl packages. kpm uses `ghcr.io` to store kcl packages by default.
+
+kpm default registry - https://github.com/orgs/KusionStack/packages
+
+You can adjust the registry url and repo name in the kpm configuration file. The kpm configuration file is located at `$KCL_PKG_PATH/.kpm/config.json`, and if the environment variable `KCL_PKG_PATH` is not set, it is saved by default at `$HOME/.kcl/kpm/.kpm/config.json`.
+
+The default content of the configuration file is as follows:
+
+```json
+{
+    "DefaultOciRegistry":"ghcr.io",
+    "DefaultOciRepo":"kusionstack"
+}
+```
+
 ## Quick Start with OCI Registry
+
+In the following sections, a temporary OCI registry was set up on `localhost:5001` in a local environment, and an account `test` with the password `1234` was added for this OCI registry.
 
 ### kpm login
 
-login to a registry (with manual password entry)
+You can use `kpm login` in the following four ways.
+
+#### 1. login to a registry with account and password
 
 ```shell
-$ kpm login -u <account_name> <oci_registry>
-Password: # input your password here.
+$ kpm login -u <account_name> -p <password> <oci_registry>
 Login succeeded
 ```
 
-- `<account_name>` is your registry account name.
-- `<oci_registry>` is the resgistry url.
+<img src="./gifs/kpm_login.gif" width="600" align="center" />
+
+#### 2. login to a registry with account, and enter the password interactively.
+
+```shell
+$ kpm login -u <account_name> <oci_registry>
+Password:
+Login succeeded
+```
+
+<img src="./gifs/kpm_login_with_pwd.gif" width="600" align="center" />
+
+#### 3. login to a registry, and enter the account and password interactively.
+
+```shell
+$ kpm login <oci_registry>
+Username: <account_name>
+Password:
+Login succeeded
+```
+
+<img src="./gifs/kpm_login_with_both.gif" width="600" align="center" />
 
 ### kpm logout
 
-logout from a registry
+You can use `kpm logout` to logout from a registry
 
 ```shell
-kpm logout <registry>
+$ kpm logout <registry>
 ```
 
-- `<registry>` is the resgistry url.
+<img src="./gifs/kpm_logout.gif" width="600" align="center" />
 
 ### kpm push
 
-Upload a kcl package to an OCI-based registry.
+You can use `kpm push` under the kcl package root directory to upload a kcl package to an OCI-based registry.
 
 ```shell
-kpm push oci://<oci_registry>/<account_name>/<repo_name>
+# create a new kcl package.
+$ kpm init <package_name> 
+# enter the kcl package root directory
+$ cd <package_name> 
+# push it to an oci registry
+$ kpm push <oci_url>
 ```
 
-- `<oci_registry>` is the oci registry url. e.g. `ghcr.io` or `docker.io`.
-- `<account_name>` is your registry account name.
-- `<repo_name>` is the repo name in the oci registry.
+<img src="./gifs/kpm_push.gif" width="600" align="center" />
 
 ### kpm pull
 
 Download a kcl package from an OCI-based registry.
 
 ```shell
-kpm pull --tag <kcl_package_version>  oci://<oci_registry>/<account_name>/<repo_name>
+$ kpm pull --tag <kcl_package_version> <oci_url>
 ```
 
-- `<oci_registry>` is the oci registry url. e.g. `ghcr.io` or `docker.io`.
-- `<account_name>` is your registry account name.
-- `<repo_name>` is the repo name in the oci registry.
-- `<kcl_package_version>` is the version of the kcl package.
+<img src="./gifs/kpm_pull.gif" width="600" align="center" />
 
 ### kpm run
 
-You can directly run an oci url or ref to compile a package in oci registry.
+Run an oci url or ref to compile a package in oci registry.
 
 ```shell
-kpm run --tag <kcl_package_version> oci://<oci_registry>/<account_name>/<repo_name>
+$ kpm run --tag <kcl_package_version> <oci_url>
 ```
 
-- `<kcl_package_version>` is the version of the kcl package.
-- `<oci_registry>` is the oci registry url. e.g. `ghcr.io` or `docker.io`.
-- `<account_name>` is your registry account name.
-- `<repo_name>` is the repo name in the oci registry.
+<img src="./gifs/kpm_run_oci_url.gif" width="600" align="center" />
 
-If your kcl package is stored on `docker.io`, then you can run the package directly using oci ref.
+Alternatively, you can compile a kcl package directly from an oci ref using `kpm run`.
 
 ```shell
-kpm run <docker.io_account_name>/<repo_name>:<kcl_package_version>
+$ kpm run <oci_ref>
 ```
 
-- `<docker.io_account_name>` is your `docker.io` account name.
-- `<repo_name>` is the repo name in the oci registry.
-- `<kcl_package_version>` is the version of the kcl package.
+<img src="./gifs/kpm_run_oci_ref.gif" width="600" align="center" />

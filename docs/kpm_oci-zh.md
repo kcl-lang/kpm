@@ -2,75 +2,110 @@
 
 从 kpm v0.2.0 版本开始，kpm 支持通过 OCI Registries 保存和分享 KCL 包。
 
+## kpm registry
+
+kpm 支持使用 OCI Registry 保存和分享 KCL 包，kpm 默认使用 ghcr.io 保存 KCL 包。
+
+kpm 默认 registry - https://github.com/orgs/KusionStack/packages
+
+可以在 kpm 的配置文件中调整 Registry 的地址和仓库名。kpm 的配置文件位于 `$KCL_PKG_PATH/.kpm/config.json`, 如果没有设置环境变量 `KCL_PKG_PATH` 的值，则默认保存在 `$HOME/.kcl/kpm/.kpm/config.json`。
+
+配置文件的默认内容如下：
+
+```json
+{
+    "DefaultOciRegistry":"ghcr.io",
+    "DefaultOciRepo":"kusionstack"
+}
+```
+
 ## 快速开始在 kpm 中使用 OCI Registry
+
+在接下来的内容中，我们将使用 `localhost:5001` 作为示例 OCI Registry，并且为这个 OCI Registry 添加了一个账户 `test`，密码是 `1234`。
 
 ### kpm login
 
-使用 kpm 登陆 OCI registry，需要手动输入密码。
+你可以通过以下四种方式使用 `kpm login`。
+
+#### 1. 使用账户和密码登陆 OCI Registry
 
 ```shell
-$ kpm login -u <account_name> <oci_registry>
-Password: # 手动输入密码。
+$ kpm login -u <account_name> -p <password> <oci_registry>
 Login succeeded
 ```
 
-- `<account_name>` 是用来登陆 OCI registry 的账户名称。
-- `<oci_registry>` 是 OCI registry 的 URL，例如：'docker.io', 'ghcr.io'等。
+<img src="./gifs/kpm_login.gif" width="600" align="center" />
+
+#### 2. 使用账户登陆 OCI Registry，并且交互式输入密码
+
+```shell
+$ kpm login -u <account_name> <oci_registry>
+Password:
+Login succeeded
+```
+
+<img src="./gifs/kpm_login_with_pwd.gif" width="600" align="center" />
+
+#### 3. 交互式输入账户和密码登陆 OCI Registry
+
+```shell
+$ kpm login <oci_registry>
+Username: <account_name>
+Password:
+Login succeeded
+```
+
+<img src="./gifs/kpm_login_with_both.gif" width="600" align="center" />
 
 ### kpm logout
 
-使用 kpm 登出 OCI registry
+你可以使用 `kpm logout` 退出一个 OCI Registry。
 
 ```shell
-kpm logout <registry>
+$ kpm logout <registry>
 ```
 
-- `<oci_registry>` 是 OCI registry 的 URL，例如：'docker.io', 'ghcr.io'等。
+<img src="./gifs/kpm_logout.gif" width="600" align="center" />
 
 ### kpm push
 
-向 OCI registry 中上传一个 kcl 包。
+你可以在 kcl 包的根目录下使用 `kpm push` 命令将 kcl 包上传到一个 OCI Registry。
 
 ```shell
-kpm push oci://<oci_registry>/<account_name>/<repo_name>
+# 创建一个新的 kcl 包。
+$ kpm init <package_name> 
+# 进入 kcl 包的根目录
+$ cd <package_name> 
+# 将 kcl 包上传到一个 oci registry
+$ kpm push <oci_url>
 ```
 
-- `<oci_registry>` 是 OCI registry 的 URL，例如：'docker.io', 'ghcr.io'等。
-- `<account_name>` 是用来登陆 OCI registry 的账户名称。
-- `<repo_name>` 是用来保存 kcl 包的仓库名称。
+<img src="./gifs/kpm_push.gif" width="600" align="center" />
 
 ### kpm pull
 
 从 OCI registry 中下载一个 kcl 包。
 
 ```shell
-kpm pull --tag <kcl_package_version>  oci://<oci_registry>/<account_name>/<repo_name>
+kpm pull --tag <kcl_package_version> <oci_url>
 ```
 
-- `<oci_registry>` 是 OCI registry 的 URL，例如：'docker.io', 'ghcr.io'等。
-- `<account_name>` 是用来登陆 OCI registry 的账户名称。
-- `<repo_name>` 是用来保存 kcl 包的仓库名称。
-- `<kcl_package_version>` kcl 包的版本号，例如：v0.0.1。
+<img src="./gifs/kpm_pull.gif" width="600" align="center" />
 
 ### kpm run
 
 kpm 可以直接通过 OCI 的 url 编译 kcl 包。
 
 ```shell
-kpm run --tag <kcl_package_version> oci://<oci_registry>/<account_name>/<repo_name>
+$ kpm run --tag <kcl_package_version> <oci_url>
 ```
 
-- `<oci_registry>` 是 OCI registry 的 URL，例如：'docker.io', 'ghcr.io'等。
-- `<account_name>` 是用来登陆 OCI registry 的账户名称。
-- `<repo_name>` 是用来保存 kcl 包的仓库名称。
-- `<kcl_package_version>` kcl 包的版本号，例如：v0.0.1。
+<img src="./gifs/kpm_run_oci_url.gif" width="600" align="center" />
 
-如果你的 kcl 是保存在 docker.io 上的，那么 kpm 还支持通过如下方式直接编译 kcl 包。
+另外，你也可以通过 `kpm run` 直接使用本地的 kcl 包。
 
 ```shell
-kpm run <docker.io_account_name>/<repo_name>:<kcl_package_version>
+$ kpm run <oci_ref>
 ```
 
-- `<docker.io_account_name>` 'docker.io'的账户名称。
-- `<repo_name>` 是用来保存 kcl 包的仓库名称。
-- `<kcl_package_version>` kcl 包的版本号，例如：v0.0.1。
+<img src="./gifs/kpm_run_oci_ref.gif" width="600" align="center" />
