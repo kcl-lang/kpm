@@ -3,12 +3,16 @@
 package cmd
 
 import (
+	"os"
 	"path/filepath"
 
 	"github.com/urfave/cli/v2"
+	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/oci"
 	"kusionstack.io/kpm/pkg/opt"
 	"kusionstack.io/kpm/pkg/reporter"
+	"kusionstack.io/kpm/pkg/settings"
+	"kusionstack.io/kpm/pkg/utils"
 )
 
 // NewPullCmd new a Command for `kpm pull`.
@@ -25,16 +29,33 @@ func NewPullCmd() *cli.Command {
 		},
 		Action: func(c *cli.Context) error {
 			tag := c.String(FLAG_TAG)
-			ociUrl := c.Args().Get(0)
+			ociUrlOrPkgName := c.Args().Get(0)
 			localPath := c.Args().Get(1)
 
-			if len(ociUrl) == 0 {
-				reporter.Report("kpm: oci url must be specified.")
+			if len(ociUrlOrPkgName) == 0 {
+				reporter.Report("kpm: oci url or package name must be specified.")
 				reporter.ExitWithReport("kpm: run 'kpm pull help' for more information.")
 			}
 
-			ociOpt, err := opt.ParseOciOptionFromOciUrl(ociUrl, tag)
-			if err != nil {
+			if len(tag) == 0 {
+				reporter.Report("kpm: pulling '", ociUrlOrPkgName, "'.")
+			} else {
+				reporter.Report("kpm: pulling '", ociUrlOrPkgName, "' with tag '", tag, "'.")
+			}
+
+			ociOpt, err := opt.ParseOciOptionFromOciUrl(ociUrlOrPkgName, tag)
+
+			if err == errors.IsOciRef {
+				settings, err := settings.GetSettings()
+				if err != nil {
+					return err
+				}
+
+				ociOpt, err = opt.ParseOciRef(filepath.Join(settings.DefaultOciRepo(), ociUrlOrPkgName))
+				if err != nil {
+					return err
+				}
+			} else if err != nil {
 				return err
 			}
 
@@ -43,12 +64,35 @@ func NewPullCmd() *cli.Command {
 				return err
 			}
 
-			err = oci.Pull(absPullPath, ociOpt.Reg, ociOpt.Repo, ociOpt.Tag)
+			tmpDir, err := os.MkdirTemp("", "")
+			if err != nil {
+				return errors.InternalBug
+			}
+			// clean the temp dir.
+			defer os.RemoveAll(tmpDir)
+
+			localPath = ociOpt.AddStoragePathSuffix(tmpDir)
+
+			// 2. Pull the tar.
+			err = oci.Pull(localPath, ociOpt.Reg, ociOpt.Repo, ociOpt.Tag)
+
 			if err != nil {
 				return err
 			}
 
-			reporter.Report("kpm: the kcl package tar is pulled successfully.")
+			// 3. Get the (*.tar) file path.
+			matches, err := filepath.Glob(filepath.Join(localPath, KCL_PKG_TAR))
+			if err != nil || len(matches) != 1 {
+				return errors.FailedPullFromOci
+			}
+
+			// 4. Untar the tar file.
+			err = utils.UnTarDir(matches[0], ociOpt.AddStoragePathSuffix(absPullPath))
+			if err != nil {
+				return err
+			}
+
+			reporter.Report("kpm: the kcl package is pulled successfully.")
 			return nil
 		},
 	}

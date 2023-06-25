@@ -149,9 +149,7 @@ func ParseOciUrl(ociUrl string) (*OciOptions, error) {
 		return nil, errors.IsOciRef
 	}
 
-	if len(u.Scheme) != 0 && u.Scheme != "oci" {
-		return nil, errors.NotOciUrl
-	} else if len(u.Scheme) == 0 {
+	if u.Scheme != "oci" {
 		return nil, errors.IsOciRef
 	}
 

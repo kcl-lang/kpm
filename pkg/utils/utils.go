@@ -204,6 +204,10 @@ func UnTarDir(tarPath string, destDir string) error {
 				return errors.FailedUnTarKclPackage
 			}
 		case tar.TypeReg:
+			err := os.MkdirAll(filepath.Dir(destFilePath), 0755)
+			if err != nil {
+				return err
+			}
 			outFile, err := os.Create(destFilePath)
 			if err != nil {
 				return errors.FailedUnTarKclPackage
