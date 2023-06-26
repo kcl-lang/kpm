@@ -3,17 +3,13 @@
 package opt
 
 import (
-	"fmt"
 	"net/url"
 	"path/filepath"
 	"strings"
 
-	"kusionstack.io/kclvm-go/pkg/kcl"
-	"kusionstack.io/kclvm-go/pkg/spec/gpyrpc"
 	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/reporter"
 	"kusionstack.io/kpm/pkg/settings"
-	"kusionstack.io/kpm/pkg/utils"
 )
 
 // Input options of 'kpm init'.
@@ -172,54 +168,4 @@ func ParseOciUrl(ociUrl string) (*OciOptions, error) {
 // You will get a path '/usr/test/docker.io/test/testRepo/v0.0.1'.
 func (oci *OciOptions) AddStoragePathSuffix(pathPrefix string) string {
 	return filepath.Join(filepath.Join(filepath.Join(pathPrefix, oci.Reg), oci.Repo), oci.Tag)
-}
-
-// The parameters needed to compile the kcl program.
-type KclOptions struct {
-	Deps       []string
-	EntryFile  string
-	KclCliArgs string
-}
-
-// The pattern of the external package argument.
-const EXTERNAL_PKGS_ARG_PATTERN = "%s=%s"
-
-// AddDep will add a file path to the dependency list.
-func (kclOpts *KclOptions) AddDep(depName string, depPath string) {
-	kclOpts.Deps = append(kclOpts.Deps, fmt.Sprintf(EXTERNAL_PKGS_ARG_PATTERN, depName, depPath))
-}
-
-// GetDepOpts will return the dependency options.
-func (kclOpts *KclOptions) GetDepOpts() *kcl.Option {
-	if kclOpts == nil {
-		return nil
-	}
-	opts := &kcl.Option{
-		ExecProgram_Args: new(gpyrpc.ExecProgram_Args),
-	}
-	for _, dep := range kclOpts.Deps {
-		opts.Merge(kcl.WithExternalPkgs(dep))
-	}
-
-	return opts
-}
-
-func NewKclOpts() *KclOptions {
-	return &KclOptions{
-		Deps:      make([]string, 0),
-		EntryFile: "",
-	}
-}
-
-// FindAllKFiles will find all the '.k' files in the entry file list.
-func (kclOpts *KclOptions) FindAllKFiles() ([]string, error) {
-	var kFiles []string
-
-	kfilesByEntryfile, err := utils.FindKFiles(kclOpts.EntryFile)
-	if err != nil {
-		return nil, err
-	}
-	kFiles = append(kFiles, kfilesByEntryfile...)
-
-	return kFiles, nil
 }

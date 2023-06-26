@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
+	"kusionstack.io/kclvm-go/pkg/kcl"
 	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/git"
 	"kusionstack.io/kpm/pkg/oci"
@@ -35,8 +36,40 @@ type ModFile struct {
 	// Whether the current package uses the vendor mode
 	// In the vendor mode, kpm will look for the package in the vendor subdirectory
 	// in the current package directory.
-	VendorMode bool `toml:"-"`
+	VendorMode bool    `toml:"-"`
+	Profiles   Profile `toml:"profile"`
 	Dependencies
+}
+
+// Profile is the profile section of 'kcl.mod'.
+// It is used to specify the compilation options of the current package.
+type Profile struct {
+	Entries []string `toml:"entries"`
+}
+
+// NewProfile will create a new profile.
+func NewProfile() Profile {
+	return Profile{
+		Entries: []string{},
+	}
+}
+
+// IntoKclOptions will transform the profile into kcl options.
+func (profile *Profile) IntoKclOptions() *kcl.Option {
+
+	opts := kcl.NewOption()
+
+	for _, entry := range profile.Entries {
+		// Get the file extension
+		ext := filepath.Ext(entry)
+		if ext == ".yaml" {
+			opts.Merge(kcl.WithSettings(entry))
+		} else {
+			opts.Merge(kcl.WithKFilenames(entry))
+		}
+	}
+
+	return opts
 }
 
 // FillDependenciesInfo will fill registry information for all dependencies in a kcl.mod.
