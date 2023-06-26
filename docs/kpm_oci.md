@@ -76,11 +76,24 @@ You can use `kpm push` under the kcl package root directory to upload a kcl pack
 $ kpm init <package_name> 
 # enter the kcl package root directory
 $ cd <package_name> 
+# push it to the default oci registry specified in the configuration file 'kpm.json'.
+$ kpm push
+```
+
+<img src="./gifs/kpm_push.gif" width="600" align="center" />
+
+You can also use `kpm push` to upload a kcl package to an OCI-based registry by specifying the registry url.
+
+```shell
+# create a new kcl package.
+$ kpm init <package_name> 
+# enter the kcl package root directory
+$ cd <package_name> 
 # push it to an oci registry
 $ kpm push <oci_url>
 ```
 
-<img src="./gifs/kpm_push.gif" width="600" align="center" />
+<img src="./gifs/kpm_push_with_url.gif" width="600" align="center" />
 
 ### kpm pull
 

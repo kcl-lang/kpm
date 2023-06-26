@@ -77,10 +77,23 @@ $ kpm init <package_name>
 # 进入 kcl 包的根目录
 $ cd <package_name> 
 # 将 kcl 包上传到一个 oci registry
-$ kpm push <oci_url>
+$ kpm push
 ```
 
 <img src="./gifs/kpm_push.gif" width="600" align="center" />
+
+你也可以在 `kpm push` 命令中指定 OCI registry 的 url。
+
+```shell
+# 创建一个新的 kcl 包。
+$ kpm init <package_name> 
+# 进入 kcl 包的根目录
+$ cd <package_name> 
+# 将 kcl 包上传到一个 oci registry
+$ kpm push <oci_url>
+```
+
+<img src="./gifs/kpm_push_with_url.gif" width="600" align="center" />
 
 ### kpm pull
 

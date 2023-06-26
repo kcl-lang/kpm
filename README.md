@@ -159,3 +159,8 @@ kpm run
 Beginning in kpm v0.2.0, you can use container registries with OCI support to store and share kcl packages.
 
 For more information about [OCI registry support](./docs/kpm_oci.md).
+
+## Learn More
+
+[OCI registry support](./docs/kpm_oci-zh.md).
+[How to share your kcl package with others using kpm](./docs/publish_your_kcl_packages-zh.md).
