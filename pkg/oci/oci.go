@@ -20,6 +20,7 @@ import (
 	"oras.land/oras-go/v2/registry/remote/retry"
 )
 
+const OCI_SCHEME = "oci"
 const DEFAULT_OCI_ARTIFACT_TYPE = "application/vnd.oci.image.layer.v1.tar"
 
 // Login will login 'hostname' by 'username' and 'password'.

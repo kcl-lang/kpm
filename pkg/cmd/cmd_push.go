@@ -54,8 +54,6 @@ func NewPushCmd(settings *settings.Settings) *cli.Command {
 	}
 }
 
-const OCI_SCHEME = "oci"
-
 // genDefaultOciUrlForKclPkg will generate the default oci url from the current package.
 func genDefaultOciUrlForKclPkg(pkg *pkg.KclPkg) (string, error) {
 	settings, err := settings.GetSettings()
@@ -64,7 +62,7 @@ func genDefaultOciUrlForKclPkg(pkg *pkg.KclPkg) (string, error) {
 	}
 
 	u := &url.URL{
-		Scheme: OCI_SCHEME,
+		Scheme: oci.OCI_SCHEME,
 		Host:   settings.DefaultOciRegistry(),
 		Path:   filepath.Join(settings.DefaultOciRepo(), pkg.GetPkgName()),
 	}
@@ -118,6 +116,10 @@ func pushTarPackage(ociUrl, localTarPath string, settings *settings.Settings) er
 }
 
 // pushPackage will push the kcl package to the oci registry.
+// 1. pushPackage will package the current kcl package into default tar path.
+// 2. If the oci url is not specified, generate the default oci url from the current package.
+// 3. Generate the OCI options from oci url and the version of current kcl package.
+// 4. Push the package to the oci registry.
 func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, settings *settings.Settings) error {
 	// 1. Package the current kcl package into default tar path.
 	tarPath, err := kclPkg.PackageCurrentPkgPath()
