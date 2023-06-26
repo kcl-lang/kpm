@@ -62,7 +62,7 @@ Login succeeded
 你可以使用 `kpm logout` 退出一个 OCI Registry。
 
 ```shell
-$ kpm logout <registry>
+kpm logout <registry>
 ```
 
 <img src="./gifs/kpm_logout.gif" width="600" align="center" />
@@ -84,20 +84,28 @@ $ kpm push <oci_url>
 
 ### kpm pull
 
-从 OCI registry 中下载一个 kcl 包。
+你可以使用 `kpm pull` 从默认的 OCI registry 中下载一个 kcl 包。kpm 会自动从`kpm.json`中的 OCI registry 中寻找 kcl 包。
+
+```shell
+kpm pull <package_name>:<package_version>
+```
+
+<img src="./gifs/kpm_pull.gif" width="600" align="center" />
+
+或者，你也可以从指定的 OCI registry url 中下载一个 kcl 包。
 
 ```shell
 kpm pull --tag <kcl_package_version> <oci_url>
 ```
 
-<img src="./gifs/kpm_pull.gif" width="600" align="center" />
+<img src="./gifs/kpm_pull_with_url.gif" width="600" align="center" />
 
 ### kpm run
 
 kpm 可以直接通过 OCI 的 url 编译 kcl 包。
 
 ```shell
-$ kpm run --tag <kcl_package_version> <oci_url>
+kpm run --tag <kcl_package_version> <oci_url>
 ```
 
 <img src="./gifs/kpm_run_oci_url.gif" width="600" align="center" />
@@ -105,7 +113,7 @@ $ kpm run --tag <kcl_package_version> <oci_url>
 另外，你也可以通过 `kpm run` 直接使用本地的 kcl 包。
 
 ```shell
-$ kpm run <oci_ref>
+kpm run <oci_ref>
 ```
 
 <img src="./gifs/kpm_run_oci_ref.gif" width="600" align="center" />

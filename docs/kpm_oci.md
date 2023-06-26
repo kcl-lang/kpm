@@ -62,7 +62,7 @@ Login succeeded
 You can use `kpm logout` to logout from a registry
 
 ```shell
-$ kpm logout <registry>
+kpm logout <registry>
 ```
 
 <img src="./gifs/kpm_logout.gif" width="600" align="center" />
@@ -84,20 +84,29 @@ $ kpm push <oci_url>
 
 ### kpm pull
 
-Download a kcl package from an OCI-based registry.
+You can use `kpm pull` to download a kcl package from the default OCI registry by kcl package name.
+`kpm` will download the kcl package from the default OCI registry specified in the configuration file `kpm.json`.
 
 ```shell
-$ kpm pull --tag <kcl_package_version> <oci_url>
+kpm pull <package_name>:<package_version>
 ```
 
 <img src="./gifs/kpm_pull.gif" width="600" align="center" />
+
+Or you can download a kcl package from an OCI-based registry url.
+
+```shell
+kpm pull --tag <kcl_package_version> <oci_url>
+```
+
+<img src="./gifs/kpm_pull_with_url.gif" width="600" align="center" />
 
 ### kpm run
 
 Run an oci url or ref to compile a package in oci registry.
 
 ```shell
-$ kpm run --tag <kcl_package_version> <oci_url>
+kpm run --tag <kcl_package_version> <oci_url>
 ```
 
 <img src="./gifs/kpm_run_oci_url.gif" width="600" align="center" />
@@ -105,7 +114,8 @@ $ kpm run --tag <kcl_package_version> <oci_url>
 Alternatively, you can compile a kcl package directly from an oci ref using `kpm run`.
 
 ```shell
-$ kpm run <oci_ref>
+kpm run <oci_ref>
 ```
 
 <img src="./gifs/kpm_run_oci_ref.gif" width="600" align="center" />
+
