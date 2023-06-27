@@ -1,6 +1,7 @@
 package modfile
 
 import (
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -162,7 +163,7 @@ func TestStoreModFile(t *testing.T) {
 
 	expect, _ := os.ReadFile(filepath.Join(testPath, "expected.toml"))
 	got, _ := os.ReadFile(filepath.Join(testPath, "kcl.mod"))
-	assert.Equal(t, string(got), string(expect))
+	assert.Equal(t, utils.RmNewline(string(got)), utils.RmNewline(string(expect)))
 }
 
 func TestGetFilePath(t *testing.T) {
@@ -180,13 +181,16 @@ func TestDownloadOci(t *testing.T) {
 	err := os.MkdirAll(testPath, 0755)
 	assert.Equal(t, err, nil)
 
+	urlpath, err := url.JoinPath(settings.DEFAULT_REPO, "k8s")
+	assert.Equal(t, err, nil)
+
 	depFromOci := Dependency{
 		Name:    "k8s",
 		Version: "1.27.2",
 		Source: Source{
 			Oci: &Oci{
 				Reg:  settings.DEFAULT_REGISTRY,
-				Repo: filepath.Join(settings.DEFAULT_REPO, "k8s"),
+				Repo: urlpath,
 				Tag:  "1.27.2",
 			},
 		},
@@ -199,7 +203,7 @@ func TestDownloadOci(t *testing.T) {
 	assert.Equal(t, dep.Sum, "ZI7L/uz53aDOIgVgxBbEPG7wGCWR+Gd3hhgYYRLoIY4=")
 	assert.NotEqual(t, dep.Source.Oci, nil)
 	assert.Equal(t, dep.Source.Oci.Reg, settings.DEFAULT_REGISTRY)
-	assert.Equal(t, dep.Source.Oci.Repo, filepath.Join(settings.DEFAULT_REPO, "k8s"))
+	assert.Equal(t, dep.Source.Oci.Repo, urlpath)
 	assert.Equal(t, dep.Source.Oci.Tag, "1.27.2")
 	assert.Equal(t, dep.LocalFullPath, testPath)
 	assert.Equal(t, err, nil)
@@ -217,13 +221,16 @@ func TestDownloadLatestOci(t *testing.T) {
 	err := os.MkdirAll(testPath, 0755)
 	assert.Equal(t, err, nil)
 
+	urlpath, err := url.JoinPath(settings.DEFAULT_REPO, "k8s")
+	assert.Equal(t, err, nil)
+
 	depFromOci := Dependency{
 		Name:    "k8s",
 		Version: "",
 		Source: Source{
 			Oci: &Oci{
 				Reg:  settings.DEFAULT_REGISTRY,
-				Repo: filepath.Join(settings.DEFAULT_REPO, "k8s"),
+				Repo: urlpath,
 				Tag:  "",
 			},
 		},
@@ -236,7 +243,7 @@ func TestDownloadLatestOci(t *testing.T) {
 	assert.Equal(t, dep.Sum, "ZI7L/uz53aDOIgVgxBbEPG7wGCWR+Gd3hhgYYRLoIY4=")
 	assert.NotEqual(t, dep.Source.Oci, nil)
 	assert.Equal(t, dep.Source.Oci.Reg, settings.DEFAULT_REGISTRY)
-	assert.Equal(t, dep.Source.Oci.Repo, filepath.Join(settings.DEFAULT_REPO, "k8s"))
+	assert.Equal(t, dep.Source.Oci.Repo, urlpath)
 	assert.Equal(t, dep.Source.Oci.Tag, "1.27.2")
 	assert.Equal(t, dep.LocalFullPath, testPath+"1.27.2")
 	assert.Equal(t, err, nil)

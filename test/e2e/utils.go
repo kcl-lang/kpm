@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,7 +13,7 @@ import (
 
 // LoadFirstFileWithExt read the first file with extention 'ext' in 'dir' and return the content.
 func LoadFirstFileWithExt(dir string, ext string) string {
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		reporter.ExitWithReport("kpm_e2e: failed to load file, the dir not exists.")
 	}

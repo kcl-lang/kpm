@@ -2,6 +2,7 @@ package oci
 
 import (
 	"context"
+	"net/url"
 	"path/filepath"
 
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
@@ -75,7 +76,12 @@ type OciClient struct {
 // regName is the registry. e.g. ghcr.io or docker.io.
 // repoName is the repo name on registry.
 func NewOciClient(regName, repoName string) (*OciClient, error) {
-	repo, err := remote.NewRepository(filepath.Join(regName, repoName))
+
+	repoPath, err := url.JoinPath(regName, repoName)
+	if err != nil {
+		return nil, err
+	}
+	repo, err := remote.NewRepository(repoPath)
 	if err != nil {
 		return nil, errors.FailedPullFromOci
 	}

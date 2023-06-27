@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -345,7 +344,8 @@ func FindKFiles(path string) ([]string, error) {
 		}
 		return files, nil
 	}
-	entries, err := ioutil.ReadDir(path)
+
+	entries, err := os.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
@@ -355,4 +355,9 @@ func FindKFiles(path string) ([]string, error) {
 		}
 	}
 	return files, nil
+}
+
+// RmNewline will remove all the '\r\n' and '\n' in the string 's'.
+func RmNewline(s string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(s, "\r\n", ""), "\n", "")
 }

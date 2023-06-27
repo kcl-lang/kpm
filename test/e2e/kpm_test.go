@@ -1,7 +1,7 @@
 package e2e
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/onsi/ginkgo/v2"
@@ -79,7 +79,7 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 	ginkgo.Context("testing kpm workflows", func() {
 		testSuitesRoot := filepath.Join(filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "kpm"), "workflows")
 
-		files, _ := ioutil.ReadDir(testSuitesRoot)
+		files, _ := os.ReadDir(testSuitesRoot)
 		for _, file := range files {
 			ginkgo.It(filepath.Join(testSuitesRoot, file.Name()), func() {
 				if file.IsDir() {
