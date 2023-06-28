@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -51,7 +52,12 @@ func NewPullCmd() *cli.Command {
 					return err
 				}
 
-				ociOpt, err = opt.ParseOciRef(filepath.Join(settings.DefaultOciRepo(), ociUrlOrPkgName))
+				urlpath, err := url.JoinPath(settings.DefaultOciRepo(), ociUrlOrPkgName)
+				if err != nil {
+					return err
+				}
+
+				ociOpt, err = opt.ParseOciRef(urlpath)
 				if err != nil {
 					return err
 				}

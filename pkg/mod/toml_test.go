@@ -8,6 +8,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/stretchr/testify/assert"
+	"kusionstack.io/kpm/pkg/utils"
 )
 
 const testTomlDir = "test_data_toml"
@@ -61,7 +62,8 @@ func TestMarshalTOML(t *testing.T) {
 	fmt.Printf("modfile: '%q'\n", got_data)
 	fmt.Printf("expected_toml == got_data: '%t'\n", expected_toml == got_data)
 	fmt.Printf("reversed_expected_toml == got_data: '%t'\n", reversed_expected_toml == got_data)
-	assert.Equal(t, (expected_toml == got_data) || (reversed_expected_toml == got_data), true)
+	assert.Equal(t, (utils.RmNewline(expected_toml) == utils.RmNewline(got_data)) ||
+		(utils.RmNewline(reversed_expected_toml) == utils.RmNewline(got_data)), true)
 }
 
 func TestUnMarshalTOML(t *testing.T) {
@@ -126,7 +128,7 @@ func TestMarshalLockToml(t *testing.T) {
 	tomlStr, _ := deps.MarshalLockTOML()
 	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected_lock.toml"))
 	expected_toml := string(expected_data)
-	assert.Equal(t, expected_toml, tomlStr)
+	assert.Equal(t, utils.RmNewline(expected_toml), utils.RmNewline(tomlStr))
 }
 
 func TestUnmarshalLockToml(t *testing.T) {

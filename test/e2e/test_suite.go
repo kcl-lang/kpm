@@ -2,7 +2,7 @@ package e2e
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -25,9 +25,9 @@ type TestSuite struct {
 	ExpectStderr string
 }
 
-/// checkTestSuite Check that the file corresponding to each suffix can appear only once
+// / checkTestSuite Check that the file corresponding to each suffix can appear only once
 func CheckTestSuite(testSuitePath string, name string) {
-	files, err := ioutil.ReadDir(testSuitePath)
+	files, err := os.ReadDir(testSuitePath)
 	if err != nil {
 		reporter.ExitWithReport("kpm_e2e: failed to check test suite.")
 	}
@@ -74,7 +74,7 @@ func LoadTestSuite(testSuitePath, name string) TestSuite {
 // LoadAllTestSuites load all test suites from 'getWorkDir()/test_suites'.
 func LoadAllTestSuites(testSuitesDir string) []TestSuite {
 	testSuites := make([]TestSuite, 0)
-	files, err := ioutil.ReadDir(testSuitesDir)
+	files, err := os.ReadDir(testSuitesDir)
 
 	if err != nil {
 		reporter.ExitWithReport("kpm_e2e: failed to read test suites dir.")

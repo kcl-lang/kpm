@@ -1,7 +1,7 @@
 package pkg
 
 import (
-	"fmt"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -136,7 +136,7 @@ func TestUpdateKclModAndLock(t *testing.T) {
 		assert.Equal(t, len(kclPkg.Dependencies.Deps), 2)
 		assert.Equal(t, len(kclPkg.modFile.Deps), 2)
 		expectKclMod, _ := os.ReadFile(filepath.Join(expectDir, "kcl.mod"))
-		assert.Equal(t, string(gotKclMod), string(expectKclMod))
+		assert.Equal(t, utils.RmNewline(string(gotKclMod)), utils.RmNewline(string(expectKclMod)))
 	}
 
 	if gotKclModLock, err := os.ReadFile(filepath.Join(testDir, "kcl.mod.lock")); os.IsNotExist(err) {
@@ -145,7 +145,7 @@ func TestUpdateKclModAndLock(t *testing.T) {
 		assert.Equal(t, len(kclPkg.Dependencies.Deps), 2)
 		assert.Equal(t, len(kclPkg.modFile.Deps), 2)
 		expectKclModLock, _ := os.ReadFile(filepath.Join(expectDir, "kcl.mod.lock"))
-		assert.Equal(t, string(gotKclModLock), string(expectKclModLock))
+		assert.Equal(t, utils.RmNewline(string(gotKclModLock)), utils.RmNewline(string(expectKclModLock)))
 	}
 }
 
@@ -473,12 +473,20 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	res, err := pkg.ResolveDepsMetadataInJsonStr(globalPkgPath, true)
 	assert.Equal(t, err, nil)
 
-	expectedStr := fmt.Sprintf(
-		"{\"packages\":{\"konfig\":{\"name\":\"konfig\",\"manifest_path\":\"%s\"}}}",
-		filepath.Join(globalPkgPath, "konfig_v0.0.1"),
-	)
+	expectedDep := modfile.Dependencies{
+		Deps: make(map[string]modfile.Dependency),
+	}
 
-	assert.Equal(t, res, expectedStr)
+	expectedDep.Deps["konfig"] = modfile.Dependency{
+		Name:          "konfig",
+		FullName:      "konfig_v0.0.1",
+		LocalFullPath: filepath.Join(globalPkgPath, "konfig_v0.0.1"),
+	}
+
+	expectedDepStr, err := json.Marshal(expectedDep)
+	assert.Equal(t, err, nil)
+
+	assert.Equal(t, res, string(expectedDepStr))
 
 	vendorDir := filepath.Join(testDir, "vendor")
 	if utils.DirExists(vendorDir) {
@@ -491,12 +499,16 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	assert.Equal(t, utils.DirExists(vendorDir), true)
 	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "konfig_v0.0.1")), true)
 
-	expectedStr = fmt.Sprintf(
-		"{\"packages\":{\"konfig\":{\"name\":\"konfig\",\"manifest_path\":\"%s\"}}}",
-		filepath.Join(vendorDir, "konfig_v0.0.1"),
-	)
+	expectedDep.Deps["konfig"] = modfile.Dependency{
+		Name:          "konfig",
+		FullName:      "konfig_v0.0.1",
+		LocalFullPath: filepath.Join(vendorDir, "konfig_v0.0.1"),
+	}
 
-	assert.Equal(t, res, expectedStr)
+	expectedDepStr, err = json.Marshal(expectedDep)
+	assert.Equal(t, err, nil)
+
+	assert.Equal(t, res, string(expectedDepStr))
 	if utils.DirExists(vendorDir) {
 		err = os.RemoveAll(vendorDir)
 		assert.Equal(t, err, nil)
@@ -508,6 +520,6 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(vendorDir), false)
 	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "konfig_v0.0.1")), false)
-	expectedStr = "{\"packages\":{\"konfig\":{\"name\":\"konfig\",\"manifest_path\":\"\"}}}"
+	expectedStr := "{\"packages\":{\"konfig\":{\"name\":\"konfig\",\"manifest_path\":\"\"}}}"
 	assert.Equal(t, res, expectedStr)
 }

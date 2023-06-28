@@ -1,0 +1,33 @@
+name: Windows Test
+on: [push, pull_request]
+
+jobs:
+  TestWindows:
+    name: Unit tests on Windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.19
+
+      - name: Install Chocolatey and make
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+          iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+          choco install make
+
+      - run: go build ./...
+      - run: go vet ./...
+
+      - name: Running go tests with coverage on Windows
+        env:
+          GO111MODULE: on 
+        run : |
+          make cover
