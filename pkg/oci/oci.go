@@ -20,6 +20,7 @@ import (
 	"oras.land/oras-go/v2/registry/remote/retry"
 )
 
+const OCI_SCHEME = "oci"
 const DEFAULT_OCI_ARTIFACT_TYPE = "application/vnd.oci.image.layer.v1.tar"
 
 // Login will login 'hostname' by 'username' and 'password'.
@@ -186,8 +187,15 @@ func (ociClient *OciClient) Push(localPath, tag string) error {
 	}
 
 	// 3. Copy from the file store to the remote repository
-	_, err = oras.Copy(*ociClient.ctx, fs, tag, ociClient.repo, tag, oras.DefaultCopyOptions)
-	return err
+	desc, err := oras.Copy(*ociClient.ctx, fs, tag, ociClient.repo, tag, oras.DefaultCopyOptions)
+
+	if err != nil {
+		return err
+	}
+
+	reporter.Report("kpm: pushed [registry]", ociClient.repo.Reference)
+	reporter.Report("kpm: digest:", desc.Digest)
+	return nil
 }
 
 func loadCredential(hostName string, settings *settings.Settings) (*remoteauth.Credential, error) {
