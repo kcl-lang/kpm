@@ -5,7 +5,6 @@ package cmd
 import (
 	"net/url"
 	"os"
-	"path/filepath"
 
 	"github.com/urfave/cli/v2"
 	"kusionstack.io/kpm/pkg/errors"
@@ -61,10 +60,15 @@ func genDefaultOciUrlForKclPkg(pkg *pkg.KclPkg) (string, error) {
 		return "", err
 	}
 
+	urlPath, err := url.JoinPath(settings.DefaultOciRepo(), pkg.GetPkgName())
+	if err != nil {
+		return "", err
+	}
+
 	u := &url.URL{
 		Scheme: oci.OCI_SCHEME,
 		Host:   settings.DefaultOciRegistry(),
-		Path:   filepath.Join(settings.DefaultOciRepo(), pkg.GetPkgName()),
+		Path:   urlPath,
 	}
 
 	return u.String(), nil
