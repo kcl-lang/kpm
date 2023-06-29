@@ -17,10 +17,10 @@
 在安装了 kpm 并创建了 ghcr.io 令牌后，您需要使用 kpm 登录 ghcr.io。您可以使用以下命令进行操作：
 
 ```shell
-kpm login ghcr.io -u <USERNAME> -p <TOKEN> <OCI_REGISTRY>
+kpm login -u <USERNAME> -p <TOKEN> ghcr.io
 ```
 
-其中 `<USERNAME>` 是您的 GitHub 用户名，`<TOKEN>` 是您在步骤 2 中创建的令牌。<OCI_REGISTRY> 是 ghcr.io。
+其中 `<USERNAME>` 是您的 GitHub 用户名，`<TOKEN>` 是您在步骤 2 中创建的令牌。
 
 关于如何使用 kpm 登录 ghcr.io 的更多信息，请参阅 [kpm login](./kpm_oci-zh.md#kpm-login)。
 
@@ -52,7 +52,7 @@ $ pwd
 $ kpm init 
 ```
 
-关于如何使用 kpm init 的更多信息，请参阅 [kpm init](../README-zh.md#快速开始)。
+关于如何使用 kpm init 的更多信息，请参阅 [kpm init](./command-reference-zh/1.init.md)。
 
 ### 2. 推送 kcl 包
 

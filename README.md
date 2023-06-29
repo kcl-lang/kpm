@@ -162,5 +162,6 @@ For more information about [OCI registry support](./docs/kpm_oci.md).
 
 ## Learn More
 
-[OCI registry support](./docs/kpm_oci-zh.md).
-[How to share your kcl package with others using kpm](./docs/publish_your_kcl_packages-zh.md).
+- [OCI registry support](./docs/kpm_oci-zh.md).
+- [How to share your kcl package with others using kpm](./docs/publish_your_kcl_packages-zh.md).
+- [kpm command reference](./docs/command-reference/index.md)

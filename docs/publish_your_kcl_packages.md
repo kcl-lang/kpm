@@ -52,7 +52,7 @@ $ pwd
 $ kpm init 
 ```
 
-For more information on how to use `kpm init`, see [kpm init](../README.md#quick-start).
+For more information on how to use `kpm init`, see [kpm init](./command-reference/1.init.md).
 
 ### 2. Pushing the KCL Package
 
