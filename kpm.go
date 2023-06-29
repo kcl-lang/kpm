@@ -28,6 +28,9 @@ func main() {
 		cmd.NewAddCmd(),
 		cmd.NewPkgCmd(),
 		cmd.NewMetadataCmd(),
+
+		// todo: The following commands are bound to the oci registry.
+		// Refactor them to compatible with the other registry.
 		cmd.NewRunCmd(),
 		cmd.NewLoginCmd(setting),
 		cmd.NewLogoutCmd(setting),
