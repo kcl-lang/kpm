@@ -6,7 +6,7 @@ Beginning in kpm v0.2.0, you can use container registries with OCI support to st
 
 kpm supports using OCI registries to store and share kcl packages. kpm uses `ghcr.io` to store kcl packages by default.
 
-kpm default registry - https://github.com/orgs/KusionStack/packages
+kpm default registry - [https://github.com/orgs/KusionStack/packages](https://github.com/orgs/KusionStack/packages)
 
 You can adjust the registry url and repo name in the kpm configuration file. The kpm configuration file is located at `$KCL_PKG_PATH/.kpm/config.json`, and if the environment variable `KCL_PKG_PATH` is not set, it is saved by default at `$HOME/.kcl/kpm/.kpm/config.json`.
 
@@ -76,11 +76,24 @@ You can use `kpm push` under the kcl package root directory to upload a kcl pack
 $ kpm init <package_name> 
 # enter the kcl package root directory
 $ cd <package_name> 
+# push it to the default oci registry specified in the configuration file 'kpm.json'.
+$ kpm push
+```
+
+<img src="./gifs/kpm_push.gif" width="600" align="center" />
+
+You can also use `kpm push` to upload a kcl package to an OCI-based registry by specifying the registry url.
+
+```shell
+# create a new kcl package.
+$ kpm init <package_name> 
+# enter the kcl package root directory
+$ cd <package_name> 
 # push it to an oci registry
 $ kpm push <oci_url>
 ```
 
-<img src="./gifs/kpm_push.gif" width="600" align="center" />
+<img src="./gifs/kpm_push_with_url.gif" width="600" align="center" />
 
 ### kpm pull
 
@@ -118,4 +131,3 @@ kpm run <oci_ref>
 ```
 
 <img src="./gifs/kpm_run_oci_ref.gif" width="600" align="center" />
-

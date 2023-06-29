@@ -1,6 +1,7 @@
 # kcl.mod
 
 ## The Manifest
+
 The `kcl.mod` file for each module is called its manifest. It is written in the TOML format. It contains metadata that is needed to compile the module.
 
 In the MVP version, the sections we plan to support are as follows:
@@ -15,24 +16,29 @@ In the MVP version, the sections we plan to support are as follows:
 ## package
 
 The first section in a kcl.mod is [package].
+
 ```
 [package]
 name = "hello_world" # the name of the package
 version = "0.1.0"    # the current version, obeying semver
 edition = "0.1.1-alpha.1"    # the kclvm version
 ```
+
 The only fields required by kpm are `name` and `version`. `edition` is an optional field that describes the version of kclvm being used. If not specified, the latest version will be selected by default.
 
 ## dependencies
-Your kcl package can depend on other libraries from registries, git repositories, or subdirectories on your local file system. 
+
+Your kcl package can depend on other libraries from registries, git repositories, or subdirectories on your local file system.
 
 From registries:
+
 ```toml
 [dependencies]
 xxx = "0.0.1"
 ```
 
 From Git:
+
 ```toml
 [dependencies]
 # git release
@@ -44,6 +50,7 @@ xxxx = {git = "<github url>", branch = "main"}
 ```
 
 From local file system
+
 ```toml
 # Find the kcl.mod under "./xxx/xxx".
 [dependencies]
@@ -51,6 +58,7 @@ xxxx = {path = "./xxx/xxx",version = "0.4.5"}
 ```
 
 ## kcl.mod.lock
+
 A read-only file generated from kcl.mod to fix the dependencies version.
 
 ```toml
@@ -70,6 +78,5 @@ checksum = "d468802bab17cbc0cc575e9b0"
 - checksum - To verify the integrity of the package.
 
 ## kcl.mod.proto
+
 We provide [kcl.mod.proto](./kcl.mod.proto) to define the specification of kcl.mod.
-
-

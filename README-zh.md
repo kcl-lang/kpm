@@ -158,3 +158,9 @@ kpm run
 从 kpm v0.2.0 版本开始，kpm 支持通过 OCI Registries 保存和分享 KCL 包。
 
 了解更多如何在 kpm 中使用，查看 [OCI registry 支持](./docs/kpm_oci-zh.md).
+
+## 了解更多
+
+- [OCI registry 支持](./docs/kpm_oci-zh.md).
+- [如何使用 kpm 与他人分享您的 kcl 包](./docs/publish_your_kcl_packages-zh.md)
+- [kpm 命令参考](./docs/command-reference-zh/index.md)
