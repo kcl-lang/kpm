@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gofrs/flock"
+	"github.com/nightlyone/lockfile"
 	"kusionstack.io/kpm/pkg/env"
 	"kusionstack.io/kpm/pkg/errors"
 	"kusionstack.io/kpm/pkg/reporter"
@@ -51,7 +51,7 @@ type Settings struct {
 	Conf KpmConf
 
 	// the flock used to lock the 'package-cache' file.
-	PackageCacheLock *flock.Flock
+	PackageCacheLock *lockfile.Lockfile
 }
 
 // AcquirePackageCacheLock will try to lock the 'package-cache' file.
@@ -62,30 +62,17 @@ func (settings *Settings) AcquirePackageCacheLock() error {
 	}
 
 	// try to lock the 'package-cache' file
-	locked, err := settings.PackageCacheLock.TryLock()
-	if err != nil {
-		return err
-	}
-
-	// if failed to lock the 'package-cache' file, wait until it is unlocked.
-	if !locked {
-		reporter.Report("kpm: waiting for package-cache lock...")
-		for {
-			// try to lock the 'package-cache' file
-			locked, err = settings.PackageCacheLock.TryLock()
-			if err != nil {
-				return err
-			}
-			// if locked, break the loop.
-			if locked {
-				break
-			}
-			// when waiting for a file lock, the program will continuously attempt to acquire the lock.
-			// without adding a sleep, the program will rapidly try to acquire the lock, consuming a large amount of CPU resources.
-			// by adding a sleep, the program can pause for a period of time between each attempt to acquire the lock,
-			// reducing the consumption of CPU resources.
-			time.Sleep(2 * time.Millisecond)
+	for {
+		err := settings.PackageCacheLock.TryLock()
+		if err == nil {
+			break
 		}
+		reporter.Report("kpm: waiting for package-cache lock...")
+		// when waiting for a file lock, the program will continuously attempt to acquire the lock.
+		// without adding a sleep, the program will rapidly try to acquire the lock, consuming a large amount of CPU resources.
+		// by adding a sleep, the program can pause for a period of time between each attempt to acquire the lock,
+		// reducing the consumption of CPU resources.
+		time.Sleep(time.Millisecond * 2)
 	}
 
 	return nil
@@ -161,11 +148,14 @@ func GetSettings() (*Settings, error) {
 				return
 			}
 		}
-
+		cacheLockFile, err := lockfile.New(lockPath)
+		if err != nil {
+			return
+		}
 		kpm_settings = &Settings{
 			CredentialsFile:  credentialsFile,
 			Conf:             *conf,
-			PackageCacheLock: flock.New(lockPath),
+			PackageCacheLock: &cacheLockFile,
 		}
 	})
 
