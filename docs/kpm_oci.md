@@ -6,7 +6,7 @@ Beginning in kpm v0.2.0, you can use container registries with OCI support to st
 
 kpm supports using OCI registries to store and share kcl packages. kpm uses `ghcr.io` to store kcl packages by default.
 
-kpm default registry - https://github.com/orgs/KusionStack/packages
+kpm default registry - [https://github.com/orgs/KusionStack/packages](https://github.com/orgs/KusionStack/packages)
 
 You can adjust the registry url and repo name in the kpm configuration file. The kpm configuration file is located at `$KCL_PKG_PATH/.kpm/config.json`, and if the environment variable `KCL_PKG_PATH` is not set, it is saved by default at `$HOME/.kcl/kpm/.kpm/config.json`.
 
@@ -131,4 +131,3 @@ kpm run <oci_ref>
 ```
 
 <img src="./gifs/kpm_run_oci_ref.gif" width="600" align="center" />
-

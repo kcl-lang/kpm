@@ -10,7 +10,7 @@
 
 ## 步骤 2：创建一个 ghcr.io 令牌
 
-如果您使用 kpm 默认的OCI Registry, 要将 kcl 包推送到 ghcr.io，您需要创建一个用于身份验证的令牌。您可以按照 [ghcr.io 身份验证](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry)中的说明进行操作。
+如果您使用 kpm 默认的 OCI Registry, 要将 kcl 包推送到 ghcr.io，您需要创建一个用于身份验证的令牌。您可以按照 [ghcr.io 身份验证](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry)中的说明进行操作。
 
 ## 步骤 3：登录 ghcr.io
 
@@ -32,16 +32,16 @@ kpm login -u <USERNAME> -p <TOKEN> ghcr.io
 
 首先，您需要确保您推送的内容是符合一个 kcl 包的规范，即必须包含合法的 kcl.mod 和 kcl.mod.lock 文件。
 
-如果您不知道如何得到一个合法的`kcl.mod`和`kcl.mod.lock`。您可以使用`kpm init`命令。
+如果您不知道如何得到一个合法的 `kcl.mod` 和 `kcl.mod.lock`。您可以使用 `kpm init` 命令。
 
 ```shell
 # 创建一个名为 my_package 的 kcl 包
 kpm init my_package
 ```
 
-`kpm init my_package` 命令将会为您创建一个新的 kcl 包 `my_package`, 并为这个包创建`kcl.mod`和`kcl.mod.lock`文件。
+`kpm init my_package` 命令将会为您创建一个新的 kcl 包 `my_package`, 并为这个包创建 `kcl.mod` 和 `kcl.mod.lock` 文件。
 
-如果您已经有了一个包含 kcl 文件的目录`exist_kcl_package`，您可以使用以下命令将其转换为一个 kcl 包，并为其创建合法的`kcl.mod`和`kcl.mod.lock`。
+如果您已经有了一个包含 kcl 文件的目录 `exist_kcl_package`，您可以使用以下命令将其转换为一个 kcl 包，并为其创建合法的 `kcl.mod` 和 `kcl.mod.lock`。
 
 ```shell
 # 在 exist_kcl_package 目录下

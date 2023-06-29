@@ -6,7 +6,7 @@
 
 kpm 支持使用 OCI Registry 保存和分享 KCL 包，kpm 默认使用 ghcr.io 保存 KCL 包。
 
-kpm 默认 registry - https://github.com/orgs/KusionStack/packages
+kpm 默认 registry - [https://github.com/orgs/KusionStack/packages](https://github.com/orgs/KusionStack/packages)
 
 可以在 kpm 的配置文件中调整 Registry 的地址和仓库名。kpm 的配置文件位于 `$KCL_PKG_PATH/.kpm/config.json`, 如果没有设置环境变量 `KCL_PKG_PATH` 的值，则默认保存在 `$HOME/.kcl/kpm/.kpm/config.json`。
 
@@ -97,7 +97,7 @@ $ kpm push <oci_url>
 
 ### kpm pull
 
-你可以使用 `kpm pull` 从默认的 OCI registry 中下载一个 kcl 包。kpm 会自动从`kpm.json`中的 OCI registry 中寻找 kcl 包。
+你可以使用 `kpm pull` 从默认的 OCI registry 中下载一个 kcl 包。kpm 会自动从 `kpm.json` 中的 OCI registry 中寻找 kcl 包。
 
 ```shell
 kpm pull <package_name>:<package_version>
