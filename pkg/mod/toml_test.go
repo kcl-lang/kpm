@@ -8,7 +8,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/stretchr/testify/assert"
-	"kusionstack.io/kpm/pkg/utils"
+	"kcl-lang.io/kpm/pkg/utils"
 )
 
 const testTomlDir = "test_data_toml"

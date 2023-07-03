@@ -8,7 +8,7 @@ import (
 
 	"github.com/otiai10/copy"
 	"github.com/thoas/go-funk"
-	"kusionstack.io/kpm/pkg/reporter"
+	"kcl-lang.io/kpm/pkg/reporter"
 )
 
 // LoadFirstFileWithExt read the first file with extention 'ext' in 'dir' and return the content.

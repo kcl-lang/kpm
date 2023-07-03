@@ -7,9 +7,9 @@ import (
 	"os"
 
 	"github.com/urfave/cli/v2"
-	"kusionstack.io/kpm/pkg/env"
-	"kusionstack.io/kpm/pkg/errors"
-	pkg "kusionstack.io/kpm/pkg/package"
+	"kcl-lang.io/kpm/pkg/env"
+	"kcl-lang.io/kpm/pkg/errors"
+	pkg "kcl-lang.io/kpm/pkg/package"
 )
 
 // NewMetadataCmd new a Command for `kpm metadata`.

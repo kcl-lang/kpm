@@ -10,8 +10,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"kusionstack.io/kpm/pkg/env"
-	"kusionstack.io/kpm/pkg/utils"
+	"kcl-lang.io/kpm/pkg/env"
+	"kcl-lang.io/kpm/pkg/utils"
 )
 
 const testDataDir = "test_data"

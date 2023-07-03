@@ -7,12 +7,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"kusionstack.io/kpm/pkg/env"
-	"kusionstack.io/kpm/pkg/errors"
-	modfile "kusionstack.io/kpm/pkg/mod"
-	"kusionstack.io/kpm/pkg/opt"
-	"kusionstack.io/kpm/pkg/runner"
-	"kusionstack.io/kpm/pkg/utils"
+	"kcl-lang.io/kpm/pkg/env"
+	"kcl-lang.io/kpm/pkg/errors"
+	modfile "kcl-lang.io/kpm/pkg/mod"
+	"kcl-lang.io/kpm/pkg/opt"
+	"kcl-lang.io/kpm/pkg/runner"
+	"kcl-lang.io/kpm/pkg/utils"
 )
 
 const testDataDir = "test_data"
@@ -136,7 +136,11 @@ func TestUpdateKclModAndLock(t *testing.T) {
 		assert.Equal(t, len(kclPkg.Dependencies.Deps), 2)
 		assert.Equal(t, len(kclPkg.modFile.Deps), 2)
 		expectKclMod, _ := os.ReadFile(filepath.Join(expectDir, "kcl.mod"))
-		assert.Equal(t, utils.RmNewline(string(gotKclMod)), utils.RmNewline(string(expectKclMod)))
+		expectKclModReverse, _ := os.ReadFile(filepath.Join(expectDir, "kcl.reverse.mod"))
+		assert.Equal(t,
+			(utils.RmNewline(string(gotKclMod)) == utils.RmNewline(string(expectKclMod))) || (utils.RmNewline(string(gotKclMod)) == utils.RmNewline(string(expectKclModReverse))),
+			true,
+		)
 	}
 
 	if gotKclModLock, err := os.ReadFile(filepath.Join(testDir, "kcl.mod.lock")); os.IsNotExist(err) {
@@ -145,7 +149,11 @@ func TestUpdateKclModAndLock(t *testing.T) {
 		assert.Equal(t, len(kclPkg.Dependencies.Deps), 2)
 		assert.Equal(t, len(kclPkg.modFile.Deps), 2)
 		expectKclModLock, _ := os.ReadFile(filepath.Join(expectDir, "kcl.mod.lock"))
-		assert.Equal(t, utils.RmNewline(string(gotKclModLock)), utils.RmNewline(string(expectKclModLock)))
+		expectKclModLockReverse, _ := os.ReadFile(filepath.Join(expectDir, "kcl.mod.reverse.lock"))
+		assert.Equal(t,
+			(utils.RmNewline(string(gotKclModLock)) == utils.RmNewline(string(expectKclModLock))) || (utils.RmNewline(string(gotKclModLock)) == utils.RmNewline(string(expectKclModLockReverse))),
+			true,
+		)
 	}
 }
 

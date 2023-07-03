@@ -6,10 +6,10 @@ import (
 	"os"
 
 	"github.com/urfave/cli/v2"
-	"kusionstack.io/kpm/pkg/cmd"
-	"kusionstack.io/kpm/pkg/reporter"
-	"kusionstack.io/kpm/pkg/settings"
-	"kusionstack.io/kpm/pkg/version"
+	"kcl-lang.io/kpm/pkg/cmd"
+	"kcl-lang.io/kpm/pkg/reporter"
+	"kcl-lang.io/kpm/pkg/settings"
+	"kcl-lang.io/kpm/pkg/version"
 )
 
 func main() {

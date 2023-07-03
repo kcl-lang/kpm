@@ -4,9 +4,9 @@ package cmd
 
 import (
 	"github.com/urfave/cli/v2"
-	"kusionstack.io/kpm/pkg/oci"
-	"kusionstack.io/kpm/pkg/reporter"
-	"kusionstack.io/kpm/pkg/settings"
+	"kcl-lang.io/kpm/pkg/oci"
+	"kcl-lang.io/kpm/pkg/reporter"
+	"kcl-lang.io/kpm/pkg/settings"
 )
 
 // NewLogoutCmd new a Command for `kpm logout`.

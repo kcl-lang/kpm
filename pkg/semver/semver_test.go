@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
-	"kusionstack.io/kpm/pkg/errors"
+	"kcl-lang.io/kpm/pkg/errors"
 )
 
 func TestLatestVersion(t *testing.T) {

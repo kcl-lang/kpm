@@ -10,7 +10,7 @@ import (
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega/gexec"
-	"kusionstack.io/kpm/pkg/reporter"
+	"kcl-lang.io/kpm/pkg/reporter"
 )
 
 const TEST_WORKSPACE = "test_kpm_workspace"

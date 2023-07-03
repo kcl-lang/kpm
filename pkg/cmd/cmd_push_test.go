@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	pkg "kusionstack.io/kpm/pkg/package"
+	pkg "kcl-lang.io/kpm/pkg/package"
 )
 
 func TestGenDefaultOciUrlForKclPkg(t *testing.T) {

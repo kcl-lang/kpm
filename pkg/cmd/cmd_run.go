@@ -9,14 +9,14 @@ import (
 	"strings"
 
 	"github.com/urfave/cli/v2"
-	"kusionstack.io/kpm/pkg/env"
-	"kusionstack.io/kpm/pkg/errors"
-	"kusionstack.io/kpm/pkg/oci"
-	"kusionstack.io/kpm/pkg/opt"
-	pkg "kusionstack.io/kpm/pkg/package"
-	"kusionstack.io/kpm/pkg/reporter"
-	"kusionstack.io/kpm/pkg/runner"
-	"kusionstack.io/kpm/pkg/utils"
+	"kcl-lang.io/kpm/pkg/env"
+	"kcl-lang.io/kpm/pkg/errors"
+	"kcl-lang.io/kpm/pkg/oci"
+	"kcl-lang.io/kpm/pkg/opt"
+	pkg "kcl-lang.io/kpm/pkg/package"
+	"kcl-lang.io/kpm/pkg/reporter"
+	"kcl-lang.io/kpm/pkg/runner"
+	"kcl-lang.io/kpm/pkg/utils"
 )
 
 // NewRunCmd new a Command for `kpm run`.

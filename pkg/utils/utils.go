@@ -15,8 +15,8 @@ import (
 	goerrors "errors"
 
 	"github.com/moby/term"
-	"kusionstack.io/kpm/pkg/errors"
-	"kusionstack.io/kpm/pkg/reporter"
+	"kcl-lang.io/kpm/pkg/errors"
+	"kcl-lang.io/kpm/pkg/reporter"
 )
 
 // HashDir computes the checksum of a directory by concatenating all files and
