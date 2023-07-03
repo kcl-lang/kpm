@@ -41,6 +41,10 @@ kcl -V
 go install kusionstack.io/kpm@latest
 ```
 
+如果您在执行完上述命令后,使用`kpm`时,无法找到命令`kpm`请参考:
+
+- [go install 安装后找不到命令。](#q-我在使用go-install安装kpm后出现了command-not-found的错误)
+
 #### 从 Github release 页面手动安装
 
 您也可以从 Github release 中获取 `kpm` ，并将 `kpm` 的二进制文件路径设置到环境变量 PATH 中。
@@ -158,6 +162,12 @@ kpm run
 从 kpm v0.2.0 版本开始，kpm 支持通过 OCI Registries 保存和分享 KCL 包。
 
 了解更多如何在 kpm 中使用，查看 [OCI registry 支持](./docs/kpm_oci-zh.md).
+
+## 常见问题 (FAQ)
+
+##### Q: 我在使用`go install`安装`kpm`后，出现了`command not found`的错误。
+
+A: `go install` 默认会将二进制文件安装到 `$GOPATH/bin` 目录下，您需要将 `$GOPATH/bin` 添加到环境变量 `PATH` 中。
 
 ## 了解更多
 

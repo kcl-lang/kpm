@@ -10,7 +10,9 @@
 
 ## 步骤 2：创建一个 ghcr.io 令牌
 
-如果您使用 kpm 默认的 OCI Registry, 要将 kcl 包推送到 ghcr.io，您需要创建一个用于身份验证的令牌。您可以按照 [ghcr.io 身份验证](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry)中的说明进行操作。
+如果您使用 kpm 默认的 OCI Registry, 要将 kcl 包推送到 ghcr.io，您需要创建一个用于身份验证的令牌。您可以参考以下文档。
+
+- [创建 ghcr.io token](https://docs.github.com/zh/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic)
 
 ## 步骤 3：登录 ghcr.io
 
