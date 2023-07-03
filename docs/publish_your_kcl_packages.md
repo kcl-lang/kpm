@@ -10,7 +10,9 @@ First, you need to install kpm on your computer. You can follow the instructions
 
 ## Step 2: Create a ghcr.io token
 
-If you are using the default OCI Registry of kpm, to push a kcl package to ghcr.io, you need to create a token for authentication. You can follow the instructions in [ghcr.io authentication](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-to-the-container-registry).
+If you are using the default OCI Registry of kpm, to push a kcl package to ghcr.io, you need to create a token for authentication. You can follow the instruction.
+
+- [Creating a ghcr.io access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic)
 
 ## Step 3: Log in to ghcr.io
 

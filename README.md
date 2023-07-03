@@ -41,6 +41,10 @@ You can download `kpm` via `go install`.
 go install kusionstack.io/kpm@latest
 ```
 
+If the command `kpm` can not be found after executing the above command, please refer to:
+
+- [go install cannot find command after installation.](#q-i-am-using-go-install-to-install-kpm-but-i-get-the-error-command-not-found)
+
 #### Download from GITHUB release page
 
 You can also get `kpm` from the github release and set the `kpm` binary path to the environment variable PATH.
@@ -159,6 +163,12 @@ kpm run
 Beginning in kpm v0.2.0, you can use container registries with OCI support to store and share kcl packages.
 
 For more information about [OCI registry support](./docs/kpm_oci.md).
+
+## Frequently Asked Questions (FAQ)
+
+##### Q: I am using `go install` to install `kpm`, but I get the error `command not found`.
+
+- A: `go install` will install the binary file to `$GOPATH/bin` by default. You need to add `$GOPATH/bin` to the environment variable `PATH`.
 
 ## Learn More
 
