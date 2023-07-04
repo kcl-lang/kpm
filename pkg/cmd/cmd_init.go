@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 
 	"github.com/urfave/cli/v2"
-	"kusionstack.io/kpm/pkg/env"
-	"kusionstack.io/kpm/pkg/opt"
-	pkg "kusionstack.io/kpm/pkg/package"
-	reporter "kusionstack.io/kpm/pkg/reporter"
+	"kcl-lang.io/kpm/pkg/env"
+	"kcl-lang.io/kpm/pkg/opt"
+	pkg "kcl-lang.io/kpm/pkg/package"
+	reporter "kcl-lang.io/kpm/pkg/reporter"
 )
 
 // NewInitCmd new a Command for `kpm init`.

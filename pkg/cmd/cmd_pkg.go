@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 
 	"github.com/urfave/cli/v2"
-	"kusionstack.io/kpm/pkg/errors"
-	pkg "kusionstack.io/kpm/pkg/package"
-	"kusionstack.io/kpm/pkg/reporter"
-	"kusionstack.io/kpm/pkg/utils"
+	"kcl-lang.io/kpm/pkg/errors"
+	pkg "kcl-lang.io/kpm/pkg/package"
+	"kcl-lang.io/kpm/pkg/reporter"
+	"kcl-lang.io/kpm/pkg/utils"
 )
 
 // NewPkgCmd new a Command for `kpm pkg`.

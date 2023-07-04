@@ -8,15 +8,15 @@ import (
 	"strings"
 
 	"github.com/otiai10/copy"
+	"kcl-lang.io/kpm/pkg/env"
+	errors "kcl-lang.io/kpm/pkg/errors"
+	modfile "kcl-lang.io/kpm/pkg/mod"
+	"kcl-lang.io/kpm/pkg/opt"
+	"kcl-lang.io/kpm/pkg/reporter"
+	"kcl-lang.io/kpm/pkg/runner"
+	"kcl-lang.io/kpm/pkg/settings"
+	"kcl-lang.io/kpm/pkg/utils"
 	"kusionstack.io/kclvm-go/pkg/kcl"
-	"kusionstack.io/kpm/pkg/env"
-	errors "kusionstack.io/kpm/pkg/errors"
-	modfile "kusionstack.io/kpm/pkg/mod"
-	"kusionstack.io/kpm/pkg/opt"
-	"kusionstack.io/kpm/pkg/reporter"
-	"kusionstack.io/kpm/pkg/runner"
-	"kusionstack.io/kpm/pkg/settings"
-	"kusionstack.io/kpm/pkg/utils"
 )
 
 type KclPkg struct {

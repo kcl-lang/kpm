@@ -2,8 +2,8 @@ package semver
 
 import (
 	"github.com/hashicorp/go-version"
-	"kusionstack.io/kpm/pkg/errors"
-	"kusionstack.io/kpm/pkg/reporter"
+	"kcl-lang.io/kpm/pkg/errors"
+	"kcl-lang.io/kpm/pkg/reporter"
 )
 
 func LatestVersion(versions []string) (string, error) {

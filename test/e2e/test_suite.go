@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"kusionstack.io/kpm/pkg/reporter"
+	"kcl-lang.io/kpm/pkg/reporter"
 )
 
 const TEST_SUITES_DIR = "test_suites"

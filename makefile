@@ -1,5 +1,5 @@
 VERSION := $(shell git describe --tags)
-LDFLAGS := -X kusionstack.io/kpm/pkg/version.version=$(VERSION)
+LDFLAGS := -X kcl-lang.io/kpm/pkg/version.version=$(VERSION)
 
 build:
 	go build -ldflags "$(LDFLAGS)" kpm.go

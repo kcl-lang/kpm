@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"kusionstack.io/kpm/pkg/errors"
-	"kusionstack.io/kpm/pkg/reporter"
-	"kusionstack.io/kpm/pkg/settings"
+	"kcl-lang.io/kpm/pkg/errors"
+	"kcl-lang.io/kpm/pkg/reporter"
+	"kcl-lang.io/kpm/pkg/settings"
 )
 
 // Input options of 'kpm init'.

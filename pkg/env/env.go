@@ -4,8 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"kusionstack.io/kpm/pkg/errors"
-	"kusionstack.io/kpm/pkg/utils"
+	"kcl-lang.io/kpm/pkg/errors"
+	"kcl-lang.io/kpm/pkg/utils"
 )
 
 // env name

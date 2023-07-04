@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
-	"kusionstack.io/kpm/pkg/reporter"
+	"kcl-lang.io/kpm/pkg/reporter"
 )
 
 const NEWLINE = "\n"

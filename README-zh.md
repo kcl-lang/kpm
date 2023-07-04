@@ -38,7 +38,7 @@ kcl -V
 您可以使用 `go install` 命令安装 `kpm`。
 
 ```shell
-go install kusionstack.io/kpm@latest
+go install kcl-lang.io/kpm@latest
 ```
 
 如果您在执行完上述命令后,使用`kpm`时,无法找到命令`kpm`请参考:
