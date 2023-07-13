@@ -105,9 +105,9 @@ type Dependency struct {
 // FillDepInfo will fill registry information for a dependency.
 func (dep *Dependency) FillDepInfo() error {
 	if dep.Source.Oci != nil {
-		settings, err := settings.GetSettings()
-		if err != nil {
-			return err
+		settings := settings.GetSettings()
+		if settings.ErrorEvent != nil {
+			return *&settings.ErrorEvent
 		}
 		dep.Source.Oci.Reg = settings.DefaultOciRegistry()
 		urlpath, err := url.JoinPath(settings.DefaultOciRepo(), dep.Name)
@@ -197,7 +197,7 @@ func (dep *Oci) Download(localPath string) (string, error) {
 
 	matches, err := filepath.Glob(filepath.Join(localPath, "*.tar"))
 	if err != nil || len(matches) != 1 {
-		return "", errors.FailedPullFromOci
+		return "", errors.FailedPull
 	}
 
 	tarPath := matches[0]

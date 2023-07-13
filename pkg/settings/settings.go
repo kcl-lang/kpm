@@ -2,6 +2,7 @@ package settings
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -47,11 +48,15 @@ func DefaultKpmConf() KpmConf {
 
 type Settings struct {
 	CredentialsFile string
+	KpmConfFile     string
 	// the default configuration for kpm.
 	Conf KpmConf
 
 	// the flock used to lock the 'package-cache' file.
 	PackageCacheLock *flock.Flock
+
+	// the error catch from the closure in once.Do()
+	ErrorEvent *reporter.KpmEvent
 }
 
 // AcquirePackageCacheLock will try to lock the 'package-cache' file.
@@ -116,6 +121,11 @@ func (settings *Settings) DefaultOciRepo() string {
 	return settings.Conf.DefaultOciRepo
 }
 
+// DefaultOciRef return the default OCI ref 'ghcr.io/kusionstack'.
+func (settings *Settings) DefaultOciRef() string {
+	return utils.JoinPath(settings.Conf.DefaultOciRegistry, settings.Conf.DefaultOciRepo)
+}
+
 // GetFullPath returns the full path file path under '$HOME/.kpm/config/'
 func GetFullPath(jsonFileName string) (string, error) {
 	home, err := env.GetAbsPkgPath()
@@ -127,21 +137,46 @@ func GetFullPath(jsonFileName string) (string, error) {
 }
 
 // GetSettings will return the kpm setting singleton.
-func GetSettings() (*Settings, error) {
-	var err error
+func GetSettings() *Settings {
 	once.Do(func() {
+		kpm_settings = &Settings{}
 		credentialsFile, err := GetFullPath(CONFIG_JSON_PATH)
 		if err != nil {
+			kpm_settings.ErrorEvent = reporter.NewErrorEvent(
+				reporter.FailedLoadSettings,
+				err,
+				fmt.Sprintf("failed to load config file '%s' for kpm.", credentialsFile),
+			)
+			return
+		}
+		kpm_settings.CredentialsFile = credentialsFile
+		kpm_settings.KpmConfFile, err = GetFullPath(KPM_JSON_PATH)
+		if err != nil {
+			kpm_settings.ErrorEvent = reporter.NewErrorEvent(
+				reporter.FailedLoadSettings,
+				err,
+				fmt.Sprintf("failed to load config file '%s' for kpm.", kpm_settings.KpmConfFile),
+			)
 			return
 		}
 
 		conf, err := loadOrCreateDefaultKpmJson()
 		if err != nil {
+			kpm_settings.ErrorEvent = reporter.NewErrorEvent(
+				reporter.FailedLoadSettings,
+				err,
+				fmt.Sprintf("failed to load config file '%s' for kpm.", kpm_settings.KpmConfFile),
+			)
 			return
 		}
 
 		lockPath, err := GetFullPath(PACKAGE_CACHE_PATH)
 		if err != nil {
+			kpm_settings.ErrorEvent = reporter.NewErrorEvent(
+				reporter.FailedLoadSettings,
+				err,
+				fmt.Sprintf("failed to load config file '%s' for kpm.", lockPath),
+			)
 			return
 		}
 
@@ -153,23 +188,30 @@ func GetSettings() (*Settings, error) {
 			// recursively create the 'lockPath' path.
 			err = os.MkdirAll(filepath.Dir(lockPath), 0755)
 			if err != nil {
+				kpm_settings.ErrorEvent = reporter.NewErrorEvent(
+					reporter.FailedLoadSettings,
+					err,
+					fmt.Sprintf("failed to create lock file '%s' for kpm.", lockPath),
+				)
 				return
 			}
 			// create a empty file named 'package-cache'.
 			_, err = os.Create(lockPath)
 			if err != nil {
+				kpm_settings.ErrorEvent = reporter.NewErrorEvent(
+					reporter.FailedLoadSettings,
+					err,
+					fmt.Sprintf("failed to create lock file '%s' for kpm.", lockPath),
+				)
 				return
 			}
 		}
 
-		kpm_settings = &Settings{
-			CredentialsFile:  credentialsFile,
-			Conf:             *conf,
-			PackageCacheLock: flock.New(lockPath),
-		}
+		kpm_settings.Conf = *conf
+		kpm_settings.PackageCacheLock = flock.New(lockPath)
 	})
 
-	return kpm_settings, err
+	return kpm_settings
 }
 
 // loadOrCreateDefaultKpmJson will load the 'kpm.json' file from '$KCL_PKG_PATH/.kpm/config',

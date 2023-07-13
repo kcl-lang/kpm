@@ -1,1 +1,1 @@
-kpm: failed to pull kcl package tar from oci.
+kpm: failed to get package with 'invalid_tag' from 'ghcr.io/invalid_oci_repo'.

@@ -1,1 +1,2 @@
-kpm: oci ref is not an url.
+kpm: only support url scheme 'oci://'.
+kpm: invalid oci url.

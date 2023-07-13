@@ -2,7 +2,7 @@ package oci
 
 import (
 	"context"
-	"net/url"
+	"fmt"
 	"path/filepath"
 
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
@@ -10,6 +10,7 @@ import (
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/semver"
 	"kcl-lang.io/kpm/pkg/settings"
+	"kcl-lang.io/kpm/pkg/utils"
 	"oras.land/oras-go/pkg/auth"
 	dockerauth "oras.land/oras-go/pkg/auth/docker"
 	remoteauth "oras.land/oras-go/v2/registry/remote/auth"
@@ -77,26 +78,30 @@ type OciClient struct {
 // regName is the registry. e.g. ghcr.io or docker.io.
 // repoName is the repo name on registry.
 func NewOciClient(regName, repoName string) (*OciClient, error) {
-
-	repoPath, err := url.JoinPath(regName, repoName)
-	if err != nil {
-		return nil, err
-	}
+	repoPath := utils.JoinPath(regName, repoName)
 	repo, err := remote.NewRepository(repoPath)
 	if err != nil {
-		return nil, errors.FailedPullFromOci
+		return nil, reporter.NewErrorEvent(
+			reporter.RepoNotFound,
+			err,
+			fmt.Sprintf("repository '%s' not found.", repoPath),
+		)
 	}
 	ctx := context.Background()
 
-	settings, err := settings.GetSettings()
+	settings := settings.GetSettings()
 	if err != nil {
-		return nil, err
+		return nil, settings.ErrorEvent
 	}
 
 	// Login
 	credential, err := loadCredential(regName, settings)
 	if err != nil {
-		return nil, errors.FailedPushToOci
+		return nil, reporter.NewErrorEvent(
+			reporter.FailedLoadCredential,
+			err,
+			fmt.Sprintf("failed to load credential for '%s' from '%s'.", regName, settings.CredentialsFile),
+		)
 	}
 	repo.Client = &remoteauth.Client{
 		Client:     retry.DefaultClient,
@@ -115,14 +120,18 @@ func (ociClient *OciClient) Pull(localPath, tag string) error {
 	// Create a file store
 	fs, err := file.New(localPath)
 	if err != nil {
-		return errors.FailedPullFromOci
+		return reporter.NewErrorEvent(reporter.FailedCreateStorePath, err, "Failed to create store path ", localPath)
 	}
 	defer fs.Close()
 
 	// Copy from the remote repository to the file store
 	_, err = oras.Copy(*ociClient.ctx, ociClient.repo, tag, fs, tag, oras.DefaultCopyOptions)
 	if err != nil {
-		return errors.FailedPullFromOci
+		return reporter.NewErrorEvent(
+			reporter.FailedGetPkg,
+			err,
+			fmt.Sprintf("failed to get package with '%s' from '%s'.", tag, ociClient.repo.Reference.String()),
+		)
 	}
 
 	return nil
@@ -143,7 +152,11 @@ func (ociClient *OciClient) TheLatestTag() (string, error) {
 	})
 
 	if err != nil {
-		return "", errors.FailedDownloadError
+		return "", reporter.NewErrorEvent(
+			reporter.FailedSelectLatestVersion,
+			err,
+			fmt.Sprintf("failed to select latest version from '%s'.", ociClient.repo.Reference.String()),
+		)
 	}
 
 	return tagSelected, nil
@@ -228,11 +241,19 @@ func Pull(localPath, hostName, repoName, tag string) error {
 		if err != nil {
 			return err
 		}
-		reporter.Report("kpm: the lastest version", tagSelected, "will be pulled.")
+		reporter.ReportEventToStdout(
+			reporter.NewEvent(reporter.SelectLatestVersion, "the lastest version '", tagSelected, "' will be pulled."),
+		)
 	} else {
 		tagSelected = tag
 	}
 
+	reporter.ReportEventToStdout(
+		reporter.NewEvent(
+			reporter.Pulling,
+			fmt.Sprintf("pulling '%s:%s' from '%s'.", repoName, tagSelected, utils.JoinPath(hostName, repoName)),
+		),
+	)
 	return ociClient.Pull(localPath, tagSelected)
 }
 

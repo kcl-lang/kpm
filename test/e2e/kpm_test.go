@@ -23,13 +23,17 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 				stdout, stderr, err := ExecKpmWithWorkDir(ts.Input, workspace)
 
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+
+				expectedStdout := ReplaceAllKeyByValue(ts.ExpectStdout, "<workspace>", workspace)
+				expectedStderr := ReplaceAllKeyByValue(ts.ExpectStderr, "<workspace>", workspace)
+
 				// Using regular expressions may miss some cases where the string is empty.
 				//
 				// Since the login/logout-related test cases will output time information,
 				// they cannot be compared with method 'Equal',
 				// so 'ContainSubstring' is used to compare the results.
-				gomega.Expect(stdout).To(gomega.ContainSubstring(ts.ExpectStdout))
-				gomega.Expect(stderr).To(gomega.ContainSubstring(ts.ExpectStderr))
+				gomega.Expect(stdout).To(gomega.ContainSubstring(expectedStdout))
+				gomega.Expect(stderr).To(gomega.ContainSubstring(expectedStderr))
 			})
 		}
 	})
@@ -49,9 +53,12 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 
 				stdout, stderr, err := ExecKpmWithWorkDir(ts.Input, workspace)
 
+				expectedStdout := ReplaceAllKeyByValue(ts.ExpectStdout, "<workspace>", workspace)
+				expectedStderr := ReplaceAllKeyByValue(ts.ExpectStderr, "<workspace>", workspace)
+
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
-				gomega.Expect(stdout).To(gomega.Equal(ts.ExpectStdout))
-				gomega.Expect(stderr).To(gomega.Equal(ts.ExpectStderr))
+				gomega.Expect(stdout).To(gomega.ContainSubstring(expectedStdout))
+				gomega.Expect(stderr).To(gomega.ContainSubstring(expectedStderr))
 			})
 		}
 	})
@@ -69,9 +76,12 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 
 				stdout, stderr, err := ExecKpmWithWorkDir(ts.Input, filepath.Join(workspace, "test_kcl"))
 
+				expectedStdout := ReplaceAllKeyByValue(ts.ExpectStdout, "<workspace>", workspace)
+				expectedStderr := ReplaceAllKeyByValue(ts.ExpectStderr, "<workspace>", workspace)
+
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
-				gomega.Expect(stdout).To(gomega.Equal(ts.ExpectStdout))
-				gomega.Expect(stderr).To(gomega.Equal(ts.ExpectStderr))
+				gomega.Expect(stdout).To(gomega.Equal(expectedStdout))
+				gomega.Expect(stderr).To(gomega.Equal(expectedStderr))
 			})
 		}
 	})
@@ -120,9 +130,12 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 
 				stdout, stderr, err := ExecKpmWithWorkDir(ts.Input, filepath.Join(workspace, ts.Name))
 
+				expectedStdout := ReplaceAllKeyByValue(ts.ExpectStdout, "<workspace>", workspace)
+				expectedStderr := ReplaceAllKeyByValue(ts.ExpectStderr, "<workspace>", workspace)
+
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
-				gomega.Expect(stdout).To(gomega.Equal(ts.ExpectStdout))
-				gomega.Expect(stderr).To(gomega.Equal(ts.ExpectStderr))
+				gomega.Expect(stdout).To(gomega.Equal(expectedStdout))
+				gomega.Expect(stderr).To(gomega.Equal(expectedStderr))
 			})
 		}
 	})

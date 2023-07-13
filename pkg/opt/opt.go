@@ -84,9 +84,9 @@ const OCI_SEPARATOR = ":"
 // the default OCI registry is 'docker.io'.
 // if the 'ociUrl' is only '<repo_name>', ParseOciOptionFromString will take 'latest' as the default tag.
 func ParseOciOptionFromString(oci string, tag string) (*OciOptions, error) {
-	ociOpt, err := ParseOciUrl(oci)
-	if err == errors.IsOciRef {
-		ociOpt, err = ParseOciRef(oci)
+	ociOpt, event := ParseOciUrl(oci)
+	if event != nil && (event.Type() == reporter.IsNotUrl || event.Type() == reporter.UrlSchemeNotOci) {
+		ociOpt, err := ParseOciRef(oci)
 		if err != nil {
 			return nil, err
 		}
@@ -95,9 +95,8 @@ func ParseOciOptionFromString(oci string, tag string) (*OciOptions, error) {
 			reporter.Report("kpm: arg '--tag' is invalid for oci reference")
 		}
 		return ociOpt, nil
-	} else if err == errors.NotOciUrl {
-		return nil, err
 	}
+
 	ociOpt.Tag = tag
 
 	return ociOpt, nil
@@ -105,7 +104,7 @@ func ParseOciOptionFromString(oci string, tag string) (*OciOptions, error) {
 
 // ParseOciOptionFromOciUrl will parse oci url into an 'OciOptions'.
 // If the 'tag' is empty, ParseOciOptionFromOciUrl will take 'latest' as the default tag.
-func ParseOciOptionFromOciUrl(url, tag string) (*OciOptions, error) {
+func ParseOciOptionFromOciUrl(url, tag string) (*OciOptions, *reporter.KpmEvent) {
 	ociOpt, err := ParseOciUrl(url)
 	if err != nil {
 		return nil, err
@@ -118,9 +117,9 @@ func ParseOciOptionFromOciUrl(url, tag string) (*OciOptions, error) {
 // with default registry host 'docker.io'.
 func ParseOciRef(ociRef string) (*OciOptions, error) {
 	oci_address := strings.Split(ociRef, OCI_SEPARATOR)
-	settings, err := settings.GetSettings()
-	if err != nil {
-		return nil, err
+	settings := settings.GetSettings()
+	if settings.ErrorEvent != nil {
+		return nil, settings.ErrorEvent
 	}
 	if len(oci_address) == 1 {
 		return &OciOptions{
@@ -134,19 +133,19 @@ func ParseOciRef(ociRef string) (*OciOptions, error) {
 			Tag:  oci_address[1],
 		}, nil
 	} else {
-		return nil, errors.InvalidOciRef
+		return nil, reporter.NewEvent(reporter.IsNotRef)
 	}
 }
 
 // ParseOciUrl will parse 'oci://hostName/repoName:repoTag' into OciOptions without tag.
-func ParseOciUrl(ociUrl string) (*OciOptions, error) {
+func ParseOciUrl(ociUrl string) (*OciOptions, *reporter.KpmEvent) {
 	u, err := url.Parse(ociUrl)
 	if err != nil {
-		return nil, errors.IsOciRef
+		return nil, reporter.NewEvent(reporter.IsNotUrl)
 	}
 
 	if u.Scheme != "oci" {
-		return nil, errors.IsOciRef
+		return nil, reporter.NewEvent(reporter.UrlSchemeNotOci)
 	}
 
 	return &OciOptions{

@@ -1,1 +1,2 @@
-kpm: failed to pull kcl package tar from oci.
+kpm: repository 'invalid_rul/' not found.
+kpm: invalid reference: invalid repository
