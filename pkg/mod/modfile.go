@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
+	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/oci"
@@ -15,7 +16,6 @@ import (
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/utils"
-	"kusionstack.io/kclvm-go/pkg/kcl"
 )
 
 const (
