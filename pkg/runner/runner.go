@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"kusionstack.io/kclvm-go/pkg/kcl"
+	"kcl-lang.io/kcl-go/pkg/kcl"
 )
 
 // The pattern of the external package argument.

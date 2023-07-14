@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"kusionstack.io/kclvm-go/pkg/kcl"
+	"kcl-lang.io/kcl-go/pkg/kcl"
 )
 
 func TestKclRun(t *testing.T) {

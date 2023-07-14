@@ -2,8 +2,8 @@ package runner
 
 import (
 	"github.com/alexflint/go-arg"
-	"kusionstack.io/kclvm-go/pkg/kcl"
-	"kusionstack.io/kclvm-go/pkg/spec/gpyrpc"
+	"kcl-lang.io/kcl-go/pkg/kcl"
+	"kcl-lang.io/kcl-go/pkg/spec/gpyrpc"
 )
 
 type Flag struct {
