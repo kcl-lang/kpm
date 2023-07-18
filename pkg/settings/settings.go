@@ -66,15 +66,15 @@ func (settings *Settings) AcquirePackageCacheLock() error {
 	if err != nil {
 		return err
 	}
-
+	firstTry := true
 	// if failed to lock the 'package-cache' file, wait until it is unlocked.
 	if !locked {
-		reporter.Report("kpm: waiting for package-cache lock...")
 		for {
 			// try to lock the 'package-cache' file
 			locked, err = settings.PackageCacheLock.TryLock()
-			if err != nil {
-				return err
+			if err != nil && firstTry {
+				reporter.Report("kpm: waiting for package-cache lock...")
+				firstTry = false
 			}
 			// if locked, break the loop.
 			if locked {

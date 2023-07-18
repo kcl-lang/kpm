@@ -15,7 +15,6 @@ import (
 	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/runner"
-	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -250,36 +249,17 @@ func (kclPkg *KclPkg) CreateDefaultKclProgram() error {
 
 // AddDeps will add the dependencies to current kcl package and update kcl.mod and kcl.mod.lock.
 func (kclPkg *KclPkg) AddDeps(opt *opt.AddOptions) error {
-	// 1. get settings from the global config file.
-	settings, err := settings.GetSettings()
-	if err != nil {
-		return err
-	}
 
-	// 2. acquire the lock of the package cache.
-	err = settings.AcquirePackageCacheLock()
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		// 3. release the lock of the package cache after the function returns.
-		releaseErr := settings.ReleasePackageCacheLock()
-		if releaseErr != nil && err == nil {
-			err = releaseErr
-		}
-	}()
-
-	// 4. get the name and version of the repository from the input arguments.
+	// 1. get the name and version of the repository from the input arguments.
 	d := modfile.ParseOpt(&opt.RegistryOpts)
 
-	// 5. download the dependency to the local path.
-	err = kclPkg.DownloadDep(d, opt.LocalPath)
+	// 2. download the dependency to the local path.
+	err := kclPkg.DownloadDep(d, opt.LocalPath)
 	if err != nil {
 		return err
 	}
 
-	// 6. update the kcl.mod and kcl.mod.lock.
+	// 3. update the kcl.mod and kcl.mod.lock.
 	err = kclPkg.UpdateModAndLockFile()
 	if err != nil {
 		return err
