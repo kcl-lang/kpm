@@ -3,13 +3,10 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
-	"github.com/gofrs/flock"
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/errors"
@@ -37,6 +34,25 @@ func NewAddCmd() *cli.Command {
 		},
 
 		Action: func(c *cli.Context) error {
+			// 1. get settings from the global config file.
+			settings, err := settings.GetSettings()
+			if err != nil {
+				return err
+			}
+
+			// 2. acquire the lock of the package cache.
+			err = settings.AcquirePackageCacheLock()
+			if err != nil {
+				return err
+			}
+
+			defer func() {
+				// 3. release the lock of the package cache after the function returns.
+				releaseErr := settings.ReleasePackageCacheLock()
+				if releaseErr != nil && err == nil {
+					err = releaseErr
+				}
+			}()
 
 			pwd, err := os.Getwd()
 
@@ -66,24 +82,6 @@ func NewAddCmd() *cli.Command {
 
 			err = addOpts.Validate()
 			if err != nil {
-				return err
-			}
-
-			// Lock the kcl.mod.lock.
-			fileLock := flock.New(kclPkg.GetLockFilePath())
-			lockCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-			defer cancel()
-			locked, err := fileLock.TryLockContext(lockCtx, time.Second)
-			if err == nil && locked {
-				defer func() {
-					if unlockErr := fileLock.Unlock(); unlockErr != nil && err == nil {
-						err = errors.InternalBug
-					}
-				}()
-			}
-			if err != nil {
-				reporter.Report("kpm: sorry, the program encountered an issue while trying to add a dependency.")
-				reporter.Report("kpm: please try again later")
 				return err
 			}
 

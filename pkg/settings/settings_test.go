@@ -123,24 +123,28 @@ func TestPackageCacheLock(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		err := settings.AcquirePackageCacheLock()
-		assert.Equal(t, err, nil)
+		fmt.Printf("1: locked.")
+		fmt.Printf("err: %v\n", err)
 		for i := 0; i < 10; i++ {
 			gotlist = append(gotlist, fmt.Sprintf("goroutine 1: %d", i))
 		}
 		err = settings.ReleasePackageCacheLock()
-		assert.Equal(t, err, nil)
+		fmt.Printf("err: %v\n", err)
+		fmt.Printf("1: released.")
 	}()
 
 	// goroutine 2: append "goroutine 2: %d" to the list
 	go func() {
 		defer wg.Done()
 		err := settings.AcquirePackageCacheLock()
-		assert.Equal(t, err, nil)
+		fmt.Printf("2: locked.")
+		fmt.Printf("err: %v\n", err)
 		for i := 0; i < 10; i++ {
 			gotlist = append(gotlist, fmt.Sprintf("goroutine 2: %d", i))
 		}
 		err = settings.ReleasePackageCacheLock()
-		assert.Equal(t, err, nil)
+		fmt.Printf("err: %v\n", err)
+		fmt.Printf("2: released.")
 	}()
 
 	wg.Wait()

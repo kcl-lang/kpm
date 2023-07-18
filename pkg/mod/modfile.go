@@ -155,14 +155,6 @@ func (dep *Dependency) Download(localPath string) (*Dependency, error) {
 		return nil, err
 	}
 
-	// Creating symbolic links in a global cache is not an optimal solution.
-	// This allows kcl compiler to locate the package by default.
-	// This feature is unstable and will be removed soon.
-	err = utils.CreateSymlink(dep.LocalFullPath, filepath.Join(filepath.Dir(dep.LocalFullPath), dep.Name))
-	if err != nil {
-		return nil, err
-	}
-
 	return dep, nil
 }
 
