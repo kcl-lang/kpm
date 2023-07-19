@@ -23,5 +23,5 @@ func LatestVersion(versions []string) (string, error) {
 		return "", errors.InvalidVersionFormat
 	}
 
-	return latest.String(), nil
+	return latest.Original(), nil
 }
