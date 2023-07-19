@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"kcl-lang.io/kpm/pkg/errors"
+	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -30,14 +30,14 @@ func GetAbsPkgPath() (string, error) {
 	if kpmHome == "" {
 		defaultHome, err := utils.CreateSubdirInUserHome(GetKpmSubDir())
 		if err != nil {
-			return "", errors.InternalBug
+			return "", reporter.NewErrorEvent(reporter.FailedAccessPkgPath, err, "could not access $KCL_PKG_PATH.")
 		}
 		kpmHome = defaultHome
 	}
 
 	kpmHome, err := filepath.Abs(kpmHome)
 	if err != nil {
-		return "", errors.InternalBug
+		return "", reporter.NewErrorEvent(reporter.FailedAccessPkgPath, err, "could not access $KCL_PKG_PATH.")
 	}
 
 	return kpmHome, nil

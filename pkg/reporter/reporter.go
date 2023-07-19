@@ -46,6 +46,7 @@ type EventType int
 
 const (
 	Default EventType = iota
+
 	// errors event type means the event is an error.
 	InvalidRepo
 	FailedNewOciClient
@@ -56,21 +57,34 @@ const (
 	FailedSelectLatestVersion
 	FailedCreateStorePath
 	FailedGetPkg
+	FailedAccessPkgPath
 	UnKnownPullWhat
 	UnknownEnv
 	InvalidKclPkg
 	FailedUntarKclPkg
+	FailedLoadKclMod
+	CheckSumMismatch
+	InvalidKpmHomeInCurrentPkg
+	InvalidCmd
+	InvalidPkgRef
+	InvalidGitUrl
+	WithoutGitTag
+	FailedCloneFromGit
+	FailedHashPkg
 	Bug
 
 	// normal event type means the event is a normal event.
 	PullingStarted
 	PullingFinished
 	Pulling
+	Adding
 	IsNotUrl
 	IsNotRef
 	UrlSchemeNotOci
 	UnsupportOciUrlScheme
 	SelectLatestVersion
+	DownloadingFromOCI
+	DownloadingFromGit
 )
 
 // KpmEvent is the event used to show kpm logs to users.

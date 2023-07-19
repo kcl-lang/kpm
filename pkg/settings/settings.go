@@ -269,9 +269,14 @@ func GetSettings() *Settings {
 
 	kpm_settings, err := kpm_settings.LoadSettingsFromEnv()
 	if err != (*reporter.KpmEvent)(nil) {
-		kpm_settings.ErrorEvent = err
-	} else {
-		kpm_settings.ErrorEvent = nil
+		if kpm_settings.ErrorEvent != (*reporter.KpmEvent)(nil) {
+			kpm_settings.ErrorEvent = reporter.NewErrorEvent(
+				reporter.UnknownEnv,
+				err,
+			)
+		} else {
+			kpm_settings.ErrorEvent = err
+		}
 	}
 
 	return kpm_settings

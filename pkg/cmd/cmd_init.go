@@ -62,7 +62,7 @@ func NewInitCmd() *cli.Command {
 
 			err = kclPkg.ValidateKpmHome(globalPkgPath)
 
-			if err != nil {
+			if err != (*reporter.KpmEvent)(nil) {
 				return err
 			}
 

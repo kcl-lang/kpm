@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -48,14 +49,14 @@ func (kclPkg *KclPkg) GetEntryKclFilesFromModFile() []string {
 func LoadKclPkg(pkgPath string) (*KclPkg, error) {
 	modFile, err := modfile.LoadModFile(pkgPath)
 	if err != nil {
-		return nil, err
+		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod' in '%s'.", pkgPath))
 	}
 
 	// Get dependencies from kcl.mod.lock.
 	deps, err := modfile.LoadLockDeps(pkgPath)
 
 	if err != nil {
-		return nil, err
+		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod.lock' in '%s'.", pkgPath))
 	}
 
 	return &KclPkg{
@@ -249,10 +250,9 @@ func (kclPkg *KclPkg) CreateDefaultKclProgram() error {
 
 // AddDeps will add the dependencies to current kcl package and update kcl.mod and kcl.mod.lock.
 func (kclPkg *KclPkg) AddDeps(opt *opt.AddOptions) error {
-
 	// 1. get the name and version of the repository from the input arguments.
 	d := modfile.ParseOpt(&opt.RegistryOpts)
-
+	reporter.ReportEventToStdout(reporter.NewEvent(reporter.Adding, fmt.Sprintf("adding dependency '%s'.", d.Name)))
 	// 2. download the dependency to the local path.
 	err := kclPkg.DownloadDep(d, opt.LocalPath)
 	if err != nil {
@@ -265,6 +265,17 @@ func (kclPkg *KclPkg) AddDeps(opt *opt.AddOptions) error {
 		return err
 	}
 
+	succeedMsgInfo := d.Name
+	if len(d.Version) != 0 {
+		succeedMsgInfo = fmt.Sprintf("%s:%s", d.Name, d.Version)
+	}
+
+	reporter.ReportEventToStdout(
+		reporter.NewEvent(
+			reporter.Adding,
+			fmt.Sprintf("add dependency '%s' successfully.", succeedMsgInfo),
+		),
+	)
 	return nil
 }
 
@@ -280,7 +291,7 @@ func (kclPkg *KclPkg) DownloadDep(d *modfile.Dependency, localPath string) error
 	changedDeps, err := getDeps(kclPkg.modFile.Dependencies, kclPkg.Dependencies, localPath)
 
 	if err != nil {
-		return errors.FailedDownloadError
+		return err
 	}
 
 	// Update kcl.mod and kcl.mod.lock
@@ -354,10 +365,14 @@ func getDeps(deps modfile.Dependencies, lockDeps modfile.Dependencies, localPath
 		// download dependencies
 		lockedDep, err := d.Download(dir)
 		if err != nil {
-			return nil, errors.FailedDownloadError
+			return nil, err
 		}
 		if expectedSum != "" && lockedDep.Sum != expectedSum && lockDep.FullName == d.FullName {
-			return nil, errors.CheckSumMismatchError
+			return nil, reporter.NewErrorEvent(
+				reporter.CheckSumMismatch,
+				errors.CheckSumMismatchError,
+				fmt.Sprintf("checksum for '%s' changed in lock file", lockedDep.Name),
+			)
 		}
 
 		// Update kcl.mod and kcl.mod.lock
@@ -419,7 +434,7 @@ func (kclPkg *KclPkg) PackageCurrentPkgPath() (string, error) {
 	}
 
 	err = kclPkg.ValidateKpmHome(globalPkgPath)
-	if err != nil {
+	if err != (*reporter.KpmEvent)(nil) {
 		return "", err
 	}
 
@@ -448,7 +463,7 @@ func (kclPkg *KclPkg) PackageToTarball(tarPath string) error {
 	}
 
 	err = kclPkg.ValidateKpmHome(globalPkgPath)
-	if err != nil {
+	if err != (*reporter.KpmEvent)(nil) {
 		return err
 	}
 
@@ -532,9 +547,9 @@ func (kclPkg *KclPkg) VendorDeps(cachePath string) error {
 }
 
 // Verify that the environment variable KPM HOME is set correctly
-func (kclPkg *KclPkg) ValidateKpmHome(kpmHome string) error {
+func (kclPkg *KclPkg) ValidateKpmHome(kpmHome string) *reporter.KpmEvent {
 	if kclPkg.HomePath == kpmHome {
-		return errors.InvalidKpmHomeInCurrentPkg
+		return reporter.NewErrorEvent(reporter.InvalidKpmHomeInCurrentPkg, errors.InvalidKpmHomeInCurrentPkg)
 	}
 	return nil
 }

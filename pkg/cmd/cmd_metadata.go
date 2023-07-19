@@ -10,6 +10,7 @@ import (
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/errors"
 	pkg "kcl-lang.io/kpm/pkg/package"
+	"kcl-lang.io/kpm/pkg/reporter"
 )
 
 // NewMetadataCmd new a Command for `kpm metadata`.
@@ -53,7 +54,7 @@ func NewMetadataCmd() *cli.Command {
 			kclPkg.SetVendorMode(c.Bool(FLAG_VENDOR))
 
 			err = kclPkg.ValidateKpmHome(globalPkgPath)
-			if err != nil {
+			if err != (*reporter.KpmEvent)(nil) {
 				return err
 			}
 

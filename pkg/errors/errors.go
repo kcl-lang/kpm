@@ -5,7 +5,7 @@ import (
 )
 
 var FailedDownloadError = errors.New("kpm: failed to download dependency")
-var CheckSumMismatchError = errors.New("kpm: checksum mismatch")
+var CheckSumMismatchError = errors.New("checksum mismatch")
 var FailedToVendorDependency = errors.New("kpm: failed to vendor dependency")
 var FailedToPackage = errors.New("kpm: failed to package.")
 var InvalidDependency = errors.New("kpm: invalid dependency.")
@@ -17,12 +17,12 @@ var FailedToLoadPackage = errors.New("kpm: failed to load package, please check 
 var InvalidInitOptions = errors.New("kpm: invalid 'kpm init' argument, you must provide a name for the package to be initialized.")
 
 // Invalid 'kpm add'
-var InvalidAddOptionsWithoutRegistry = errors.New("kpm: invalid 'kpm add' argument, you must provide a registry url for the package.")
+var InvalidAddOptions = errors.New("invalid 'kpm add' argument, you must provide a package name or url for the package.")
 var InvalidAddOptionsInvalidGitUrl = errors.New("kpm: invalid 'kpm add' argument, you must provide a Git Url for the package.")
 var InvalidAddOptionsInvalidOciRef = errors.New("kpm: invalid 'kpm add' argument, you must provide a valid Oci Ref for the package.")
 
-var InvalidAddOptionsInvalidOciReg = errors.New("kpm: invalid 'kpm add' argument, you must provide a Reg for the package.")
-var InvalidAddOptionsInvalidOciRepo = errors.New("kpm: invalid 'kpm add' argument, you must provide a Repo for the package.")
+var InvalidAddOptionsInvalidOciReg = errors.New("invalid 'kpm add' argument, you must provide a Reg for the package.")
+var InvalidAddOptionsInvalidOciRepo = errors.New("invalid 'kpm add' argument, you must provide a Repo for the package.")
 
 // Invalid 'kpm run'
 var InvalidRunOptionsWithoutEntryFiles = errors.New("kpm: invalid 'kpm run' argument, you must provide an entry file.")
@@ -34,7 +34,7 @@ var KclPacakgeTarNotFound = errors.New("kpm: the kcl package tar path is not fou
 var InvalidKclPacakgeTar = errors.New("kpm: the kcl package tar path is an invalid *.tar file")
 
 // Invalid KCL_PKG_PATH
-var InvalidKpmHomeInCurrentPkg = errors.New("kpm: environment variable KCL_PKG_PATH cannot be set to the same path as the current KCL package.")
+var InvalidKpmHomeInCurrentPkg = errors.New("environment variable KCL_PKG_PATH cannot be set to the same path as the current KCL package.")
 
 // Invalid oci
 var FailedLogin = errors.New("kpm: failed to login, please check registry, username and password is valid.")

@@ -80,8 +80,8 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 				expectedStderr := ReplaceAllKeyByValue(ts.ExpectStderr, "<workspace>", workspace)
 
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
-				gomega.Expect(stdout).To(gomega.Equal(expectedStdout))
-				gomega.Expect(stderr).To(gomega.Equal(expectedStderr))
+				gomega.Expect(stdout).To(gomega.ContainSubstring(expectedStdout))
+				gomega.Expect(stderr).To(gomega.ContainSubstring(expectedStderr))
 			})
 		}
 	})

@@ -23,3 +23,4 @@ kpm
 # e2e test cases dir
 !kpm/
 scripts/pkg_in_reg/*
+scripts/registry_auth/*
