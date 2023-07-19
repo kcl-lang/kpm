@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"kcl-lang.io/kpm/pkg/env"
+	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -27,8 +28,8 @@ func getTestDir(subDir string) string {
 func TestSettingInit(t *testing.T) {
 	kpmHome, err := env.GetAbsPkgPath()
 	assert.Equal(t, err, nil)
-	settings, err := GetSettings()
-	assert.Equal(t, err, nil)
+	settings := GetSettings()
+	assert.Equal(t, settings.ErrorEvent, (*reporter.KpmEvent)(nil))
 	assert.Equal(t, settings.CredentialsFile, filepath.Join(kpmHome, CONFIG_JSON_PATH))
 }
 
@@ -85,8 +86,8 @@ func TestLoadOrCreateDefaultKpmJson(t *testing.T) {
 
 func TestPackageCacheLock(t *testing.T) {
 
-	settings, err := GetSettings()
-	assert.Equal(t, err, nil)
+	settings := GetSettings()
+	assert.Equal(t, settings.ErrorEvent, (*reporter.KpmEvent)(nil))
 
 	// create the expected result of the test.
 	// 10 times of "goroutine 1: %d" at first, and then 10 times of "goroutine 2: %d"

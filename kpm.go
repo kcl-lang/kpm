@@ -14,9 +14,9 @@ import (
 
 func main() {
 	reporter.InitReporter()
-	setting, err := settings.GetSettings()
-	if err != nil {
-		reporter.Fatal(err)
+	setting := settings.GetSettings()
+	if setting.ErrorEvent != nil {
+		reporter.Fatal(setting.ErrorEvent)
 	}
 	app := cli.NewApp()
 	app.Name = "kpm"
@@ -37,7 +37,7 @@ func main() {
 		cmd.NewPushCmd(setting),
 		cmd.NewPullCmd(),
 	}
-	err = app.Run(os.Args)
+	err := app.Run(os.Args)
 	if err != nil {
 		reporter.Fatal(err)
 	}

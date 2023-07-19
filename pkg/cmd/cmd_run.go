@@ -135,7 +135,7 @@ func runOci(ociRef, version string, entryFiles []string, vendorMode bool, kclArg
 	// 3.Get the (*.tar) file path.
 	matches, err := filepath.Glob(filepath.Join(localPath, KCL_PKG_TAR))
 	if err != nil || len(matches) != 1 {
-		return "", errors.FailedPullFromOci
+		return "", errors.FailedPull
 	}
 
 	return runTar(matches[0], entryFiles, vendorMode, kclArgs)

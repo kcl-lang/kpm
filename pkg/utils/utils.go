@@ -361,3 +361,8 @@ func FindKFiles(path string) ([]string, error) {
 func RmNewline(s string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(s, "\r\n", ""), "\n", "")
 }
+
+// JoinPath will join the 'elem' to the 'base' with '/'.
+func JoinPath(base, elem string) string {
+	return fmt.Sprintf("%s/%s", base, elem)
+}

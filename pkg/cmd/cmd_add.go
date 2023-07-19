@@ -35,13 +35,13 @@ func NewAddCmd() *cli.Command {
 
 		Action: func(c *cli.Context) error {
 			// 1. get settings from the global config file.
-			settings, err := settings.GetSettings()
-			if err != nil {
-				return err
+			settings := settings.GetSettings()
+			if settings.ErrorEvent != nil {
+				return settings.ErrorEvent
 			}
 
 			// 2. acquire the lock of the package cache.
-			err = settings.AcquirePackageCacheLock()
+			err := settings.AcquirePackageCacheLock()
 			if err != nil {
 				return err
 			}
@@ -164,9 +164,9 @@ func parseOciRegistryOptions(c *cli.Context) (*opt.RegistryOptions, error) {
 		return nil, err
 	}
 
-	settings, err := settings.GetSettings()
-	if err != nil {
-		return nil, err
+	settings := settings.GetSettings()
+	if settings.ErrorEvent != nil {
+		return nil, settings.ErrorEvent
 	}
 
 	return &opt.RegistryOptions{

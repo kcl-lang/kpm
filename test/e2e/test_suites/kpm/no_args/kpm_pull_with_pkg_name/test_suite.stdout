@@ -1,0 +1,4 @@
+kpm: start to pull 'k8s'.
+kpm: the lastest version '1.27.2' will be pulled.
+kpm: pulling 'kusionstack/k8s:1.27.2' from 'ghcr.io/kusionstack/k8s'.
+kpm: pulled 'k8s' in '<workspace>/ghcr.io/kusionstack/k8s' successfully.

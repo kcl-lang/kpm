@@ -55,9 +55,9 @@ func NewPushCmd(settings *settings.Settings) *cli.Command {
 
 // genDefaultOciUrlForKclPkg will generate the default oci url from the current package.
 func genDefaultOciUrlForKclPkg(pkg *pkg.KclPkg) (string, error) {
-	settings, err := settings.GetSettings()
-	if err != nil {
-		return "", err
+	settings := settings.GetSettings()
+	if settings.ErrorEvent != nil {
+		return "", settings.ErrorEvent
 	}
 
 	urlPath, err := url.JoinPath(settings.DefaultOciRepo(), pkg.GetPkgName())
@@ -154,7 +154,11 @@ func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, settings *settings.Settings)
 	// 3. Generate the OCI options from oci url and the version of current kcl package.
 	ociOpts, err := opt.ParseOciOptionFromOciUrl(ociUrl, kclPkg.GetPkgTag())
 	if err != nil {
-		return err
+		return reporter.NewErrorEvent(
+			reporter.UnsupportOciUrlScheme,
+			errors.InvalidOciUrl,
+			"only support url scheme 'oci://'.",
+		)
 	}
 
 	reporter.Report("kpm: package '" + kclPkg.GetPkgName() + "' will be pushed.")

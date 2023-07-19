@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -29,77 +30,111 @@ func NewPullCmd() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			tag := c.String(FLAG_TAG)
-			ociUrlOrPkgName := c.Args().Get(0)
-			localPath := c.Args().Get(1)
-
-			if len(ociUrlOrPkgName) == 0 {
-				reporter.Report("kpm: oci url or package name must be specified.")
-				reporter.ExitWithReport("kpm: run 'kpm pull help' for more information.")
-			}
-
-			if len(tag) == 0 {
-				reporter.Report("kpm: pulling '", ociUrlOrPkgName, "'.")
-			} else {
-				reporter.Report("kpm: pulling '", ociUrlOrPkgName, "' with tag '", tag, "'.")
-			}
-
-			ociOpt, err := opt.ParseOciOptionFromOciUrl(ociUrlOrPkgName, tag)
-
-			if err == errors.IsOciRef {
-				settings, err := settings.GetSettings()
-				if err != nil {
-					return err
-				}
-
-				urlpath, err := url.JoinPath(settings.DefaultOciRepo(), ociUrlOrPkgName)
-				if err != nil {
-					return err
-				}
-
-				ociOpt, err = opt.ParseOciRef(urlpath)
-				if err != nil {
-					return err
-				}
-			} else if err != nil {
-				return err
-			}
-
-			absPullPath, err := filepath.Abs(localPath)
-			if err != nil {
-				return err
-			}
-
-			tmpDir, err := os.MkdirTemp("", "")
-			if err != nil {
-				return errors.InternalBug
-			}
-			// clean the temp dir.
-			defer os.RemoveAll(tmpDir)
-
-			localPath = ociOpt.AddStoragePathSuffix(tmpDir)
-
-			// 2. Pull the tar.
-			err = oci.Pull(localPath, ociOpt.Reg, ociOpt.Repo, ociOpt.Tag)
-
-			if err != nil {
-				return err
-			}
-
-			// 3. Get the (*.tar) file path.
-			matches, err := filepath.Glob(filepath.Join(localPath, KCL_PKG_TAR))
-			if err != nil || len(matches) != 1 {
-				return errors.FailedPullFromOci
-			}
-
-			// 4. Untar the tar file.
-			err = utils.UnTarDir(matches[0], ociOpt.AddStoragePathSuffix(absPullPath))
-			if err != nil {
-				return err
-			}
-
-			reporter.Report("kpm: the kcl package is pulled successfully.")
-			return nil
+			return KpmPull(c)
 		},
 	}
+}
+
+func KpmPull(c *cli.Context) error {
+	tag := c.String(FLAG_TAG)
+	ociUrlOrPkgName := c.Args().Get(0)
+	localPath := c.Args().Get(1)
+
+	if len(ociUrlOrPkgName) == 0 {
+		return reporter.NewErrorEvent(
+			reporter.UnKnownPullWhat,
+			errors.FailedPull,
+			"oci url or package name must be specified.",
+		)
+	}
+
+	if len(tag) == 0 {
+		reporter.ReportEventToStdout(
+			reporter.NewEvent(
+				reporter.PullingStarted,
+				fmt.Sprintf("start to pull '%s'.", ociUrlOrPkgName),
+			),
+		)
+	} else {
+		reporter.ReportEventToStdout(
+			reporter.NewEvent(
+				reporter.PullingStarted,
+				fmt.Sprintf("start to pull '%s' with tag '%s'.", ociUrlOrPkgName, tag),
+			),
+		)
+	}
+
+	ociOpt, event := opt.ParseOciOptionFromOciUrl(ociUrlOrPkgName, tag)
+
+	if event.Type() == reporter.IsNotUrl || event.Type() == reporter.UrlSchemeNotOci {
+		settings := settings.GetSettings()
+		if settings.ErrorEvent != nil {
+			return settings.ErrorEvent
+		}
+
+		urlpath, err := url.JoinPath(settings.DefaultOciRepo(), ociUrlOrPkgName)
+		if err != nil {
+			return reporter.NewErrorEvent(reporter.Bug, err)
+		}
+
+		ociOpt, err = opt.ParseOciRef(urlpath)
+		if err != nil {
+			return err
+		}
+	} else if event != nil {
+		return event
+	}
+
+	absPullPath, err := filepath.Abs(localPath)
+	if err != nil {
+		return reporter.NewErrorEvent(reporter.Bug, err)
+	}
+
+	tmpDir, err := os.MkdirTemp("", "")
+	if err != nil {
+		return reporter.NewErrorEvent(reporter.Bug, err, fmt.Sprintf("failed to create temp dir '%s'.", tmpDir))
+	}
+
+	// clean the temp dir.
+	defer os.RemoveAll(tmpDir)
+
+	localPath = ociOpt.AddStoragePathSuffix(tmpDir)
+
+	// 2. Pull the tar.
+	err = oci.Pull(localPath, ociOpt.Reg, ociOpt.Repo, ociOpt.Tag)
+
+	if err != nil {
+		return err
+	}
+
+	// 3. Get the (*.tar) file path.
+	tarPath := filepath.Join(localPath, KCL_PKG_TAR)
+	matches, err := filepath.Glob(tarPath)
+	if err != nil || len(matches) != 1 {
+		if err == nil {
+			err = errors.InvalidPkg
+		}
+
+		return reporter.NewErrorEvent(
+			reporter.InvalidKclPkg,
+			err,
+			fmt.Sprintf("failed to find the kcl package tar from '%s'.", tarPath),
+		)
+	}
+
+	// 4. Untar the tar file.
+	storagePath := ociOpt.AddStoragePathSuffix(absPullPath)
+	err = utils.UnTarDir(matches[0], storagePath)
+	if err != nil {
+		return reporter.NewErrorEvent(
+			reporter.FailedUntarKclPkg,
+			err,
+			fmt.Sprintf("failed to untar the kcl package tar from '%s' into '%s'.", matches[0], storagePath),
+		)
+	}
+
+	reporter.ReportEventToStdout(
+		reporter.NewEvent(reporter.PullingFinished, fmt.Sprintf("pulled '%s' in '%s' successfully.", ociUrlOrPkgName, storagePath)),
+	)
+	return nil
 }
