@@ -1,0 +1,1 @@
+kpm pull --tag 1.14 oci://ghcr.io/kcl-lang/k8s
