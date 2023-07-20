@@ -66,7 +66,7 @@ func KpmPull(c *cli.Context) error {
 
 	ociOpt, event := opt.ParseOciOptionFromOciUrl(ociUrlOrPkgName, tag)
 
-	if event.Type() == reporter.IsNotUrl || event.Type() == reporter.UrlSchemeNotOci {
+	if event != nil && (event.Type() == reporter.IsNotUrl || event.Type() == reporter.UrlSchemeNotOci) {
 		settings := settings.GetSettings()
 		if settings.ErrorEvent != nil {
 			return settings.ErrorEvent
