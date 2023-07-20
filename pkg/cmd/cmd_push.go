@@ -60,10 +60,7 @@ func genDefaultOciUrlForKclPkg(pkg *pkg.KclPkg) (string, error) {
 		return "", settings.ErrorEvent
 	}
 
-	urlPath, err := url.JoinPath(settings.DefaultOciRepo(), pkg.GetPkgName())
-	if err != nil {
-		return "", err
-	}
+	urlPath := utils.JoinPath(settings.DefaultOciRepo(), pkg.GetPkgName())
 
 	u := &url.URL{
 		Scheme: oci.OCI_SCHEME,

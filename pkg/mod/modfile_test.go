@@ -1,7 +1,6 @@
 package modfile
 
 import (
-	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -181,8 +180,7 @@ func TestDownloadOci(t *testing.T) {
 	err := os.MkdirAll(testPath, 0755)
 	assert.Equal(t, err, nil)
 
-	urlpath, err := url.JoinPath(settings.DEFAULT_REPO, "k8s")
-	assert.Equal(t, err, nil)
+	urlpath := utils.JoinPath(settings.DEFAULT_REPO, "k8s")
 
 	depFromOci := Dependency{
 		Name:    "k8s",
@@ -221,8 +219,7 @@ func TestDownloadLatestOci(t *testing.T) {
 	err := os.MkdirAll(testPath, 0755)
 	assert.Equal(t, err, nil)
 
-	urlpath, err := url.JoinPath(settings.DEFAULT_REPO, "k8s")
-	assert.Equal(t, err, nil)
+	urlpath := utils.JoinPath(settings.DEFAULT_REPO, "k8s")
 
 	depFromOci := Dependency{
 		Name:    "k8s",
