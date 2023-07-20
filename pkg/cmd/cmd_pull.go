@@ -4,7 +4,6 @@ package cmd
 
 import (
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 
@@ -65,17 +64,14 @@ func KpmPull(c *cli.Context) error {
 	}
 
 	ociOpt, event := opt.ParseOciOptionFromOciUrl(ociUrlOrPkgName, tag)
-
-	if event.Type() == reporter.IsNotUrl || event.Type() == reporter.UrlSchemeNotOci {
+	var err error
+	if event != nil && (event.Type() == reporter.IsNotUrl || event.Type() == reporter.UrlSchemeNotOci) {
 		settings := settings.GetSettings()
 		if settings.ErrorEvent != nil {
 			return settings.ErrorEvent
 		}
 
-		urlpath, err := url.JoinPath(settings.DefaultOciRepo(), ociUrlOrPkgName)
-		if err != nil {
-			return reporter.NewErrorEvent(reporter.Bug, err)
-		}
+		urlpath := utils.JoinPath(settings.DefaultOciRepo(), ociUrlOrPkgName)
 
 		ociOpt, err = opt.ParseOciRef(urlpath)
 		if err != nil {

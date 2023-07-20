@@ -120,3 +120,13 @@ func TestDefaultKpmHome(t *testing.T) {
 	assert.Equal(t, kpmHome, filePath)
 	assert.Equal(t, DirExists(kpmHome), true)
 }
+
+func TestJoinPath(t *testing.T) {
+	assert.Equal(t, JoinPath("base", "elem"), "base/elem")
+	assert.Equal(t, JoinPath("base/", "elem"), "base/elem")
+	assert.Equal(t, JoinPath("base", "/elem"), "base/elem")
+	assert.Equal(t, JoinPath("", "/elem"), "/elem")
+	assert.Equal(t, JoinPath("", "elem"), "/elem")
+	assert.Equal(t, JoinPath("base/", ""), "base/")
+	assert.Equal(t, JoinPath("base", ""), "base/")
+}

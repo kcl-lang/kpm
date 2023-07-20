@@ -1,0 +1,4 @@
+kpm: start to pull 'oci://ghcr.io/kcl-lang/k8s'.
+kpm: the lastest version '1.27' will be pulled.
+kpm: pulling '/kcl-lang/k8s:1.27' from 'ghcr.io/kcl-lang/k8s'.
+kpm: pulled 'oci://ghcr.io/kcl-lang/k8s' in '<workspace>/ghcr.io/kcl-lang/k8s' successfully.

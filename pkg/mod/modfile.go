@@ -3,7 +3,6 @@ package modfile
 
 import (
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 
@@ -110,10 +109,7 @@ func (dep *Dependency) FillDepInfo() error {
 			return settings.ErrorEvent
 		}
 		dep.Source.Oci.Reg = settings.DefaultOciRegistry()
-		urlpath, err := url.JoinPath(settings.DefaultOciRepo(), dep.Name)
-		if err != nil {
-			return err
-		}
+		urlpath := utils.JoinPath(settings.DefaultOciRepo(), dep.Name)
 		dep.Source.Oci.Repo = urlpath
 	}
 	return nil
@@ -377,11 +373,7 @@ func ParseOpt(opt *opt.RegistryOptions) *Dependency {
 		}
 	}
 	if opt.Oci != nil {
-		repoPath, err := url.JoinPath(opt.Oci.Repo, opt.Oci.PkgName)
-		if err != nil {
-			reporter.Report("kpm: failed to parse oci rul")
-			return nil
-		}
+		repoPath := utils.JoinPath(opt.Oci.Repo, opt.Oci.PkgName)
 		ociSource := Oci{
 			Reg:  opt.Oci.Reg,
 			Repo: repoPath,

@@ -364,5 +364,7 @@ func RmNewline(s string) string {
 
 // JoinPath will join the 'elem' to the 'base' with '/'.
 func JoinPath(base, elem string) string {
-	return fmt.Sprintf("%s/%s", base, elem)
+	base = strings.TrimSuffix(base, "/")
+	elem = strings.TrimPrefix(elem, "/")
+	return base + "/" + elem
 }
