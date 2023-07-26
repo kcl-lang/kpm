@@ -1,0 +1,6 @@
+<un_ordered>kpm: adding dependency 'kcl2'.
+kpm: the lastest version '0.0.1' will be added.
+kpm: downloading 'test/kcl2:0.0.1' from 'localhost:5001/test/kcl2:0.0.1'.
+kpm: downloading 'test/k8s:1.27' from 'localhost:5001/test/k8s:1.27'.
+kpm: downloading 'test/kcl1:0.0.1' from 'localhost:5001/test/kcl1:0.0.1'.
+kpm: add dependency 'kcl2' successfully.

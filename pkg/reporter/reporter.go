@@ -85,6 +85,9 @@ const (
 	SelectLatestVersion
 	DownloadingFromOCI
 	DownloadingFromGit
+	LocalPathNotExist
+	PathIsEmpty
+	AddItselfAsDep
 )
 
 // KpmEvent is the event used to show kpm logs to users.

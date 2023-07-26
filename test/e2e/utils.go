@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/otiai10/copy"
@@ -60,7 +61,7 @@ func CopyDir(srcDir, dstDir string) {
 	}
 }
 
-var KEYS = []string{"<workspace>", "<ignore>"}
+var KEYS = []string{"<workspace>", "<ignore>", "<un_ordered>"}
 
 // IsIgnore will reture whether the expected result in 'expectedStr' should be ignored.
 func IsIgnore(expectedStr string) bool {
@@ -101,4 +102,16 @@ func SplitCommand(command string) []string {
 		args = append(args, currentArg)
 	}
 	return args
+}
+
+// RemoveLineOrder will remove the line order in 'str1'.
+func RemoveLineOrder(str1 string) string {
+	// Split the strings into slices of lines
+	lines1 := strings.Split(str1, "\n")
+
+	// Sort the slices of lines
+	sort.Strings(lines1)
+
+	// Compare the sorted slices of lines
+	return strings.Join(lines1, "\n")
 }

@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"kcl-lang.io/kpm/pkg/env"
-	modfile "kcl-lang.io/kpm/pkg/mod"
 	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/runner"
@@ -42,7 +41,7 @@ func TestLoadKclPkg(t *testing.T) {
 		t.Errorf("Failed to 'LoadKclPkg'.")
 	}
 
-	mfile := modfile.NewModFile(&opt.InitOptions{Name: "test_name", InitPath: testDir})
+	mfile := NewModFile(&opt.InitOptions{Name: "test_name", InitPath: testDir})
 	_ = mfile.StoreModFile()
 
 	kclPkg, err = LoadKclPkg(testDir)
@@ -84,26 +83,26 @@ func TestUpdateKclModAndLock(t *testing.T) {
 
 	_ = kclPkg.InitEmptyPkg()
 
-	dep := modfile.Dependency{
+	dep := Dependency{
 		Name:     "name",
 		FullName: "test_version",
 		Version:  "test_version",
 		Sum:      "test_sum",
-		Source: modfile.Source{
-			Git: &modfile.Git{
+		Source: Source{
+			Git: &Git{
 				Url: "test_url",
 				Tag: "test_tag",
 			},
 		},
 	}
 
-	oci_dep := modfile.Dependency{
+	oci_dep := Dependency{
 		Name:     "oci_name",
 		FullName: "test_version",
 		Version:  "test_version",
 		Sum:      "test_sum",
-		Source: modfile.Source{
-			Oci: &modfile.Oci{
+		Source: Source{
+			Oci: &Oci{
 				Reg:  "test_reg",
 				Repo: "test_repo",
 				Tag:  "test_tag",
@@ -176,7 +175,7 @@ func TestUpdateKclModAndLock(t *testing.T) {
 
 func TestCheck(t *testing.T) {
 	testDir := getTestDir("test_check")
-	dep := modfile.Dependency{
+	dep := Dependency{
 		FullName: "test_full_name",
 		Sum:      "",
 	}
@@ -192,8 +191,8 @@ func TestCheck(t *testing.T) {
 
 func TestGetPkgName(t *testing.T) {
 	kclPkg := KclPkg{
-		modFile: modfile.ModFile{
-			Pkg: modfile.Package{
+		modFile: ModFile{
+			Pkg: Package{
 				Name: "test",
 			},
 		},
@@ -208,27 +207,27 @@ func TestVendorDeps(t *testing.T) {
 	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1"))
 	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
 
-	depKcl1 := modfile.Dependency{
+	depKcl1 := Dependency{
 		Name:     "kcl1",
 		FullName: "kcl1",
 		Sum:      kcl1Sum,
 	}
 
-	depKcl2 := modfile.Dependency{
+	depKcl2 := Dependency{
 		Name:     "kcl2",
 		FullName: "kcl2",
 		Sum:      kcl2Sum,
 	}
 
 	kclPkg := KclPkg{
-		modFile: modfile.ModFile{
+		modFile: ModFile{
 			HomePath: filepath.Join(testDir, "my_kcl"),
 			// Whether the current package uses the vendor mode
 			// In the vendor mode, kpm will look for the package in the vendor subdirectory
 			// in the current package directory.
 			VendorMode: false,
-			Dependencies: modfile.Dependencies{
-				Deps: map[string]modfile.Dependency{
+			Dependencies: Dependencies{
+				Deps: map[string]Dependency{
 					"kcl1": depKcl1,
 					"kcl2": depKcl2,
 				},
@@ -237,8 +236,8 @@ func TestVendorDeps(t *testing.T) {
 		HomePath: filepath.Join(testDir, "my_kcl"),
 		// The dependencies in the current kcl package are the dependencies of kcl.mod.lock,
 		// not the dependencies in kcl.mod.
-		Dependencies: modfile.Dependencies{
-			Deps: map[string]modfile.Dependency{
+		Dependencies: Dependencies{
+			Deps: map[string]Dependency{
 				"kcl1": depKcl1,
 				"kcl2": depKcl2,
 			},
@@ -268,27 +267,27 @@ func TestResolveDepsVendorMode(t *testing.T) {
 	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1"))
 	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
 
-	depKcl1 := modfile.Dependency{
+	depKcl1 := Dependency{
 		Name:     "kcl1",
 		FullName: "kcl1",
 		Sum:      kcl1Sum,
 	}
 
-	depKcl2 := modfile.Dependency{
+	depKcl2 := Dependency{
 		Name:     "kcl2",
 		FullName: "kcl2",
 		Sum:      kcl2Sum,
 	}
 
 	kclPkg := KclPkg{
-		modFile: modfile.ModFile{
+		modFile: ModFile{
 			HomePath: home_path,
 			// Whether the current package uses the vendor mode
 			// In the vendor mode, kpm will look for the package in the vendor subdirectory
 			// in the current package directory.
 			VendorMode: true,
-			Dependencies: modfile.Dependencies{
-				Deps: map[string]modfile.Dependency{
+			Dependencies: Dependencies{
+				Deps: map[string]Dependency{
 					"kcl1": depKcl1,
 					"kcl2": depKcl2,
 				},
@@ -297,8 +296,8 @@ func TestResolveDepsVendorMode(t *testing.T) {
 		HomePath: home_path,
 		// The dependencies in the current kcl package are the dependencies of kcl.mod.lock,
 		// not the dependencies in kcl.mod.
-		Dependencies: modfile.Dependencies{
-			Deps: map[string]modfile.Dependency{
+		Dependencies: Dependencies{
+			Deps: map[string]Dependency{
 				"kcl1": depKcl1,
 				"kcl2": depKcl2,
 			},
@@ -321,7 +320,7 @@ func TestResolveDepsVendorMode(t *testing.T) {
 	os.RemoveAll(home_path)
 }
 
-func checkDepsMapInSearchPath(t *testing.T, dep modfile.Dependency, searchPath string, maps map[string]string) {
+func checkDepsMapInSearchPath(t *testing.T, dep Dependency, searchPath string, maps map[string]string) {
 	assert.Equal(t, maps[dep.Name], filepath.Join(searchPath, dep.FullName))
 	assert.Equal(t, utils.DirExists(filepath.Join(searchPath, dep.FullName)), true)
 }
@@ -335,27 +334,27 @@ func TestCompileWithEntryFile(t *testing.T) {
 	os.RemoveAll(vendor_path)
 
 	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1"))
-	depKcl1 := modfile.Dependency{
+	depKcl1 := Dependency{
 		Name:     "kcl1",
 		FullName: "kcl1",
 		Sum:      kcl1Sum,
 	}
 	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
-	depKcl2 := modfile.Dependency{
+	depKcl2 := Dependency{
 		Name:     "kcl2",
 		FullName: "kcl2",
 		Sum:      kcl2Sum,
 	}
 
 	kclPkg := KclPkg{
-		modFile: modfile.ModFile{
+		modFile: ModFile{
 			HomePath: home_path,
 			// Whether the current package uses the vendor mode
 			// In the vendor mode, kpm will look for the package in the vendor subdirectory
 			// in the current package directory.
 			VendorMode: true,
-			Dependencies: modfile.Dependencies{
-				Deps: map[string]modfile.Dependency{
+			Dependencies: Dependencies{
+				Deps: map[string]Dependency{
 					"kcl1": depKcl1,
 					"kcl2": depKcl2,
 				},
@@ -364,8 +363,8 @@ func TestCompileWithEntryFile(t *testing.T) {
 		HomePath: home_path,
 		// The dependencies in the current kcl package are the dependencies of kcl.mod.lock,
 		// not the dependencies in kcl.mod.
-		Dependencies: modfile.Dependencies{
-			Deps: map[string]modfile.Dependency{
+		Dependencies: Dependencies{
+			Deps: map[string]Dependency{
 				"kcl1": depKcl1,
 				"kcl2": depKcl2,
 			},
@@ -499,11 +498,11 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	res, err := pkg.ResolveDepsMetadataInJsonStr(globalPkgPath, true)
 	assert.Equal(t, err, nil)
 
-	expectedDep := modfile.Dependencies{
-		Deps: make(map[string]modfile.Dependency),
+	expectedDep := Dependencies{
+		Deps: make(map[string]Dependency),
 	}
 
-	expectedDep.Deps["konfig"] = modfile.Dependency{
+	expectedDep.Deps["konfig"] = Dependency{
 		Name:          "konfig",
 		FullName:      "konfig_v0.0.1",
 		LocalFullPath: filepath.Join(globalPkgPath, "konfig_v0.0.1"),
@@ -525,7 +524,7 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	assert.Equal(t, utils.DirExists(vendorDir), true)
 	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "konfig_v0.0.1")), true)
 
-	expectedDep.Deps["konfig"] = modfile.Dependency{
+	expectedDep.Deps["konfig"] = Dependency{
 		Name:          "konfig",
 		FullName:      "konfig_v0.0.1",
 		LocalFullPath: filepath.Join(vendorDir, "konfig_v0.0.1"),

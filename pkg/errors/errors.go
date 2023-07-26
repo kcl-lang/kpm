@@ -47,7 +47,8 @@ var IsOciRef = errors.New("kpm: oci ref is not an url.")
 
 // Invalid Version
 var InvalidVersionFormat = errors.New("kpm: failed to parse version.")
-
+var PathNotFound = errors.New("path not found.")
+var PathIsEmpty = errors.New("path is empty.")
 var InvalidPkg = errors.New("invalid kcl package.")
 var InvalidOciUrl = errors.New("invalid oci url.")
 var UnknownEnv = errors.New("invalid environment variable.")

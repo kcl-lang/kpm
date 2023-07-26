@@ -4,6 +4,7 @@ package opt
 
 import (
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -39,13 +40,16 @@ func (opts *AddOptions) Validate() error {
 		return opts.RegistryOpts.Git.Validate()
 	} else if opts.RegistryOpts.Oci != nil {
 		return opts.RegistryOpts.Oci.Validate()
+	} else if opts.RegistryOpts.Local != nil {
+		return opts.RegistryOpts.Local.Validate()
 	}
 	return nil
 }
 
 type RegistryOptions struct {
-	Git *GitOptions
-	Oci *OciOptions
+	Git   *GitOptions
+	Oci   *OciOptions
+	Local *LocalOptions
 }
 
 type GitOptions struct {
@@ -74,6 +78,22 @@ type OciOptions struct {
 func (opts *OciOptions) Validate() error {
 	if len(opts.Repo) == 0 {
 		return reporter.NewErrorEvent(reporter.InvalidRepo, errors.InvalidAddOptionsInvalidOciRepo)
+	}
+	return nil
+}
+
+// LocalOptions for local packages.
+// kpm will find packages from local path.
+type LocalOptions struct {
+	Path string
+}
+
+func (opts *LocalOptions) Validate() error {
+	if len(opts.Path) == 0 {
+		return errors.PathIsEmpty
+	}
+	if _, err := os.Stat(opts.Path); err != nil {
+		return err
 	}
 	return nil
 }

@@ -5,6 +5,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/urfave/cli/v2"
@@ -86,6 +87,19 @@ func KpmAdd(c *cli.Context) error {
 		return err
 	}
 
+	if addOpts.RegistryOpts.Local != nil {
+		absAddPath, err := filepath.Abs(addOpts.RegistryOpts.Local.Path)
+		if err != nil {
+			return reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it.")
+		}
+		if absAddPath == kclPkg.HomePath {
+			return reporter.NewErrorEvent(
+				reporter.AddItselfAsDep,
+				fmt.Errorf("cannot add '%s' as a dependency to itself", kclPkg.GetPkgName()),
+			)
+		}
+	}
+
 	err = addOpts.Validate()
 	if err != nil {
 		return err
@@ -126,15 +140,23 @@ func parseAddOptions(c *cli.Context, localPath string) (*opt.AddOptions, error) 
 			RegistryOpts: *gitOpts,
 		}, nil
 	} else {
-		// parse from 'kpm add xxx:0.0.1'.
-		ociReg, err := parseOciRegistryOptions(c)
-		if err != nil {
-			return nil, err
+		localPkg, err := parseLocalPathOptions(c)
+		if err != (*reporter.KpmEvent)(nil) {
+			// parse from 'kpm add xxx:0.0.1'.
+			ociReg, err := parseOciRegistryOptions(c)
+			if err != nil {
+				return nil, err
+			}
+			return &opt.AddOptions{
+				LocalPath:    localPath,
+				RegistryOpts: *ociReg,
+			}, nil
+		} else {
+			return &opt.AddOptions{
+				LocalPath:    localPath,
+				RegistryOpts: *localPkg,
+			}, nil
 		}
-		return &opt.AddOptions{
-			LocalPath:    localPath,
-			RegistryOpts: *ociReg,
-		}, nil
 	}
 }
 
@@ -189,6 +211,24 @@ func parseOciRegistryOptions(c *cli.Context) (*opt.RegistryOptions, error) {
 			Tag:     version,
 		},
 	}, nil
+}
+
+// parseLocalPathOptions will parse the local path information from user cli inputs.
+func parseLocalPathOptions(c *cli.Context) (*opt.RegistryOptions, *reporter.KpmEvent) {
+	localPath := c.Args().First()
+	if localPath == "" {
+		return nil, reporter.NewErrorEvent(reporter.PathIsEmpty, errors.PathIsEmpty)
+	}
+	// check if the local path exists.
+	if _, err := os.Stat(localPath); os.IsNotExist(err) {
+		return nil, reporter.NewErrorEvent(reporter.LocalPathNotExist, err)
+	} else {
+		return &opt.RegistryOptions{
+			Local: &opt.LocalOptions{
+				Path: localPath,
+			},
+		}, nil
+	}
 }
 
 // parseOciPkgNameAndVersion will parse package name and version
