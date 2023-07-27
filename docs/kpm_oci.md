@@ -15,7 +15,7 @@ The default content of the configuration file is as follows:
 ```json
 {
     "DefaultOciRegistry":"ghcr.io",
-    "DefaultOciRepo":"kusionstack"
+    "DefaultOciRepo":"kcl-lang"
 }
 ```
 

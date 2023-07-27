@@ -100,10 +100,10 @@ version = "0.0.1"
 
 You can then add a dependency to the current kcl package using the `kpm add` command
 
-As shown below, taking the example of adding a package dependency named `k8s`, the version of the package is `1.27.2`.
+As shown below, taking the example of adding a package dependency named `k8s`, the version of the package is `1.27`.
 
 ```shell
-kpm add k8s:1.27.2
+kpm add k8s:1.27
 ```
 
 <img src="./docs/gifs/kpm_add_k8s.gif" width="600" align="center" />
@@ -117,7 +117,7 @@ edition = "0.0.1"
 version = "0.0.1"
 
 [dependencies]
-k8s = "1.27.2" # The dependency 'k8s' with version '1.27.2'
+k8s = "1.27" # The dependency 'k8s' with version '1.27'
 ```
 
 ### Write a kcl program that uses the content in `k8s`

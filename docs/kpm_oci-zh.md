@@ -15,7 +15,7 @@ kpm 默认 registry - [https://github.com/orgs/KusionStack/packages](https://git
 ```json
 {
     "DefaultOciRegistry":"ghcr.io",
-    "DefaultOciRepo":"kusionstack"
+    "DefaultOciRepo":"kcl-lang"
 }
 ```
 

@@ -47,7 +47,7 @@ func TestDefaultKpmConf(t *testing.T) {
 		Conf: DefaultKpmConf(),
 	}
 	assert.Equal(t, settings.DefaultOciRegistry(), "ghcr.io")
-	assert.Equal(t, settings.DefaultOciRepo(), "kusionstack")
+	assert.Equal(t, settings.DefaultOciRepo(), "kcl-lang")
 }
 
 func TestLoadOrCreateDefaultKpmJson(t *testing.T) {
@@ -60,7 +60,7 @@ func TestLoadOrCreateDefaultKpmJson(t *testing.T) {
 
 	kpmConf, err := loadOrCreateDefaultKpmJson()
 	assert.Equal(t, kpmConf.DefaultOciRegistry, "ghcr.io")
-	assert.Equal(t, kpmConf.DefaultOciRepo, "kusionstack")
+	assert.Equal(t, kpmConf.DefaultOciRepo, "kcl-lang")
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(kpmPath), true)
 
@@ -154,4 +154,19 @@ func TestPackageCacheLock(t *testing.T) {
 	assert.Equal(t,
 		(reflect.DeepEqual(gotlist, goroutine_1_first_list) || reflect.DeepEqual(gotlist, goroutine_2_first_list)),
 		true)
+}
+
+func TestSettingEnv(t *testing.T) {
+	settings := GetSettings()
+	assert.Equal(t, settings.DefaultOciRegistry(), "ghcr.io")
+	assert.Equal(t, settings.DefaultOciRepo(), "kcl-lang")
+
+	err := os.Setenv("KPM_REG", "test_reg")
+	assert.Equal(t, err, nil)
+	err = os.Setenv("KPM_REPO", "test_repo")
+	assert.Equal(t, err, nil)
+
+	settings = GetSettings()
+	assert.Equal(t, settings.DefaultOciRegistry(), "test_reg")
+	assert.Equal(t, settings.DefaultOciRepo(), "test_repo")
 }

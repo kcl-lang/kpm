@@ -150,7 +150,7 @@ func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, settings *settings.Settings)
 
 	// 3. Generate the OCI options from oci url and the version of current kcl package.
 	ociOpts, err := opt.ParseOciOptionFromOciUrl(ociUrl, kclPkg.GetPkgTag())
-	if err != nil {
+	if err != (*reporter.KpmEvent)(nil) {
 		return reporter.NewErrorEvent(
 			reporter.UnsupportOciUrlScheme,
 			errors.InvalidOciUrl,
