@@ -93,6 +93,7 @@ func NewOciClient(regName, repoName string) (*OciClient, error) {
 	if err != nil {
 		return nil, settings.ErrorEvent
 	}
+	repo.PlainHTTP = settings.DefaultOciPlainHttp()
 
 	// Login
 	credential, err := loadCredential(regName, settings)

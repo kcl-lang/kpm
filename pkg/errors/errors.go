@@ -50,3 +50,4 @@ var InvalidVersionFormat = errors.New("kpm: failed to parse version.")
 
 var InvalidPkg = errors.New("invalid kcl package.")
 var InvalidOciUrl = errors.New("invalid oci url.")
+var UnknownEnv = errors.New("invalid environment variable.")

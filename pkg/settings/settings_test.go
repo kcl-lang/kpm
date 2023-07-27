@@ -77,7 +77,8 @@ func TestLoadOrCreateDefaultKpmJson(t *testing.T) {
 	var got interface{}
 	err = json.Unmarshal(gotJson, &got)
 	assert.Equal(t, err, nil)
-
+	fmt.Printf("got: %v\n", got)
+	fmt.Printf("expected: %v\n", expected)
 	assert.Equal(t, reflect.DeepEqual(expected, got), true)
 
 	os.RemoveAll(kpmPath)
@@ -160,13 +161,29 @@ func TestSettingEnv(t *testing.T) {
 	settings := GetSettings()
 	assert.Equal(t, settings.DefaultOciRegistry(), "ghcr.io")
 	assert.Equal(t, settings.DefaultOciRepo(), "kcl-lang")
+	assert.Equal(t, settings.DefaultOciPlainHttp(), false)
 
 	err := os.Setenv("KPM_REG", "test_reg")
 	assert.Equal(t, err, nil)
 	err = os.Setenv("KPM_REPO", "test_repo")
 	assert.Equal(t, err, nil)
+	err = os.Setenv("OCI_REG_PLAIN_HTTP", "true")
+	assert.Equal(t, err, nil)
 
 	settings = GetSettings()
 	assert.Equal(t, settings.DefaultOciRegistry(), "test_reg")
 	assert.Equal(t, settings.DefaultOciRepo(), "test_repo")
+	assert.Equal(t, settings.ErrorEvent.Type(), reporter.UnknownEnv)
+	assert.Equal(t, settings.ErrorEvent.Error(), "kpm: unknown environment variable 'OCI_REG_PLAIN_HTTP=true'\nkpm: invalid environment variable.\n\n")
+	assert.Equal(t, settings.DefaultOciPlainHttp(), false)
+
+	err = os.Setenv("OCI_REG_PLAIN_HTTP", "on")
+	assert.Equal(t, err, nil)
+	settings = GetSettings()
+	assert.Equal(t, settings.DefaultOciPlainHttp(), true)
+
+	err = os.Setenv("OCI_REG_PLAIN_HTTP", "off")
+	assert.Equal(t, err, nil)
+	settings = GetSettings()
+	assert.Equal(t, settings.DefaultOciPlainHttp(), false)
 }
