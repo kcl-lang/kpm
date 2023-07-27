@@ -77,7 +77,8 @@ func TestLoadOrCreateDefaultKpmJson(t *testing.T) {
 	var got interface{}
 	err = json.Unmarshal(gotJson, &got)
 	assert.Equal(t, err, nil)
-
+	fmt.Printf("got: %v\n", got)
+	fmt.Printf("expected: %v\n", expected)
 	assert.Equal(t, reflect.DeepEqual(expected, got), true)
 
 	os.RemoveAll(kpmPath)
