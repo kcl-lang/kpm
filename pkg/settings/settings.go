@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -26,14 +27,19 @@ const PACKAGE_CACHE_PATH = ".kpm/config/package-cache"
 
 // The kpm configuration
 type KpmConf struct {
-	DefaultOciRegistry string
-	DefaultOciRepo     string
+	DefaultOciRegistry  string
+	DefaultOciRepo      string
+	DefaultOciPlainHttp bool
 }
 
+const ON = "on"
+const OFF = "off"
 const DEFAULT_REGISTRY = "ghcr.io"
 const DEFAULT_REPO = "kcl-lang"
+const DEFAULT_OCI_PLAIN_HTTP = OFF
 const DEFAULT_REGISTRY_ENV = "KPM_REG"
 const DEFAULT_REPO_ENV = "KPM_REPO"
+const DEFAULT_OCI_PLAIN_HTTP_ENV = "OCI_REG_PLAIN_HTTP"
 
 // This is a singleton that loads kpm settings from 'kpm.json'
 // and is only initialized on the first call by 'Init()' or 'GetSettings()'
@@ -43,8 +49,9 @@ var once sync.Once
 // DefaultKpmConf create a default configuration for kpm.
 func DefaultKpmConf() KpmConf {
 	return KpmConf{
-		DefaultOciRegistry: DEFAULT_REGISTRY,
-		DefaultOciRepo:     DEFAULT_REPO,
+		DefaultOciRegistry:  DEFAULT_REGISTRY,
+		DefaultOciRepo:      DEFAULT_REPO,
+		DefaultOciPlainHttp: DEFAULT_OCI_PLAIN_HTTP == ON,
 	}
 }
 
@@ -123,13 +130,18 @@ func (settings *Settings) DefaultOciRepo() string {
 	return settings.Conf.DefaultOciRepo
 }
 
+// DefaultOciPlainHttp return the default OCI plain http 'false'.
+func (settings *Settings) DefaultOciPlainHttp() bool {
+	return settings.Conf.DefaultOciPlainHttp
+}
+
 // DefaultOciRef return the default OCI ref 'ghcr.io/kcl-lang'.
 func (settings *Settings) DefaultOciRef() string {
 	return utils.JoinPath(settings.Conf.DefaultOciRegistry, settings.Conf.DefaultOciRepo)
 }
 
 // LoadSettingsFromEnv will load the kpm settings from environment variables.
-func (settings *Settings) LoadSettingsFromEnv() *Settings {
+func (settings *Settings) LoadSettingsFromEnv() (*Settings, *reporter.KpmEvent) {
 	// Load the env KPM_REG
 	reg := os.Getenv(DEFAULT_REGISTRY_ENV)
 	if len(reg) > 0 {
@@ -140,7 +152,34 @@ func (settings *Settings) LoadSettingsFromEnv() *Settings {
 	if len(repo) > 0 {
 		settings.Conf.DefaultOciRepo = repo
 	}
-	return settings
+
+	// Load the env OCI_REG_PLAIN_HTTP
+	plainHttp := os.Getenv(DEFAULT_OCI_PLAIN_HTTP_ENV)
+	var err *reporter.KpmEvent
+	if len(plainHttp) > 0 {
+		settings.Conf.DefaultOciPlainHttp, err = isOn(plainHttp)
+		if err != (*reporter.KpmEvent)(nil) {
+			return settings, reporter.NewErrorEvent(
+				reporter.UnknownEnv,
+				err,
+				fmt.Sprintf("unknown environment variable '%s=%s'", DEFAULT_OCI_PLAIN_HTTP_ENV, plainHttp),
+			)
+		}
+	}
+	return settings, nil
+}
+
+func isOn(input string) (bool, *reporter.KpmEvent) {
+	if strings.ToLower(input) == ON {
+		return true, nil
+	} else if strings.ToLower(input) == OFF {
+		return false, nil
+	} else {
+		return false, reporter.NewErrorEvent(
+			reporter.UnknownEnv,
+			errors.UnknownEnv,
+		)
+	}
 }
 
 // GetFullPath returns the full path file path under '$HOME/.kpm/config/'
@@ -228,7 +267,14 @@ func GetSettings() *Settings {
 		kpm_settings.PackageCacheLock = flock.New(lockPath)
 	})
 
-	return kpm_settings.LoadSettingsFromEnv()
+	kpm_settings, err := kpm_settings.LoadSettingsFromEnv()
+	if err != (*reporter.KpmEvent)(nil) {
+		kpm_settings.ErrorEvent = err
+	} else {
+		kpm_settings.ErrorEvent = nil
+	}
+
+	return kpm_settings
 }
 
 // loadOrCreateDefaultKpmJson will load the 'kpm.json' file from '$KCL_PKG_PATH/.kpm/config',

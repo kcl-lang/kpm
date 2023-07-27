@@ -8,11 +8,14 @@ import (
 	"log"
 	"os"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 // Init the log.
 func InitReporter() {
 	log.SetFlags(0)
+	logrus.SetLevel(logrus.ErrorLevel)
 }
 
 // Report prints to the logger.
@@ -54,6 +57,7 @@ const (
 	FailedCreateStorePath
 	FailedGetPkg
 	UnKnownPullWhat
+	UnknownEnv
 	InvalidKclPkg
 	FailedUntarKclPkg
 	Bug
