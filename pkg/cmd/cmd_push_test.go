@@ -15,5 +15,5 @@ func TestGenDefaultOciUrlForKclPkg(t *testing.T) {
 	assert.Equal(t, err, nil)
 	url, err := genDefaultOciUrlForKclPkg(kclPkg)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, url, "oci://ghcr.io/kusionstack/test_gen_oci_url")
+	assert.Equal(t, url, "oci://ghcr.io/kcl-lang/test_gen_oci_url")
 }

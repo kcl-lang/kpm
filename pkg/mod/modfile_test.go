@@ -176,7 +176,7 @@ func TestGetFilePath(t *testing.T) {
 
 // TestDownloadGit test download from oci registry.
 func TestDownloadOci(t *testing.T) {
-	testPath := filepath.Join(getTestDir("download"), "k8s_1.27.2")
+	testPath := filepath.Join(getTestDir("download"), "k8s_1.27")
 	err := os.MkdirAll(testPath, 0755)
 	assert.Equal(t, err, nil)
 
@@ -184,30 +184,30 @@ func TestDownloadOci(t *testing.T) {
 
 	depFromOci := Dependency{
 		Name:    "k8s",
-		Version: "1.27.2",
+		Version: "1.27",
 		Source: Source{
 			Oci: &Oci{
 				Reg:  settings.DEFAULT_REGISTRY,
 				Repo: urlpath,
-				Tag:  "1.27.2",
+				Tag:  "1.27",
 			},
 		},
 	}
 
 	dep, err := depFromOci.Download(testPath)
+	assert.Equal(t, err, nil)
 	assert.Equal(t, dep.Name, "k8s")
-	assert.Equal(t, dep.FullName, "k8s_1.27.2")
-	assert.Equal(t, dep.Version, "1.27.2")
-	assert.Equal(t, dep.Sum, "ZI7L/uz53aDOIgVgxBbEPG7wGCWR+Gd3hhgYYRLoIY4=")
+	assert.Equal(t, dep.FullName, "k8s_1.27")
+	assert.Equal(t, dep.Version, "1.27")
+	assert.Equal(t, dep.Sum, "xnYM1FWHAy3m+KcQMQb2rjZouTxumqYt6FGZpu2T4yM=")
 	assert.NotEqual(t, dep.Source.Oci, nil)
 	assert.Equal(t, dep.Source.Oci.Reg, settings.DEFAULT_REGISTRY)
 	assert.Equal(t, dep.Source.Oci.Repo, urlpath)
-	assert.Equal(t, dep.Source.Oci.Tag, "1.27.2")
+	assert.Equal(t, dep.Source.Oci.Tag, "1.27")
 	assert.Equal(t, dep.LocalFullPath, testPath)
-	assert.Equal(t, err, nil)
 
 	// Check whether the tar downloaded by `kpm add` has been deleted.
-	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "k8s_1.27.2.tar")), false)
+	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "k8s_1.27.tar")), false)
 
 	err = os.RemoveAll(getTestDir("download"))
 	assert.Equal(t, err, nil)
@@ -235,18 +235,18 @@ func TestDownloadLatestOci(t *testing.T) {
 
 	dep, err := depFromOci.Download(testPath)
 	assert.Equal(t, dep.Name, "k8s")
-	assert.Equal(t, dep.FullName, "k8s_1.27.2")
-	assert.Equal(t, dep.Version, "1.27.2")
-	assert.Equal(t, dep.Sum, "ZI7L/uz53aDOIgVgxBbEPG7wGCWR+Gd3hhgYYRLoIY4=")
+	assert.Equal(t, dep.FullName, "k8s_1.27")
+	assert.Equal(t, dep.Version, "1.27")
+	assert.Equal(t, dep.Sum, "xnYM1FWHAy3m+KcQMQb2rjZouTxumqYt6FGZpu2T4yM=")
 	assert.NotEqual(t, dep.Source.Oci, nil)
 	assert.Equal(t, dep.Source.Oci.Reg, settings.DEFAULT_REGISTRY)
 	assert.Equal(t, dep.Source.Oci.Repo, urlpath)
-	assert.Equal(t, dep.Source.Oci.Tag, "1.27.2")
-	assert.Equal(t, dep.LocalFullPath, testPath+"1.27.2")
+	assert.Equal(t, dep.Source.Oci.Tag, "1.27")
+	assert.Equal(t, dep.LocalFullPath, testPath+"1.27")
 	assert.Equal(t, err, nil)
 
 	// Check whether the tar downloaded by `kpm add` has been deleted.
-	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "k8s_1.27.2.tar")), false)
+	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "k8s_1.27.tar")), false)
 
 	err = os.RemoveAll(getTestDir("download"))
 	assert.Equal(t, err, nil)

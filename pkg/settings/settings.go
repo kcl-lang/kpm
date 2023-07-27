@@ -31,7 +31,9 @@ type KpmConf struct {
 }
 
 const DEFAULT_REGISTRY = "ghcr.io"
-const DEFAULT_REPO = "kusionstack"
+const DEFAULT_REPO = "kcl-lang"
+const DEFAULT_REGISTRY_ENV = "KPM_REG"
+const DEFAULT_REPO_ENV = "KPM_REPO"
 
 // This is a singleton that loads kpm settings from 'kpm.json'
 // and is only initialized on the first call by 'Init()' or 'GetSettings()'
@@ -116,14 +118,29 @@ func (settings *Settings) DefaultOciRegistry() string {
 	return settings.Conf.DefaultOciRegistry
 }
 
-// DefaultOciRepo return the default OCI repo 'kusionstack'.
+// DefaultOciRepo return the default OCI repo 'kcl-lang'.
 func (settings *Settings) DefaultOciRepo() string {
 	return settings.Conf.DefaultOciRepo
 }
 
-// DefaultOciRef return the default OCI ref 'ghcr.io/kusionstack'.
+// DefaultOciRef return the default OCI ref 'ghcr.io/kcl-lang'.
 func (settings *Settings) DefaultOciRef() string {
 	return utils.JoinPath(settings.Conf.DefaultOciRegistry, settings.Conf.DefaultOciRepo)
+}
+
+// LoadSettingsFromEnv will load the kpm settings from environment variables.
+func (settings *Settings) LoadSettingsFromEnv() *Settings {
+	// Load the env KPM_REG
+	reg := os.Getenv(DEFAULT_REGISTRY_ENV)
+	if len(reg) > 0 {
+		settings.Conf.DefaultOciRegistry = reg
+	}
+	// Load the env KPM_REPO
+	repo := os.Getenv(DEFAULT_REPO_ENV)
+	if len(repo) > 0 {
+		settings.Conf.DefaultOciRepo = repo
+	}
+	return settings
 }
 
 // GetFullPath returns the full path file path under '$HOME/.kpm/config/'
@@ -211,7 +228,7 @@ func GetSettings() *Settings {
 		kpm_settings.PackageCacheLock = flock.New(lockPath)
 	})
 
-	return kpm_settings
+	return kpm_settings.LoadSettingsFromEnv()
 }
 
 // loadOrCreateDefaultKpmJson will load the 'kpm.json' file from '$KCL_PKG_PATH/.kpm/config',

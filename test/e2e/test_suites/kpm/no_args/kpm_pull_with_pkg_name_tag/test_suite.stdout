@@ -1,3 +1,3 @@
-kpm: start to pull 'k8s:1.27.2'.
-kpm: pulling 'kusionstack/k8s:1.27.2' from 'ghcr.io/kusionstack/k8s'.
-kpm: pulled 'k8s:1.27.2' in '<workspace>/ghcr.io/kusionstack/k8s/1.27.2' successfully.
+kpm: start to pull 'k8s:1.27'.
+kpm: pulling 'kcl-lang/k8s:1.27' from 'ghcr.io/kcl-lang/k8s'.
+kpm: pulled 'k8s:1.27' in '<workspace>/ghcr.io/kcl-lang/k8s/1.27' successfully.

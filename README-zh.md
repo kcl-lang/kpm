@@ -100,10 +100,10 @@ version = "0.0.1"
 
 然后，您可以通过 `kpm add` 命令来为您当前的库添加一个外部依赖。
 
-如下面的命令所示，为当前包添加一个版本号为 `1.27.2` 并且名为 `k8s` 的依赖包。
+如下面的命令所示，为当前包添加一个版本号为 `1.27` 并且名为 `k8s` 的依赖包。
 
 ```shell
-kpm add k8s:1.27.2
+kpm add k8s:1.27
 ```
 
 <img src="./docs/gifs/kpm_add_k8s.gif" width="600" align="center" />
@@ -117,7 +117,7 @@ edition = "0.0.1"
 version = "0.0.1"
 
 [dependencies]
-k8s = "1.27.2" # The dependency 'k8s' with version '1.27.2'
+k8s = "1.27" # The dependency 'k8s' with version '1.27'
 ```
 
 ### 编写一个程序使用包 `konfig` 中的内容
