@@ -1,0 +1,2 @@
+kpm: adding dependency 'k8s'.
+kpm: downloading 'test/k8s:not_exist_tag' from 'localhost:5001/test/k8s:not_exist_tag'.

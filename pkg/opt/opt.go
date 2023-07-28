@@ -57,7 +57,7 @@ type GitOptions struct {
 
 func (opts *GitOptions) Validate() error {
 	if len(opts.Url) == 0 {
-		return errors.InvalidAddOptionsInvalidGitUrl
+		return reporter.NewErrorEvent(reporter.InvalidGitUrl, errors.InvalidAddOptionsInvalidGitUrl)
 	}
 	return nil
 }
@@ -73,7 +73,7 @@ type OciOptions struct {
 
 func (opts *OciOptions) Validate() error {
 	if len(opts.Repo) == 0 {
-		return errors.InvalidAddOptionsInvalidOciRepo
+		return reporter.NewErrorEvent(reporter.InvalidRepo, errors.InvalidAddOptionsInvalidOciRepo)
 	}
 	return nil
 }

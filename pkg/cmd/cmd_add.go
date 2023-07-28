@@ -34,74 +34,75 @@ func NewAddCmd() *cli.Command {
 		},
 
 		Action: func(c *cli.Context) error {
-			// 1. get settings from the global config file.
-			settings := settings.GetSettings()
-			if settings.ErrorEvent != nil {
-				return settings.ErrorEvent
-			}
-
-			// 2. acquire the lock of the package cache.
-			err := settings.AcquirePackageCacheLock()
-			if err != nil {
-				return err
-			}
-
-			defer func() {
-				// 3. release the lock of the package cache after the function returns.
-				releaseErr := settings.ReleasePackageCacheLock()
-				if releaseErr != nil && err == nil {
-					err = releaseErr
-				}
-			}()
-
-			pwd, err := os.Getwd()
-
-			if err != nil {
-				reporter.Fatal("kpm: internal bugs, please contact us to fix it")
-			}
-
-			globalPkgPath, err := env.GetAbsPkgPath()
-			if err != nil {
-				return err
-			}
-
-			kclPkg, err := pkg.LoadKclPkg(pwd)
-			if err != nil {
-				reporter.Fatal("kpm: could not load `kcl.mod` in `", pwd, "`")
-			}
-
-			err = kclPkg.ValidateKpmHome(globalPkgPath)
-			if err != nil {
-				return err
-			}
-
-			addOpts, err := parseAddOptions(c, globalPkgPath)
-			if err != nil {
-				return err
-			}
-
-			err = addOpts.Validate()
-			if err != nil {
-				return err
-			}
-
-			err = kclPkg.AddDeps(addOpts)
-			if err != nil {
-				return err
-			}
-			reporter.Report("kpm: add dependency successfully.")
-			return nil
+			return KpmAdd(c)
 		},
 	}
 }
 
+func KpmAdd(c *cli.Context) error {
+	// 1. get settings from the global config file.
+	settings := settings.GetSettings()
+	if settings.ErrorEvent != (*reporter.KpmEvent)(nil) {
+		return settings.ErrorEvent
+	}
+
+	// 2. acquire the lock of the package cache.
+	err := settings.AcquirePackageCacheLock()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		// 3. release the lock of the package cache after the function returns.
+		releaseErr := settings.ReleasePackageCacheLock()
+		if releaseErr != nil && err == nil {
+			err = releaseErr
+		}
+	}()
+
+	pwd, err := os.Getwd()
+
+	if err != nil {
+		return reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it.")
+	}
+
+	globalPkgPath, err := env.GetAbsPkgPath()
+	if err != nil {
+		return err
+	}
+
+	kclPkg, err := pkg.LoadKclPkg(pwd)
+	if err != nil {
+		return err
+	}
+
+	err = kclPkg.ValidateKpmHome(globalPkgPath)
+	if err != (*reporter.KpmEvent)(nil) {
+		return err
+	}
+
+	addOpts, err := parseAddOptions(c, globalPkgPath)
+	if err != nil {
+		return err
+	}
+
+	err = addOpts.Validate()
+	if err != nil {
+		return err
+	}
+
+	err = kclPkg.AddDeps(addOpts)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // onlyOnceOption is used to check that the value of some parameters can only appear once.
-func onlyOnceOption(c *cli.Context, name string) (*string, error) {
+func onlyOnceOption(c *cli.Context, name string) (*string, *reporter.KpmEvent) {
 	inputOpt := c.StringSlice(name)
 	if len(inputOpt) > 1 {
-		reporter.ExitWithReport("kpm: the argument '", name, "' cannot be used multiple times")
-		reporter.ExitWithReport("kpm: run 'kpm add help' for more information.")
-		return nil, fmt.Errorf("kpm: Invalid command")
+		return nil, reporter.NewErrorEvent(reporter.InvalidCmd, fmt.Errorf("the argument '%s' cannot be used multiple times", name))
 	} else if len(inputOpt) == 1 {
 		return &inputOpt[0], nil
 	} else {
@@ -114,7 +115,10 @@ func parseAddOptions(c *cli.Context, localPath string) (*opt.AddOptions, error) 
 	// parse from 'kpm add -git https://xxx/xxx.git -tag v0.0.1'.
 	if c.NArg() == 0 {
 		gitOpts, err := parseGitRegistryOptions(c)
-		if err != nil {
+		if err != (*reporter.KpmEvent)(nil) {
+			if err.Type() == reporter.InvalidGitUrl {
+				return nil, reporter.NewErrorEvent(reporter.InvalidCmd, errors.InvalidAddOptions)
+			}
 			return nil, err
 		}
 		return &opt.AddOptions{
@@ -135,17 +139,25 @@ func parseAddOptions(c *cli.Context, localPath string) (*opt.AddOptions, error) 
 }
 
 // parseGitRegistryOptions will parse the git registry information from user cli inputs.
-func parseGitRegistryOptions(c *cli.Context) (*opt.RegistryOptions, error) {
+func parseGitRegistryOptions(c *cli.Context) (*opt.RegistryOptions, *reporter.KpmEvent) {
 	gitUrl, err := onlyOnceOption(c, "git")
 
-	if err != nil {
-		return nil, nil
+	if err != (*reporter.KpmEvent)(nil) {
+		return nil, err
 	}
 
 	gitTag, err := onlyOnceOption(c, "tag")
 
-	if err != nil {
+	if err != (*reporter.KpmEvent)(nil) {
 		return nil, err
+	}
+
+	if gitUrl == nil {
+		return nil, reporter.NewErrorEvent(reporter.InvalidGitUrl, fmt.Errorf("the argument 'git' is required"))
+	}
+
+	if gitTag == nil {
+		return nil, reporter.NewErrorEvent(reporter.WithoutGitTag, fmt.Errorf("the argument 'tag' is required"))
 	}
 
 	return &opt.RegistryOptions{
@@ -188,11 +200,11 @@ func parseOciPkgNameAndVersion(s string) (string, string, error) {
 	}
 
 	if len(parts) > 2 {
-		return "", "", errors.InvalidAddOptionsInvalidOciRef
+		return "", "", reporter.NewErrorEvent(reporter.InvalidPkgRef, fmt.Errorf("invalid oci package reference '%s'", s))
 	}
 
 	if parts[1] == "" {
-		return "", "", errors.InvalidAddOptionsInvalidOciRef
+		return "", "", reporter.NewErrorEvent(reporter.InvalidPkgRef, fmt.Errorf("invalid oci package reference '%s'", s))
 	}
 
 	return parts[0], parts[1], nil

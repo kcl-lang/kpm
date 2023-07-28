@@ -124,7 +124,6 @@ func (dep *Dependency) GenDepFullName() string {
 
 // Download will download the kcl package to localPath from registory.
 func (dep *Dependency) Download(localPath string) (*Dependency, error) {
-	reporter.Report("kpm: adding dependency", dep.Name)
 	if dep.Source.Git != nil {
 		_, err := dep.Source.Git.Download(localPath)
 		if err != nil {
@@ -148,7 +147,11 @@ func (dep *Dependency) Download(localPath string) (*Dependency, error) {
 	var err error
 	dep.Sum, err = utils.HashDir(dep.LocalFullPath)
 	if err != nil {
-		return nil, err
+		return nil, reporter.NewErrorEvent(
+			reporter.FailedHashPkg,
+			err,
+			fmt.Sprintf("failed to hash the kcl package '%s' in '%s'.", dep.Name, dep.LocalFullPath),
+		)
 	}
 
 	return dep, nil
@@ -156,17 +159,29 @@ func (dep *Dependency) Download(localPath string) (*Dependency, error) {
 
 // Download will download the kcl package to localPath from git url.
 func (dep *Git) Download(localPath string) (string, error) {
+
+	reporter.ReportEventToStdout(
+		reporter.NewEvent(
+			reporter.DownloadingFromGit,
+			fmt.Sprintf("downloading '%s' with tag '%s'.", dep.Url, dep.Tag),
+		),
+	)
+
 	_, err := git.Clone(dep.Url, dep.Tag, localPath)
 
 	if err != nil {
-		reporter.Report("kpm: git clone error:", err)
-		return localPath, err
+		return localPath, reporter.NewErrorEvent(
+			reporter.FailedCloneFromGit,
+			err,
+			fmt.Sprintf("failed to clone from '%s' into '%s'.", dep.Url, localPath),
+		)
 	}
 
 	return localPath, err
 }
 
 func (dep *Oci) Download(localPath string) (string, error) {
+
 	ociClient, err := oci.NewOciClient(dep.Reg, dep.Repo)
 	if err != nil {
 		return "", err
@@ -178,12 +193,23 @@ func (dep *Oci) Download(localPath string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		reporter.Report("kpm: the lastest version", tagSelected, "will be pulled.")
+
+		reporter.ReportEventToStdout(
+			reporter.NewEvent(reporter.SelectLatestVersion, "the lastest version '", tagSelected, "' will be added."),
+		)
+
 		dep.Tag = tagSelected
 		localPath = localPath + dep.Tag
 	} else {
 		tagSelected = dep.Tag
 	}
+
+	reporter.ReportEventToStdout(
+		reporter.NewEvent(
+			reporter.DownloadingFromOCI,
+			fmt.Sprintf("downloading '%s:%s' from '%s/%s:%s'.", dep.Repo, tagSelected, dep.Reg, dep.Repo, tagSelected),
+		),
+	)
 
 	// Pull the package with the tag.
 	err = ociClient.Pull(localPath, tagSelected)
@@ -193,20 +219,36 @@ func (dep *Oci) Download(localPath string) (string, error) {
 
 	matches, err := filepath.Glob(filepath.Join(localPath, "*.tar"))
 	if err != nil || len(matches) != 1 {
-		return "", errors.FailedPull
+		if err == nil {
+			err = errors.InvalidPkg
+		}
+
+		return "", reporter.NewErrorEvent(
+			reporter.InvalidKclPkg,
+			err,
+			fmt.Sprintf("failed to find the kcl package tar from '%s'.", localPath),
+		)
 	}
 
 	tarPath := matches[0]
 	err = utils.UnTarDir(tarPath, localPath)
 	if err != nil {
-		return "", err
+		return "", reporter.NewErrorEvent(
+			reporter.FailedUntarKclPkg,
+			err,
+			fmt.Sprintf("failed to untar the kcl package tar from '%s' into '%s'.", tarPath, localPath),
+		)
 	}
 
 	// After untar the downloaded kcl package tar file, remove the tar file.
 	if utils.DirExists(tarPath) {
 		err = os.Remove(tarPath)
 		if err != nil {
-			return "", err
+			return "", reporter.NewErrorEvent(
+				reporter.FailedUntarKclPkg,
+				err,
+				fmt.Sprintf("failed to untar the kcl package tar from '%s' into '%s'.", tarPath, localPath),
+			)
 		}
 	}
 

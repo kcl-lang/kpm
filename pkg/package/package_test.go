@@ -9,9 +9,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"kcl-lang.io/kpm/pkg/env"
-	"kcl-lang.io/kpm/pkg/errors"
 	modfile "kcl-lang.io/kpm/pkg/mod"
 	"kcl-lang.io/kpm/pkg/opt"
+	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/runner"
 	"kcl-lang.io/kpm/pkg/utils"
 )
@@ -401,7 +401,8 @@ func TestValidateKpmHome(t *testing.T) {
 	oldValue := os.Getenv(env.PKG_PATH)
 	os.Setenv(env.PKG_PATH, "test_home_path")
 	err := kclPkg.ValidateKpmHome(os.Getenv(env.PKG_PATH))
-	assert.Equal(t, err, errors.InvalidKpmHomeInCurrentPkg)
+	assert.Equal(t, err.Error(), "kpm: environment variable KCL_PKG_PATH cannot be set to the same path as the current KCL package.\n")
+	assert.Equal(t, err.Type(), reporter.InvalidKpmHomeInCurrentPkg)
 	os.Setenv(env.PKG_PATH, oldValue)
 }
 

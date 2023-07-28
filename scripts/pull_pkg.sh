@@ -18,7 +18,14 @@ mkdir -p ./scripts/pkg_in_reg/
 
 cd ./scripts/pkg_in_reg/
 
-$current_dir/bin/kpm pull k8s:1.14
-$current_dir/bin/kpm pull k8s:1.27
+
+# Check if file exists
+if [ ! -d "./ghcr.io/kcl-lang/k8s/1.14" ]; then
+  $current_dir/bin/kpm pull k8s:1.14
+fi
+
+if [ ! -d "./ghcr.io/kcl-lang/k8s/1.27" ]; then
+  $current_dir/bin/kpm pull k8s:1.27
+fi
 
 cd "$current_dir"
