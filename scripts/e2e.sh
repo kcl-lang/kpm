@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 
-# Usage: hack/run-e2e.sh
-# Example 1: hack/run-e2e.sh (run e2e test)
+# start registry at 'localhost:5001'
+# include account 'test' and password '1234'
+./scripts/reg.sh
+
+# set the kpm default registry and repository
+export KPM_REG="localhost:5001"
+export KPM_REPO="test"
+export OCI_REG_PLAIN_HTTP=on
 
 set -o errexit
 set -o nounset
@@ -13,6 +19,9 @@ GO111MODULE=on go install github.com/onsi/ginkgo/v2/ginkgo@v2.0.0
 # Build kpm binary
 LDFLAGS="-X kcl-lang.io/kpm/pkg/version.version=test_version"
 go build -ldflags "$LDFLAGS" -o ./bin/kpm
+
+# Prepare e2e test env
+./scripts/e2e_prepare.sh
 
 # Run e2e
 set +e
