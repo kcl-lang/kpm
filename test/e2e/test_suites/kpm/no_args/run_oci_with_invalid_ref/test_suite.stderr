@@ -1,1 +1,1 @@
-kpm: failed to get package with 'invalid_tag' from 'ghcr.io/invalid_oci_repo'.
+kpm: failed to get package with 'invalid_tag' from 'localhost:5001/invalid_oci_repo'.

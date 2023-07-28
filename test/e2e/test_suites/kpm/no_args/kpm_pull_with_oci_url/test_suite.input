@@ -1,1 +1,1 @@
-kpm pull oci://ghcr.io/kcl-lang/k8s
+kpm pull oci://localhost:5001/test/k8s
