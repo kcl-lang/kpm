@@ -28,3 +28,15 @@ cd "$current_dir"
 # Push the package k8s/1.17 to the registry
 cd ./scripts/pkg_in_reg/ghcr.io/kcl-lang/k8s/1.27
 $current_dir/bin/kpm push
+
+cd "$current_dir"
+
+# Push the package 'kcl1' depends on 'k8s' to the registry
+cd ./scripts/pkg_in_reg/kcl1
+$current_dir/bin/kpm push
+
+cd "$current_dir"
+
+# Push the package 'kcl2' depends on 'k8s' to the registry
+cd ./scripts/pkg_in_reg/kcl2
+$current_dir/bin/kpm push

@@ -3,14 +3,17 @@ package e2e
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 )
 
 var _ = ginkgo.Describe("Kpm CLI Testing", func() {
-	ginkgo.Context("testing no args", func() {
-		testSuites := LoadAllTestSuites(filepath.Join(filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "kpm"), "no_args"))
+	ginkgo.Context("testing 'exec kpm outside a kcl package'", func() {
+		testSuites := LoadAllTestSuites(filepath.Join(filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "kpm"), "exec_outside_pkg"))
+		testDataRoot := filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "test_data")
+
 		for _, ts := range testSuites {
 			// In the for loop, the variable ts is defined outside the scope of the ginkgo.It function.
 			// This means that when the ginkgo.It function is executed,
@@ -20,6 +23,9 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 			ts := ts
 			ginkgo.It(ts.GetTestSuiteInfo(), func() {
 				workspace := GetWorkspace()
+				Copy(filepath.Join(testDataRoot, "kcl1.tar"), filepath.Join(workspace, "kcl1.tar"))
+				Copy(filepath.Join(testDataRoot, "exist_but_not_tar"), filepath.Join(workspace, "exist_but_not_tar"))
+
 				stdout, stderr, err := ExecKpmWithWorkDir(ts.Input, workspace)
 
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
@@ -38,33 +44,8 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 		}
 	})
 
-	ginkgo.Context("testing 'kpm run --input <entry_file> <tar_path>'", func() {
-		testSuitesRoot := filepath.Join(filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "kpm"), "run_tar")
-		testSuites := LoadAllTestSuites(testSuitesRoot)
-		testDataRoot := filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "test_data")
-
-		for _, ts := range testSuites {
-			ts := ts
-			ginkgo.It(ts.GetTestSuiteInfo(), func() {
-				workspace := GetWorkspace()
-
-				Copy(filepath.Join(testDataRoot, "kcl1.tar"), filepath.Join(workspace, "kcl1.tar"))
-				Copy(filepath.Join(testDataRoot, "exist_but_not_tar"), filepath.Join(workspace, "exist_but_not_tar"))
-
-				stdout, stderr, err := ExecKpmWithWorkDir(ts.Input, workspace)
-
-				expectedStdout := ReplaceAllKeyByValue(ts.ExpectStdout, "<workspace>", workspace)
-				expectedStderr := ReplaceAllKeyByValue(ts.ExpectStderr, "<workspace>", workspace)
-
-				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
-				gomega.Expect(stdout).To(gomega.ContainSubstring(expectedStdout))
-				gomega.Expect(stderr).To(gomega.ContainSubstring(expectedStderr))
-			})
-		}
-	})
-
-	ginkgo.Context("testing 'kpm run --input <entry_file>'", func() {
-		testSuitesRoot := filepath.Join(filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "kpm"), "run_pkg_not_tar")
+	ginkgo.Context("testing 'exec kpm inside a kcl package'", func() {
+		testSuitesRoot := filepath.Join(filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "kpm"), "exec_inside_pkg")
 		testSuites := LoadAllTestSuites(testSuitesRoot)
 		testDataRoot := filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "test_data")
 		for _, ts := range testSuites {
@@ -73,15 +54,31 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 				workspace := GetWorkspace()
 
 				CopyDir(filepath.Join(testDataRoot, "test_kcl"), filepath.Join(workspace, "test_kcl"))
+				CopyDir(filepath.Join(testDataRoot, "a_kcl_pkg_dep_one_pkg"), filepath.Join(workspace, "a_kcl_pkg_dep_one_pkg"))
+				CopyDir(filepath.Join(testDataRoot, "a_kcl_pkg_dep_one_pkg_2"), filepath.Join(workspace, "a_kcl_pkg_dep_one_pkg_2"))
+				CopyDir(filepath.Join(testDataRoot, "a_kcl_pkg_dep_one_pkg_3"), filepath.Join(workspace, "a_kcl_pkg_dep_one_pkg_3"))
+				CopyDir(filepath.Join(testDataRoot, "a_kcl_pkg_dep_one_pkg_4"), filepath.Join(workspace, "a_kcl_pkg_dep_one_pkg_4"))
+				CopyDir(filepath.Join(testDataRoot, "a_kcl_pkg_dep_one_pkg_5"), filepath.Join(workspace, "a_kcl_pkg_dep_one_pkg_5"))
+				CopyDir(filepath.Join(testDataRoot, "an_invalid_kcl_pkg"), filepath.Join(workspace, "an_invalid_kcl_pkg"))
 
-				stdout, stderr, err := ExecKpmWithWorkDir(ts.Input, filepath.Join(workspace, "test_kcl"))
+				input := ReplaceAllKeyByValue(ts.Input, "<workspace>", workspace)
+
+				stdout, stderr, err := ExecKpmWithWorkDir(input, filepath.Join(workspace, "test_kcl"))
 
 				expectedStdout := ReplaceAllKeyByValue(ts.ExpectStdout, "<workspace>", workspace)
 				expectedStderr := ReplaceAllKeyByValue(ts.ExpectStderr, "<workspace>", workspace)
 
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
-				gomega.Expect(stdout).To(gomega.ContainSubstring(expectedStdout))
-				gomega.Expect(stderr).To(gomega.ContainSubstring(expectedStderr))
+				if strings.Contains(ts.ExpectStdout, "<un_ordered>") {
+					expectedStdout := ReplaceAllKeyByValue(ts.ExpectStdout, "<un_ordered>", "")
+					gomega.Expect(RemoveLineOrder(stdout)).To(gomega.ContainSubstring(RemoveLineOrder(expectedStdout)))
+				} else if strings.Contains(ts.ExpectStderr, "<un_ordered>") {
+					expectedStderr := ReplaceAllKeyByValue(ts.ExpectStderr, "<un_ordered>", "")
+					gomega.Expect(RemoveLineOrder(stderr)).To(gomega.ContainSubstring(RemoveLineOrder(expectedStderr)))
+				} else {
+					gomega.Expect(stdout).To(gomega.ContainSubstring(expectedStdout))
+					gomega.Expect(stderr).To(gomega.ContainSubstring(expectedStderr))
+				}
 			})
 		}
 	})

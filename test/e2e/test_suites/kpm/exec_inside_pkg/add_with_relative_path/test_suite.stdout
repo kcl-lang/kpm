@@ -1,0 +1,3 @@
+kpm: adding dependency 'a_kcl_pkg_dep_pkg_name'.
+kpm: downloading 'test/k8s:1.27' from 'localhost:5001/test/k8s:1.27'.
+kpm: add dependency 'a_kcl_pkg_dep_pkg_name:0.0.1' successfully.

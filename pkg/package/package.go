@@ -12,7 +12,6 @@ import (
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/env"
 	errors "kcl-lang.io/kpm/pkg/errors"
-	modfile "kcl-lang.io/kpm/pkg/mod"
 	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/runner"
@@ -20,18 +19,18 @@ import (
 )
 
 type KclPkg struct {
-	modFile  modfile.ModFile
+	modFile  ModFile
 	HomePath string
 	// The dependencies in the current kcl package are the dependencies of kcl.mod.lock,
 	// not the dependencies in kcl.mod.
-	modfile.Dependencies
+	Dependencies
 }
 
 func NewKclPkg(opts *opt.InitOptions) KclPkg {
 	return KclPkg{
-		modFile:      *modfile.NewModFile(opts),
+		modFile:      *NewModFile(opts),
 		HomePath:     opts.InitPath,
-		Dependencies: modfile.Dependencies{Deps: make(map[string]modfile.Dependency)},
+		Dependencies: Dependencies{Deps: make(map[string]Dependency)},
 	}
 }
 
@@ -47,13 +46,13 @@ func (kclPkg *KclPkg) GetEntryKclFilesFromModFile() []string {
 
 // Load the kcl package from directory containing kcl.mod and kcl.mod.lock file.
 func LoadKclPkg(pkgPath string) (*KclPkg, error) {
-	modFile, err := modfile.LoadModFile(pkgPath)
+	modFile, err := LoadModFile(pkgPath)
 	if err != nil {
 		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod' in '%s'.", pkgPath))
 	}
 
 	// Get dependencies from kcl.mod.lock.
-	deps, err := modfile.LoadLockDeps(pkgPath)
+	deps, err := LoadLockDeps(pkgPath)
 
 	if err != nil {
 		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod.lock' in '%s'.", pkgPath))
@@ -251,10 +250,14 @@ func (kclPkg *KclPkg) CreateDefaultKclProgram() error {
 // AddDeps will add the dependencies to current kcl package and update kcl.mod and kcl.mod.lock.
 func (kclPkg *KclPkg) AddDeps(opt *opt.AddOptions) error {
 	// 1. get the name and version of the repository from the input arguments.
-	d := modfile.ParseOpt(&opt.RegistryOpts)
+	d, err := ParseOpt(&opt.RegistryOpts)
+	if err != nil {
+		return err
+	}
+
 	reporter.ReportEventToStdout(reporter.NewEvent(reporter.Adding, fmt.Sprintf("adding dependency '%s'.", d.Name)))
 	// 2. download the dependency to the local path.
-	err := kclPkg.DownloadDep(d, opt.LocalPath)
+	err = kclPkg.DownloadDep(d, opt.LocalPath)
 	if err != nil {
 		return err
 	}
@@ -280,7 +283,7 @@ func (kclPkg *KclPkg) AddDeps(opt *opt.AddOptions) error {
 }
 
 // DownloadDep will download the corresponding dependency.
-func (kclPkg *KclPkg) DownloadDep(d *modfile.Dependency, localPath string) error {
+func (kclPkg *KclPkg) DownloadDep(d *Dependency, localPath string) error {
 
 	if !reflect.DeepEqual(kclPkg.modFile.Dependencies.Deps[d.Name], *d) {
 		// the dep passed on the cli is different from the kcl.mod.
@@ -322,7 +325,7 @@ func (kclPkg *KclPkg) UpdateModAndLockFile() error {
 
 // LockDepsVersion locks the dependencies of the current kcl package into kcl.mod.lock.
 func (kclPkg *KclPkg) LockDepsVersion() error {
-	fullPath := filepath.Join(kclPkg.HomePath, modfile.MOD_LOCK_FILE)
+	fullPath := filepath.Join(kclPkg.HomePath, MOD_LOCK_FILE)
 	lockToml, err := kclPkg.Dependencies.MarshalLockTOML()
 	if err != nil {
 		return err
@@ -333,9 +336,9 @@ func (kclPkg *KclPkg) LockDepsVersion() error {
 
 // getDeps will recursively download all dependencies to the 'localPath' directory,
 // and return the dependencies that need to be updated to kcl.mod and kcl.mod.lock.
-func getDeps(deps modfile.Dependencies, lockDeps modfile.Dependencies, localPath string) (*modfile.Dependencies, error) {
-	newDeps := modfile.Dependencies{
-		Deps: make(map[string]modfile.Dependency),
+func getDeps(deps Dependencies, lockDeps Dependencies, localPath string) (*Dependencies, error) {
+	newDeps := Dependencies{
+		Deps: make(map[string]Dependency),
 	}
 
 	// Traverse all dependencies in kcl.mod
@@ -367,12 +370,15 @@ func getDeps(deps modfile.Dependencies, lockDeps modfile.Dependencies, localPath
 		if err != nil {
 			return nil, err
 		}
-		if expectedSum != "" && lockedDep.Sum != expectedSum && lockDep.FullName == d.FullName {
-			return nil, reporter.NewErrorEvent(
-				reporter.CheckSumMismatch,
-				errors.CheckSumMismatchError,
-				fmt.Sprintf("checksum for '%s' changed in lock file", lockedDep.Name),
-			)
+
+		if !lockedDep.isFromLocal() {
+			if expectedSum != "" && lockedDep.Sum != expectedSum && lockDep.FullName == d.FullName {
+				return nil, reporter.NewErrorEvent(
+					reporter.CheckSumMismatch,
+					errors.CheckSumMismatchError,
+					fmt.Sprintf("checksum for '%s' changed in lock file", lockedDep.Name),
+				)
+			}
 		}
 
 		// Update kcl.mod and kcl.mod.lock
@@ -383,7 +389,11 @@ func getDeps(deps modfile.Dependencies, lockDeps modfile.Dependencies, localPath
 	// Recursively download the dependencies of the new dependencies.
 	for _, d := range newDeps.Deps {
 		// Load kcl.mod file of the new downloaded dependencies.
-		modfile, err := modfile.LoadModFile(filepath.Join(localPath, d.FullName))
+		modfile, err := LoadModFile(filepath.Join(localPath, d.FullName))
+		if len(d.LocalFullPath) != 0 {
+			modfile, err = LoadModFile(d.LocalFullPath)
+		}
+
 		if err != nil {
 			if os.IsNotExist(err) {
 				continue
@@ -409,7 +419,7 @@ func getDeps(deps modfile.Dependencies, lockDeps modfile.Dependencies, localPath
 }
 
 // check sum for a Dependency.
-func check(dep modfile.Dependency, newDepPath string) bool {
+func check(dep Dependency, newDepPath string) bool {
 	if dep.Sum == "" {
 		return false
 	}
@@ -502,7 +512,7 @@ func (kclPkg *KclPkg) VendorDeps(cachePath string) error {
 		return errors.InternalBug
 	}
 
-	lockDeps := make([]modfile.Dependency, 0, len(kclPkg.Dependencies.Deps))
+	lockDeps := make([]Dependency, 0, len(kclPkg.Dependencies.Deps))
 
 	for _, d := range kclPkg.Dependencies.Deps {
 		lockDeps = append(lockDeps, d)

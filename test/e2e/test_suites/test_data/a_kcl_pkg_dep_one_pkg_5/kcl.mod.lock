@@ -1,0 +1,31 @@
+[dependencies]
+  [dependencies.a_kcl_pkg_dep_pkg_name]
+    name = "a_kcl_pkg_dep_pkg_name"
+    full_name = "a_kcl_pkg_dep_pkg_name_0.0.1"
+    version = "0.0.1"
+    sum = "AfdOtDGXfOoJvpmJ4uQ/YllHoP2wAzbtQQeXo4s4C/U="
+    path = "../a_kcl_pkg_dep_one_pkg_4"
+  [dependencies.k8s]
+    name = "k8s"
+    full_name = "k8s_1.27"
+    version = "1.27"
+    sum = "xnYM1FWHAy3m+KcQMQb2rjZouTxumqYt6FGZpu2T4yM="
+    reg = "localhost:5001"
+    repo = "test/k8s"
+    oci_tag = "1.27"
+  [dependencies.kcl1]
+    name = "kcl1"
+    full_name = "kcl1_0.0.1"
+    version = "0.0.1"
+    sum = "zLzaol7KpC57mKLQ/56ciIHO397Rk/Dum+meo+tUsw8="
+    reg = "localhost:5001"
+    repo = "test/kcl1"
+    oci_tag = "0.0.1"
+  [dependencies.kcl2]
+    name = "kcl2"
+    full_name = "kcl2_0.0.1"
+    version = "0.0.1"
+    sum = "vbB9bd42chVsjx8ejEJvxQbAhrB7WvUTr76gVomZdb4="
+    reg = "localhost:5001"
+    repo = "test/kcl2"
+    oci_tag = "0.0.1"

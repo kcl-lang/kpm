@@ -80,6 +80,7 @@ type OciClient struct {
 func NewOciClient(regName, repoName string) (*OciClient, error) {
 	repoPath := utils.JoinPath(regName, repoName)
 	repo, err := remote.NewRepository(repoPath)
+
 	if err != nil {
 		return nil, reporter.NewErrorEvent(
 			reporter.RepoNotFound,
