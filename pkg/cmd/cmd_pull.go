@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/urfave/cli/v2"
+	"kcl-lang.io/kpm/pkg/api"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/oci"
 	"kcl-lang.io/kpm/pkg/opt"
@@ -104,7 +105,7 @@ func KpmPull(c *cli.Context) error {
 	}
 
 	// 3. Get the (*.tar) file path.
-	tarPath := filepath.Join(localPath, KCL_PKG_TAR)
+	tarPath := filepath.Join(localPath, api.KCL_PKG_TAR)
 	matches, err := filepath.Glob(tarPath)
 	if err != nil || len(matches) != 1 {
 		if err == nil {

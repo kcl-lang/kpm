@@ -1,4 +1,4 @@
-package cmd
+package api
 
 import (
 	"os"
@@ -58,7 +58,7 @@ func TestAbsTarPath(t *testing.T) {
 
 func TestRunPkgInPath(t *testing.T) {
 	pkgPath := getTestDir("test_run_pkg_in_path")
-	result, err := runPkgInPath(filepath.Join(pkgPath, "test_kcl"), []string{"main.k"}, false, "")
+	result, err := RunPkgInPath(filepath.Join(pkgPath, "test_kcl"), []string{"main.k"}, false, "")
 	assert.Equal(t, err, nil)
 	expected, _ := os.ReadFile(filepath.Join(pkgPath, "expected"))
 	assert.Equal(t, utils.RmNewline(string(result)), utils.RmNewline(string(expected)))
@@ -66,7 +66,7 @@ func TestRunPkgInPath(t *testing.T) {
 
 func TestRunPkgInPathInvalidPath(t *testing.T) {
 	pkgPath := getTestDir("test_run_pkg_in_path")
-	result, err := runPkgInPath(filepath.Join(pkgPath, "test_kcl"), []string{"not_exist.k"}, false, "")
+	result, err := RunPkgInPath(filepath.Join(pkgPath, "test_kcl"), []string{"not_exist.k"}, false, "")
 	assert.NotEqual(t, err, nil)
 	assert.Equal(t, err, errors.EntryFileNotFound)
 	assert.Equal(t, result, "")
@@ -74,7 +74,7 @@ func TestRunPkgInPathInvalidPath(t *testing.T) {
 
 func TestRunPkgInPathInvalidPkg(t *testing.T) {
 	pkgPath := getTestDir("test_run_pkg_in_path")
-	result, err := runPkgInPath(filepath.Join(pkgPath, "invalid_pkg"), []string{"not_exist.k"}, false, "")
+	result, err := RunPkgInPath(filepath.Join(pkgPath, "invalid_pkg"), []string{"not_exist.k"}, false, "")
 	assert.NotEqual(t, err, nil)
 	assert.Equal(t, err, errors.FailedToLoadPackage)
 	assert.Equal(t, result, "")
@@ -91,7 +91,7 @@ func TestRunTar(t *testing.T) {
 	}
 
 	expectedResult, _ := os.ReadFile(expectPath)
-	gotResult, err := runTar(tarPath, []string{""}, true, "")
+	gotResult, err := RunTar(tarPath, []string{""}, true, "")
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.RmNewline(string(expectedResult)), utils.RmNewline(gotResult))
 	assert.Equal(t, utils.DirExists(untarPath), true)
