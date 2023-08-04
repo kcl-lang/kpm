@@ -9,7 +9,7 @@ In the MVP version, the sections we plan to support are as follows:
   - [package](#package) - Defines a package.
     - [name](#package) — The name of the package.
     - [version](#package) — The version of the package.
-    - [edition](#package) — The KCLVM edition.
+    - [edition](#package) — The KCL compiler edition.
 - Dependency tables:
   - [dependencies](#dependencies) - Package library dependencies.
 - Compiler settings:
@@ -24,10 +24,8 @@ The first section in a `kcl.mod` is [package].
 [package]
 name = "hello_world" # the name of the package
 version = "0.1.0"    # the current version, obeying semver
-edition = "0.1.1-alpha.1"    # the kclvm version
+edition = "0.5.0"    # the KCL compiler version
 ```
-
-The only fields required by `kpm` are `name` and `version`. `edition` is an optional field that describes the version of kclvm being used. If not specified, the latest version will be selected by default.
 
 ## dependencies
 
@@ -96,7 +94,35 @@ entries = [
 The `mod relative paths` must contains the preffix `{k8s:KCL_MOD}`, `k8s` is the package name, `{k8s:KCL_MOD}` means the package root path of the package `k8s`. Therefore, if the package root path of `k8s` is `/.kcl/kpm/k8s`, the `entries` show above will take `/usr/my_pkg/entry1.k`, `/usr/my_pkg/subdir/entry2.k` and `/.kcl/kpm/k8s/core/api/v1/deployment.k` as the entry point of the kcl compiler. 
 
 ### Note
+You can use `normal path` to specify the compilation entry point in the current package path, and use `mod relative path` to specify the entry point in a third-party package.
 
-You can specify the compiling entry points in current package path by `normal path` and the entry points in vendor packages by `mod relative path`.
+Therefore, the file path specified by `normal path` must come from the same package, that is, the `kcl.mod` path found from the normal path must only find one `kcl.mod` file, otherwise the compiler will output an error.
 
-Therefore, the `entries` specified by `normal path` must be included in the current package path. If you use `normal path` to specify the entry points from different packages, the kcl compiler will report an error.
+For example:
+
+In the path `/usr/kcl1`:
+```
+/usr/kcl1
+      |--- kcl.mod
+      |--- entry1.k
+```
+
+In the path `/usr/kcl2`:
+```
+/usr/kcl2
+      |--- kcl.mod
+      |--- entry2.k
+```
+
+If you compile with this `kcl.mod` in the path `/usr/kcl1`:
+```
+entries = [
+   "entry1.k", # The corresponding kcl.mod file is /usr/kcl1/kcl.mod
+   "/usr/kcl2/entry2.k", # The corresponding kcl.mod file is /usr/kcl2/kcl.mod
+]
+```
+
+You will get an error:
+```
+error[E3M38]: conflict kcl.mod file paths
+```
