@@ -1,8 +1,11 @@
 package pkg
 
 import (
+	"archive/tar"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -417,7 +420,7 @@ func TestPackageCurrentPkgPath(t *testing.T) {
 
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, kclPkg.GetPkgTarName())), false)
 
-	path, err := kclPkg.PackageCurrentPkgPath()
+	path, err := kclPkg.PackageCurrentPkgPath(true)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, path, filepath.Join(testDir, kclPkg.GetPkgTarName()))
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, kclPkg.GetPkgTarName())), true)
@@ -547,4 +550,79 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "konfig_v0.0.1")), false)
 	expectedStr := "{\"packages\":{\"konfig\":{\"name\":\"konfig\",\"manifest_path\":\"\"}}}"
 	assert.Equal(t, res, expectedStr)
+}
+
+func TestPkgWithInVendorMode(t *testing.T) {
+	testDir := getTestDir("test_pkg_with_vendor")
+	kcl1Path := filepath.Join(testDir, "kcl1")
+
+	createKclPkg1 := func() {
+		assert.Equal(t, utils.DirExists(kcl1Path), false)
+		err := os.MkdirAll(kcl1Path, 0755)
+		assert.Equal(t, err, nil)
+	}
+
+	defer func() {
+		if err := os.RemoveAll(kcl1Path); err != nil {
+			log.Printf("failed to close file: %v", err)
+		}
+	}()
+
+	createKclPkg1()
+
+	initOpts := opt.InitOptions{
+		Name:     "kcl1",
+		InitPath: kcl1Path,
+	}
+	kclPkg1 := NewKclPkg(&initOpts)
+
+	kclPkg1.AddDeps(&opt.AddOptions{
+		LocalPath: "localPath",
+		RegistryOpts: opt.RegistryOptions{
+			Local: &opt.LocalOptions{
+				Path: filepath.Join(testDir, "kcl2"),
+			},
+		},
+	})
+
+	// package the kcl1 into tar in vendor mode.
+	tarPath, err := kclPkg1.PackageCurrentPkgPath(true)
+	assert.Equal(t, err, nil)
+	hasSubDir, err := hasSubdirInTar(tarPath, "vendor")
+	assert.Equal(t, err, nil)
+	assert.Equal(t, hasSubDir, true)
+
+	// clean the kcl1
+	err = os.RemoveAll(kcl1Path)
+	assert.Equal(t, err, nil)
+
+	createKclPkg1()
+	// package the kcl1 into tar in non-vendor mode.
+	tarPath, err = kclPkg1.PackageCurrentPkgPath(false)
+	assert.Equal(t, err, nil)
+	hasSubDir, err = hasSubdirInTar(tarPath, "vendor")
+	assert.Equal(t, err, nil)
+	assert.Equal(t, hasSubDir, false)
+}
+
+// check if the tar file contains the subdir
+func hasSubdirInTar(tarPath, subdir string) (bool, error) {
+	f, err := os.Open(tarPath)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	tr := tar.NewReader(f)
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if hdr.Typeflag == tar.TypeDir && filepath.Base(hdr.Name) == subdir {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }

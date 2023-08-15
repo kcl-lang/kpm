@@ -437,7 +437,7 @@ func check(dep Dependency, newDepPath string) bool {
 // And the tar will be named "<package_name>-<package_version>.tar"
 // <package_name> is the package name specified in kcl.mod.
 // <package_version> is the package version specified in kcl.mod.
-func (kclPkg *KclPkg) PackageCurrentPkgPath() (string, error) {
+func (kclPkg *KclPkg) PackageCurrentPkgPath(vendorMode bool) (string, error) {
 	globalPkgPath, err := env.GetAbsPkgPath()
 	if err != nil {
 		return "", err
@@ -448,7 +448,7 @@ func (kclPkg *KclPkg) PackageCurrentPkgPath() (string, error) {
 		return "", err
 	}
 
-	err = kclPkg.PackageKclPkg(globalPkgPath, kclPkg.DefaultTarPath())
+	err = kclPkg.PackageKclPkg(globalPkgPath, kclPkg.DefaultTarPath(), vendorMode)
 
 	if err != nil {
 		reporter.ExitWithReport("kpm: failed to package pkg " + kclPkg.GetPkgName() + ".")
@@ -465,7 +465,7 @@ func (kclPkg *KclPkg) DefaultTarPath() string {
 }
 
 // PkgCurrentPackageIntoTarPath will package the current kcl package into 'tarPath'.
-func (kclPkg *KclPkg) PackageToTarball(tarPath string) error {
+func (kclPkg *KclPkg) PackageToTarball(tarPath string, vendorMode bool) error {
 
 	globalPkgPath, err := env.GetAbsPkgPath()
 	if err != nil {
@@ -477,7 +477,7 @@ func (kclPkg *KclPkg) PackageToTarball(tarPath string) error {
 		return err
 	}
 
-	err = kclPkg.PackageKclPkg(globalPkgPath, tarPath)
+	err = kclPkg.PackageKclPkg(globalPkgPath, tarPath, vendorMode)
 
 	if err != nil {
 		reporter.ExitWithReport("kpm: failed to package pkg " + kclPkg.GetPkgName() + ".")
@@ -488,15 +488,17 @@ func (kclPkg *KclPkg) PackageToTarball(tarPath string) error {
 
 // PackageKclPkg will save all dependencies to the 'vendor' in current pacakge
 // and package the current package into tar
-func (kclPkg *KclPkg) PackageKclPkg(kpmHome string, tarPath string) error {
+func (kclPkg *KclPkg) PackageKclPkg(kpmHome string, tarPath string, vendorMode bool) error {
 	// Vendor all the dependencies into the current kcl package.
-	err := kclPkg.VendorDeps(kpmHome)
-	if err != nil {
-		return errors.FailedToVendorDependency
+	if vendorMode {
+		err := kclPkg.VendorDeps(kpmHome)
+		if err != nil {
+			return errors.FailedToVendorDependency
+		}
 	}
 
 	// Tar the current kcl package into a "*.tar" file.
-	err = utils.TarDir(kclPkg.HomePath, tarPath)
+	err := utils.TarDir(kclPkg.HomePath, tarPath)
 	if err != nil {
 		return errors.FailedToPackage
 	}
@@ -534,6 +536,12 @@ func (kclPkg *KclPkg) VendorDeps(cachePath string) error {
 			if utils.DirExists(cacheFullPath) && check(d, cacheFullPath) {
 				// If there is, copy it into the 'vendor' directory.
 				err := copy.Copy(cacheFullPath, vendorFullPath)
+				if err != nil {
+					return errors.FailedToVendorDependency
+				}
+			} else if utils.DirExists(d.GetLocalFullPath()) && check(d, d.GetLocalFullPath()) {
+				// If there is, copy it into the 'vendor' directory.
+				err := copy.Copy(d.GetLocalFullPath(), vendorFullPath)
 				if err != nil {
 					return errors.FailedToVendorDependency
 				}

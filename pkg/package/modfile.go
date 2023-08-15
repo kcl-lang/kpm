@@ -101,6 +101,14 @@ type Dependency struct {
 	Source        `json:"-"`
 }
 
+// GetLocalFullPath will get the local path of a dependency.
+func (dep *Dependency) GetLocalFullPath() string {
+	if dep.isFromLocal() {
+		return dep.Source.Local.Path
+	}
+	return dep.LocalFullPath
+}
+
 func (dep *Dependency) isFromLocal() bool {
 	return dep.Source.Oci == nil && dep.Source.Git == nil && dep.Source.Local != nil
 }
