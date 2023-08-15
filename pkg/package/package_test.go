@@ -576,7 +576,7 @@ func TestPkgWithInVendorMode(t *testing.T) {
 	}
 	kclPkg1 := NewKclPkg(&initOpts)
 
-	kclPkg1.AddDeps(&opt.AddOptions{
+	err := kclPkg1.AddDeps(&opt.AddOptions{
 		LocalPath: "localPath",
 		RegistryOpts: opt.RegistryOptions{
 			Local: &opt.LocalOptions{
@@ -584,6 +584,8 @@ func TestPkgWithInVendorMode(t *testing.T) {
 			},
 		},
 	})
+
+	assert.Equal(t, err, nil)
 
 	// package the kcl1 into tar in vendor mode.
 	tarPath, err := kclPkg1.PackageCurrentPkgPath(true)
