@@ -27,6 +27,13 @@ func NewPushCmd(settings *settings.Settings) *cli.Command {
 				Name:  FLAG_TAR_PATH,
 				Usage: "a kcl file as the compile entry file",
 			},
+			// '--vendor' will trigger the vendor mode
+			// In the vendor mode, the package search path is the subdirectory 'vendor' in current package.
+			// In the non-vendor mode, the package search path is the $KCL_PKG_PATH.
+			&cli.BoolFlag{
+				Name:  FLAG_VENDOR,
+				Usage: "push in vendor mode",
+			},
 		},
 		Action: func(c *cli.Context) error {
 
@@ -38,10 +45,10 @@ func NewPushCmd(settings *settings.Settings) *cli.Command {
 			if len(localTarPath) == 0 {
 				// If the tar package to be pushed is not specified,
 				// the current kcl package is packaged into tar and pushed.
-				err = pushCurrentPackage(ociUrl, settings)
+				err = pushCurrentPackage(ociUrl, c.Bool(FLAG_VENDOR), settings)
 			} else {
 				// Else push the tar package specified.
-				err = pushTarPackage(ociUrl, localTarPath, settings)
+				err = pushTarPackage(ociUrl, localTarPath, c.Bool(FLAG_VENDOR), settings)
 			}
 
 			if err != nil {
@@ -72,7 +79,7 @@ func genDefaultOciUrlForKclPkg(pkg *pkg.KclPkg) (string, error) {
 }
 
 // pushCurrentPackage will push the current package to the oci registry.
-func pushCurrentPackage(ociUrl string, settings *settings.Settings) error {
+func pushCurrentPackage(ociUrl string, vendorMode bool, settings *settings.Settings) error {
 	pwd, err := os.Getwd()
 
 	if err != nil {
@@ -87,12 +94,12 @@ func pushCurrentPackage(ociUrl string, settings *settings.Settings) error {
 	}
 
 	// 2. push the package
-	return pushPackage(ociUrl, kclPkg, settings)
+	return pushPackage(ociUrl, kclPkg, vendorMode, settings)
 }
 
 // pushTarPackage will push the kcl package in tarPath to the oci registry.
 // If the tar in 'tarPath' is not a kcl package tar, pushTarPackage will return an error.
-func pushTarPackage(ociUrl, localTarPath string, settings *settings.Settings) error {
+func pushTarPackage(ociUrl, localTarPath string, vendorMode bool, settings *settings.Settings) error {
 	var kclPkg *pkg.KclPkg
 	var err error
 
@@ -113,7 +120,7 @@ func pushTarPackage(ociUrl, localTarPath string, settings *settings.Settings) er
 	}
 
 	// 2. push the package
-	return pushPackage(ociUrl, kclPkg, settings)
+	return pushPackage(ociUrl, kclPkg, vendorMode, settings)
 }
 
 // pushPackage will push the kcl package to the oci registry.
@@ -121,9 +128,9 @@ func pushTarPackage(ociUrl, localTarPath string, settings *settings.Settings) er
 // 2. If the oci url is not specified, generate the default oci url from the current package.
 // 3. Generate the OCI options from oci url and the version of current kcl package.
 // 4. Push the package to the oci registry.
-func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, settings *settings.Settings) error {
+func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, vendorMode bool, settings *settings.Settings) error {
 	// 1. Package the current kcl package into default tar path.
-	tarPath, err := kclPkg.PackageCurrentPkgPath()
+	tarPath, err := kclPkg.PackageCurrentPkgPath(vendorMode)
 	if err != nil {
 		return err
 	}

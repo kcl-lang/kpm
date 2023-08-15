@@ -24,6 +24,13 @@ func NewPkgCmd() *cli.Command {
 				Name:  "target",
 				Usage: "Packaged target path",
 			},
+			// '--vendor' will trigger the vendor mode
+			// In the vendor mode, the package search path is the subdirectory 'vendor' in current package.
+			// In the non-vendor mode, the package search path is the $KCL_PKG_PATH.
+			&cli.BoolFlag{
+				Name:  FLAG_VENDOR,
+				Usage: "push in vendor mode",
+			},
 		},
 		Action: func(c *cli.Context) error {
 			tarPath := c.String("target")
@@ -54,7 +61,7 @@ func NewPkgCmd() *cli.Command {
 				}
 			}
 			// The method for packaging kcl package should be a member method of KclPkg.
-			return kclPkg.PackageToTarball(filepath.Join(tarPath, kclPkg.GetPkgTarName()))
+			return kclPkg.PackageToTarball(filepath.Join(tarPath, kclPkg.GetPkgTarName()), c.Bool(FLAG_VENDOR))
 		},
 	}
 }
