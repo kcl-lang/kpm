@@ -174,3 +174,4 @@ A: `go install` 默认会将二进制文件安装到 `$GOPATH/bin` 目录下，�
 - [OCI registry 支持](./docs/kpm_oci-zh.md).
 - [如何使用 kpm 与他人分享您的 kcl 包](./docs/publish_your_kcl_packages-zh.md)
 - [kpm 命令参考](./docs/command-reference-zh/index.md)
+- [kcl.mod: KCL 包清单文件](./docs/kcl_mod-zh.md)
