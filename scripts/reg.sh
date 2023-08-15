@@ -23,3 +23,6 @@ docker run -p 5001:5000 \
 -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm" \
 -e "REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd" \
 -d registry
+
+# clean the registry
+docker exec registry rm -rf /var/lib/registry/docker/registry/v2/repositories/

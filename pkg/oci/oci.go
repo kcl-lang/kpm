@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+	"github.com/thoas/go-funk"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/semver"
@@ -18,6 +19,7 @@ import (
 	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/content/file"
 	"oras.land/oras-go/v2/registry/remote"
+	"oras.land/oras-go/v2/registry/remote/errcode"
 	"oras.land/oras-go/v2/registry/remote/retry"
 )
 
@@ -77,7 +79,7 @@ type OciClient struct {
 // NewOciClient will new an OciClient.
 // regName is the registry. e.g. ghcr.io or docker.io.
 // repoName is the repo name on registry.
-func NewOciClient(regName, repoName string) (*OciClient, error) {
+func NewOciClient(regName, repoName string) (*OciClient, *reporter.KpmEvent) {
 	repoPath := utils.JoinPath(regName, repoName)
 	repo, err := remote.NewRepository(repoPath)
 
@@ -118,7 +120,7 @@ func NewOciClient(regName, repoName string) (*OciClient, error) {
 }
 
 // Pull will pull the oci artifacts from oci registry to local path.
-func (ociClient *OciClient) Pull(localPath, tag string) error {
+func (ociClient *OciClient) Pull(localPath, tag string) *reporter.KpmEvent {
 	// Create a file store
 	fs, err := file.New(localPath)
 	if err != nil {
@@ -140,7 +142,7 @@ func (ociClient *OciClient) Pull(localPath, tag string) error {
 }
 
 // TheLatestTag will return the latest tag of the kcl packages.
-func (ociClient *OciClient) TheLatestTag() (string, error) {
+func (ociClient *OciClient) TheLatestTag() (string, *reporter.KpmEvent) {
 	var tagSelected string
 
 	err := ociClient.repo.Tags(*ociClient.ctx, "", func(tags []string) error {
@@ -164,12 +166,40 @@ func (ociClient *OciClient) TheLatestTag() (string, error) {
 	return tagSelected, nil
 }
 
+// ContainsTag will check if the tag exists in the repo.
+func (ociClient *OciClient) ContainsTag(tag string) (bool, *reporter.KpmEvent) {
+	var exists bool
+
+	err := ociClient.repo.Tags(*ociClient.ctx, "", func(tags []string) error {
+		exists = funk.ContainsString(tags, tag)
+		return nil
+	})
+
+	if err != nil {
+		// If the repo with tag is not found, return false.
+		errRes, ok := err.(*errcode.ErrorResponse)
+		if ok {
+			if len(errRes.Errors) == 1 && errRes.Errors[0].Code == errcode.ErrorCodeNameUnknown {
+				return false, nil
+			}
+		}
+		// If the user not login, return error.
+		return false, reporter.NewErrorEvent(
+			reporter.FailedGetPackageVersions,
+			err,
+			fmt.Sprintf("failed to access '%s'", ociClient.repo.Reference.String()),
+		)
+	}
+
+	return exists, nil
+}
+
 // Push will push the oci artifacts to oci registry from local path
-func (ociClient *OciClient) Push(localPath, tag string) error {
+func (ociClient *OciClient) Push(localPath, tag string) *reporter.KpmEvent {
 	// 0. Create a file store
 	fs, err := file.New(filepath.Dir(localPath))
 	if err != nil {
-		return err
+		return reporter.NewErrorEvent(reporter.FailedPush, err, "Failed to load store path ", localPath)
 	}
 	defer fs.Close()
 
@@ -184,7 +214,7 @@ func (ociClient *OciClient) Push(localPath, tag string) error {
 		// and a file path is created for each download, which is not good.
 		fileDescriptor, err := fs.Add(*ociClient.ctx, filepath.Base(name), DEFAULT_OCI_ARTIFACT_TYPE, "")
 		if err != nil {
-			return err
+			return reporter.NewErrorEvent(reporter.FailedPush, err, fmt.Sprintf("Failed to add file '%s'", name))
 		}
 		fileDescriptors = append(fileDescriptors, fileDescriptor)
 	}
@@ -194,18 +224,18 @@ func (ociClient *OciClient) Push(localPath, tag string) error {
 		PackImageManifest: true,
 	})
 	if err != nil {
-		return err
+		return reporter.NewErrorEvent(reporter.FailedPush, err, fmt.Sprintf("Failed to pack package in '%s'", localPath))
 	}
 
 	if err = fs.Tag(*ociClient.ctx, manifestDescriptor, tag); err != nil {
-		return err
+		return reporter.NewErrorEvent(reporter.FailedPush, err, fmt.Sprintf("Failed to tag package with tag '%s'", tag))
 	}
 
 	// 3. Copy from the file store to the remote repository
 	desc, err := oras.Copy(*ociClient.ctx, fs, tag, ociClient.repo, tag, oras.DefaultCopyOptions)
 
 	if err != nil {
-		return err
+		return reporter.NewErrorEvent(reporter.FailedPush, err, fmt.Sprintf("Failed to push '%s'", ociClient.repo.Reference))
 	}
 
 	reporter.Report("kpm: pushed [registry]", ociClient.repo.Reference)
@@ -231,7 +261,7 @@ func loadCredential(hostName string, settings *settings.Settings) (*remoteauth.C
 }
 
 // Pull will pull the oci artifacts from oci registry to local path.
-func Pull(localPath, hostName, repoName, tag string) error {
+func Pull(localPath, hostName, repoName, tag string) *reporter.KpmEvent {
 	ociClient, err := NewOciClient(hostName, repoName)
 	if err != nil {
 		return err
@@ -260,11 +290,23 @@ func Pull(localPath, hostName, repoName, tag string) error {
 }
 
 // Push will push the oci artifacts to oci registry from local path
-func Push(localPath, hostName, repoName, tag string, settings *settings.Settings) error {
+func Push(localPath, hostName, repoName, tag string, settings *settings.Settings) *reporter.KpmEvent {
 	// Create an oci client.
 	ociClient, err := NewOciClient(hostName, repoName)
 	if err != nil {
 		return err
+	}
+
+	exist, err := ociClient.ContainsTag(tag)
+	if err != (*reporter.KpmEvent)(nil) {
+		return err
+	}
+
+	if exist {
+		return reporter.NewErrorEvent(
+			reporter.PkgTagExists,
+			fmt.Errorf("package version '%s' already exists", tag),
+		)
 	}
 
 	// Push the oci package by the oci client.

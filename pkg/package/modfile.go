@@ -8,7 +8,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"kcl-lang.io/kcl-go/pkg/kcl"
-	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/oci"
 	"kcl-lang.io/kpm/pkg/opt"
@@ -233,10 +232,14 @@ func (dep *Oci) Download(localPath string) (string, error) {
 		return "", err
 	}
 
-	matches, err := filepath.Glob(filepath.Join(localPath, "*.tar"))
-	if err != nil || len(matches) != 1 {
-		if err == nil {
-			err = errors.InvalidPkg
+	matches, finderr := filepath.Glob(filepath.Join(localPath, "*.tar"))
+	if finderr != nil || len(matches) != 1 {
+		if finderr == nil {
+			err = reporter.NewErrorEvent(
+				reporter.InvalidKclPkg,
+				err,
+				fmt.Sprintf("failed to find the kcl package tar from '%s'.", localPath),
+			)
 		}
 
 		return "", reporter.NewErrorEvent(
@@ -247,19 +250,19 @@ func (dep *Oci) Download(localPath string) (string, error) {
 	}
 
 	tarPath := matches[0]
-	err = utils.UnTarDir(tarPath, localPath)
-	if err != nil {
+	untarErr := utils.UnTarDir(tarPath, localPath)
+	if untarErr != nil {
 		return "", reporter.NewErrorEvent(
 			reporter.FailedUntarKclPkg,
-			err,
+			untarErr,
 			fmt.Sprintf("failed to untar the kcl package tar from '%s' into '%s'.", tarPath, localPath),
 		)
 	}
 
 	// After untar the downloaded kcl package tar file, remove the tar file.
 	if utils.DirExists(tarPath) {
-		err = os.Remove(tarPath)
-		if err != nil {
+		rmErr := os.Remove(tarPath)
+		if rmErr != nil {
 			return "", reporter.NewErrorEvent(
 				reporter.FailedUntarKclPkg,
 				err,

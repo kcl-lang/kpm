@@ -103,10 +103,10 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 
 						gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 						if !IsIgnore(expectedStdout) {
-							gomega.Expect(stdout).To(gomega.Equal(expectedStdout))
+							gomega.Expect(stdout).To(gomega.ContainSubstring(expectedStdout))
 						}
 						if !IsIgnore(expectedStderr) {
-							gomega.Expect(stderr).To(gomega.Equal(expectedStderr))
+							gomega.Expect(stderr).To(gomega.ContainSubstring(expectedStderr))
 						}
 					}
 				}

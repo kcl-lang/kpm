@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"fmt"
 	"net/url"
 	"os"
 
@@ -36,28 +37,31 @@ func NewPushCmd(settings *settings.Settings) *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-
-			localTarPath := c.String(FLAG_TAR_PATH)
-			ociUrl := c.Args().First()
-
-			var err error
-
-			if len(localTarPath) == 0 {
-				// If the tar package to be pushed is not specified,
-				// the current kcl package is packaged into tar and pushed.
-				err = pushCurrentPackage(ociUrl, c.Bool(FLAG_VENDOR), settings)
-			} else {
-				// Else push the tar package specified.
-				err = pushTarPackage(ociUrl, localTarPath, c.Bool(FLAG_VENDOR), settings)
-			}
-
-			if err != nil {
-				return err
-			}
-
-			return nil
+			return KpmPush(c, settings)
 		},
 	}
+}
+
+func KpmPush(c *cli.Context, settings *settings.Settings) error {
+	localTarPath := c.String(FLAG_TAR_PATH)
+	ociUrl := c.Args().First()
+
+	var err error
+
+	if len(localTarPath) == 0 {
+		// If the tar package to be pushed is not specified,
+		// the current kcl package is packaged into tar and pushed.
+		err = pushCurrentPackage(ociUrl, c.Bool(FLAG_VENDOR), settings)
+	} else {
+		// Else push the tar package specified.
+		err = pushTarPackage(ociUrl, localTarPath, c.Bool(FLAG_VENDOR), settings)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // genDefaultOciUrlForKclPkg will generate the default oci url from the current package.
@@ -83,13 +87,14 @@ func pushCurrentPackage(ociUrl string, vendorMode bool, settings *settings.Setti
 	pwd, err := os.Getwd()
 
 	if err != nil {
-		reporter.ExitWithReport("kpm: internal bug: failed to load working directory")
+		reporter.ReportEventToStderr(reporter.NewEvent(reporter.Bug, "internal bug: failed to load working directory"))
+		return err
 	}
 	// 1. Load the current kcl packege.
 	kclPkg, err := pkg.LoadKclPkg(pwd)
 
 	if err != nil {
-		reporter.ExitWithReport("kpm: failed to load package in " + pwd + ".")
+		reporter.ReportEventToStderr(reporter.NewEvent(reporter.FailedLoadKclMod, fmt.Sprintf("failed to load package in '%s'", pwd)))
 		return err
 	}
 
@@ -168,7 +173,7 @@ func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, vendorMode bool, settings *s
 	reporter.Report("kpm: package '" + kclPkg.GetPkgName() + "' will be pushed.")
 	// 4. Push it.
 	err = oci.Push(tarPath, ociOpts.Reg, ociOpts.Repo, ociOpts.Tag, settings)
-	if err != nil {
+	if err != (*reporter.KpmEvent)(nil) {
 		return err
 	}
 

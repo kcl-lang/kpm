@@ -100,7 +100,7 @@ func KpmPull(c *cli.Context) error {
 	// 2. Pull the tar.
 	err = oci.Pull(localPath, ociOpt.Reg, ociOpt.Repo, ociOpt.Tag)
 
-	if err != nil {
+	if err != (*reporter.KpmEvent)(nil) {
 		return err
 	}
 

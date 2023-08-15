@@ -55,7 +55,9 @@ const (
 	FailedLoadCredential
 	FailedCreateOciClient
 	FailedSelectLatestVersion
+	FailedGetPackageVersions
 	FailedCreateStorePath
+	FailedPush
 	FailedGetPkg
 	FailedAccessPkgPath
 	UnKnownPullWhat
@@ -88,6 +90,7 @@ const (
 	LocalPathNotExist
 	PathIsEmpty
 	AddItselfAsDep
+	PkgTagExists
 )
 
 // KpmEvent is the event used to show kpm logs to users.
@@ -147,9 +150,14 @@ func NewEvent(errType EventType, args ...string) *KpmEvent {
 	}
 }
 
-// ReportEvent reports the event to users to stdout.
+// ReportEventToStdout reports the event to users to stdout.
 func ReportEventToStdout(event *KpmEvent) {
 	fmt.Fprintf(os.Stdout, "%v", event.Event())
+}
+
+// ReportEventToStderr reports the event to users to stderr.
+func ReportEventToStderr(event *KpmEvent) {
+	fmt.Fprintf(os.Stderr, "%v", event.Event())
 }
 
 // ReportEvent reports the event to users to stdout.

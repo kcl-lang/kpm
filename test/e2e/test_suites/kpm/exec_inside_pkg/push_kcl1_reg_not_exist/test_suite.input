@@ -1,0 +1,1 @@
+kpm push oci://not_exist_reg/not_exist_repo
