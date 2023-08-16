@@ -174,5 +174,6 @@ For more information about [OCI registry support](./docs/kpm_oci.md).
 
 - [OCI registry support](./docs/kpm_oci-zh.md).
 - [How to share your kcl package with others using kpm](./docs/publish_your_kcl_packages-zh.md).
+- [How to use kpm to share your kcl package with others on docker.io](./docs/publish_to_docker_reg.md)
 - [kpm command reference](./docs/command-reference/index.md)
 - [kcl.mod: The KCL package Manifest File](./docs/kcl_mod.md)
