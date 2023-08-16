@@ -21,7 +21,7 @@
 
 ### 安装 KCL
 
-`kpm` 将调用 [KCL 编译器](https://github.com/KusionStack/KCLVM) 来编译 KCL 程序。在使用 `kpm` 之前，您需要确保 KCL编译器 已经成功安装。
+`kpm` 将调用 [KCL 编译器](https://github.com/KusionStack/KCLVM) 来编译 KCL 程序。在使用 `kpm` 之前，您需要确保 KCL 编译器 已经成功安装。
 
 [如需了解如何安装 KCL 的更多信息，请参考此处。](https://kcl-lang.io/docs/user_docs/getting-started/install)
 
@@ -41,7 +41,7 @@ kcl -V
 go install kcl-lang.io/kpm@latest
 ```
 
-如果您在执行完上述命令后,使用`kpm`时,无法找到命令`kpm`请参考:
+如果您在执行完上述命令后,使用 `kpm` 时,无法找到命令 `kpm` 请参考:
 
 - [go install 安装后找不到命令。](#q-我在使用go-install安装kpm后出现了command-not-found的错误)
 
@@ -54,13 +54,13 @@ go install kcl-lang.io/kpm@latest
 export PATH=$KPM_INSTALLATION_PATH:$PATH  
 ```
 
-请使用以下命令以确保您成功安装了`kpm`。
+请使用以下命令以确保您成功安装了 `kpm`。
 
 ```shell
 kpm --help
 ```
 
-如果你看到以下输出信息，那么你已经成功安装了`kpm`，可以继续执行下一步操作。
+如果你看到以下输出信息，那么你已经成功安装了 `kpm`，可以继续执行下一步操作。
 
 <img src="./docs/gifs/kpm_help.gif" width="600" align="center" />
 
@@ -76,7 +76,7 @@ kpm init my_package
 
 <img src="./docs/gifs/kpm_init.gif" width="600" align="center" />
 
-`kpm` 将会在执行`kpm init my_package`命令的目录下创建两个默认的配置文件 `kcl.mod` 和 `kcl.mod.lock`。
+`kpm` 将会在执行 `kpm init my_package` 命令的目录下创建两个默认的配置文件 `kcl.mod` 和 `kcl.mod.lock`。
 
 ```shell
 - my_package
@@ -155,6 +155,7 @@ k8core.Pod {
 ```shell
 kpm run
 ```
+
 <img src="./docs/gifs/kpm_run.gif" width="600" align="center" />
 
 ## OCI Registry 的支持
@@ -165,7 +166,7 @@ kpm run
 
 ## 常见问题 (FAQ)
 
-##### Q: 我在使用`go install`安装`kpm`后，出现了`command not found`的错误。
+##### Q: 我在使用 `go install` 安装 `kpm` 后，出现了 `command not found` 的错误。
 
 A: `go install` 默认会将二进制文件安装到 `$GOPATH/bin` 目录下，您需要将 `$GOPATH/bin` 添加到环境变量 `PATH` 中。
 
@@ -173,5 +174,6 @@ A: `go install` 默认会将二进制文件安装到 `$GOPATH/bin` 目录下，�
 
 - [OCI registry 支持](./docs/kpm_oci-zh.md).
 - [如何使用 kpm 与他人分享您的 kcl 包](./docs/publish_your_kcl_packages-zh.md)
+- [如何使用 kpm 在 docker.io 上与他人分享您的 kcl 包](./docs/publish_to_docker_reg-zh.md)
 - [kpm 命令参考](./docs/command-reference-zh/index.md)
 - [kcl.mod: KCL 包清单文件](./docs/kcl_mod-zh.md)
