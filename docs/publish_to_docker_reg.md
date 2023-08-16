@@ -12,20 +12,7 @@ First, you need to install kpm on your computer. You can follow the instructions
 
 If you want to use `docker.io` as the OCI registry to share your kcl package with others, you need to create a `docker.io` account to support the push of your kcl package.
 
-## Step 3: Tell kpm the registry and the repository
-
-By default, kpm uses `ghcr.io` as the OCI registry. More information about how to use `ghcr.io` as the OCI registry to share your kcl package with others, see [How to Share Your KCL Packages with Others on ghcr.io using kpm](./publish_your_kcl_packages.md).
-
-Therefore, if you want to use `docker.io`, you need to specify the registry and repository by setting the environment variables `KPM_REG` and `KPM_REPO`.
-
-```shell
-export KPM_REG=docker.io
-export KPM_REPO=<USERNAME>
-```
-
-`<USERNAME>` is your `docker.io` username created in [Step 2](#step-2-create-a-dockerio-account).
-
-## Step 4: Log in to docker.io
+## Step 3: Log in to docker.io
 
 You can use the following command to log in to docker.io.
 
@@ -37,7 +24,7 @@ Where `<USERNAME>` is your `docker.io` username, and `<PASSWORD>` is your `docke
 
 For more information on how to log in to docker.io using kpm, see [kpm login](./kpm_oci.md#kpm-login).
 
-## Step 5: Push your kcl package
+## Step 4: Push your kcl package
 
 Now, you can use kpm to push your kcl package to `docker.io`.
 
@@ -77,8 +64,8 @@ $ pwd
 /home/user/exist_kcl_package
 
 # Pushing the KCL Package to Default OCI Registry
-$ kpm push
+$ kpm push oci://docker.io/<USERNAME>/exist_kcl_package
 ```
 
-After completing these steps, you have successfully pushed your KCL Package to `docker.io`.
+After completing these steps, you have successfully pushed your KCL Package `exist_kcl_package` to `docker.io`.
 For more information on how to use `kpm push`, see [kpm push](./kpm_oci.md#kpm-push).

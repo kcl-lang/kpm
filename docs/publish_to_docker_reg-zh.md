@@ -12,20 +12,7 @@
 
 您需要创建一个 docker.io 账户以支持您的 kcl 包的推送。
 
-## 步骤 3: 指定 registry 和 仓库
-
-kpm 默认的 OCI registry 是 ghcr.io, 关于如何使用 kpm 默认的 OCI Registry 分享您的 kcl 包，请参阅 [如何使用 kpm 在 ghcr.io 上与他人分享您的 kcl 包](./publish_your_kcl_packages-zh.md)。
-
-因此，如果您希望使用 docker.io , 您需要通过设置环境变量 `KPM_REGISTRY` 和 `KPM_REPO` 来指定 registry 和 仓库。
-
-```shell
-export KPM_REG=docker.io
-export KPM_REPO=<USERNAME>
-```
-
-`<USERNAME>` 是您在[步骤二](#步骤-2创建一个-docker-账户)创建的 docker.io 账户名。
-
-## 步骤 4：登录 docker.io
+## 步骤 3：登录 docker.io
 
 您可以直接使用 docker.io 的账户名和密码登录。
 
@@ -37,7 +24,7 @@ kpm login -u <USERNAME> -p <PASSWORD> docker.io
 
 关于如何使用 kpm 登录 docker.io 的更多信息，请参阅 [kpm login](./kpm_oci-zh.md#kpm-login)。
 
-## 步骤 5：推送您的 kcl 包
+## 步骤 4：推送您的 kcl 包
 
 现在，您可以使用 kpm 将您的 kcl 包推送到 docker.io。
 
@@ -77,8 +64,8 @@ $ pwd
 /home/user/exist_kcl_package
 
 # 推送 kcl 包到默认的 OCI Registry
-$ kpm push
+$ kpm push oci://docker.io/<USERNAME>/exist_kcl_package
 ```
 
-完成上述步骤后，您就成功地将您的 kcl 包推送到了 docker.io 中。
+完成上述步骤后，您就成功地将您的 kcl 包 `exist_kcl_package` 推送到了 docker.io 中。
 关于如何使用 kpm push 的更多信息，请参阅 [kpm push](./kpm_oci-zh.md#kpm-push)。
