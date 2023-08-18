@@ -32,7 +32,7 @@ func TestPackageApi(t *testing.T) {
 	assert.Equal(t, dep.Source.Oci.Repo, "kcl-lang/k8s")
 	assert.Equal(t, dep.Source.Oci.Tag, "1.27")
 
-	assert.Equal(t, dep.GetLocalFullPath(), filepath.Join(kcl_pkg_path, "k8s_1.27"))
+	assert.Equal(t, dep.GetLocalFullPath(""), filepath.Join(kcl_pkg_path, "k8s_1.27"))
 
 	schemas, err := pkg.GetAllSchemaTypeMapping()
 	assert.Equal(t, err, nil)
