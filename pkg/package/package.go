@@ -590,6 +590,16 @@ func (kclPkg *KclPkg) GetPkgTag() string {
 	return kclPkg.modFile.Pkg.Version
 }
 
+// GetPkgEdition returns compile edition of package.
+func (kclPkg *KclPkg) GetPkgEdition() string {
+	return kclPkg.modFile.Pkg.Edition
+}
+
+// GetPkgProfile returns the profile of package.
+func (kclPkg *KclPkg) GetPkgProfile() Profile {
+	return kclPkg.modFile.Profiles
+}
+
 // GetPkgTarName returns the kcl package tar name "<package_name>-v<package_version>.tar"
 func (kclPkg *KclPkg) GetPkgTarName() string {
 	return kclPkg.GetPkgFullName() + TAR_SUFFIX

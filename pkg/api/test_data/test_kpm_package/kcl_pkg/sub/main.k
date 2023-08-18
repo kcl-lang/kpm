@@ -1,0 +1,2 @@
+schema SchemaInSubK:
+    msg: str
