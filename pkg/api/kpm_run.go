@@ -66,7 +66,7 @@ func RunOci(ociRef, version string, entryFiles []string, vendorMode bool, kclArg
 	// 2. Pull the tar.
 	err = oci.Pull(localPath, ociOpts.Reg, ociOpts.Repo, ociOpts.Tag)
 
-	if err != nil {
+	if err != (*reporter.KpmEvent)(nil) {
 		return "", err
 	}
 
