@@ -1,6 +1,9 @@
 package api
 
 import (
+	"os"
+	"path/filepath"
+
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kcl-go/pkg/spec/gpyrpc"
 	pkg "kcl-lang.io/kpm/pkg/package"
@@ -64,12 +67,88 @@ func (pkg *KclPackage) GetPkgProfile() pkg.Profile {
 	return pkg.pkg.GetPkgProfile()
 }
 
-// GetAllSchemaTypes returns all the schema types of the package.
-func (pkg *KclPackage) GetAllSchemaTypes() (map[string]*gpyrpc.KclType, error) {
-	return kcl.GetSchemaTypeMapping(pkg.GetPkgHomePath(), "", "")
+// GetAllSchemaTypeMapping returns all the schema types of the package.
+//
+// It will return a map of schema types, the key is the relative path to the package home path.
+//
+// And, the value is a map of schema types, the key is the schema name, the value is the schema type.
+func (pkg *KclPackage) GetAllSchemaTypeMapping() (map[string]map[string]*gpyrpc.KclType, error) {
+	return pkg.GetSchemaTypeMappingNamed("")
 }
 
-// GetSchemaType returns the schema type filtered by schema name.
-func (pkg *KclPackage) GetSchemaType(schemaName string) ([]*gpyrpc.KclType, error) {
-	return kcl.GetSchemaType(pkg.GetPkgHomePath(), "", schemaName)
+// GetSchemaTypeMappingNamed returns the schema type filtered by schema name.
+//
+// If 'schemaName' is empty, it will return all the schema types.
+func (pkg *KclPackage) GetSchemaTypeMappingNamed(schemaName string) (map[string]map[string]*gpyrpc.KclType, error) {
+	schemaTypes := make(map[string]map[string]*gpyrpc.KclType)
+	err := filepath.Walk(pkg.GetPkgHomePath(), func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			schemaTypeMap, err := kcl.GetSchemaTypeMapping(path, "", schemaName)
+			if err != nil {
+				return err
+			}
+
+			relPath, err := filepath.Rel(pkg.GetPkgHomePath(), path)
+			if err != nil {
+				return err
+			}
+
+			schemaTypes[relPath] = schemaTypeMap
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return schemaTypes, nil
+}
+
+// GetAllSchemaType returns all the schema types of the package.
+//
+// It will return a map of schema types, the key is the relative path to the package home path.
+//
+// And, the value is a slice of schema types.
+func (pkg *KclPackage) GetAllSchemaType() (map[string][]*gpyrpc.KclType, error) {
+	return pkg.GetSchemaTypeNamed("")
+}
+
+// GetSchemaTypeNamed returns the schema type filtered by schema name.
+//
+// If 'schemaName' is empty, it will return all the schema types.
+func (pkg *KclPackage) GetSchemaTypeNamed(schemaName string) (map[string][]*gpyrpc.KclType, error) {
+	schemaTypes := make(map[string][]*gpyrpc.KclType)
+	err := filepath.Walk(pkg.GetPkgHomePath(), func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			schemaType, err := kcl.GetSchemaType(path, "", schemaName)
+			if err != nil {
+				return err
+			}
+
+			relPath, err := filepath.Rel(pkg.GetPkgHomePath(), path)
+			if err != nil {
+				return err
+			}
+
+			schemaTypes[relPath] = schemaType
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return schemaTypes, nil
 }
