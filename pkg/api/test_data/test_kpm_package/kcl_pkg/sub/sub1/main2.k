@@ -1,0 +1,2 @@
+schema SchemaWithSameName:
+    msg: str
