@@ -6,6 +6,7 @@ import (
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kcl-go/pkg/spec/gpyrpc"
+	"kcl-lang.io/kpm/pkg/errors"
 	pkg "kcl-lang.io/kpm/pkg/package"
 )
 
@@ -119,7 +120,7 @@ func (pkg *KclPackage) GetSchemaTypeMappingWithFilters(fileterFuncs []KclTypeFil
 		if info.IsDir() {
 			fileteredKtypeMap := make(map[string]*KclType)
 			schemaTypeMap, err := kcl.GetSchemaTypeMapping(path, "", "")
-			if err != nil {
+			if err != nil && err.Error() != errors.NoKclFiles.Error() {
 				return err
 			}
 
@@ -127,22 +128,23 @@ func (pkg *KclPackage) GetSchemaTypeMappingWithFilters(fileterFuncs []KclTypeFil
 			if err != nil {
 				return err
 			}
-
-			for kName, kType := range schemaTypeMap {
-				kTy := NewKclTypes(kName, relPath, kType)
-				filterPassed := true
-				for _, filterFunc := range fileterFuncs {
-					if !filterFunc(kTy) {
-						filterPassed = false
-						break
+			if schemaTypeMap != nil {
+				for kName, kType := range schemaTypeMap {
+					kTy := NewKclTypes(kName, relPath, kType)
+					filterPassed := true
+					for _, filterFunc := range fileterFuncs {
+						if !filterFunc(kTy) {
+							filterPassed = false
+							break
+						}
+					}
+					if filterPassed {
+						fileteredKtypeMap[kName] = kTy
 					}
 				}
-				if filterPassed {
-					fileteredKtypeMap[kName] = kTy
+				if len(fileteredKtypeMap) > 0 {
+					schemaTypes[relPath] = fileteredKtypeMap
 				}
-			}
-			if len(fileteredKtypeMap) > 0 {
-				schemaTypes[relPath] = fileteredKtypeMap
 			}
 		}
 

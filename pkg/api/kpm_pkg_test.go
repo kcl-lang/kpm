@@ -135,3 +135,19 @@ func TestGetSchemaTypeMappingWithFilters(t *testing.T) {
 	assert.Equal(t, schemas[filepath.Join(".")]["SchemaWithSameName"].Name, "SchemaWithSameName")
 	assert.Equal(t, schemas[filepath.Join("sub", "sub1")]["SchemaWithSameName"].RelPath, filepath.Join("sub", "sub1"))
 }
+
+func TestGetSchemaTypeUnderEmptyDir(t *testing.T) {
+	pkg_path := filepath.Join(getTestDir("test_kpm_package"), "no_kcl_files")
+	kcl_pkg_path, err := GetKclPkgPath()
+
+	assert.Equal(t, err, nil)
+	pkg, err := GetKclPackage(pkg_path)
+	assert.Equal(t, err, nil)
+	err = pkg.pkg.ResolveDepsMetadata(kcl_pkg_path, true)
+	assert.Equal(t, err, nil)
+	schemas, err := pkg.GetSchemaTypeMappingNamed("SchemaInMain")
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(schemas), 1)
+	assert.Equal(t, schemas[filepath.Join(".")]["SchemaInMain"].Type, "schema")
+	assert.Equal(t, schemas[filepath.Join(".")]["SchemaInMain"].SchemaName, "SchemaInMain")
+}

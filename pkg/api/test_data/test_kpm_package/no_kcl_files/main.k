@@ -1,0 +1,2 @@
+schema SchemaInMain:
+    msg: str
