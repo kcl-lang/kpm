@@ -37,23 +37,15 @@ func TestPackageApi(t *testing.T) {
 	schemas, err := pkg.GetAllSchemaTypeMapping()
 	assert.Equal(t, err, nil)
 	assert.Equal(t, len(schemas), 3)
-	assert.Equal(t, len(schemas["."]), 6)
+	assert.Equal(t, len(schemas["."]), 2)
 	assert.Equal(t, len(schemas[filepath.Join("sub")]), 1)
 	assert.Equal(t, len(schemas[filepath.Join("sub", "sub1")]), 2)
 
 	// All schema types under the root path
 	assert.Equal(t, schemas[filepath.Join(".")]["SchemaInMainK"].Type, "schema")
 	assert.Equal(t, schemas[filepath.Join(".")]["SchemaInMainK"].SchemaName, "SchemaInMainK")
-	assert.Equal(t, schemas[filepath.Join(".")]["schema_in_main_k"].Type, "schema")
-	assert.Equal(t, schemas[filepath.Join(".")]["schema_in_main_k"].SchemaName, "SchemaInMainK")
-	assert.Equal(t, schemas[filepath.Join(".")]["schema_in_sub_k"].Type, "schema")
-	assert.Equal(t, schemas[filepath.Join(".")]["schema_in_sub_k"].SchemaName, "SchemaInSubK")
 	assert.Equal(t, schemas[filepath.Join(".")]["SchemaWithSameName"].Type, "schema")
 	assert.Equal(t, schemas[filepath.Join(".")]["SchemaWithSameName"].SchemaName, "SchemaWithSameName")
-	assert.Equal(t, schemas[filepath.Join(".")]["schema_with_same_name"].Type, "schema")
-	assert.Equal(t, schemas[filepath.Join(".")]["schema_with_same_name"].SchemaName, "SchemaWithSameName")
-	assert.Equal(t, schemas[filepath.Join(".")]["schema_with_same_name_in_sub"].Type, "schema")
-	assert.Equal(t, schemas[filepath.Join(".")]["schema_with_same_name_in_sub"].SchemaName, "SchemaWithSameName")
 
 	// All schema types under the root_path/sub path
 	assert.Equal(t, schemas[filepath.Join("sub")]["SchemaInSubK"].Type, "schema")
@@ -78,9 +70,8 @@ func TestGetAllSchemaTypesMappingNamed(t *testing.T) {
 
 	schemas, err := pkg.GetSchemaTypeMappingNamed("SchemaWithSameName")
 	assert.Equal(t, err, nil)
-	assert.Equal(t, len(schemas), 3)
+	assert.Equal(t, len(schemas), 2)
 	assert.Equal(t, len(schemas["."]), 1)
-	assert.Equal(t, len(schemas[filepath.Join("sub")]), 0)
 	assert.Equal(t, len(schemas[filepath.Join("sub", "sub1")]), 1)
 
 	// // All schema types under the root path
@@ -92,7 +83,8 @@ func TestGetAllSchemaTypesMappingNamed(t *testing.T) {
 	assert.Equal(t, schemas[filepath.Join("sub", "sub1")]["SchemaWithSameName"].SchemaName, "SchemaWithSameName")
 }
 
-func TestGetAllSchemaTypes(t *testing.T) {
+func TestGetSchemaTypeMappingWithFilters(t *testing.T) {
+
 	pkg_path := filepath.Join(getTestDir("test_kpm_package"), "kcl_pkg")
 	kcl_pkg_path, err := GetKclPkgPath()
 
@@ -102,60 +94,44 @@ func TestGetAllSchemaTypes(t *testing.T) {
 	err = pkg.pkg.ResolveDepsMetadata(kcl_pkg_path, true)
 	assert.Equal(t, err, nil)
 
-	schemas, err := pkg.GetAllSchemaType()
+	filterFunc := func(kt *KclType) bool {
+		return kt.Type != "schema"
+	}
+	schemas, err := pkg.GetSchemaTypeMappingWithFilters([]KclTypeFilterFunc{filterFunc})
 	assert.Equal(t, err, nil)
-	assert.Equal(t, len(schemas), 3)
-	assert.Equal(t, len(schemas["."]), 6)
-	assert.Equal(t, len(schemas[filepath.Join("sub")]), 1)
-	assert.Equal(t, len(schemas[filepath.Join("sub", "sub1")]), 2)
+	assert.Equal(t, len(schemas), 0)
 
-	// All schema types under the root path
-	assert.Equal(t, schemas[filepath.Join(".")][0].Type, "schema")
-	assert.Equal(t, schemas[filepath.Join(".")][0].SchemaName, "SchemaInMainK")
-	assert.Equal(t, schemas[filepath.Join(".")][1].Type, "schema")
-	assert.Equal(t, schemas[filepath.Join(".")][1].SchemaName, "SchemaWithSameName")
-	assert.Equal(t, schemas[filepath.Join(".")][2].Type, "schema")
-	assert.Equal(t, schemas[filepath.Join(".")][2].SchemaName, "SchemaInMainK")
-	assert.Equal(t, schemas[filepath.Join(".")][3].Type, "schema")
-	assert.Equal(t, schemas[filepath.Join(".")][3].SchemaName, "SchemaInSubK")
-	assert.Equal(t, schemas[filepath.Join(".")][4].Type, "schema")
-	assert.Equal(t, schemas[filepath.Join(".")][4].SchemaName, "SchemaWithSameName")
-	assert.Equal(t, schemas[filepath.Join(".")][5].Type, "schema")
-	assert.Equal(t, schemas[filepath.Join(".")][5].SchemaName, "SchemaWithSameName")
-
-	// All schema types under the root_path/sub path
-	assert.Equal(t, schemas[filepath.Join("sub")][0].Type, "schema")
-	assert.Equal(t, schemas[filepath.Join("sub")][0].SchemaName, "SchemaInSubK")
-
-	// All schema types under the root_path/sub/sub1 path
-	assert.Equal(t, schemas[filepath.Join("sub", "sub1")][0].Type, "schema")
-	assert.Equal(t, schemas[filepath.Join("sub", "sub1")][0].SchemaName, "SchemaInSubSub1K")
-	assert.Equal(t, schemas[filepath.Join("sub", "sub1")][1].Type, "schema")
-	assert.Equal(t, schemas[filepath.Join("sub", "sub1")][1].SchemaName, "SchemaWithSameName")
-}
-
-func TestGetAllSchemaTypesNamed(t *testing.T) {
-	pkg_path := filepath.Join(getTestDir("test_kpm_package"), "kcl_pkg")
-	kcl_pkg_path, err := GetKclPkgPath()
-
+	filterFunc = func(kt *KclType) bool {
+		return kt.SchemaName == "SchemaWithSameName"
+	}
+	schemas, err = pkg.GetSchemaTypeMappingWithFilters([]KclTypeFilterFunc{filterFunc})
 	assert.Equal(t, err, nil)
-	pkg, err := GetKclPackage(pkg_path)
-	assert.Equal(t, err, nil)
-	err = pkg.pkg.ResolveDepsMetadata(kcl_pkg_path, true)
-	assert.Equal(t, err, nil)
-
-	schemas, err := pkg.GetSchemaTypeNamed("SchemaWithSameName")
-	assert.Equal(t, err, nil)
-	assert.Equal(t, len(schemas), 3)
-	assert.Equal(t, len(schemas["."]), 1)
-	assert.Equal(t, len(schemas[filepath.Join("sub")]), 0)
+	assert.Equal(t, len(schemas), 2)
+	assert.Equal(t, len(schemas[filepath.Join(".")]), 3)
 	assert.Equal(t, len(schemas[filepath.Join("sub", "sub1")]), 1)
+	assert.Equal(t, schemas[filepath.Join(".")]["SchemaWithSameName"].Type, "schema")
+	assert.Equal(t, schemas[filepath.Join(".")]["SchemaWithSameName"].SchemaName, "SchemaWithSameName")
+	assert.Equal(t, schemas[filepath.Join(".")]["schema_with_same_name"].Type, "schema")
+	assert.Equal(t, schemas[filepath.Join(".")]["schema_with_same_name"].SchemaName, "SchemaWithSameName")
+	assert.Equal(t, schemas[filepath.Join(".")]["schema_with_same_name_in_sub"].Type, "schema")
+	assert.Equal(t, schemas[filepath.Join(".")]["schema_with_same_name_in_sub"].SchemaName, "SchemaWithSameName")
+	assert.Equal(t, schemas[filepath.Join("sub", "sub1")]["SchemaWithSameName"].Type, "schema")
+	assert.Equal(t, schemas[filepath.Join("sub", "sub1")]["SchemaWithSameName"].SchemaName, "SchemaWithSameName")
 
-	// // All schema types under the root path
-	assert.Equal(t, schemas[filepath.Join(".")][0].Type, "schema")
-	assert.Equal(t, schemas[filepath.Join(".")][0].SchemaName, "SchemaWithSameName")
-
-	// // All schema types under the root_path/sub/sub1 path
-	assert.Equal(t, schemas[filepath.Join("sub", "sub1")][0].Type, "schema")
-	assert.Equal(t, schemas[filepath.Join("sub", "sub1")][0].SchemaName, "SchemaWithSameName")
+	filterFunc = func(kt *KclType) bool {
+		return kt.SchemaName == "SchemaWithSameName" && kt.Name == "SchemaWithSameName"
+	}
+	schemas, err = pkg.GetSchemaTypeMappingWithFilters([]KclTypeFilterFunc{filterFunc})
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(schemas), 2)
+	assert.Equal(t, len(schemas[filepath.Join(".")]), 1)
+	assert.Equal(t, len(schemas[filepath.Join("sub", "sub1")]), 1)
+	assert.Equal(t, schemas[filepath.Join(".")]["SchemaWithSameName"].Type, "schema")
+	assert.Equal(t, schemas[filepath.Join(".")]["SchemaWithSameName"].SchemaName, "SchemaWithSameName")
+	assert.Equal(t, schemas[filepath.Join(".")]["SchemaWithSameName"].Name, "SchemaWithSameName")
+	assert.Equal(t, schemas[filepath.Join(".")]["SchemaWithSameName"].RelPath, ".")
+	assert.Equal(t, schemas[filepath.Join("sub", "sub1")]["SchemaWithSameName"].Type, "schema")
+	assert.Equal(t, schemas[filepath.Join("sub", "sub1")]["SchemaWithSameName"].SchemaName, "SchemaWithSameName")
+	assert.Equal(t, schemas[filepath.Join(".")]["SchemaWithSameName"].Name, "SchemaWithSameName")
+	assert.Equal(t, schemas[filepath.Join("sub", "sub1")]["SchemaWithSameName"].RelPath, filepath.Join("sub", "sub1"))
 }
