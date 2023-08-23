@@ -8,10 +8,72 @@ import (
 	"path/filepath"
 	"strings"
 
+	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/settings"
 )
+
+// CompileOptions is the input options of 'kpm run'.
+type CompileOptions struct {
+	isVendor        bool
+	hasSettingsYaml bool
+	pkgPath         string
+	entries         []string
+	*kcl.Option
+}
+
+// DefaultCompileOptions returns a default CompileOptions.
+func DefaultCompileOptions() *CompileOptions {
+	return &CompileOptions{
+		Option: kcl.NewOption(),
+	}
+}
+
+// AddEntry will add a compile entry file to the compiler.
+func (opts *CompileOptions) AddEntry(entry string) {
+	opts.entries = append(opts.entries, entry)
+}
+
+// Entrirs will return the entries of the compiler.
+func (opts *CompileOptions) Entries() []string {
+	return opts.entries
+}
+
+// ExtendEntries will extend the entries of the compiler.
+func (opts *CompileOptions) ExtendEntries(entries []string) {
+	opts.entries = append(opts.entries, entries...)
+}
+
+// SetHasSettingsYaml will set the 'hasSettingsYaml' flag.
+func (opts *CompileOptions) SetHasSettingsYaml(hasSettingsYaml bool) {
+	opts.hasSettingsYaml = hasSettingsYaml
+}
+
+// HasSettingsYaml will return the 'hasSettingsYaml' flag.
+func (opts *CompileOptions) HasSettingsYaml() bool {
+	return opts.hasSettingsYaml
+}
+
+// SetVendor will set the 'isVendor' flag.
+func (opts *CompileOptions) SetVendor(isVendor bool) {
+	opts.isVendor = isVendor
+}
+
+// IsVendor will return the 'isVendor' flag.
+func (opts *CompileOptions) IsVendor() bool {
+	return opts.isVendor
+}
+
+// PkgPath will return the home path for a kcl package during compilation
+func (opts *CompileOptions) PkgPath() string {
+	return opts.pkgPath
+}
+
+// SetPkgPath will set the home path for a kcl package during compilation
+func (opts *CompileOptions) SetPkgPath(pkgPath string) {
+	opts.pkgPath = pkgPath
+}
 
 // Input options of 'kpm init'.
 type InitOptions struct {

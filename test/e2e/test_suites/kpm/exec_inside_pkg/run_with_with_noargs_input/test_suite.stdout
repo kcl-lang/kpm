@@ -10,8 +10,13 @@ COMMANDS:
    help, h  Shows a list of commands or help for one command
 
 OPTIONS:
-   --input value [ --input value ]  a kcl file as the compile entry file
-   --tag value                      the tag for oci artifact
-   --vendor                         run in vendor mode (default: false)
-   --kcl_args value                 Arguments for kcl
-   --help, -h                       show help
+   --input value [ --input value ]                              a kcl file as the compile entry file
+   --tag value                                                  the tag for oci artifact
+   --vendor                                                     run in vendor mode (default: false)
+   --kcl_args value                                             Arguments for kcl
+   --setting value, -Y value [ --setting value, -Y value ]      [Deprecated] Specify the input setting file
+   --argument value, -D value [ --argument value, -D value ]    Specify the top-level argument
+   --overrides value, -O value [ --overrides value, -O value ]  Specify the configuration override path and value
+   --disable_none, -n                                           Disable dumping None values (default: false)
+   --sort_keys, -k                                              Sort result keys (default: false)
+   --help, -h                                                   show help

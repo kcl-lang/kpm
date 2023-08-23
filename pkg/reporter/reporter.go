@@ -93,6 +93,7 @@ const (
 	AddItselfAsDep
 	PkgTagExists
 	DependencyNotFound
+	CompileFailed
 )
 
 // KpmEvent is the event used to show kpm logs to users.
