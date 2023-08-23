@@ -1,0 +1,7 @@
+[dependencies]
+  [dependencies.kcl2]
+    name = "kcl2"
+    full_name = "kcl2_0.0.1"
+    version = "0.0.1"
+    sum = "Q+ilCTK5EXPn7stwrtY2La1MQdP+wiAq5wHiG91NoB8="
+    path = "../kcl2"

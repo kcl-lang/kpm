@@ -66,6 +66,7 @@ const (
 	FailedUntarKclPkg
 	FailedLoadKclMod
 	CheckSumMismatch
+	CalSumFailed
 	InvalidKpmHomeInCurrentPkg
 	InvalidCmd
 	InvalidPkgRef
@@ -91,6 +92,7 @@ const (
 	PathIsEmpty
 	AddItselfAsDep
 	PkgTagExists
+	DependencyNotFound
 )
 
 // KpmEvent is the event used to show kpm logs to users.

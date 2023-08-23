@@ -98,6 +98,9 @@ func (kclPkg *KclPkg) Compile(kpmHome string, kclvmCompiler *runner.Compiler) (*
 
 	// Fill the dependency path.
 	for dName, dPath := range pkgMap {
+		if !filepath.IsAbs(dPath) {
+			dPath = filepath.Join(kclPkg.HomePath, dPath)
+		}
 		kclvmCompiler.AddDepPath(dName, dPath)
 	}
 
@@ -121,7 +124,7 @@ func (kclPkg *KclPkg) ResolveDeps(kpmHome string) (map[string]string, error) {
 
 	var pkgMap map[string]string = make(map[string]string)
 	for name, d := range kclPkg.Dependencies.Deps {
-		pkgMap[name] = d.LocalFullPath
+		pkgMap[name] = d.GetLocalFullPath(kclPkg.HomePath)
 	}
 
 	return pkgMap, nil
@@ -156,6 +159,15 @@ func (kclPkg *KclPkg) ResolveDepsMetadata(kpmHome string, update bool) error {
 			if utils.DirExists(searchFullPath) && check(d, searchFullPath) {
 				// Find it and update the local path of the dependency.
 				d.LocalFullPath = searchFullPath
+				kclPkg.Dependencies.Deps[name] = d
+			} else if d.isFromLocal() && !utils.DirExists(d.GetLocalFullPath(kclPkg.HomePath)) {
+				return reporter.NewErrorEvent(reporter.DependencyNotFound, fmt.Errorf("dependency '%s' not found in '%s'", d.Name, searchFullPath))
+			} else if d.isFromLocal() && utils.DirExists(d.GetLocalFullPath(kclPkg.HomePath)) {
+				sum, err := utils.HashDir(d.GetLocalFullPath(kclPkg.HomePath))
+				if err != nil {
+					return reporter.NewErrorEvent(reporter.CalSumFailed, err, fmt.Sprintf("failed to calculate checksum for '%s' in '%s'", d.Name, searchFullPath))
+				}
+				d.Sum = sum
 				kclPkg.Dependencies.Deps[name] = d
 			} else {
 				// Otherwise, re-vendor it.
@@ -539,9 +551,9 @@ func (kclPkg *KclPkg) VendorDeps(cachePath string) error {
 				if err != nil {
 					return errors.FailedToVendorDependency
 				}
-			} else if utils.DirExists(d.GetLocalFullPath()) && check(d, d.GetLocalFullPath()) {
+			} else if utils.DirExists(d.GetLocalFullPath(kclPkg.HomePath)) && check(d, d.GetLocalFullPath(kclPkg.HomePath)) {
 				// If there is, copy it into the 'vendor' directory.
-				err := copy.Copy(d.GetLocalFullPath(), vendorFullPath)
+				err := copy.Copy(d.GetLocalFullPath(kclPkg.HomePath), vendorFullPath)
 				if err != nil {
 					return errors.FailedToVendorDependency
 				}

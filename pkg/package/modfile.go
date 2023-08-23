@@ -101,9 +101,12 @@ type Dependency struct {
 }
 
 // GetLocalFullPath will get the local path of a dependency.
-func (dep *Dependency) GetLocalFullPath() string {
+func (dep *Dependency) GetLocalFullPath(rootpath string) string {
 	if dep.isFromLocal() {
-		return dep.Source.Local.Path
+		if filepath.IsAbs(dep.Source.Local.Path) {
+			return dep.Source.Local.Path
+		}
+		return filepath.Join(rootpath, dep.Source.Local.Path)
 	}
 	return dep.LocalFullPath
 }

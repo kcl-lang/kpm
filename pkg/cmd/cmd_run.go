@@ -52,13 +52,15 @@ func NewRunCmd() *cli.Command {
 				fmt.Println(compileResult)
 			} else {
 				// 'kpm run <package source>' compile the kcl package from the <package source>.
-				compileResult, err := api.RunTar(pkgWillBeCompiled, c.StringSlice(FLAG_INPUT), c.Bool(FLAG_VENDOR), c.String(FLAG_KCL))
-				if err == errors.InvalidKclPacakgeTar {
-					compileResult, err = api.RunOci(pkgWillBeCompiled, c.String(FLAG_TAG), c.StringSlice(FLAG_INPUT), c.Bool(FLAG_VENDOR), c.String(FLAG_KCL))
-					if err != nil {
-						return err
+				compileResult, err := api.RunPkgInPath(pkgWillBeCompiled, c.StringSlice(FLAG_INPUT), c.Bool(FLAG_VENDOR), c.String(FLAG_KCL))
+				if err == errors.FailedToLoadPackage {
+					compileResult, err = api.RunTar(pkgWillBeCompiled, c.StringSlice(FLAG_INPUT), c.Bool(FLAG_VENDOR), c.String(FLAG_KCL))
+					if err == errors.InvalidKclPacakgeTar {
+						compileResult, err = api.RunOci(pkgWillBeCompiled, c.String(FLAG_TAG), c.StringSlice(FLAG_INPUT), c.Bool(FLAG_VENDOR), c.String(FLAG_KCL))
 					}
-				} else if err != nil {
+				}
+
+				if err != nil {
 					return err
 				}
 				fmt.Println(compileResult)
