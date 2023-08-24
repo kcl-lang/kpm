@@ -36,18 +36,11 @@ func NewRunCmd() *cli.Command {
 				Usage: "run in vendor mode",
 			},
 
-			// '--kcl' will pass the arguments to kcl.
-			&cli.StringFlag{
-				Name:  FLAG_KCL,
-				Value: "",
-				Usage: "Arguments for kcl",
-			},
-
 			// KCL arg: --setting, -Y
 			&cli.StringSliceFlag{
 				Name:    FLAG_SETTING,
 				Aliases: []string{"Y"},
-				Usage:   "[Deprecated] Specify the input setting file",
+				Usage:   "Specify the input setting file",
 			},
 
 			// KCL arg: --argument, -D
