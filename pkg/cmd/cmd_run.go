@@ -40,35 +40,35 @@ func NewRunCmd() *cli.Command {
 			&cli.StringSliceFlag{
 				Name:    FLAG_SETTING,
 				Aliases: []string{"Y"},
-				Usage:   "Specify the input setting file",
+				Usage:   "specify the input setting file",
 			},
 
 			// KCL arg: --argument, -D
 			&cli.StringSliceFlag{
 				Name:    FLAG_ARGUMENT,
 				Aliases: []string{"D"},
-				Usage:   "Specify the top-level argument",
+				Usage:   "specify the top-level argument",
 			},
 
 			// KCL arg: --overrides, -O
 			&cli.StringSliceFlag{
 				Name:    FLAG_OVERRIDES,
 				Aliases: []string{"O"},
-				Usage:   "Specify the configuration override path and value",
+				Usage:   "specify the configuration override path and value",
 			},
 
 			// KCL arg: --disable_none, -n
 			&cli.BoolFlag{
 				Name:    FLAG_DISABLE_NONE,
 				Aliases: []string{"n"},
-				Usage:   "Disable dumping None values",
+				Usage:   "disable dumping None values",
 			},
 
 			// KCL arg: --sort_keys -k
 			&cli.BoolFlag{
 				Name:    FLAG_SORT_KEYS,
 				Aliases: []string{"k"},
-				Usage:   "Sort result keys",
+				Usage:   "sort result keys",
 			},
 		},
 		Action: func(c *cli.Context) error {
