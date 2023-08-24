@@ -59,7 +59,6 @@ func (profile *Profile) IntoKclOptions() *kcl.Option {
 	opts := kcl.NewOption()
 
 	for _, entry := range profile.Entries {
-		// Get the file extension
 		ext := filepath.Ext(entry)
 		if ext == ".yaml" {
 			opts.Merge(kcl.WithSettings(entry))

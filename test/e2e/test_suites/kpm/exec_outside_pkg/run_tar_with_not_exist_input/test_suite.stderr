@@ -1,1 +1,2 @@
-kpm: entry file cannot be found, please make sure the '--input' entry file can be found
+kpm: failed to compile the kcl package
+kpm: Cannot find the kcl file, please check the file path

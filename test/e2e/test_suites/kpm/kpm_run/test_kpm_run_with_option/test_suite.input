@@ -1,1 +1,1 @@
-kpm run --kcl_args "-D name1=Hello1 -D name2=Hello2"
+kpm run -D name1=Hello1 -D name2=Hello2

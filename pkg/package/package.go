@@ -104,9 +104,6 @@ func (kclPkg *KclPkg) Compile(kpmHome string, kclvmCompiler *runner.Compiler) (*
 		kclvmCompiler.AddDepPath(dName, dPath)
 	}
 
-	// Add kcl options from kcl.mod.
-	kclvmCompiler.AddKclOption(*kclPkg.GetKclOpts())
-
 	return kclvmCompiler.Run()
 }
 

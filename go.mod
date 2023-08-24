@@ -18,7 +18,6 @@ require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
 	github.com/acomagu/bufpipe v1.0.4 // indirect
-	github.com/alexflint/go-scalar v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chai2010/jsonv v1.1.3 // indirect
@@ -85,7 +84,6 @@ require (
 )
 
 require (
-	github.com/alexflint/go-arg v1.4.3
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/gofrs/flock v0.8.1

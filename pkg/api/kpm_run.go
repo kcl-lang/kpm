@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/oci"
@@ -16,7 +17,7 @@ import (
 )
 
 // RunTar will compile the kcl package from a kcl package tar.
-func RunTar(tarPath string, entryFiles []string, vendorMode bool, kclArgs string) (string, error) {
+func RunTar(tarPath string, opts *opt.CompileOptions) (string, error) {
 	absTarPath, err := absTarPath(tarPath)
 	if err != nil {
 		return "", err
@@ -30,12 +31,13 @@ func RunTar(tarPath string, entryFiles []string, vendorMode bool, kclArgs string
 		return "", err
 	}
 
+	opts.SetPkgPath(destDir)
 	// The directory after extracting the tar package is taken as the root directory of the package,
 	// and kclvm is called to compile the kcl program under the 'destDir'.
 	// e.g.
 	// if the tar path is 'xxx/xxx/xxx/test.tar',
 	// the 'xxx/xxx/xxx/test' will be taken as the root path of the kcl package to compile.
-	compileResult, compileErr := RunPkgInPath(destDir, entryFiles, vendorMode, kclArgs)
+	compileResult, compileErr := RunPkgInPath(opts)
 
 	if compileErr != nil {
 		return "", compileErr
@@ -46,7 +48,7 @@ func RunTar(tarPath string, entryFiles []string, vendorMode bool, kclArgs string
 const KCL_PKG_TAR = "*.tar"
 
 // RunOci will compile the kcl package from an OCI reference.
-func RunOci(ociRef, version string, entryFiles []string, vendorMode bool, kclArgs string) (string, error) {
+func RunOci(ociRef, version string, opts *opt.CompileOptions) (string, error) {
 	ociOpts, err := opt.ParseOciOptionFromString(ociRef, version)
 
 	if err != nil {
@@ -76,21 +78,22 @@ func RunOci(ociRef, version string, entryFiles []string, vendorMode bool, kclArg
 		return "", errors.FailedPull
 	}
 
-	return RunTar(matches[0], entryFiles, vendorMode, kclArgs)
+	return RunTar(matches[0], opts)
 }
 
 // RunPkg will compile current kcl package.
-func RunPkg(entryFiles []string, vendorMode bool, kclArgs string) (string, error) {
+func RunPkg(opts *opt.CompileOptions) (string, error) {
 
 	// If no tar packages specified by "--tar" to run
 	// kpm will take the current directory ($PWD) as the root of the kcl package and compile.
 	pwd, err := os.Getwd()
+	opts.SetPkgPath(pwd)
 
 	if err != nil {
 		reporter.ExitWithReport("kpm: internal bug: failed to load working directory")
 	}
 
-	compileResult, err := RunPkgInPath(pwd, entryFiles, vendorMode, kclArgs)
+	compileResult, err := RunPkgInPath(opts)
 	if err != nil {
 		return "", err
 	}
@@ -100,9 +103,9 @@ func RunPkg(entryFiles []string, vendorMode bool, kclArgs string) (string, error
 
 // RunPkgInPath will load the 'KclPkg' from path 'pkgPath'.
 // And run the kcl package with entry file in 'entryFilePath' in 'vendorMode'.
-func RunPkgInPath(pkgPath string, entryFilePaths []string, vendorMode bool, kclArgs string) (string, error) {
+func RunPkgInPath(opts *opt.CompileOptions) (string, error) {
 
-	pkgPath, err := filepath.Abs(pkgPath)
+	pkgPath, err := filepath.Abs(opts.PkgPath())
 	if err != nil {
 		return "", errors.InternalBug
 	}
@@ -112,7 +115,7 @@ func RunPkgInPath(pkgPath string, entryFilePaths []string, vendorMode bool, kclA
 		return "", errors.FailedToLoadPackage
 	}
 
-	kclPkg.SetVendorMode(vendorMode)
+	kclPkg.SetVendorMode(opts.IsVendor())
 
 	globalPkgPath, err := env.GetAbsPkgPath()
 	if err != nil {
@@ -124,20 +127,25 @@ func RunPkgInPath(pkgPath string, entryFilePaths []string, vendorMode bool, kclA
 		return "", err
 	}
 
-	// Calculate the absolute path of entry file described by '--input'.
-	compiler := runner.DefaultCompiler()
-	compiler.SetKclCliArgs(kclArgs)
-	for _, entryFilePath := range entryFilePaths {
-		entryFilePath, err = getAbsInputPath(pkgPath, entryFilePath)
-		if err != nil {
-			return "", err
+	if len(opts.Entries()) > 0 {
+		// add entry from '--input'
+		for _, entry := range opts.Entries() {
+			if filepath.IsAbs(entry) {
+				opts.Merge(kcl.WithKFilenames(entry))
+			} else {
+				opts.Merge(kcl.WithKFilenames(filepath.Join(opts.PkgPath(), entry)))
+			}
 		}
-		compiler.AddKFile(entryFilePath)
+		// add entry from 'kcl.mod'
+	} else if len(kclPkg.GetEntryKclFilesFromModFile()) > 0 {
+		opts.Merge(*kclPkg.GetKclOpts())
+	} else if !opts.HasSettingsYaml() {
+		// no entry
+		opts.Merge(kcl.WithKFilenames(opts.PkgPath()))
 	}
 
-	if len(entryFilePaths) == 0 && len(kclPkg.GetEntryKclFilesFromModFile()) == 0 {
-		compiler.AddKFile(kclPkg.HomePath)
-	}
+	// Calculate the absolute path of entry file described by '--input'.
+	compiler := runner.NewCompilerWithOpts(opts)
 
 	// Call the kcl compiler.
 	compileResult, err := kclPkg.Compile(
@@ -146,7 +154,7 @@ func RunPkgInPath(pkgPath string, entryFilePaths []string, vendorMode bool, kclA
 	)
 
 	if err != nil {
-		return "", err
+		return "", reporter.NewErrorEvent(reporter.CompileFailed, err, "failed to compile the kcl package")
 	}
 
 	return compileResult.GetRawYamlResult(), nil

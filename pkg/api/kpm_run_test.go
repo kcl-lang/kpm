@@ -1,12 +1,15 @@
 package api
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/errors"
+	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -58,7 +61,10 @@ func TestAbsTarPath(t *testing.T) {
 
 func TestRunPkgInPath(t *testing.T) {
 	pkgPath := getTestDir("test_run_pkg_in_path")
-	result, err := RunPkgInPath(filepath.Join(pkgPath, "test_kcl"), []string{"main.k"}, false, "")
+	opts := opt.DefaultCompileOptions()
+	opts.AddEntry(filepath.Join(pkgPath, "test_kcl", "main.k"))
+	opts.SetPkgPath(filepath.Join(pkgPath, "test_kcl"))
+	result, err := RunPkgInPath(opts)
 	assert.Equal(t, err, nil)
 	expected, _ := os.ReadFile(filepath.Join(pkgPath, "expected"))
 	assert.Equal(t, utils.RmNewline(string(result)), utils.RmNewline(string(expected)))
@@ -66,15 +72,20 @@ func TestRunPkgInPath(t *testing.T) {
 
 func TestRunPkgInPathInvalidPath(t *testing.T) {
 	pkgPath := getTestDir("test_run_pkg_in_path")
-	result, err := RunPkgInPath(filepath.Join(pkgPath, "test_kcl"), []string{"not_exist.k"}, false, "")
+	opts := opt.DefaultCompileOptions()
+	opts.AddEntry(filepath.Join(pkgPath, "test_kcl", "not_exist.k"))
+	opts.SetPkgPath(filepath.Join(pkgPath, "test_kcl"))
+	result, err := RunPkgInPath(opts)
 	assert.NotEqual(t, err, nil)
-	assert.Equal(t, err, errors.EntryFileNotFound)
+	assert.Equal(t, err.Error(), fmt.Sprintf("kpm: failed to compile the kcl package\nkpm: Cannot find the kcl file, please check the file path %s\n", filepath.Join(pkgPath, "test_kcl", "not_exist.k")))
 	assert.Equal(t, result, "")
 }
 
 func TestRunPkgInPathInvalidPkg(t *testing.T) {
 	pkgPath := getTestDir("test_run_pkg_in_path")
-	result, err := RunPkgInPath(filepath.Join(pkgPath, "invalid_pkg"), []string{"not_exist.k"}, false, "")
+	opts := opt.DefaultCompileOptions()
+	opts.Merge(kcl.WithKFilenames(filepath.Join(pkgPath, "invalid_pkg", "not_exist.k")))
+	result, err := RunPkgInPath(opts)
 	assert.NotEqual(t, err, nil)
 	assert.Equal(t, err, errors.FailedToLoadPackage)
 	assert.Equal(t, result, "")
@@ -91,7 +102,9 @@ func TestRunTar(t *testing.T) {
 	}
 
 	expectedResult, _ := os.ReadFile(expectPath)
-	gotResult, err := RunTar(tarPath, []string{""}, true, "")
+	opts := opt.DefaultCompileOptions()
+	opts.SetVendor(true)
+	gotResult, err := RunTar(tarPath, opts)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.RmNewline(string(expectedResult)), utils.RmNewline(gotResult))
 	assert.Equal(t, utils.DirExists(untarPath), true)
