@@ -22,7 +22,7 @@ func NewAddCmd() *cli.Command {
 	return &cli.Command{
 		Hidden: false,
 		Name:   "add",
-		Usage:  "add new dependancy",
+		Usage:  "add new dependency",
 		Flags: []cli.Flag{
 			&cli.StringSliceFlag{
 				Name:  "git",
