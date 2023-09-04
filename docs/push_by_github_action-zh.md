@@ -37,17 +37,9 @@
 
 ### 2. 为您的仓库设置 OCI Registry，账户和密码
 
-#### 2.1 通过 GitHub action variables 设置您的 OCI Registry，账户
-
-[为 Github 仓库设置 Variables](https://docs.github.com/zh/actions/learn-github-actions/variables#creating-configuration-variables-for-a-repository)
-
-以 docker.io 为例，您可以为您的仓库设置两个 Variables `REG` 和 `REG_ACCOUNT`。`REG` 的值为 `docker.io`，`REG_ACCOUNT` 的值为您的 docker.io 账户。
-
-#### 2.2 通过 GitHub action secrets 设置您的 OCI Registry 密码
+以 docker.io 为例，您可以为您的仓库设置 secrets `REG`, `REG_ACCOUNT` 和 `REG_TOKEN`。`REG` 的值为 `docker.io`，`REG_ACCOUNT` 的值为您的 docker.io 账户, `REG_TOKEN` 为您的 `docker.io` 登录密码。
 
 [为仓库添加 secrets](https://docs.github.com/zh/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository)
-
-以 `docker.io` 为例，您可以将您的 `docker.io` 登录密码设置为名为 `REG_TOKEN` 的 secrets 。
 
 如果您使用 `ghcr.io` 作为 `Registry`, 您需要使用 GitHub token 作为 secrets。
 
@@ -84,12 +76,12 @@ jobs:
       - name: Login and Push
         env:
           # 通过环境变量指定 OCI Registry 和账户
-          KPM_REG: ${{ vars.REG }}
-          KPM_REPO: ${{ vars.REG_ACCOUNT }}
+          KPM_REG: ${{ secrets.REG }}
+          KPM_REPO: ${{ secrets.REG_ACCOUNT }}
           # kpm login 时使用 secrets.REG_TOKEN 
-        run: kpm login -u ${{ vars.REG_ACCOUNT }} -p ${{ secrets.REG_TOKEN }} ${{ vars.REG }} && kpm push
+        run: kpm login -u ${{ secrets.REG_ACCOUNT }} -p ${{ secrets.REG_TOKEN }} ${{ secrets.REG }} && kpm push
 
       - name: Run kpm project from oci registry
-        run: kpm run oci://${{ vars.REG }}/${{ vars.REG_ACCOUNT }}/catalog --tag 0.0.1
+        run: kpm run oci://${{ secrets.REG }}/${{ secrets.REG_ACCOUNT }}/catalog --tag 0.0.1
 
 ```

@@ -35,20 +35,13 @@ In this repository, add your KCL program, take the repository https://github.com
 
 ### 2. Set OCI Registry, account and password for your Github repository
 
-#### 2.1 Set OCI Registry and account through GitHub action variables
+Take docker.io as an example, you can set secrets `REG`, `REG_ACCOUNT` and `REG_TOKEN` for your repository. The value of `REG` is `docker.io`, the value of `REG_ACCOUNT` is your `docker.io` account, and the value of `REG_TOKEN` is your `docker.io` login password.
 
-[Set Variables for Github repository](https://docs.github.com/en/actions/learn-github-actions/variables#creating-configuration-variables-for-a-repository)
-
-Take `docker.io` as an example, you can set two Variables `REG` and `REG_ACCOUNT` for your repository. The value of `REG` is `docker.io`, and the value of `REG_ACCOUNT` is your docker.io account.
-
-#### 2.2 Set your OCI Registry password through GitHub action secrets
-[Add secrets for repository](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository)
-
-Take `docker.io` as an example, you can set your `docker.io` login password as a secrets named `REG_TOKEN`.
+[Add secrets to the repository](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository)
 
 If you use `ghcr.io` as `Registry`, you need to use GitHub token as secrets.
 
-[Create a GitHub Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
+[Create a GitHub Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#personal-access-tokens-classic)
 
 ## Step 4: Add your KCL package to the repository and write github action workflow
 
@@ -79,11 +72,11 @@ jobs:
 
       - name: Login and Push
         env:
-          KPM_REG: ${{ vars.REG }}
-          KPM_REPO: ${{ vars.REG_ACCOUNT }}
-        run: kpm login -u ${{ vars.REG_ACCOUNT }} -p ${{ secrets.REG_TOKEN }} ${{ vars.REG }} && kpm push
+          KPM_REG: ${{ secrets.REG }}
+          KPM_REPO: ${{ secrets.REG_ACCOUNT }}
+        run: kpm login -u ${{ secrets.REG_ACCOUNT }} -p ${{ secrets.REG_TOKEN }} ${{ secrets.REG }} && kpm push
 
       - name: Run kpm project from oci registry
-        run: kpm run oci://${{ vars.REG }}/${{ vars.REG_ACCOUNT }}/catalog --tag 0.0.1
+        run: kpm run oci://${{ secrets.REG }}/${{ secrets.REG_ACCOUNT }}/catalog --tag 0.0.1
 
 ```
