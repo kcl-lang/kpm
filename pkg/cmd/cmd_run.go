@@ -8,8 +8,8 @@ import (
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/api"
-	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/opt"
+	"kcl-lang.io/kpm/pkg/runner"
 )
 
 // NewRunCmd new a Command for `kpm run`.
@@ -79,29 +79,44 @@ func NewRunCmd() *cli.Command {
 
 func KpmRun(c *cli.Context) error {
 	kclOpts := CompileOptionFromCli(c)
-	pkgWillBeCompiled := c.Args().First()
+	runEntry, errEvent := runner.FindRunEntryFrom(c.Args().Slice())
+	if errEvent != nil {
+		return errEvent
+	}
+
 	// 'kpm run' compile the current package undor '$pwd'.
-	if len(pkgWillBeCompiled) == 0 {
-		compileResult, err := api.RunPkg(kclOpts)
+	if runEntry.IsEmpty() {
+		compileResult, err := api.RunCurrentPkg(kclOpts)
 		if err != nil {
 			return err
 		}
-		fmt.Println(compileResult)
+		fmt.Println(compileResult.GetRawYamlResult())
 	} else {
-		// 'kpm run <package source>' compile the kcl package from the <package source>.
-		kclOpts.SetPkgPath(pkgWillBeCompiled)
-		compileResult, err := api.RunPkgInPath(kclOpts)
-		if err == errors.FailedToLoadPackage {
-			compileResult, err = api.RunTar(pkgWillBeCompiled, kclOpts)
-			if err == errors.InvalidKclPacakgeTar {
-				compileResult, err = api.RunOci(pkgWillBeCompiled, c.String(FLAG_TAG), kclOpts)
+		var compileResult *kcl.KCLResultList
+		var err error
+		// 'kpm run' compile the package from the local file system.
+		if runEntry.IsLocalFile() {
+			kclOpts.SetPkgPath(runEntry.PackageSource())
+			kclOpts.ExtendEntries(runEntry.EntryFiles())
+			if runEntry.IsFakePackage() {
+				// If there is only kcl file without kcl package,
+				compileResult, err = api.CompileWithOpts(kclOpts)
+			} else {
+				// Else compile the kcl pacakge.
+				compileResult, err = api.RunPkgWithOpt(kclOpts)
 			}
+		} else if runEntry.IsTar() {
+			// 'kpm run' compile the package from the kcl pakcage tar.
+			compileResult, err = api.RunTarPkg(runEntry.PackageSource(), kclOpts)
+		} else {
+			// 'kpm run' compile the package from the OCI reference or url.
+			compileResult, err = api.RunOciPkg(runEntry.PackageSource(), c.String(FLAG_TAG), kclOpts)
 		}
 
 		if err != nil {
 			return err
 		}
-		fmt.Println(compileResult)
+		fmt.Println(compileResult.GetRawYamlResult())
 	}
 	return nil
 }

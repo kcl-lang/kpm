@@ -8,13 +8,16 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
 	goerrors "errors"
 
+	"github.com/docker/distribution/reference"
 	"github.com/moby/term"
+	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/reporter"
 )
@@ -223,9 +226,10 @@ func UnTarDir(tarPath string, destDir string) error {
 	return nil
 }
 
+// DirExists will check whether the directory 'path' exists.
 func DirExists(path string) bool {
 	_, err := os.Stat(path)
-	return !os.IsNotExist(err)
+	return err == nil
 }
 
 // DefaultKpmHome create the '.kpm' in the user home and return the path of ".kpm".
@@ -367,4 +371,26 @@ func JoinPath(base, elem string) string {
 	base = strings.TrimSuffix(base, "/")
 	elem = strings.TrimPrefix(elem, "/")
 	return base + "/" + elem
+}
+
+// IsUrl will check whether the string 'str' is a url.
+func IsURL(str string) bool {
+	u, err := url.Parse(str)
+	return err == nil && u.Scheme != "" && u.Host != ""
+}
+
+// IsRef will check whether the string 'str' is a reference.
+func IsRef(str string) bool {
+	_, err := reference.ParseNormalizedNamed(str)
+	return err == nil
+}
+
+// IsTar will check whether the string 'str' is a tar path.
+func IsTar(str string) bool {
+	return strings.HasSuffix(str, constants.TarPathSuffix)
+}
+
+// IsKfile will check whether the string 'str' is a k file path.
+func IsKfile(str string) bool {
+	return strings.HasSuffix(str, constants.KFilePathSuffix)
 }

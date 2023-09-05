@@ -1,1 +1,1 @@
-kpm: failed to select latest version from 'localhost:5001/exist_but_not_tar'.
+kpm: invalid file path 'exist_but_not_tar'

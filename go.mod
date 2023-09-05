@@ -87,6 +87,7 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/go-git/go-git/v5 v5.6.1
 	github.com/gofrs/flock v0.8.1
+	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/hashicorp/go-version v1.6.0
 	github.com/moby/term v0.0.0-20221205130635-1aeaba878587
 	github.com/onsi/ginkgo/v2 v2.9.2

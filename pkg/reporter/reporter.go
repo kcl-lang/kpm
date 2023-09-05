@@ -93,6 +93,7 @@ const (
 	AddItselfAsDep
 	PkgTagExists
 	DependencyNotFound
+	KclModNotFound
 	CompileFailed
 )
 
