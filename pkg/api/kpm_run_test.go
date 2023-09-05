@@ -113,3 +113,12 @@ func TestRunTar(t *testing.T) {
 		os.RemoveAll(untarPath)
 	}
 }
+
+func TestRunWithWorkdir(t *testing.T) {
+	pkgPath := getTestDir(filepath.Join("test_work_dir", "dev"))
+	opts := opt.DefaultCompileOptions()
+	opts.SetPkgPath(pkgPath)
+	result, err := RunPkgInPath(opts)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, result, "base: base\nmain: main")
+}
