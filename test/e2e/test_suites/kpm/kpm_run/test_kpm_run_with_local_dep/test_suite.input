@@ -1,1 +1,1 @@
-kpm run ./kcl1
+kpm run <workspace>/kcl1

@@ -143,6 +143,8 @@ func RunPkgInPath(opts *opt.CompileOptions) (string, error) {
 		// no entry
 		opts.Merge(kcl.WithKFilenames(opts.PkgPath()))
 	}
+	// set the 'kcl.mod' path as the work dir.
+	opts.Merge(kcl.WithWorkDir(opts.PkgPath()))
 
 	// Calculate the absolute path of entry file described by '--input'.
 	compiler := runner.NewCompilerWithOpts(opts)
