@@ -122,3 +122,42 @@ func TestRunWithWorkdir(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, result, "base: base\nmain: main")
 }
+
+func TestRunWithOpts(t *testing.T) {
+	pkgPath := getTestDir("test_run_pkg_in_path")
+	opts := opt.DefaultCompileOptions()
+	opts.AddEntry(filepath.Join(pkgPath, "test_kcl", "main.k"))
+	opts.SetPkgPath(filepath.Join(pkgPath, "test_kcl"))
+	result, err := RunPkgWithOpt(opts)
+	assert.Equal(t, err, nil)
+	expected, _ := os.ReadFile(filepath.Join(pkgPath, "expected"))
+	assert.Equal(t, utils.RmNewline(string(result.GetRawYamlResult())), utils.RmNewline(string(expected)))
+	expectedJson, _ := os.ReadFile(filepath.Join(pkgPath, "expected.json"))
+	assert.Equal(t, utils.RmNewline(string(result.GetRawJsonResult())), utils.RmNewline(string(expectedJson)))
+}
+
+func TestRunTarPkg(t *testing.T) {
+	pkgPath := getTestDir("test_run_tar_in_path")
+	tarPath, _ := filepath.Abs(filepath.Join(pkgPath, "test.tar"))
+	untarPath := filepath.Join(pkgPath, "test")
+	expectPath := filepath.Join(pkgPath, "expected")
+	expectPathJson := filepath.Join(pkgPath, "expected.json")
+
+	if utils.DirExists(untarPath) {
+		os.RemoveAll(untarPath)
+	}
+
+	expectedResult, _ := os.ReadFile(expectPath)
+	expectedResultJson, _ := os.ReadFile(expectPathJson)
+	opts := opt.DefaultCompileOptions()
+	opts.SetVendor(true)
+	gotResult, err := RunTarPkg(tarPath, opts)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, utils.RmNewline(string(expectedResult)), utils.RmNewline(gotResult.GetRawYamlResult()))
+	assert.Equal(t, utils.RmNewline(string(expectedResultJson)), utils.RmNewline(gotResult.GetRawJsonResult()))
+	assert.Equal(t, utils.DirExists(untarPath), true)
+
+	if utils.DirExists(untarPath) {
+		os.RemoveAll(untarPath)
+	}
+}
