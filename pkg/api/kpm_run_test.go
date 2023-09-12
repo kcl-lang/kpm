@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"kcl-lang.io/kcl-go/pkg/kcl"
-	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/utils"
 )
@@ -84,10 +83,11 @@ func TestRunPkgInPathInvalidPath(t *testing.T) {
 func TestRunPkgInPathInvalidPkg(t *testing.T) {
 	pkgPath := getTestDir("test_run_pkg_in_path")
 	opts := opt.DefaultCompileOptions()
+	opts.SetPkgPath(pkgPath)
 	opts.Merge(kcl.WithKFilenames(filepath.Join(pkgPath, "invalid_pkg", "not_exist.k")))
 	result, err := RunPkgInPath(opts)
 	assert.NotEqual(t, err, nil)
-	assert.Equal(t, err, errors.FailedToLoadPackage)
+	assert.Equal(t, err.Error(), fmt.Sprintf("kpm: failed to load package, please check the package path '%s' is valid", pkgPath))
 	assert.Equal(t, result, "")
 }
 

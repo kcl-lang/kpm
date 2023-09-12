@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -66,6 +67,24 @@ func RunPkgInPath(opts *opt.CompileOptions) (string, error) {
 	return compileResult.GetRawYamlResult(), nil
 }
 
+// CompileWithOpts will compile the kcl program without kcl package.
+func RunWithOpt(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
+	if len(opts.Entries()) > 0 {
+		for _, entry := range opts.Entries() {
+			if filepath.IsAbs(entry) {
+				opts.Merge(kcl.WithKFilenames(entry))
+			} else {
+				opts.Merge(kcl.WithKFilenames(filepath.Join(opts.PkgPath(), entry)))
+			}
+		}
+	} else {
+		// no entry
+		opts.Merge(kcl.WithKFilenames(opts.PkgPath()))
+	}
+	opts.Merge(kcl.WithWorkDir(opts.PkgPath()))
+	return kcl.RunWithOpts(*opts.Option)
+}
+
 // absTarPath checks whether path 'tarPath' exists and whether path 'tarPath' ends with '.tar'
 // And after checking, absTarPath return the abs path for 'tarPath'.
 func absTarPath(tarPath string) (string, error) {
@@ -110,7 +129,7 @@ func RunPkgWithOpt(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 
 	kclPkg, err := pkg.LoadKclPkg(pkgPath)
 	if err != nil {
-		return nil, errors.FailedToLoadPackage
+		return nil, fmt.Errorf("kpm: failed to load package, please check the package path '%s' is valid", pkgPath)
 	}
 
 	kclPkg.SetVendorMode(opts.IsVendor())

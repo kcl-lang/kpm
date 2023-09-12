@@ -1,0 +1,2 @@
+kpm: only allows one package to be compiled at a time
+kpm: cannot compile multiple packages [<workspace>/test_kpm_run_with_multi_kfile_1 <workspace>/test_kpm_run_with_multi_kfile_1/sub] at the same time

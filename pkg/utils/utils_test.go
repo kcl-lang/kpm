@@ -130,3 +130,28 @@ func TestJoinPath(t *testing.T) {
 	assert.Equal(t, JoinPath("base/", ""), "base/")
 	assert.Equal(t, JoinPath("base", ""), "base/")
 }
+
+func TestIsUrl(t *testing.T) {
+	assert.Equal(t, IsURL("invalid url"), false)
+	assert.Equal(t, IsURL("https://url/xxx"), true)
+	assert.Equal(t, IsURL("https://url"), true)
+	assert.Equal(t, IsURL("https://"), false)
+}
+
+func TestIsRef(t *testing.T) {
+	assert.Equal(t, IsRef("invalid ref"), false)
+	assert.Equal(t, IsRef("ghcr.io/xxx/xxx"), true)
+	assert.Equal(t, IsRef("ghcr.io/xxx"), true)
+	assert.Equal(t, IsRef("ghcr.io/xxx:0.0.1"), true)
+	assert.Equal(t, IsRef("ghcr.io/"), false)
+}
+
+func TestIsTar(t *testing.T) {
+	assert.Equal(t, IsTar("invalid tar"), false)
+	assert.Equal(t, IsTar("xxx.tar"), true)
+}
+
+func TestIsKfile(t *testing.T) {
+	assert.Equal(t, IsKfile("invalid kfile"), false)
+	assert.Equal(t, IsKfile("xxx.k"), true)
+}
