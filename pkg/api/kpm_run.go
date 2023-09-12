@@ -68,7 +68,7 @@ func RunPkgInPath(opts *opt.CompileOptions) (string, error) {
 }
 
 // CompileWithOpts will compile the kcl program without kcl package.
-func CompileWithOpts(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
+func RunWithOpt(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 	if len(opts.Entries()) > 0 {
 		for _, entry := range opts.Entries() {
 			if filepath.IsAbs(entry) {

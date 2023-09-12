@@ -13,6 +13,15 @@ import (
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
+// EntryKind is the kind of the entry.
+// Including:
+// 1. WithKclMod: local file which can find 'kcl.mod' in the parent dir of the file.
+// 2. WithoutKclMod: local file which can find 'kcl.mod' in the parent dir of the file.
+// 3. TarEntry: kcl package tar file.
+// 4. UrlEntry: kcl package url.
+// 5. RefEntry: kcl package ref.
+type EntryKind string
+
 // Entry is the entry of 'kpm run'.
 type Entry struct {
 	// The package source of the entry, filepath, tar path, url or ref.
@@ -20,20 +29,22 @@ type Entry struct {
 	// The start files for one compilation.
 	entryFiles []string
 	// The kind of the entry, file, tar, url or ref.
-	kind string
-	// If the entry is a fake package,
-	// which means the entry only contains kcl files without kcl.mod.
-	isFakePackage bool
+	kind EntryKind
 }
 
 // SetKind will set the kind of the entry.
-func (e *Entry) SetKind(kind string) {
+func (e *Entry) SetKind(kind EntryKind) {
 	e.kind = kind
 }
 
 // Kind will return the kind of the entry.
-func (e *Entry) Kind() string {
+func (e *Entry) Kind() EntryKind {
 	return e.kind
+}
+
+// IsLocalFileWithKclMod will return true if the entry is a local file with 'kcl.mod'.
+func (e *Entry) IsLocalFileWithKclMod() bool {
+	return e.kind == constants.FileWithKclModEntry
 }
 
 // IsLocalFile will return true if the entry is a local file.
@@ -76,16 +87,6 @@ func (e *Entry) SetPackageSource(packageSource string) {
 	e.packageSource = packageSource
 }
 
-// SetIsFakePackage will set the 'isFakePackage' flag.
-func (e *Entry) SetIsFakePackage(isFakePackage bool) {
-	e.isFakePackage = isFakePackage
-}
-
-// IsFakePackage will return the 'isFakePackage' flag.
-func (e *Entry) IsFakePackage() bool {
-	return e.isFakePackage
-}
-
 // AddEntryFile will add a entry file to the entry.
 func (e *Entry) AddEntryFile(entrySource string) {
 	e.entryFiles = append(e.entryFiles, entrySource)
@@ -118,8 +119,11 @@ func FindRunEntryFrom(sources []string) (*Entry, *reporter.KpmEvent) {
 			}
 			entry.SetPackageSource(modPath)
 			entry.AddEntryFile(source)
-			entry.SetKind(constants.FileEntry)
-			entry.SetIsFakePackage(!utils.DirExists(filepath.Join(modPath, constants.KCL_MOD)))
+			if !utils.DirExists(filepath.Join(modPath, constants.KCL_MOD)) {
+				entry.SetKind(constants.FileEntry)
+			} else {
+				entry.SetKind(constants.FileWithKclModEntry)
+			}
 			absModPath, bugerr := filepath.Abs(modPath)
 			if bugerr != nil {
 				return nil, reporter.NewErrorEvent(reporter.Bug, bugerr, errors.InternalBug.Error())
@@ -157,7 +161,7 @@ func FindRunEntryFrom(sources []string) (*Entry, *reporter.KpmEvent) {
 }
 
 // GetSourceKindFrom will return the kind of the source.
-func GetSourceKindFrom(source string) string {
+func GetSourceKindFrom(source string) EntryKind {
 	if utils.DirExists(source) && !utils.IsTar(source) {
 		return constants.FileEntry
 	} else if utils.IsTar(source) {

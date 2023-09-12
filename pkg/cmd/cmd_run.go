@@ -95,12 +95,12 @@ func KpmRun(c *cli.Context) error {
 		var compileResult *kcl.KCLResultList
 		var err error
 		// 'kpm run' compile the package from the local file system.
-		if runEntry.IsLocalFile() {
+		if runEntry.IsLocalFile() || runEntry.IsLocalFileWithKclMod() {
 			kclOpts.SetPkgPath(runEntry.PackageSource())
 			kclOpts.ExtendEntries(runEntry.EntryFiles())
-			if runEntry.IsFakePackage() {
+			if runEntry.IsLocalFile() {
 				// If there is only kcl file without kcl package,
-				compileResult, err = api.CompileWithOpts(kclOpts)
+				compileResult, err = api.RunWithOpt(kclOpts)
 			} else {
 				// Else compile the kcl pacakge.
 				compileResult, err = api.RunPkgWithOpt(kclOpts)

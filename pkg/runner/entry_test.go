@@ -41,11 +41,11 @@ func TestFindModRootFrom(t *testing.T) {
 }
 
 func TestGetSourceKindFrom(t *testing.T) {
-	assert.Equal(t, GetSourceKindFrom("./testdata_external/external/main.k"), constants.FileEntry)
-	assert.Equal(t, GetSourceKindFrom("main.tar"), constants.TarEntry)
-	assert.Equal(t, GetSourceKindFrom("oci://test_url"), constants.UrlEntry)
-	assert.Equal(t, GetSourceKindFrom("test_ref:0.0.1"), constants.RefEntry)
-	assert.Equal(t, GetSourceKindFrom("invalid input"), "")
+	assert.Equal(t, string(GetSourceKindFrom("./testdata_external/external/main.k")), constants.FileEntry)
+	assert.Equal(t, string(GetSourceKindFrom("main.tar")), constants.TarEntry)
+	assert.Equal(t, string(GetSourceKindFrom("oci://test_url")), constants.UrlEntry)
+	assert.Equal(t, string(GetSourceKindFrom("test_ref:0.0.1")), constants.RefEntry)
+	assert.Equal(t, string(GetSourceKindFrom("invalid input")), "")
 }
 
 func TestFindRunEntryFrom(t *testing.T) {
