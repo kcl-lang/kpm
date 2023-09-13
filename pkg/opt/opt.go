@@ -18,7 +18,6 @@ import (
 type CompileOptions struct {
 	isVendor        bool
 	hasSettingsYaml bool
-	pkgPath         string
 	entries         []string
 	*kcl.Option
 }
@@ -67,12 +66,12 @@ func (opts *CompileOptions) IsVendor() bool {
 
 // PkgPath will return the home path for a kcl package during compilation
 func (opts *CompileOptions) PkgPath() string {
-	return opts.pkgPath
+	return opts.WorkDir
 }
 
 // SetPkgPath will set the home path for a kcl package during compilation
 func (opts *CompileOptions) SetPkgPath(pkgPath string) {
-	opts.pkgPath = pkgPath
+	opts.Merge(kcl.WithWorkDir(pkgPath))
 }
 
 // Input options of 'kpm init'.

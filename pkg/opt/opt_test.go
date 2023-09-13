@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"kcl-lang.io/kcl-go/pkg/kcl"
 )
 
 func TestParseOciOptionFromString(t *testing.T) {
@@ -32,4 +33,11 @@ func TestParseOciOptionFromString(t *testing.T) {
 	assert.Equal(t, ociOption.Reg, "test_reg")
 	assert.Equal(t, ociOption.Repo, "/test_oci_repo")
 	assert.Equal(t, ociOption.Tag, "test_tag")
+}
+
+func TestWorkDirAsPkgPath(t *testing.T) {
+	opts := DefaultCompileOptions()
+	assert.Equal(t, opts.PkgPath(), "")
+	opts.Merge(kcl.WithWorkDir("test_work_dir"))
+	assert.Equal(t, opts.PkgPath(), "test_work_dir")
 }
