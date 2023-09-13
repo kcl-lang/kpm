@@ -4,12 +4,13 @@ go 1.19
 
 require (
 	github.com/BurntSushi/toml v1.2.1
+	github.com/docker/distribution v2.8.1+incompatible
 	github.com/opencontainers/image-spec v1.1.0-rc2.0.20221005185240-3a7f492d3f1b
 	github.com/otiai10/copy v1.9.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/urfave/cli/v2 v2.25.0
 	gotest.tools/v3 v3.4.0
-	kcl-lang.io/kcl-go v0.5.6
+	kcl-lang.io/kcl-go v0.6.0-alpha.1
 )
 
 require (
@@ -27,7 +28,6 @@ require (
 	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/cli v23.0.1+incompatible // indirect
-	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v23.0.1+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.7.0 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
@@ -80,7 +80,7 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	kcl-lang.io/kcl-artifact-go v0.5.7 // indirect
+	kcl-lang.io/kcl-artifact-go v0.6.0-alpha.1 // indirect
 )
 
 require (
