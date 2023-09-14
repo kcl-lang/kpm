@@ -80,7 +80,9 @@ const (
 	PullingStarted
 	PullingFinished
 	Pulling
+	InvalidFlag
 	Adding
+	WaitingLock
 	IsNotUrl
 	IsNotRef
 	UrlSchemeNotOci

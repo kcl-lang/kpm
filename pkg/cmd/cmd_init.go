@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/urfave/cli/v2"
+	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
@@ -14,7 +15,7 @@ import (
 )
 
 // NewInitCmd new a Command for `kpm init`.
-func NewInitCmd() *cli.Command {
+func NewInitCmd(kpmcli *client.KpmClient) *cli.Command {
 	return &cli.Command{
 		Hidden: false,
 		Name:   "init",
@@ -66,8 +67,7 @@ func NewInitCmd() *cli.Command {
 				return err
 			}
 
-			err = kclPkg.InitEmptyPkg()
-
+			err = kpmcli.InitEmptyPkg(&kclPkg)
 			if err == nil {
 				reporter.Report("kpm: package '", pkgName, "' init finished")
 			} else {

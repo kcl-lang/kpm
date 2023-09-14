@@ -7,7 +7,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"kcl-lang.io/kpm/pkg/opt"
-	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -153,82 +152,4 @@ func TestGetFilePath(t *testing.T) {
 	}
 	assert.Equal(t, mfile.GetModFilePath(), filepath.Join(testPath, MOD_FILE))
 	assert.Equal(t, mfile.GetModLockFilePath(), filepath.Join(testPath, MOD_LOCK_FILE))
-}
-
-// TestDownloadGit test download from oci registry.
-func TestDownloadOci(t *testing.T) {
-	testPath := filepath.Join(getTestDir("download"), "k8s_1.27")
-	err := os.MkdirAll(testPath, 0755)
-	assert.Equal(t, err, nil)
-
-	urlpath := utils.JoinPath(settings.DEFAULT_REPO, "k8s")
-
-	depFromOci := Dependency{
-		Name:    "k8s",
-		Version: "1.27",
-		Source: Source{
-			Oci: &Oci{
-				Reg:  settings.DEFAULT_REGISTRY,
-				Repo: urlpath,
-				Tag:  "1.27",
-			},
-		},
-	}
-
-	dep, err := depFromOci.Download(testPath)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, dep.Name, "k8s")
-	assert.Equal(t, dep.FullName, "k8s_1.27")
-	assert.Equal(t, dep.Version, "1.27")
-	assert.Equal(t, dep.Sum, "xnYM1FWHAy3m+KcQMQb2rjZouTxumqYt6FGZpu2T4yM=")
-	assert.NotEqual(t, dep.Source.Oci, nil)
-	assert.Equal(t, dep.Source.Oci.Reg, settings.DEFAULT_REGISTRY)
-	assert.Equal(t, dep.Source.Oci.Repo, urlpath)
-	assert.Equal(t, dep.Source.Oci.Tag, "1.27")
-	assert.Equal(t, dep.LocalFullPath, testPath)
-
-	// Check whether the tar downloaded by `kpm add` has been deleted.
-	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "k8s_1.27.tar")), false)
-
-	err = os.RemoveAll(getTestDir("download"))
-	assert.Equal(t, err, nil)
-}
-
-// TestDownloadLatestOci tests the case that the version is empty.
-func TestDownloadLatestOci(t *testing.T) {
-	testPath := filepath.Join(getTestDir("download"), "a_random_name")
-	err := os.MkdirAll(testPath, 0755)
-	assert.Equal(t, err, nil)
-
-	urlpath := utils.JoinPath(settings.DEFAULT_REPO, "k8s")
-
-	depFromOci := Dependency{
-		Name:    "k8s",
-		Version: "",
-		Source: Source{
-			Oci: &Oci{
-				Reg:  settings.DEFAULT_REGISTRY,
-				Repo: urlpath,
-				Tag:  "",
-			},
-		},
-	}
-
-	dep, err := depFromOci.Download(testPath)
-	assert.Equal(t, dep.Name, "k8s")
-	assert.Equal(t, dep.FullName, "k8s_1.27")
-	assert.Equal(t, dep.Version, "1.27")
-	assert.Equal(t, dep.Sum, "xnYM1FWHAy3m+KcQMQb2rjZouTxumqYt6FGZpu2T4yM=")
-	assert.NotEqual(t, dep.Source.Oci, nil)
-	assert.Equal(t, dep.Source.Oci.Reg, settings.DEFAULT_REGISTRY)
-	assert.Equal(t, dep.Source.Oci.Repo, urlpath)
-	assert.Equal(t, dep.Source.Oci.Tag, "1.27")
-	assert.Equal(t, dep.LocalFullPath, testPath+"1.27")
-	assert.Equal(t, err, nil)
-
-	// Check whether the tar downloaded by `kpm add` has been deleted.
-	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "k8s_1.27.tar")), false)
-
-	err = os.RemoveAll(getTestDir("download"))
-	assert.Equal(t, err, nil)
 }

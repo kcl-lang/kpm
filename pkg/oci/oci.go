@@ -3,6 +3,7 @@ package oci
 import (
 	"context"
 	"fmt"
+	"io"
 	"path/filepath"
 
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
@@ -72,14 +73,23 @@ func Logout(hostname string, setting *settings.Settings) error {
 
 // OciClient is mainly responsible for interacting with OCI registry
 type OciClient struct {
-	repo *remote.Repository
-	ctx  *context.Context
+	repo      *remote.Repository
+	ctx       *context.Context
+	logWriter io.Writer
+}
+
+func (ociClient *OciClient) SetLogWriter(writer io.Writer) {
+	ociClient.logWriter = writer
+}
+
+func (ociClient *OciClient) GetReference() string {
+	return ociClient.repo.Reference.String()
 }
 
 // NewOciClient will new an OciClient.
 // regName is the registry. e.g. ghcr.io or docker.io.
 // repoName is the repo name on registry.
-func NewOciClient(regName, repoName string) (*OciClient, *reporter.KpmEvent) {
+func NewOciClient(regName, repoName string, settings *settings.Settings) (*OciClient, error) {
 	repoPath := utils.JoinPath(regName, repoName)
 	repo, err := remote.NewRepository(repoPath)
 
@@ -91,11 +101,6 @@ func NewOciClient(regName, repoName string) (*OciClient, *reporter.KpmEvent) {
 		)
 	}
 	ctx := context.Background()
-
-	settings := settings.GetSettings()
-	if err != nil {
-		return nil, settings.ErrorEvent
-	}
 	repo.PlainHTTP = settings.DefaultOciPlainHttp()
 
 	// Login
@@ -120,7 +125,7 @@ func NewOciClient(regName, repoName string) (*OciClient, *reporter.KpmEvent) {
 }
 
 // Pull will pull the oci artifacts from oci registry to local path.
-func (ociClient *OciClient) Pull(localPath, tag string) *reporter.KpmEvent {
+func (ociClient *OciClient) Pull(localPath, tag string) error {
 	// Create a file store
 	fs, err := file.New(localPath)
 	if err != nil {
@@ -142,7 +147,7 @@ func (ociClient *OciClient) Pull(localPath, tag string) *reporter.KpmEvent {
 }
 
 // TheLatestTag will return the latest tag of the kcl packages.
-func (ociClient *OciClient) TheLatestTag() (string, *reporter.KpmEvent) {
+func (ociClient *OciClient) TheLatestTag() (string, error) {
 	var tagSelected string
 
 	err := ociClient.repo.Tags(*ociClient.ctx, "", func(tags []string) error {
@@ -224,18 +229,18 @@ func (ociClient *OciClient) Push(localPath, tag string) *reporter.KpmEvent {
 		PackImageManifest: true,
 	})
 	if err != nil {
-		return reporter.NewErrorEvent(reporter.FailedPush, err, fmt.Sprintf("Failed to pack package in '%s'", localPath))
+		return reporter.NewErrorEvent(reporter.FailedPush, err, fmt.Sprintf("failed to pack package in '%s'", localPath))
 	}
 
 	if err = fs.Tag(*ociClient.ctx, manifestDescriptor, tag); err != nil {
-		return reporter.NewErrorEvent(reporter.FailedPush, err, fmt.Sprintf("Failed to tag package with tag '%s'", tag))
+		return reporter.NewErrorEvent(reporter.FailedPush, err, fmt.Sprintf("failed to tag package with tag '%s'", tag))
 	}
 
 	// 3. Copy from the file store to the remote repository
 	desc, err := oras.Copy(*ociClient.ctx, fs, tag, ociClient.repo, tag, oras.DefaultCopyOptions)
 
 	if err != nil {
-		return reporter.NewErrorEvent(reporter.FailedPush, err, fmt.Sprintf("Failed to push '%s'", ociClient.repo.Reference))
+		return reporter.NewErrorEvent(reporter.FailedPush, err, fmt.Sprintf("failed to push '%s'", ociClient.repo.Reference))
 	}
 
 	reporter.Report("kpm: pushed [registry]", ociClient.repo.Reference)
@@ -261,8 +266,8 @@ func loadCredential(hostName string, settings *settings.Settings) (*remoteauth.C
 }
 
 // Pull will pull the oci artifacts from oci registry to local path.
-func Pull(localPath, hostName, repoName, tag string) *reporter.KpmEvent {
-	ociClient, err := NewOciClient(hostName, repoName)
+func Pull(localPath, hostName, repoName, tag string, settings *settings.Settings) error {
+	ociClient, err := NewOciClient(hostName, repoName, settings)
 	if err != nil {
 		return err
 	}
@@ -290,9 +295,9 @@ func Pull(localPath, hostName, repoName, tag string) *reporter.KpmEvent {
 }
 
 // Push will push the oci artifacts to oci registry from local path
-func Push(localPath, hostName, repoName, tag string, settings *settings.Settings) *reporter.KpmEvent {
+func Push(localPath, hostName, repoName, tag string, settings *settings.Settings) error {
 	// Create an oci client.
-	ociClient, err := NewOciClient(hostName, repoName)
+	ociClient, err := NewOciClient(hostName, repoName, settings)
 	if err != nil {
 		return err
 	}

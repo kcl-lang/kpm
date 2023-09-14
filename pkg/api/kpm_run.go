@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
+	"kcl-lang.io/kpm/pkg/client"
+	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/oci"
@@ -31,8 +33,6 @@ func RunTar(tarPath string, opts *opt.CompileOptions) (string, error) {
 	}
 	return compileResult.GetRawYamlResult(), nil
 }
-
-const KCL_PKG_TAR = "*.tar"
 
 // RunOci will compile the kcl package from an OCI reference.
 func RunOci(ociRef, version string, opts *opt.CompileOptions) (string, error) {
@@ -83,23 +83,6 @@ func RunWithOpt(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 	}
 	opts.Merge(kcl.WithWorkDir(opts.PkgPath()))
 	return kcl.RunWithOpts(*opts.Option)
-}
-
-// absTarPath checks whether path 'tarPath' exists and whether path 'tarPath' ends with '.tar'
-// And after checking, absTarPath return the abs path for 'tarPath'.
-func absTarPath(tarPath string) (string, error) {
-	absTarPath, err := filepath.Abs(tarPath)
-	if err != nil {
-		return "", errors.InternalBug
-	}
-
-	if filepath.Ext(absTarPath) != ".tar" {
-		return "", errors.InvalidKclPacakgeTar
-	} else if !utils.DirExists(absTarPath) {
-		return "", errors.KclPacakgeTarNotFound
-	}
-
-	return absTarPath, nil
 }
 
 // getAbsInputPath will return the abs path of the file path described by '--input'.
@@ -165,11 +148,13 @@ func RunPkgWithOpt(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 	// Calculate the absolute path of entry file described by '--input'.
 	compiler := runner.NewCompilerWithOpts(opts)
 
+	kpmcli, err := client.NewKpmClient()
+	if err != nil {
+		return nil, err
+	}
+
 	// Call the kcl compiler.
-	compileResult, err := kclPkg.Compile(
-		globalPkgPath,
-		compiler,
-	)
+	compileResult, err := kpmcli.Compile(kclPkg, compiler)
 
 	if err != nil {
 		return nil, reporter.NewErrorEvent(reporter.CompileFailed, err, "failed to compile the kcl package")
@@ -192,7 +177,7 @@ func RunCurrentPkg(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 
 // RunTarPkg will compile the kcl package from a kcl package tar.
 func RunTarPkg(tarPath string, opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
-	absTarPath, err := absTarPath(tarPath)
+	absTarPath, err := utils.AbsTarPath(tarPath)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +201,12 @@ func RunTarPkg(tarPath string, opts *opt.CompileOptions) (*kcl.KCLResultList, er
 
 // RunOciPkg will compile the kcl package from an OCI reference.
 func RunOciPkg(ociRef, version string, opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
-	ociOpts, err := opt.ParseOciOptionFromString(ociRef, version)
+	kpmcli, err := client.NewKpmClient()
+	if err != nil {
+		return nil, err
+	}
+
+	ociOpts, err := kpmcli.ParseOciOptionFromString(ociRef, version)
 
 	if err != nil {
 		return nil, err
@@ -233,14 +223,14 @@ func RunOciPkg(ociRef, version string, opts *opt.CompileOptions) (*kcl.KCLResult
 	localPath := ociOpts.AddStoragePathSuffix(tmpDir)
 
 	// 2. Pull the tar.
-	err = oci.Pull(localPath, ociOpts.Reg, ociOpts.Repo, ociOpts.Tag)
+	err = oci.Pull(localPath, ociOpts.Reg, ociOpts.Repo, ociOpts.Tag, kpmcli.GetSettings())
 
 	if err != (*reporter.KpmEvent)(nil) {
 		return nil, err
 	}
 
 	// 3.Get the (*.tar) file path.
-	matches, err := filepath.Glob(filepath.Join(localPath, KCL_PKG_TAR))
+	matches, err := filepath.Glob(filepath.Join(localPath, constants.KCL_PKG_TAR))
 	if err != nil || len(matches) != 1 {
 		return nil, errors.FailedPull
 	}

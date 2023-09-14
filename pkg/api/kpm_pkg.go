@@ -6,6 +6,7 @@ import (
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kcl-go/pkg/spec/gpyrpc"
+	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/errors"
 	pkg "kcl-lang.io/kpm/pkg/package"
 )
@@ -57,7 +58,11 @@ func GetKclPackage(pkgPath string) (*KclPackage, error) {
 //
 // 'pkg_path' is the path of dependencies download by kpm.
 func (pkg *KclPackage) UpdateDependencyInPath(pkg_path string) error {
-	return pkg.pkg.ResolveDepsMetadata(pkg_path, true)
+	kpmcli, err := client.NewKpmClient()
+	if err != nil {
+		return err
+	}
+	return kpmcli.ResolvePkgDepsMetadata(pkg.pkg, true)
 }
 
 // GetPkgName returns the name of the package.

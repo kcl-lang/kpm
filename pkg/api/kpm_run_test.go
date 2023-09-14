@@ -41,23 +41,6 @@ func TestGetAbsInputPath(t *testing.T) {
 	assert.Equal(t, path, "")
 }
 
-func TestAbsTarPath(t *testing.T) {
-	pkgPath := getTestDir("test_check_tar_path")
-	expectAbsTarPath, _ := filepath.Abs(filepath.Join(pkgPath, "test.tar"))
-
-	abs, err := absTarPath(filepath.Join(pkgPath, "test.tar"))
-	assert.Equal(t, err, nil)
-	assert.Equal(t, abs, expectAbsTarPath)
-
-	abs, err = absTarPath(filepath.Join(pkgPath, "no_exist.tar"))
-	assert.NotEqual(t, err, nil)
-	assert.Equal(t, abs, "")
-
-	abs, err = absTarPath(filepath.Join(pkgPath, "invalid_tar"))
-	assert.NotEqual(t, err, nil)
-	assert.Equal(t, abs, "")
-}
-
 func TestRunPkgInPath(t *testing.T) {
 	pkgPath := getTestDir("test_run_pkg_in_path")
 	opts := opt.DefaultCompileOptions()

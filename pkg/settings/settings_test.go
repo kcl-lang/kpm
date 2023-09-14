@@ -124,7 +124,7 @@ func TestPackageCacheLock(t *testing.T) {
 	// goroutine 1: append "goroutine 1: %d" to the list
 	go func() {
 		defer wg.Done()
-		err := settings.AcquirePackageCacheLock()
+		err := settings.AcquirePackageCacheLock(os.Stdout)
 		fmt.Printf("1: locked.")
 		fmt.Printf("err: %v\n", err)
 		for i := 0; i < 10; i++ {
@@ -138,7 +138,7 @@ func TestPackageCacheLock(t *testing.T) {
 	// goroutine 2: append "goroutine 2: %d" to the list
 	go func() {
 		defer wg.Done()
-		err := settings.AcquirePackageCacheLock()
+		err := settings.AcquirePackageCacheLock(os.Stdout)
 		fmt.Printf("2: locked.")
 		fmt.Printf("err: %v\n", err)
 		for i := 0; i < 10; i++ {

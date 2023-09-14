@@ -8,8 +8,6 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"kcl-lang.io/kcl-go/pkg/kcl"
-	"kcl-lang.io/kpm/pkg/git"
-	"kcl-lang.io/kpm/pkg/oci"
 	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/settings"
@@ -101,7 +99,7 @@ type Dependency struct {
 
 // GetLocalFullPath will get the local path of a dependency.
 func (dep *Dependency) GetLocalFullPath(rootpath string) string {
-	if dep.isFromLocal() {
+	if dep.IsFromLocal() {
 		if filepath.IsAbs(dep.Source.Local.Path) {
 			return dep.Source.Local.Path
 		}
@@ -110,7 +108,7 @@ func (dep *Dependency) GetLocalFullPath(rootpath string) string {
 	return dep.LocalFullPath
 }
 
-func (dep *Dependency) isFromLocal() bool {
+func (dep *Dependency) IsFromLocal() bool {
 	return dep.Source.Oci == nil && dep.Source.Git == nil && dep.Source.Local != nil
 }
 
@@ -133,147 +131,6 @@ func (dep *Dependency) FillDepInfo() error {
 func (dep *Dependency) GenDepFullName() string {
 	dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, dep.Name, dep.Version)
 	return dep.FullName
-}
-
-// Download will download the kcl package to localPath from registory.
-func (dep *Dependency) Download(localPath string) (*Dependency, error) {
-	if dep.Source.Git != nil {
-		_, err := dep.Source.Git.Download(localPath)
-		if err != nil {
-			return nil, err
-		}
-		dep.Version = dep.Source.Git.Tag
-		dep.LocalFullPath = localPath
-		dep.FullName = dep.GenDepFullName()
-	}
-
-	if dep.Source.Oci != nil {
-		localPath, err := dep.Source.Oci.Download(localPath)
-		if err != nil {
-			return nil, err
-		}
-		dep.Version = dep.Source.Oci.Tag
-		dep.LocalFullPath = localPath
-		dep.FullName = dep.GenDepFullName()
-	}
-
-	if dep.Source.Local != nil {
-		dep.LocalFullPath = dep.Source.Local.Path
-	}
-
-	var err error
-	dep.Sum, err = utils.HashDir(dep.LocalFullPath)
-	if err != nil {
-		return nil, reporter.NewErrorEvent(
-			reporter.FailedHashPkg,
-			err,
-			fmt.Sprintf("failed to hash the kcl package '%s' in '%s'.", dep.Name, dep.LocalFullPath),
-		)
-	}
-
-	return dep, nil
-}
-
-// Download will download the kcl package to localPath from git url.
-func (dep *Git) Download(localPath string) (string, error) {
-
-	reporter.ReportEventToStdout(
-		reporter.NewEvent(
-			reporter.DownloadingFromGit,
-			fmt.Sprintf("downloading '%s' with tag '%s'.", dep.Url, dep.Tag),
-		),
-	)
-
-	_, err := git.Clone(dep.Url, dep.Tag, localPath)
-
-	if err != nil {
-		return localPath, reporter.NewErrorEvent(
-			reporter.FailedCloneFromGit,
-			err,
-			fmt.Sprintf("failed to clone from '%s' into '%s'.", dep.Url, localPath),
-		)
-	}
-
-	return localPath, err
-}
-
-func (dep *Oci) Download(localPath string) (string, error) {
-
-	ociClient, err := oci.NewOciClient(dep.Reg, dep.Repo)
-	if err != nil {
-		return "", err
-	}
-	// Select the latest tag, if the tag, the user inputed, is empty.
-	var tagSelected string
-	if len(dep.Tag) == 0 {
-		tagSelected, err = ociClient.TheLatestTag()
-		if err != nil {
-			return "", err
-		}
-
-		reporter.ReportEventToStdout(
-			reporter.NewEvent(reporter.SelectLatestVersion, "the lastest version '", tagSelected, "' will be added."),
-		)
-
-		dep.Tag = tagSelected
-		localPath = localPath + dep.Tag
-	} else {
-		tagSelected = dep.Tag
-	}
-
-	reporter.ReportEventToStdout(
-		reporter.NewEvent(
-			reporter.DownloadingFromOCI,
-			fmt.Sprintf("downloading '%s:%s' from '%s/%s:%s'.", dep.Repo, tagSelected, dep.Reg, dep.Repo, tagSelected),
-		),
-	)
-
-	// Pull the package with the tag.
-	err = ociClient.Pull(localPath, tagSelected)
-	if err != nil {
-		return "", err
-	}
-
-	matches, finderr := filepath.Glob(filepath.Join(localPath, "*.tar"))
-	if finderr != nil || len(matches) != 1 {
-		if finderr == nil {
-			err = reporter.NewErrorEvent(
-				reporter.InvalidKclPkg,
-				err,
-				fmt.Sprintf("failed to find the kcl package tar from '%s'.", localPath),
-			)
-		}
-
-		return "", reporter.NewErrorEvent(
-			reporter.InvalidKclPkg,
-			err,
-			fmt.Sprintf("failed to find the kcl package tar from '%s'.", localPath),
-		)
-	}
-
-	tarPath := matches[0]
-	untarErr := utils.UnTarDir(tarPath, localPath)
-	if untarErr != nil {
-		return "", reporter.NewErrorEvent(
-			reporter.FailedUntarKclPkg,
-			untarErr,
-			fmt.Sprintf("failed to untar the kcl package tar from '%s' into '%s'.", tarPath, localPath),
-		)
-	}
-
-	// After untar the downloaded kcl package tar file, remove the tar file.
-	if utils.DirExists(tarPath) {
-		rmErr := os.Remove(tarPath)
-		if rmErr != nil {
-			return "", reporter.NewErrorEvent(
-				reporter.FailedUntarKclPkg,
-				err,
-				fmt.Sprintf("failed to untar the kcl package tar from '%s' into '%s'.", tarPath, localPath),
-			)
-		}
-	}
-
-	return localPath, nil
 }
 
 // Source is the package source from registry.
@@ -309,27 +166,6 @@ func ModFileExists(path string) (bool, error) {
 // ModLockFileExists returns whether a 'kcl.mod.lock' file exists in the path.
 func ModLockFileExists(path string) (bool, error) {
 	return utils.Exists(filepath.Join(path, MOD_LOCK_FILE))
-}
-
-// LoadModFile load the contents of the 'kcl.mod' file in the path.
-func LoadModFile(homePath string) (*ModFile, error) {
-	modFile := new(ModFile)
-	err := modFile.loadModFile(filepath.Join(homePath, MOD_FILE))
-	if err != nil {
-		return nil, err
-	}
-
-	modFile.HomePath = homePath
-
-	if modFile.Dependencies.Deps == nil {
-		modFile.Dependencies.Deps = make(map[string]Dependency)
-	}
-	err = modFile.FillDependenciesInfo()
-	if err != nil {
-		return nil, err
-	}
-
-	return modFile, nil
 }
 
 // LoadLockDeps will load all dependencies from 'kcl.mod.lock'.
@@ -399,6 +235,27 @@ func (mod *ModFile) loadModFile(filepath string) error {
 	return nil
 }
 
+// LoadModFile load the contents of the 'kcl.mod' file in the path.
+func LoadModFile(homePath string) (*ModFile, error) {
+	modFile := new(ModFile)
+	err := modFile.loadModFile(filepath.Join(homePath, MOD_FILE))
+	if err != nil {
+		return nil, err
+	}
+
+	modFile.HomePath = homePath
+
+	if modFile.Dependencies.Deps == nil {
+		modFile.Dependencies.Deps = make(map[string]Dependency)
+	}
+	err = modFile.FillDependenciesInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	return modFile, nil
+}
+
 // Load the kcl.mod.lock file.
 func (deps *Dependencies) loadLockFile(filepath string) error {
 	data, err := os.ReadFile(filepath)
@@ -463,15 +320,15 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 			return nil, err
 		}
 		return &Dependency{
-			Name:          depPkg.modFile.Pkg.Name,
-			FullName:      depPkg.modFile.Pkg.Name + "_" + depPkg.modFile.Pkg.Version,
+			Name:          depPkg.ModFile.Pkg.Name,
+			FullName:      depPkg.ModFile.Pkg.Name + "_" + depPkg.ModFile.Pkg.Version,
 			LocalFullPath: opt.Local.Path,
 			Source: Source{
 				Local: &Local{
 					Path: opt.Local.Path,
 				},
 			},
-			Version: depPkg.modFile.Pkg.Version,
+			Version: depPkg.ModFile.Pkg.Version,
 		}, nil
 
 	}

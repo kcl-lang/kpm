@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/urfave/cli/v2"
+	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/errors"
 	pkg "kcl-lang.io/kpm/pkg/package"
@@ -14,7 +15,7 @@ import (
 )
 
 // NewMetadataCmd new a Command for `kpm metadata`.
-func NewMetadataCmd() *cli.Command {
+func NewMetadataCmd(kpmcli *client.KpmClient) *cli.Command {
 	return &cli.Command{
 		Hidden: false,
 		Name:   "metadata",
@@ -59,7 +60,8 @@ func NewMetadataCmd() *cli.Command {
 			}
 
 			autoUpdate := c.Bool(FLAG_UPDATE)
-			jsonStr, err := kclPkg.ResolveDepsMetadataInJsonStr(globalPkgPath, autoUpdate)
+
+			jsonStr, err := kpmcli.ResolveDepsMetadataInJsonStr(kclPkg, autoUpdate)
 			if err != nil {
 				return err
 			}

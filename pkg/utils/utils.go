@@ -394,3 +394,36 @@ func IsTar(str string) bool {
 func IsKfile(str string) bool {
 	return strings.HasSuffix(str, constants.KFilePathSuffix)
 }
+
+// CheckPackageSum will check whether the 'checkedSum' is equal
+// to the hash of the package under 'localPath'.
+func CheckPackageSum(checkedSum, localPath string) bool {
+	if checkedSum == "" {
+		return false
+	}
+
+	sum, err := HashDir(localPath)
+
+	if err != nil {
+		return false
+	}
+
+	return checkedSum == sum
+}
+
+// AbsTarPath checks whether path 'tarPath' exists and whether path 'tarPath' ends with '.tar'
+// And after checking, absTarPath return the abs path for 'tarPath'.
+func AbsTarPath(tarPath string) (string, error) {
+	absTarPath, err := filepath.Abs(tarPath)
+	if err != nil {
+		return "", errors.InternalBug
+	}
+
+	if filepath.Ext(absTarPath) != ".tar" {
+		return "", errors.InvalidKclPacakgeTar
+	} else if !DirExists(absTarPath) {
+		return "", errors.KclPacakgeTarNotFound
+	}
+
+	return absTarPath, nil
+}
