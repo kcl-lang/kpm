@@ -28,6 +28,7 @@ func main() {
 		cmd.NewAddCmd(kpmcli),
 		cmd.NewPkgCmd(kpmcli),
 		cmd.NewMetadataCmd(kpmcli),
+		cmd.NewImportCmd(kpmcli),
 
 		// todo: The following commands are bound to the oci registry.
 		// Refactor them to compatible with the other registry.
