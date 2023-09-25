@@ -3,6 +3,7 @@ COMMANDS:
    add       add new dependency
    pkg       package a kcl package into tar
    metadata  output the resolved dependencies of a package
+   import    convert other formats to KCL file
    run       compile kcl package.
    login     login to a registry
    logout    logout from a registry
