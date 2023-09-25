@@ -8,12 +8,13 @@ import (
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/api"
+	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/runner"
 )
 
 // NewRunCmd new a Command for `kpm run`.
-func NewRunCmd() *cli.Command {
+func NewRunCmd(kpmcli *client.KpmClient) *cli.Command {
 	return &cli.Command{
 		Hidden: false,
 		Name:   "run",
@@ -72,12 +73,12 @@ func NewRunCmd() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			return KpmRun(c)
+			return KpmRun(c, kpmcli)
 		},
 	}
 }
 
-func KpmRun(c *cli.Context) error {
+func KpmRun(c *cli.Context, kpmcli *client.KpmClient) error {
 	kclOpts := CompileOptionFromCli(c)
 	runEntry, errEvent := runner.FindRunEntryFrom(c.Args().Slice())
 	if errEvent != nil {
@@ -103,14 +104,14 @@ func KpmRun(c *cli.Context) error {
 				compileResult, err = api.RunWithOpt(kclOpts)
 			} else {
 				// Else compile the kcl pacakge.
-				compileResult, err = api.RunPkgWithOpt(kclOpts)
+				compileResult, err = kpmcli.CompileWithOpts(kclOpts)
 			}
 		} else if runEntry.IsTar() {
 			// 'kpm run' compile the package from the kcl pakcage tar.
-			compileResult, err = api.RunTarPkg(runEntry.PackageSource(), kclOpts)
+			compileResult, err = kpmcli.CompileTarPkg(runEntry.PackageSource(), kclOpts)
 		} else {
 			// 'kpm run' compile the package from the OCI reference or url.
-			compileResult, err = api.RunOciPkg(runEntry.PackageSource(), c.String(FLAG_TAG), kclOpts)
+			compileResult, err = kpmcli.CompileOciPkg(runEntry.PackageSource(), c.String(FLAG_TAG), kclOpts)
 		}
 
 		if err != nil {

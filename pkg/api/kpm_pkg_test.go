@@ -5,18 +5,18 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+	"kcl-lang.io/kpm/pkg/client"
 )
 
 func TestPackageApi(t *testing.T) {
 	pkg_path := filepath.Join(getTestDir("test_kpm_package"), "kcl_pkg")
 	kcl_pkg_path, err := GetKclPkgPath()
-
+	assert.Equal(t, err, nil)
+	kpmcli, err := client.NewKpmClient()
 	assert.Equal(t, err, nil)
 	pkg, err := GetKclPackage(pkg_path)
 	assert.Equal(t, err, nil)
-	err = pkg.pkg.ResolveDepsMetadata(kcl_pkg_path, true)
-	assert.Equal(t, err, nil)
-
+	err = kpmcli.ResolvePkgDepsMetadata(pkg.pkg, true)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, pkg.GetPkgName(), "kcl_pkg")
 	assert.Equal(t, pkg.GetVersion(), "0.0.1")
@@ -60,12 +60,12 @@ func TestPackageApi(t *testing.T) {
 
 func TestGetAllSchemaTypesMappingNamed(t *testing.T) {
 	pkg_path := filepath.Join(getTestDir("test_kpm_package"), "kcl_pkg")
-	kcl_pkg_path, err := GetKclPkgPath()
-
-	assert.Equal(t, err, nil)
 	pkg, err := GetKclPackage(pkg_path)
 	assert.Equal(t, err, nil)
-	err = pkg.pkg.ResolveDepsMetadata(kcl_pkg_path, true)
+	kpmcli, err := client.NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	err = kpmcli.ResolvePkgDepsMetadata(pkg.pkg, true)
 	assert.Equal(t, err, nil)
 
 	schemas, err := pkg.GetSchemaTypeMappingNamed("SchemaWithSameName")
@@ -84,14 +84,12 @@ func TestGetAllSchemaTypesMappingNamed(t *testing.T) {
 }
 
 func TestGetSchemaTypeMappingWithFilters(t *testing.T) {
-
 	pkg_path := filepath.Join(getTestDir("test_kpm_package"), "kcl_pkg")
-	kcl_pkg_path, err := GetKclPkgPath()
-
-	assert.Equal(t, err, nil)
 	pkg, err := GetKclPackage(pkg_path)
 	assert.Equal(t, err, nil)
-	err = pkg.pkg.ResolveDepsMetadata(kcl_pkg_path, true)
+	kpmcli, err := client.NewKpmClient()
+	assert.Equal(t, err, nil)
+	err = kpmcli.ResolvePkgDepsMetadata(pkg.pkg, true)
 	assert.Equal(t, err, nil)
 
 	filterFunc := func(kt *KclType) bool {
@@ -138,12 +136,11 @@ func TestGetSchemaTypeMappingWithFilters(t *testing.T) {
 
 func TestGetSchemaTypeUnderEmptyDir(t *testing.T) {
 	pkg_path := filepath.Join(getTestDir("test_kpm_package"), "no_kcl_files")
-	kcl_pkg_path, err := GetKclPkgPath()
-
-	assert.Equal(t, err, nil)
 	pkg, err := GetKclPackage(pkg_path)
 	assert.Equal(t, err, nil)
-	err = pkg.pkg.ResolveDepsMetadata(kcl_pkg_path, true)
+	kpmcli, err := client.NewKpmClient()
+	assert.Equal(t, err, nil)
+	err = kpmcli.ResolvePkgDepsMetadata(pkg.pkg, true)
 	assert.Equal(t, err, nil)
 	schemas, err := pkg.GetSchemaTypeMappingNamed("SchemaInMain")
 	assert.Equal(t, err, nil)

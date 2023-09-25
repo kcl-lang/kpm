@@ -9,16 +9,16 @@ import (
 	"strings"
 
 	"github.com/urfave/cli/v2"
+	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
-	"kcl-lang.io/kpm/pkg/settings"
 )
 
 // NewAddCmd new a Command for `kpm add`.
-func NewAddCmd() *cli.Command {
+func NewAddCmd(kpmcli *client.KpmClient) *cli.Command {
 	return &cli.Command{
 		Hidden: false,
 		Name:   "add",
@@ -35,27 +35,21 @@ func NewAddCmd() *cli.Command {
 		},
 
 		Action: func(c *cli.Context) error {
-			return KpmAdd(c)
+			return KpmAdd(c, kpmcli)
 		},
 	}
 }
 
-func KpmAdd(c *cli.Context) error {
-	// 1. get settings from the global config file.
-	settings := settings.GetSettings()
-	if settings.ErrorEvent != (*reporter.KpmEvent)(nil) {
-		return settings.ErrorEvent
-	}
-
-	// 2. acquire the lock of the package cache.
-	err := settings.AcquirePackageCacheLock()
+func KpmAdd(c *cli.Context, kpmcli *client.KpmClient) error {
+	// acquire the lock of the package cache.
+	err := kpmcli.AcquirePackageCacheLock()
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		// 3. release the lock of the package cache after the function returns.
-		releaseErr := settings.ReleasePackageCacheLock()
+		// release the lock of the package cache after the function returns.
+		releaseErr := kpmcli.ReleasePackageCacheLock()
 		if releaseErr != nil && err == nil {
 			err = releaseErr
 		}
@@ -82,7 +76,7 @@ func KpmAdd(c *cli.Context) error {
 		return err
 	}
 
-	addOpts, err := parseAddOptions(c, globalPkgPath)
+	addOpts, err := parseAddOptions(c, kpmcli, globalPkgPath)
 	if err != nil {
 		return err
 	}
@@ -105,7 +99,7 @@ func KpmAdd(c *cli.Context) error {
 		return err
 	}
 
-	err = kclPkg.AddDeps(addOpts)
+	_, err = kpmcli.AddDepWithOpts(kclPkg, addOpts)
 	if err != nil {
 		return err
 	}
@@ -125,7 +119,7 @@ func onlyOnceOption(c *cli.Context, name string) (*string, *reporter.KpmEvent) {
 }
 
 // parseAddOptions will parse the user cli inputs.
-func parseAddOptions(c *cli.Context, localPath string) (*opt.AddOptions, error) {
+func parseAddOptions(c *cli.Context, kpmcli *client.KpmClient, localPath string) (*opt.AddOptions, error) {
 	// parse from 'kpm add -git https://xxx/xxx.git -tag v0.0.1'.
 	if c.NArg() == 0 {
 		gitOpts, err := parseGitRegistryOptions(c)
@@ -143,7 +137,7 @@ func parseAddOptions(c *cli.Context, localPath string) (*opt.AddOptions, error) 
 		localPkg, err := parseLocalPathOptions(c)
 		if err != (*reporter.KpmEvent)(nil) {
 			// parse from 'kpm add xxx:0.0.1'.
-			ociReg, err := parseOciRegistryOptions(c)
+			ociReg, err := parseOciRegistryOptions(c, kpmcli)
 			if err != nil {
 				return nil, err
 			}
@@ -191,22 +185,17 @@ func parseGitRegistryOptions(c *cli.Context) (*opt.RegistryOptions, *reporter.Kp
 }
 
 // parseOciRegistryOptions will parse the oci registry information from user cli inputs.
-func parseOciRegistryOptions(c *cli.Context) (*opt.RegistryOptions, error) {
+func parseOciRegistryOptions(c *cli.Context, kpmcli *client.KpmClient) (*opt.RegistryOptions, error) {
 	ociPkgRef := c.Args().First()
 	name, version, err := parseOciPkgNameAndVersion(ociPkgRef)
 	if err != nil {
 		return nil, err
 	}
 
-	settings := settings.GetSettings()
-	if settings.ErrorEvent != nil {
-		return nil, settings.ErrorEvent
-	}
-
 	return &opt.RegistryOptions{
 		Oci: &opt.OciOptions{
-			Reg:     settings.DefaultOciRegistry(),
-			Repo:    settings.DefaultOciRepo(),
+			Reg:     kpmcli.GetSettings().DefaultOciRegistry(),
+			Repo:    kpmcli.GetSettings().DefaultOciRepo(),
 			PkgName: name,
 			Tag:     version,
 		},

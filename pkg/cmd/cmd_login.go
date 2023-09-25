@@ -4,14 +4,13 @@ package cmd
 
 import (
 	"github.com/urfave/cli/v2"
-	"kcl-lang.io/kpm/pkg/oci"
+	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/reporter"
-	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
 // NewLoginCmd new a Command for `kpm login`.
-func NewLoginCmd(settings *settings.Settings) *cli.Command {
+func NewLoginCmd(kpmcli *client.KpmClient) *cli.Command {
 	return &cli.Command{
 		Hidden: false,
 		Name:   "login",
@@ -42,7 +41,7 @@ func NewLoginCmd(settings *settings.Settings) *cli.Command {
 				return err
 			}
 
-			err = oci.Login(registry, username, password, settings)
+			err = kpmcli.LoginOci(registry, username, password)
 			if err != nil {
 				return err
 			}

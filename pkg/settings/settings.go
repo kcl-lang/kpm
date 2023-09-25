@@ -3,6 +3,7 @@ package settings
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,7 +70,7 @@ type Settings struct {
 }
 
 // AcquirePackageCacheLock will try to lock the 'package-cache' file.
-func (settings *Settings) AcquirePackageCacheLock() error {
+func (settings *Settings) AcquirePackageCacheLock(logWriter io.Writer) error {
 	// if the 'package-cache' file is not initialized, this is an internal bug.
 	if settings.PackageCacheLock == nil {
 		return errors.InternalBug
@@ -83,7 +84,7 @@ func (settings *Settings) AcquirePackageCacheLock() error {
 
 	// if failed to lock the 'package-cache' file, wait until it is unlocked.
 	if !locked {
-		reporter.Report("kpm: waiting for package-cache lock...")
+		reporter.ReportEventTo(reporter.NewEvent(reporter.WaitingLock, "waiting for package-cache lock..."), logWriter)
 		for {
 			// try to lock the 'package-cache' file
 			locked, err = settings.PackageCacheLock.TryLock()

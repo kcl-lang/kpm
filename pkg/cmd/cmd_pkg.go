@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/urfave/cli/v2"
+	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/errors"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -14,7 +15,7 @@ import (
 )
 
 // NewPkgCmd new a Command for `kpm pkg`.
-func NewPkgCmd() *cli.Command {
+func NewPkgCmd(kpmcli *client.KpmClient) *cli.Command {
 	return &cli.Command{
 		Hidden: false,
 		Name:   "pkg",
@@ -60,8 +61,8 @@ func NewPkgCmd() *cli.Command {
 					return errors.InternalBug
 				}
 			}
-			// The method for packaging kcl package should be a member method of KclPkg.
-			return kclPkg.PackageToTarball(filepath.Join(tarPath, kclPkg.GetPkgTarName()), c.Bool(FLAG_VENDOR))
+
+			return kpmcli.Package(kclPkg, filepath.Join(tarPath, kclPkg.GetPkgTarName()), c.Bool(FLAG_VENDOR))
 		},
 	}
 }

@@ -3,15 +3,14 @@
 package opt
 
 import (
+	"io"
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/reporter"
-	"kcl-lang.io/kpm/pkg/settings"
 )
 
 // CompileOptions is the input options of 'kpm run'.
@@ -19,12 +18,15 @@ type CompileOptions struct {
 	isVendor        bool
 	hasSettingsYaml bool
 	entries         []string
+	// Add a writer to control the output of the compiler.
+	writer io.Writer
 	*kcl.Option
 }
 
 // DefaultCompileOptions returns a default CompileOptions.
 func DefaultCompileOptions() *CompileOptions {
 	return &CompileOptions{
+		writer: os.Stdout,
 		Option: kcl.NewOption(),
 	}
 }
@@ -159,30 +161,6 @@ func (opts *LocalOptions) Validate() error {
 	return nil
 }
 
-const OCI_SEPARATOR = ":"
-
-// ParseOciOptionFromString will parser '<repo_name>:<repo_tag>' into an 'OciOptions' with an OCI registry.
-// the default OCI registry is 'docker.io'.
-// if the 'ociUrl' is only '<repo_name>', ParseOciOptionFromString will take 'latest' as the default tag.
-func ParseOciOptionFromString(oci string, tag string) (*OciOptions, error) {
-	ociOpt, event := ParseOciUrl(oci)
-	if event != nil && (event.Type() == reporter.IsNotUrl || event.Type() == reporter.UrlSchemeNotOci) {
-		ociOpt, err := ParseOciRef(oci)
-		if err != nil {
-			return nil, err
-		}
-		if len(tag) != 0 {
-			reporter.Report("kpm: kpm get version from oci reference '<repo_name>:<repo_tag>'")
-			reporter.Report("kpm: arg '--tag' is invalid for oci reference")
-		}
-		return ociOpt, nil
-	}
-
-	ociOpt.Tag = tag
-
-	return ociOpt, nil
-}
-
 // ParseOciOptionFromOciUrl will parse oci url into an 'OciOptions'.
 // If the 'tag' is empty, ParseOciOptionFromOciUrl will take 'latest' as the default tag.
 func ParseOciOptionFromOciUrl(url, tag string) (*OciOptions, *reporter.KpmEvent) {
@@ -192,30 +170,6 @@ func ParseOciOptionFromOciUrl(url, tag string) (*OciOptions, *reporter.KpmEvent)
 	}
 	ociOpt.Tag = tag
 	return ociOpt, nil
-}
-
-// ParseOciRef will parse 'repoName:repoTag' into OciOptions,
-// with default registry host 'docker.io'.
-func ParseOciRef(ociRef string) (*OciOptions, error) {
-	oci_address := strings.Split(ociRef, OCI_SEPARATOR)
-	settings := settings.GetSettings()
-	if settings.ErrorEvent != nil {
-		return nil, settings.ErrorEvent
-	}
-	if len(oci_address) == 1 {
-		return &OciOptions{
-			Reg:  settings.DefaultOciRegistry(),
-			Repo: oci_address[0],
-		}, nil
-	} else if len(oci_address) == 2 {
-		return &OciOptions{
-			Reg:  settings.DefaultOciRegistry(),
-			Repo: oci_address[0],
-			Tag:  oci_address[1],
-		}, nil
-	} else {
-		return nil, reporter.NewEvent(reporter.IsNotRef)
-	}
 }
 
 // ParseOciUrl will parse 'oci://hostName/repoName:repoTag' into OciOptions without tag.

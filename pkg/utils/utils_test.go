@@ -155,3 +155,20 @@ func TestIsKfile(t *testing.T) {
 	assert.Equal(t, IsKfile("invalid kfile"), false)
 	assert.Equal(t, IsKfile("xxx.k"), true)
 }
+
+func TestAbsTarPath(t *testing.T) {
+	pkgPath := getTestDir("test_check_tar_path")
+	expectAbsTarPath, _ := filepath.Abs(filepath.Join(pkgPath, "test.tar"))
+
+	abs, err := AbsTarPath(filepath.Join(pkgPath, "test.tar"))
+	assert.Equal(t, err, nil)
+	assert.Equal(t, abs, expectAbsTarPath)
+
+	abs, err = AbsTarPath(filepath.Join(pkgPath, "no_exist.tar"))
+	assert.NotEqual(t, err, nil)
+	assert.Equal(t, abs, "")
+
+	abs, err = AbsTarPath(filepath.Join(pkgPath, "invalid_tar"))
+	assert.NotEqual(t, err, nil)
+	assert.Equal(t, abs, "")
+}

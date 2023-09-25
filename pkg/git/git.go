@@ -2,17 +2,17 @@ package git
 
 import (
 	"fmt"
-	"os"
+	"io"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 )
 
-/// Clone will clone from `repoURL` to `localPath` via git.
-func Clone(repoURL string, tagName string, localPath string) (*git.Repository, error) {
+// Clone will clone from `repoURL` to `localPath` via git.
+func Clone(repoURL string, tagName string, localPath string, writer io.Writer) (*git.Repository, error) {
 	repo, err := git.PlainClone(localPath, false, &git.CloneOptions{
 		URL:           repoURL,
-		Progress:      os.Stdout,
+		Progress:      writer,
 		ReferenceName: plumbing.ReferenceName(CreateTagRef(tagName)),
 	})
 	return repo, err
