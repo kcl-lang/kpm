@@ -532,7 +532,7 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "konfig_v0.0.1")), false)
 	jsonPath, err := json.Marshal(filepath.Join("not_exist", "konfig_v0.0.1"))
 	assert.Equal(t, err, nil)
-	expectedStr := fmt.Sprintf("{\"packages\":{\"konfig\":{\"name\":\"konfig\",\"manifest_path\":\"%s\"}}}", string(jsonPath))
+	expectedStr := fmt.Sprintf("{\"packages\":{\"konfig\":{\"name\":\"konfig\",\"manifest_path\":%s}}}", string(jsonPath))
 	assert.Equal(t, res, expectedStr)
 	defer func() {
 		if r := os.RemoveAll(filepath.Join("not_exist", "konfig_v0.0.1")); r != nil {
