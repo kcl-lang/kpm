@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
+	"kcl-lang.io/kpm/pkg/constants"
 	errors "kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -106,6 +107,12 @@ func (kclPkg *KclPkg) LockDepsVersion() error {
 	}
 
 	return utils.StoreToFile(fullPath, lockToml)
+}
+
+// CreateDefauleMain will create a default main.k file in the current kcl package.
+func (kclPkg *KclPkg) CreateDefauleMain() error {
+	mainKPath := filepath.Join(kclPkg.HomePath, constants.DEFAULT_KCL_FILE_NAME)
+	return utils.StoreToFile(mainKPath, constants.DEFAULT_KCL_FILE_CONTENT)
 }
 
 // check sum for a Dependency.

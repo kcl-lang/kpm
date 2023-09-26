@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -68,13 +69,12 @@ func NewInitCmd(kpmcli *client.KpmClient) *cli.Command {
 			}
 
 			err = kpmcli.InitEmptyPkg(&kclPkg)
-			if err == nil {
-				reporter.Report("kpm: package '", pkgName, "' init finished")
-			} else {
-				reporter.ExitWithReport(err)
+			if err != nil {
+				return err
 			}
 
-			return err
+			reporter.ReportMsgTo(fmt.Sprintf("kpm: package '%s' init finished", pkgName), kpmcli.GetLogWriter())
+			return nil
 		},
 	}
 }

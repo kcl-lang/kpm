@@ -17,12 +17,12 @@ func TestLatestVersion(t *testing.T) {
 	assert.Equal(t, latest, "")
 
 	latest, err = LatestVersion([]string{"invalid_version"})
-	assert.Equal(t, err, errors.InvalidVersionFormat)
+	assert.Equal(t, err.Error(), "kpm: failed to parse version invalid_version\nkpm: Malformed version: invalid_version\n")
 	assert.Equal(t, latest, "")
 
 	latest, err = LatestVersion([]string{"1.2.3", "1.4.0", "1.3.5", "invalid_version"})
-	assert.Equal(t, err, nil)
-	assert.Equal(t, latest, "1.4.0")
+	assert.Equal(t, err.Error(), "kpm: failed to parse version invalid_version\nkpm: Malformed version: invalid_version\n")
+	assert.Equal(t, latest, "")
 }
 
 func TestTheLatestTagWithMissingVersion(t *testing.T) {

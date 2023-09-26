@@ -3,6 +3,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -31,8 +33,11 @@ func NewLoginCmd(kpmcli *client.KpmClient) *cli.Command {
 		},
 		Action: func(c *cli.Context) error {
 			if c.NArg() == 0 {
-				reporter.Report("kpm: registry must be specified.")
-				reporter.ExitWithReport("kpm: run 'kpm registry help' for more information.")
+				return reporter.NewErrorEvent(
+					reporter.InvalidCmd,
+					fmt.Errorf("registry must be specified"),
+					"run 'kpm login help' for more information",
+				)
 			}
 			registry := c.Args().First()
 
@@ -45,7 +50,7 @@ func NewLoginCmd(kpmcli *client.KpmClient) *cli.Command {
 			if err != nil {
 				return err
 			}
-
+			reporter.ReportMsgTo("Login Succeeded", kpmcli.GetLogWriter())
 			return nil
 		},
 	}

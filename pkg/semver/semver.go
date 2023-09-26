@@ -1,6 +1,8 @@
 package semver
 
 import (
+	"fmt"
+
 	"github.com/hashicorp/go-version"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -11,8 +13,7 @@ func LatestVersion(versions []string) (string, error) {
 	for _, v := range versions {
 		ver, err := version.NewVersion(v)
 		if err != nil {
-			reporter.Report("kpm: failed to parse version", v, err)
-			continue
+			return "", reporter.NewErrorEvent(reporter.FailedParseVersion, err, fmt.Sprintf("failed to parse version %s", v))
 		}
 		if latest == nil || ver.GreaterThan(latest) {
 			latest = ver

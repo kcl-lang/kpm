@@ -3,6 +3,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -16,14 +18,17 @@ func NewLogoutCmd(kpmcli *client.KpmClient) *cli.Command {
 		Usage:  "logout from a registry",
 		Action: func(c *cli.Context) error {
 			if c.NArg() == 0 {
-				reporter.Report("kpm: registry must be specified.")
-				reporter.ExitWithReport("kpm: run 'kpm registry help' for more information.")
+				return reporter.NewErrorEvent(
+					reporter.InvalidCmd,
+					fmt.Errorf("registry must be specified"),
+					"run 'kpm logout help' for more information",
+				)
 			}
 			err := kpmcli.LogoutOci(c.Args().First())
 			if err != nil {
 				return err
 			}
-
+			reporter.ReportMsgTo("kpm: Logout Succeeded", kpmcli.GetLogWriter())
 			return nil
 		},
 	}

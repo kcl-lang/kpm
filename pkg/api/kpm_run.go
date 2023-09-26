@@ -105,6 +105,109 @@ func getAbsInputPath(pkgPath string, inputPath string) (string, error) {
 
 // RunPkgWithOpt will compile the kcl package with the compile options.
 func RunPkgWithOpt(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
+	kpmcli, err := client.NewKpmClient()
+	if err != nil {
+		return nil, err
+	}
+	return run(kpmcli, opts)
+}
+
+// RunCurrentPkg will compile the current kcl package.
+func RunCurrentPkg(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
+	pwd, err := os.Getwd()
+	opts.SetPkgPath(pwd)
+
+	if err != nil {
+		reporter.ExitWithReport("kpm: internal bug: failed to load working directory")
+	}
+
+	return RunPkgWithOpt(opts)
+}
+
+// RunTarPkg will compile the kcl package from a kcl package tar.
+func RunTarPkg(tarPath string, opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
+	absTarPath, err := utils.AbsTarPath(tarPath)
+	if err != nil {
+		return nil, err
+	}
+	// Extract the tar package to a directory with the same name.
+	// e.g.
+	// 'xxx/xxx/xxx/test.tar' will be extracted to the directory 'xxx/xxx/xxx/test'.
+	destDir := strings.TrimSuffix(absTarPath, filepath.Ext(absTarPath))
+	err = utils.UnTarDir(absTarPath, destDir)
+	if err != nil {
+		return nil, err
+	}
+
+	opts.SetPkgPath(destDir)
+	kpmcli, err := client.NewKpmClient()
+	if err != nil {
+		return nil, err
+	}
+	// The directory after extracting the tar package is taken as the root directory of the package,
+	// and kclvm is called to compile the kcl program under the 'destDir'.
+	// e.g.
+	// if the tar path is 'xxx/xxx/xxx/test.tar',
+	// the 'xxx/xxx/xxx/test' will be taken as the root path of the kcl package to compile.
+	return run(kpmcli, opts)
+}
+
+// RunOciPkg will compile the kcl package from an OCI reference.
+func RunOciPkg(ociRef, version string, opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
+	kpmcli, err := client.NewKpmClient()
+	if err != nil {
+		return nil, err
+	}
+
+	ociOpts, err := kpmcli.ParseOciOptionFromString(ociRef, version)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// 1. Create the temporary directory to pull the tar.
+	tmpDir, err := os.MkdirTemp("", "")
+	if err != nil {
+		return nil, errors.InternalBug
+	}
+	// clean the temp dir.
+	defer os.RemoveAll(tmpDir)
+
+	localPath := ociOpts.AddStoragePathSuffix(tmpDir)
+
+	// 2. Pull the tar.
+	err = oci.Pull(localPath, ociOpts.Reg, ociOpts.Repo, ociOpts.Tag, kpmcli.GetSettings())
+
+	if err != (*reporter.KpmEvent)(nil) {
+		return nil, err
+	}
+
+	// 3.Get the (*.tar) file path.
+	matches, err := filepath.Glob(filepath.Join(localPath, constants.KCL_PKG_TAR))
+	if err != nil || len(matches) != 1 {
+		return nil, errors.FailedPull
+	}
+
+	// 4. Untar the tar file.
+	absTarPath, err := utils.AbsTarPath(matches[0])
+	if err != nil {
+		return nil, err
+	}
+	// Extract the tar package to a directory with the same name.
+	// e.g.
+	// 'xxx/xxx/xxx/test.tar' will be extracted to the directory 'xxx/xxx/xxx/test'.
+	destDir := strings.TrimSuffix(absTarPath, filepath.Ext(absTarPath))
+	err = utils.UnTarDir(absTarPath, destDir)
+	if err != nil {
+		return nil, err
+	}
+
+	opts.SetPkgPath(destDir)
+	return run(kpmcli, opts)
+}
+
+// 'run' will compile the kcl package from the compile options by kpm client.
+func run(kpmcli *client.KpmClient, opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 	pkgPath, err := filepath.Abs(opts.PkgPath())
 	if err != nil {
 		return nil, errors.InternalBug
@@ -148,10 +251,7 @@ func RunPkgWithOpt(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 	// Calculate the absolute path of entry file described by '--input'.
 	compiler := runner.NewCompilerWithOpts(opts)
 
-	kpmcli, err := client.NewKpmClient()
-	if err != nil {
-		return nil, err
-	}
+	kpmcli.SetLogWriter(opts.LogWriter())
 
 	// Call the kcl compiler.
 	compileResult, err := kpmcli.Compile(kclPkg, compiler)
@@ -161,79 +261,4 @@ func RunPkgWithOpt(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 	}
 
 	return compileResult, nil
-}
-
-// RunCurrentPkg will compile the current kcl package.
-func RunCurrentPkg(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
-	pwd, err := os.Getwd()
-	opts.SetPkgPath(pwd)
-
-	if err != nil {
-		reporter.ExitWithReport("kpm: internal bug: failed to load working directory")
-	}
-
-	return RunPkgWithOpt(opts)
-}
-
-// RunTarPkg will compile the kcl package from a kcl package tar.
-func RunTarPkg(tarPath string, opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
-	absTarPath, err := utils.AbsTarPath(tarPath)
-	if err != nil {
-		return nil, err
-	}
-	// Extract the tar package to a directory with the same name.
-	// e.g.
-	// 'xxx/xxx/xxx/test.tar' will be extracted to the directory 'xxx/xxx/xxx/test'.
-	destDir := strings.TrimSuffix(absTarPath, filepath.Ext(absTarPath))
-	err = utils.UnTarDir(absTarPath, destDir)
-	if err != nil {
-		return nil, err
-	}
-
-	opts.SetPkgPath(destDir)
-	// The directory after extracting the tar package is taken as the root directory of the package,
-	// and kclvm is called to compile the kcl program under the 'destDir'.
-	// e.g.
-	// if the tar path is 'xxx/xxx/xxx/test.tar',
-	// the 'xxx/xxx/xxx/test' will be taken as the root path of the kcl package to compile.
-	return RunPkgWithOpt(opts)
-}
-
-// RunOciPkg will compile the kcl package from an OCI reference.
-func RunOciPkg(ociRef, version string, opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
-	kpmcli, err := client.NewKpmClient()
-	if err != nil {
-		return nil, err
-	}
-
-	ociOpts, err := kpmcli.ParseOciOptionFromString(ociRef, version)
-
-	if err != nil {
-		return nil, err
-	}
-
-	// 1. Create the temporary directory to pull the tar.
-	tmpDir, err := os.MkdirTemp("", "")
-	if err != nil {
-		return nil, errors.InternalBug
-	}
-	// clean the temp dir.
-	defer os.RemoveAll(tmpDir)
-
-	localPath := ociOpts.AddStoragePathSuffix(tmpDir)
-
-	// 2. Pull the tar.
-	err = oci.Pull(localPath, ociOpts.Reg, ociOpts.Repo, ociOpts.Tag, kpmcli.GetSettings())
-
-	if err != (*reporter.KpmEvent)(nil) {
-		return nil, err
-	}
-
-	// 3.Get the (*.tar) file path.
-	matches, err := filepath.Glob(filepath.Join(localPath, constants.KCL_PKG_TAR))
-	if err != nil || len(matches) != 1 {
-		return nil, errors.FailedPull
-	}
-
-	return RunTarPkg(matches[0], opts)
 }

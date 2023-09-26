@@ -48,7 +48,6 @@ func Login(hostname, username, password string, setting *settings.Settings) erro
 		return errors.FailedLogin
 	}
 
-	reporter.Report("kpm: Login Succeeded")
 	return nil
 }
 
@@ -67,7 +66,6 @@ func Logout(hostname string, setting *settings.Settings) error {
 		return errors.FailedLogout
 	}
 
-	reporter.Report("kpm: Logout Succeeded")
 	return nil
 }
 
@@ -243,8 +241,8 @@ func (ociClient *OciClient) Push(localPath, tag string) *reporter.KpmEvent {
 		return reporter.NewErrorEvent(reporter.FailedPush, err, fmt.Sprintf("failed to push '%s'", ociClient.repo.Reference))
 	}
 
-	reporter.Report("kpm: pushed [registry]", ociClient.repo.Reference)
-	reporter.Report("kpm: digest:", desc.Digest)
+	reporter.ReportMsgTo(fmt.Sprintf("kpm: pushed [registry] %s", ociClient.repo.Reference), ociClient.logWriter)
+	reporter.ReportMsgTo(fmt.Sprintf("kpm: digest: %s", desc.Digest), ociClient.logWriter)
 	return nil
 }
 
