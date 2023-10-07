@@ -354,16 +354,14 @@ func (local *Local) UnmarshalModTOML(data interface{}) error {
 func (dep *Dependencies) MarshalLockTOML() (string, error) {
 	buf := new(bytes.Buffer)
 	if err := toml.NewEncoder(buf).Encode(dep); err != nil {
-		reporter.Report("kpm: failed to lock dependencies version.")
-		return "", err
+		return "", reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, "failed to lock dependencies version")
 	}
 	return buf.String(), nil
 }
 
 func (dep *Dependencies) UnmarshalLockTOML(data string) error {
 	if _, err := toml.NewDecoder(strings.NewReader(data)).Decode(dep); err != nil {
-		reporter.Report("kpm: failed to load kcl.mod.lock.")
-		return err
+		return reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, "failed to load kcl.mod.lock")
 	}
 
 	return nil

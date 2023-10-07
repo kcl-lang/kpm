@@ -1,2 +1,2 @@
-kpm: registry must be specified.
-kpm: run 'kpm registry help' for more information.
+kpm: run 'kpm logout help' for more information
+kpm: registry must be specified

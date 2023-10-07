@@ -37,6 +37,18 @@ func main() {
 		cmd.NewPushCmd(kpmcli),
 		cmd.NewPullCmd(kpmcli),
 	}
+	app.Flags = []cli.Flag{
+		&cli.BoolFlag{
+			Name:  cmd.FLAG_QUIET,
+			Usage: "push in vendor mode",
+		},
+	}
+	app.Before = func(c *cli.Context) error {
+		if c.Bool(cmd.FLAG_QUIET) {
+			kpmcli.SetLogWriter(nil)
+		}
+		return nil
+	}
 	err = app.Run(os.Args)
 	if err != nil {
 		reporter.Fatal(err)

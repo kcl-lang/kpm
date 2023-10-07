@@ -1,0 +1,76 @@
+helloworld:
+  workload:
+    containers:
+      nginx:
+        image: nginx:v1
+        command:
+        - /bin/sh
+        - -c
+        - echo hi
+        args:
+        - /bin/sh
+        - -c
+        - echo hi
+        env:
+          env1: VALUE
+          env2: secret://sec-name/key
+        workingDir: /tmp
+        resources:
+          cpu: '2'
+          memory: 4Gi
+        readinessProbe:
+          probeHandler:
+            url: http://localhost:80
+          initialDelaySeconds: 10
+    secrets:
+      basic-auth:
+        type: basic
+        data:
+          username: admin
+          password: '******'
+    replicas: 2
+    type: Deployment
+    ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+      public: true
+  monitoring:
+    interval: 30s
+    timeout: 15s
+    path: /metrics
+    port: web
+    scheme: http
+helloworldcollaset:
+  workload:
+    containers:
+      nginx:
+        image: nginx:v1
+        command:
+        - /bin/sh
+        - -c
+        - echo hi
+        args:
+        - /bin/sh
+        - -c
+        - echo hi
+        workingDir: /tmp
+    replicas: 2
+    type: CollaSet
+    ports:
+    - port: 80
+      protocol: TCP
+      public: false
+  opsRule:
+    maxUnavailable: 30%
+helloworldjob:
+  workload:
+    containers:
+      busybox:
+        image: busybox:1.28
+        command:
+        - /bin/sh
+        - -c
+        - echo hello
+    replicas: 2
+    schedule: 0 * * * *

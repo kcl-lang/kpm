@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -37,8 +38,11 @@ func NewPkgCmd(kpmcli *client.KpmClient) *cli.Command {
 			tarPath := c.String("target")
 
 			if len(tarPath) == 0 {
-				reporter.Report("kpm: The directory where the tar is generated is required.")
-				reporter.ExitWithReport("kpm: run 'kpm pkg help' for more information.")
+				return reporter.NewErrorEvent(
+					reporter.InvalidCmd,
+					fmt.Errorf("the directory where the tar is generated is required"),
+					"run 'kpm pkg help' for more information",
+				)
 			}
 
 			pwd, err := os.Getwd()

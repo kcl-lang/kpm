@@ -4,12 +4,14 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/api"
 	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/opt"
+	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/runner"
 )
 
@@ -87,7 +89,15 @@ func KpmRun(c *cli.Context, kpmcli *client.KpmClient) error {
 
 	// 'kpm run' compile the current package undor '$pwd'.
 	if runEntry.IsEmpty() {
-		compileResult, err := api.RunCurrentPkg(kclOpts)
+		pwd, err := os.Getwd()
+		kclOpts.SetPkgPath(pwd)
+
+		if err != nil {
+			return reporter.NewErrorEvent(
+				reporter.Bug, err, "internal bugs, please contact us to fix it.",
+			)
+		}
+		compileResult, err := kpmcli.CompileWithOpts(kclOpts)
 		if err != nil {
 			return err
 		}

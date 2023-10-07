@@ -264,15 +264,13 @@ func (deps *Dependencies) loadLockFile(filepath string) error {
 	}
 
 	if err != nil {
-		reporter.Report("kpm: failed to load", filepath)
-		return err
+		return reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, fmt.Sprintf("failed to load '%s'", filepath))
 	}
 
 	err = deps.UnmarshalLockTOML(string(data))
 
 	if err != nil {
-		reporter.Report("kpm: failed to load", filepath)
-		return err
+		return reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, fmt.Sprintf("failed to load '%s'", filepath))
 	}
 
 	return nil

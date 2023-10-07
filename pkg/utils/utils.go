@@ -96,15 +96,12 @@ func ParseRepoNameFromGitUrl(gitUrl string) string {
 func CreateFileIfNotExist(filePath string, storeFunc func() error) error {
 	_, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
-		reporter.Report("kpm: creating new :", filePath)
 		err := storeFunc()
 		if err != nil {
-			reporter.Report("kpm: failed to create: ,", filePath)
-			return err
+			return reporter.NewErrorEvent(reporter.FailedCreateFile, err, fmt.Sprintf("failed to create '%s'", filePath))
 		}
 	} else {
-		reporter.Report("kpm: '" + filePath + "' already exists")
-		return err
+		return reporter.NewErrorEvent(reporter.FileExists, err, fmt.Sprintf("'%s' already exists", filePath))
 	}
 	return nil
 }

@@ -150,9 +150,11 @@ func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, vendorMode bool, kpmcli *cli
 	if len(ociUrl) == 0 {
 		ociUrl, err = genDefaultOciUrlForKclPkg(kclPkg, kpmcli)
 		if err != nil || len(ociUrl) == 0 {
-			reporter.Report("kpm: failed to generate default oci url for current package.")
-			reporter.Report("kpm: run 'kpm push help' for more information.")
-			return errors.FailedPushToOci
+			return reporter.NewErrorEvent(
+				reporter.InvalidCmd,
+				fmt.Errorf("failed to generate default oci url for current package"),
+				"run 'kpm push help' for more information",
+			)
 		}
 	}
 
@@ -166,7 +168,7 @@ func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, vendorMode bool, kpmcli *cli
 		)
 	}
 
-	reporter.Report("kpm: package '" + kclPkg.GetPkgName() + "' will be pushed.")
+	reporter.ReportMsgTo(fmt.Sprintf("kpm: package '%s' will be pushed", kclPkg.GetPkgName()), kpmcli.GetLogWriter())
 	// 4. Push it.
 	err = kpmcli.PushToOci(tarPath, ociOpts)
 	if err != (*reporter.KpmEvent)(nil) {

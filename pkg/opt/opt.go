@@ -36,6 +36,11 @@ func (opts *CompileOptions) AddEntry(entry string) {
 	opts.entries = append(opts.entries, entry)
 }
 
+// SetLogWriter will set the log writer of the compiler.
+func (opts *CompileOptions) SetLogWriter(writer io.Writer) {
+	opts.writer = writer
+}
+
 // Entrirs will return the entries of the compiler.
 func (opts *CompileOptions) Entries() []string {
 	return opts.entries
@@ -74,6 +79,11 @@ func (opts *CompileOptions) PkgPath() string {
 // SetPkgPath will set the home path for a kcl package during compilation
 func (opts *CompileOptions) SetPkgPath(pkgPath string) {
 	opts.Merge(kcl.WithWorkDir(pkgPath))
+}
+
+// LogWriter will return the log writer of the compiler.
+func (opts *CompileOptions) LogWriter() io.Writer {
+	return opts.writer
 }
 
 // Input options of 'kpm init'.

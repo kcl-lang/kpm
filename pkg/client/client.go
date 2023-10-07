@@ -54,6 +54,14 @@ func NewKpmClient() (*KpmClient, error) {
 	}, nil
 }
 
+func (c *KpmClient) SetLogWriter(writer io.Writer) {
+	c.logWriter = writer
+}
+
+func (c *KpmClient) GetLogWriter() io.Writer {
+	return c.logWriter
+}
+
 // SetHomePath will set the home path of kpm.
 func (c *KpmClient) SetHomePath(homePath string) {
 	c.homePath = homePath
@@ -339,26 +347,41 @@ func (c *KpmClient) CompileOciPkg(ociSource, version string, opts *opt.CompileOp
 	return c.CompileTarPkg(matches[0], opts)
 }
 
+// createIfNotExist will create a file if it does not exist.
+func (c *KpmClient) createIfNotExist(filepath string, storeFunc func() error) error {
+	reporter.ReportMsgTo(fmt.Sprintf("kpm: creating new :%s", filepath), c.GetLogWriter())
+	err := utils.CreateFileIfNotExist(
+		filepath,
+		storeFunc,
+	)
+	if err != nil {
+		if errEvent, ok := err.(*reporter.KpmEvent); ok {
+			if errEvent.Type() != reporter.FileExists {
+				return err
+			} else {
+				reporter.ReportMsgTo(fmt.Sprintf("kpm: '%s' already exists", filepath), c.GetLogWriter())
+			}
+		} else {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // InitEmptyPkg will initialize an empty kcl package.
 func (c *KpmClient) InitEmptyPkg(kclPkg *pkg.KclPkg) error {
-	err := utils.CreateFileIfNotExist(
-		kclPkg.ModFile.GetModFilePath(),
-		kclPkg.ModFile.StoreModFile,
-	)
+	err := c.createIfNotExist(kclPkg.ModFile.GetModFilePath(), kclPkg.ModFile.StoreModFile)
 	if err != nil {
 		return err
 	}
 
-	err = utils.CreateFileIfNotExist(
-		kclPkg.ModFile.GetModLockFilePath(),
-		kclPkg.LockDepsVersion,
-	)
+	err = c.createIfNotExist(kclPkg.ModFile.GetModLockFilePath(), kclPkg.LockDepsVersion)
 	if err != nil {
 		return err
 	}
 
-	// create the default kcl program.
-	err = createDefaultPkgIn(kclPkg.HomePath)
+	err = c.createIfNotExist(filepath.Join(kclPkg.ModFile.HomePath, constants.DEFAULT_KCL_FILE_NAME), kclPkg.CreateDefauleMain)
 	if err != nil {
 		return err
 	}
@@ -988,18 +1011,6 @@ func (c *KpmClient) pullTarFromOci(localPath string, ociOpts *opt.OciOptions) er
 		return err
 	}
 
-	return nil
-}
-
-// createDefaultPkgIn will create the default kcl program in the local path.
-func createDefaultPkgIn(localPath string) error {
-	mainProgPath := filepath.Join(localPath, constants.DEFAULT_KCL_FILE_NAME)
-	if !utils.DirExists(mainProgPath) {
-		err := os.WriteFile(mainProgPath, []byte(constants.DEFAULT_KCL_FILE_CONTENT), 0644)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

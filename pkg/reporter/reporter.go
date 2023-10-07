@@ -65,6 +65,9 @@ const (
 	InvalidKclPkg
 	FailedUntarKclPkg
 	FailedLoadKclMod
+	FailedLoadKclModLock
+	FailedCreateFile
+	FileExists
 	CheckSumMismatch
 	CalSumFailed
 	InvalidKpmHomeInCurrentPkg
@@ -97,6 +100,7 @@ const (
 	DependencyNotFound
 	KclModNotFound
 	CompileFailed
+	FailedParseVersion
 )
 
 // KpmEvent is the event used to show kpm logs to users.
@@ -168,5 +172,13 @@ func ReportEventToStderr(event *KpmEvent) {
 
 // ReportEvent reports the event to users to stdout.
 func ReportEventTo(event *KpmEvent, w io.Writer) {
-	fmt.Fprintf(w, "%v", event.Event())
+	if w != nil {
+		fmt.Fprintf(w, "%v", event.Event())
+	}
+}
+
+func ReportMsgTo(msg string, w io.Writer) {
+	if w != nil {
+		fmt.Fprintf(w, "%s\n", msg)
+	}
 }
