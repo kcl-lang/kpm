@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kcl-go/pkg/tools/gen"
 	"kcl-lang.io/kpm/pkg/client"
@@ -11,7 +12,7 @@ import (
 )
 
 // NewImportCmd new a Command for `kpm import`.
-func NewImportCmd(_ *client.KpmClient) *cli.Command {
+func NewImportCmd(kpmcli *client.KpmClient) *cli.Command {
 	return &cli.Command{
 		Hidden: false,
 		Name:   "import",
@@ -47,8 +48,7 @@ func NewImportCmd(_ *client.KpmClient) *cli.Command {
 		},
 		Action: func(c *cli.Context) error {
 			if c.Args().Len() != 1 {
-				reporter.Report("kpm: invalid arguments")
-				reporter.ExitWithReport("kpm: run 'kpm import help' for more information.")
+				return fmt.Errorf("kpm: invalid arguments")
 			}
 			inputFile := c.Args().First()
 
@@ -67,23 +67,22 @@ func NewImportCmd(_ *client.KpmClient) *cli.Command {
 			case "auto":
 				opt.Mode = gen.ModeAuto
 			default:
-				reporter.Report("kpm: invalid mode: ", c.String("mode"))
-				reporter.ExitWithReport("kpm: run 'kpm import help' for more information.")
+				return fmt.Errorf("kpm: invalid mode: %s", c.String("mode"))
 			}
 
 			outputFile := c.String("output")
 			if outputFile == "" {
 				outputFile = "generated.k"
-				reporter.Report("kpm: output file not specified, use default: ", outputFile)
+				reporter.ReportMsgTo("kpm: output file not specified, use default: generated.k", kpmcli.GetLogWriter())
 			}
 
 			if _, err := os.Stat(outputFile); err == nil && !c.Bool("force") {
-				reporter.ExitWithReport("kpm: output file already exist, use --force to overwrite: ", outputFile)
+				return fmt.Errorf("kpm: output file already exist, use --force to overwrite: %s", outputFile)
 			}
 
 			outputWriter, err := os.Create(outputFile)
 			if err != nil {
-				reporter.ExitWithReport("kpm: failed to create output file: ", outputFile)
+				return fmt.Errorf("kpm: failed to create output file: %s", outputFile)
 			}
 
 			return gen.GenKcl(outputWriter, inputFile, nil, opt)
