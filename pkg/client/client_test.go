@@ -98,7 +98,7 @@ func TestDownloadLatestOci(t *testing.T) {
 	assert.Equal(t, dep.Name, "k8s")
 	assert.Equal(t, dep.FullName, "k8s_1.28")
 	assert.Equal(t, dep.Version, "1.28")
-	assert.Equal(t, dep.Sum, "xnYM1FWHAy3m+KcQMQb2rjZouTxumqYt6FGZpu2T4yM=")
+	assert.Equal(t, dep.Sum, "aTxPUVZyr9MdiB3YdiY/8pCh9sC55yURnZdGlJsKG6Q=")
 	assert.NotEqual(t, dep.Source.Oci, nil)
 	assert.Equal(t, dep.Source.Oci.Reg, "ghcr.io")
 	assert.Equal(t, dep.Source.Oci.Repo, "kcl-lang/k8s")
