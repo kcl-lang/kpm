@@ -114,6 +114,13 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 		searchPath = c.homePath
 	}
 
+	// alian the dependencies between kcl.mod and kcl.mod.lock
+	for name, d := range kclPkg.ModFile.Dependencies.Deps {
+		if _, ok := kclPkg.Dependencies.Deps[name]; !ok {
+			kclPkg.Dependencies.Deps[name] = d
+		}
+	}
+
 	for name, d := range kclPkg.Dependencies.Deps {
 		searchFullPath := filepath.Join(searchPath, d.FullName)
 		if !update {
@@ -161,6 +168,11 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 		}
 	}
 
+	// update the kcl.mod and kcl.mod.lock.
+	err := kclPkg.UpdateModAndLockFile()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

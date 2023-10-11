@@ -296,6 +296,25 @@ func TestVendorDeps(t *testing.T) {
 	os.RemoveAll(filepath.Join(testDir, "my_kcl"))
 }
 
+func TestResolveDepsWithOnlyKclMod(t *testing.T) {
+	testDir := getTestDir("resolve_dep_with_kclmod")
+	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl.mod.lock")), false)
+	kclPkg, err := pkg.LoadKclPkg(testDir)
+	assert.Equal(t, err, nil)
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	depsMap, err := kpmcli.ResolveDepsIntoMap(kclPkg)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(depsMap), 1)
+	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl.mod.lock")), true)
+	assert.Equal(t, depsMap["k8s"], filepath.Join(kpmcli.homePath, "k8s_1.17"))
+	assert.Equal(t, utils.DirExists(filepath.Join(kpmcli.homePath, "k8s_1.17")), true)
+	defer func() {
+		err := os.Remove(filepath.Join(testDir, "kcl.mod.lock"))
+		assert.Equal(t, err, nil)
+	}()
+}
+
 func TestResolveDepsVendorMode(t *testing.T) {
 	testDir := getTestDir("resolve_deps")
 	kpm_home := filepath.Join(testDir, "kpm_home")
