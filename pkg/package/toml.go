@@ -210,6 +210,7 @@ func (mod *ModFile) UnmarshalTOML(data interface{}) error {
 const NAME_FLAG = "name"
 const EDITION_FLAG = "edition"
 const VERSION_FLAG = "version"
+const DESCRIPTION_FLAG = "description"
 
 func (pkg *Package) UnmarshalTOML(data interface{}) error {
 	meta, ok := data.(map[string]interface{})
@@ -227,6 +228,10 @@ func (pkg *Package) UnmarshalTOML(data interface{}) error {
 
 	if v, ok := meta[VERSION_FLAG].(string); ok {
 		pkg.Version = v
+	}
+
+	if v, ok := meta[DESCRIPTION_FLAG].(string); ok {
+		pkg.Description = v
 	}
 	return nil
 }

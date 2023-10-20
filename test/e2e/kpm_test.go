@@ -1,12 +1,20 @@
 package e2e
 
 import (
+	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+	"kcl-lang.io/kpm/pkg/constants"
+	"oras.land/oras-go/v2"
+	"oras.land/oras-go/v2/registry/remote"
+	"oras.land/oras-go/v2/registry/remote/auth"
+	"oras.land/oras-go/v2/registry/remote/retry"
 )
 
 var _ = ginkgo.Describe("Kpm CLI Testing", func() {
@@ -135,6 +143,70 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 				gomega.Expect(stdout).To(gomega.Equal(expectedStdout))
 				gomega.Expect(stderr).To(gomega.Equal(expectedStderr))
+			})
+		}
+	})
+
+	ginkgo.Context("testing 'test oci '", func() {
+		testSuitesRoot := filepath.Join(filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "kpm"), "test_oci")
+		testSuites := LoadAllTestSuites(testSuitesRoot)
+		testDataRoot := filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "test_data")
+		for _, ts := range testSuites {
+			ts := ts
+			ginkgo.It(ts.GetTestSuiteInfo(), func() {
+				// 1. Push a package with metadata in OCI manifest
+				workspace := GetWorkspace()
+
+				CopyDir(filepath.Join(testDataRoot, ts.Name), filepath.Join(workspace, ts.Name))
+
+				input := ReplaceAllKeyByValue(ts.Input, "<workspace>", filepath.Join(workspace, ts.Name))
+
+				stdout, stderr, err := ExecKpmWithWorkDir(input, filepath.Join(workspace, ts.Name))
+
+				expectedStdout := ReplaceAllKeyByValue(ts.ExpectStdout, "<workspace>", workspace)
+				expectedStderr := ReplaceAllKeyByValue(ts.ExpectStderr, "<workspace>", workspace)
+
+				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+				if !IsIgnore(expectedStdout) {
+					gomega.Expect(stdout).To(gomega.ContainSubstring(expectedStdout))
+				}
+				if !IsIgnore(expectedStderr) {
+					gomega.Expect(stderr).To(gomega.ContainSubstring(expectedStderr))
+				}
+
+				bytes, err := os.ReadFile(filepath.Join(testDataRoot, ts.Name, "expected_oci_manifest.json"))
+				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+
+				// 2. fetch the metadata in OCI manifest to check if the metadata is correct
+				repo, err := remote.NewRepository("localhost:5001/test/test_push_with_oci_manifest")
+				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+				repo.PlainHTTP = true
+				repo.Client = &auth.Client{
+					Client: retry.DefaultClient,
+					Cache:  auth.DefaultCache,
+					Credential: auth.StaticCredential("localhost:5001", auth.Credential{
+						Username: "test",
+						Password: "1234",
+					}),
+				}
+
+				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+				_, manifestContent, err := oras.FetchBytes(context.Background(), repo, "0.0.1", oras.DefaultFetchBytesOptions)
+				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+				var manifest_got v1.Manifest
+				err = json.Unmarshal([]byte(manifestContent), &manifest_got)
+				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+
+				var manifest_expect v1.Manifest
+				err = json.Unmarshal(bytes, &manifest_expect)
+				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+				gomega.Expect(len(manifest_expect.Annotations)).To(gomega.Equal(len(manifest_got.Annotations)))
+				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_NAME]).
+					To(gomega.Equal(manifest_got.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_NAME]))
+				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_VERSION]).
+					To(gomega.Equal(manifest_got.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_VERSION]))
+				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_DESCRIPTION]).
+					To(gomega.Equal(manifest_got.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_DESCRIPTION]))
 			})
 		}
 	})
