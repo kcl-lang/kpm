@@ -1028,6 +1028,20 @@ func (c *KpmClient) pullTarFromOci(localPath string, ociOpts *opt.OciOptions) er
 	return nil
 }
 
+// FetchOciManifestConfIntoJsonStr will fetch the oci manifest config of the kcl package from the oci registry and return it into json string.
+func (c *KpmClient) FetchOciManifestIntoJsonStr(opts opt.OciFetchOptions) (string, error) {
+	ociCli, err := oci.NewOciClient(opts.Reg, opts.Repo, &c.settings)
+	if err != nil {
+		return "", err
+	}
+
+	manifestJson, err := ociCli.FetchManifestIntoJsonStr(opts)
+	if err != nil {
+		return "", err
+	}
+	return manifestJson, nil
+}
+
 // check sum for a Dependency.
 func check(dep pkg.Dependency, newDepPath string) bool {
 	if dep.Sum == "" {

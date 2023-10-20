@@ -11,6 +11,7 @@ import (
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/reporter"
+	"oras.land/oras-go/v2"
 )
 
 // CompileOptions is the input options of 'kpm run'.
@@ -217,4 +218,10 @@ func (oci *OciOptions) AddStoragePathSuffix(pathPrefix string) string {
 
 type OciManifestOptions struct {
 	Annotations map[string]string
+}
+
+// OciFetchOptions is the input options of the api to fetch oci manifest.
+type OciFetchOptions struct {
+	oras.FetchBytesOptions
+	OciOptions
 }
