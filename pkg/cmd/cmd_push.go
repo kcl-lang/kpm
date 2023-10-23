@@ -167,6 +167,7 @@ func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, vendorMode bool, kpmcli *cli
 			"only support url scheme 'oci://'.",
 		)
 	}
+	ociOpts.Annotations = oci.GenOciManifestFromPkg(kclPkg)
 
 	reporter.ReportMsgTo(fmt.Sprintf("kpm: package '%s' will be pushed", kclPkg.GetPkgName()), kpmcli.GetLogWriter())
 	// 4. Push it.
@@ -174,6 +175,5 @@ func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, vendorMode bool, kpmcli *cli
 	if err != (*reporter.KpmEvent)(nil) {
 		return err
 	}
-
 	return nil
 }

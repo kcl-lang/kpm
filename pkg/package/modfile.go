@@ -21,9 +21,10 @@ const (
 
 // 'Package' is the kcl package section of 'kcl.mod'.
 type Package struct {
-	Name    string `toml:"name,omitempty"`    // kcl package name
-	Edition string `toml:"edition,omitempty"` // kcl compiler version
-	Version string `toml:"version,omitempty"` // kcl package version
+	Name        string `toml:"name,omitempty"`        // kcl package name
+	Edition     string `toml:"edition,omitempty"`     // kcl compiler version
+	Version     string `toml:"version,omitempty"`     // kcl package version
+	Description string `toml:"description,omitempty"` // kcl package description
 }
 
 // 'ModFile' is kcl package file 'kcl.mod'.

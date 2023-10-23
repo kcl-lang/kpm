@@ -142,10 +142,11 @@ func (opts *GitOptions) Validate() error {
 // OciOptions for download oci packages.
 // kpm will download packages from oci registry by '{Reg}/{Repo}/{PkgName}:{Tag}'.
 type OciOptions struct {
-	Reg     string
-	Repo    string
-	Tag     string
-	PkgName string
+	Reg         string
+	Repo        string
+	Tag         string
+	PkgName     string
+	Annotations map[string]string
 }
 
 func (opts *OciOptions) Validate() error {
@@ -212,4 +213,8 @@ func ParseOciUrl(ociUrl string) (*OciOptions, *reporter.KpmEvent) {
 // You will get a path '/usr/test/docker.io/test/testRepo/v0.0.1'.
 func (oci *OciOptions) AddStoragePathSuffix(pathPrefix string) string {
 	return filepath.Join(filepath.Join(filepath.Join(pathPrefix, oci.Reg), oci.Repo), oci.Tag)
+}
+
+type OciManifestOptions struct {
+	Annotations map[string]string
 }

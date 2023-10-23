@@ -10,6 +10,20 @@ import (
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
+func TestModFileWithDesc(t *testing.T) {
+	testPath := getTestDir("test_mod_with_desc")
+	isExist, err := ModFileExists(testPath)
+	assert.Equal(t, isExist, true)
+	assert.Equal(t, err, nil)
+	modFile, err := LoadModFile(testPath)
+	assert.Equal(t, modFile.Pkg.Name, "test_mod_with_desc")
+	assert.Equal(t, modFile.Pkg.Version, "0.0.1")
+	assert.Equal(t, modFile.Pkg.Edition, "0.0.1")
+	assert.Equal(t, modFile.Pkg.Description, "This is a test module with a description")
+	assert.Equal(t, len(modFile.Dependencies.Deps), 0)
+	assert.Equal(t, err, nil)
+}
+
 func TestModFileExists(t *testing.T) {
 	testDir := initTestDir("test_data_modfile")
 	// there is no 'kcl.mod' and 'kcl.mod.lock'.

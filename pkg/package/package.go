@@ -184,3 +184,13 @@ const LOCK_FILE_NAME = "kcl.mod.lock"
 func (kclPkg *KclPkg) GetLockFilePath() string {
 	return filepath.Join(kclPkg.HomePath, LOCK_FILE_NAME)
 }
+
+// GetPkgVersion returns the version of package.
+func (KclPkg *KclPkg) GetPkgVersion() string {
+	return KclPkg.ModFile.Pkg.Version
+}
+
+// GetPkgDescription returns the description of package.
+func (KclPkg *KclPkg) GetPkgDescription() string {
+	return KclPkg.ModFile.Pkg.Description
+}
