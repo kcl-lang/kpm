@@ -832,7 +832,9 @@ func (c *KpmClient) PushToOci(localPath string, ociOpts *opt.OciOptions) error {
 		)
 	}
 
-	return ociCli.Push(localPath, ociOpts.Tag, ociOpts.Annotations)
+	return ociCli.PushWithOciManifest(localPath, ociOpts.Tag, &opt.OciManifestOptions{
+		Annotations: ociOpts.Annotations,
+	})
 }
 
 // LoginOci will login to the oci registry.

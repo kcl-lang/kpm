@@ -214,3 +214,7 @@ func ParseOciUrl(ociUrl string) (*OciOptions, *reporter.KpmEvent) {
 func (oci *OciOptions) AddStoragePathSuffix(pathPrefix string) string {
 	return filepath.Join(filepath.Join(filepath.Join(pathPrefix, oci.Reg), oci.Repo), oci.Tag)
 }
+
+type OciManifestOptions struct {
+	Annotations map[string]string
+}

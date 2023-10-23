@@ -10,6 +10,7 @@ import (
 	"github.com/thoas/go-funk"
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/errors"
+	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/semver"
@@ -200,7 +201,12 @@ func (ociClient *OciClient) ContainsTag(tag string) (bool, *reporter.KpmEvent) {
 }
 
 // Push will push the oci artifacts to oci registry from local path
-func (ociClient *OciClient) Push(localPath, tag string, annotations map[string]string) *reporter.KpmEvent {
+func (ociClient *OciClient) Push(localPath, tag string) *reporter.KpmEvent {
+	return ociClient.PushWithOciManifest(localPath, tag, &opt.OciManifestOptions{})
+}
+
+// PushWithManifest will push the oci artifacts to oci registry from local path
+func (ociClient *OciClient) PushWithOciManifest(localPath, tag string, manifest_opts *opt.OciManifestOptions) *reporter.KpmEvent {
 	// 0. Create a file store
 	fs, err := file.New(filepath.Dir(localPath))
 	if err != nil {
@@ -226,7 +232,7 @@ func (ociClient *OciClient) Push(localPath, tag string, annotations map[string]s
 
 	// 2. Pack the files, tag the packed manifest and add metadata as annotations
 	packOpts := oras.PackManifestOptions{
-		ManifestAnnotations: annotations,
+		ManifestAnnotations: manifest_opts.Annotations,
 		Layers:              fileDescriptors,
 	}
 	manifestDescriptor, err := oras.PackManifest(*ociClient.ctx, fs, oras.PackManifestVersion1_1_RC4, DEFAULT_OCI_ARTIFACT_TYPE, packOpts)
@@ -318,7 +324,7 @@ func Push(localPath, hostName, repoName, tag string, settings *settings.Settings
 	}
 
 	// Push the oci package by the oci client.
-	return ociClient.Push(localPath, tag, make(map[string]string))
+	return ociClient.Push(localPath, tag)
 }
 
 func GenOciManifestFromPkg(kclPkg *pkg.KclPkg) map[string]string {
