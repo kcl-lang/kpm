@@ -206,7 +206,7 @@ func (ociClient *OciClient) Push(localPath, tag string) *reporter.KpmEvent {
 }
 
 // PushWithManifest will push the oci artifacts to oci registry from local path
-func (ociClient *OciClient) PushWithOciManifest(localPath, tag string, manifest_opts *opt.OciManifestOptions) *reporter.KpmEvent {
+func (ociClient *OciClient) PushWithOciManifest(localPath, tag string, opts *opt.OciManifestOptions) *reporter.KpmEvent {
 	// 0. Create a file store
 	fs, err := file.New(filepath.Dir(localPath))
 	if err != nil {
@@ -232,7 +232,7 @@ func (ociClient *OciClient) PushWithOciManifest(localPath, tag string, manifest_
 
 	// 2. Pack the files, tag the packed manifest and add metadata as annotations
 	packOpts := oras.PackManifestOptions{
-		ManifestAnnotations: manifest_opts.Annotations,
+		ManifestAnnotations: opts.Annotations,
 		Layers:              fileDescriptors,
 	}
 	manifestDescriptor, err := oras.PackManifest(*ociClient.ctx, fs, oras.PackManifestVersion1_1_RC4, DEFAULT_OCI_ARTIFACT_TYPE, packOpts)
