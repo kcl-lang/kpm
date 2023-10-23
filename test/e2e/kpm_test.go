@@ -10,7 +10,9 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/constants"
+	"kcl-lang.io/kpm/pkg/opt"
 	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/registry/remote"
 	"oras.land/oras-go/v2/registry/remote/auth"
@@ -207,6 +209,27 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 					To(gomega.Equal(manifest_got.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_VERSION]))
 				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_DESCRIPTION]).
 					To(gomega.Equal(manifest_got.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_DESCRIPTION]))
+			})
+
+			ginkgo.It("testing 'fetch api '", func() {
+				kpmcli, err := client.NewKpmClient()
+				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+				jsonstr, err := kpmcli.FetchOciManifestIntoJsonStr(opt.OciFetchOptions{
+					FetchBytesOptions: oras.DefaultFetchBytesOptions,
+					OciOptions: opt.OciOptions{
+						Reg:  "localhost:5001",
+						Repo: "test/kcl2",
+						Tag:  "0.0.1",
+					},
+				})
+				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+				var manifest_expect v1.Manifest
+				err = json.Unmarshal([]byte(jsonstr), &manifest_expect)
+				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+				gomega.Expect(len(manifest_expect.Annotations)).To(gomega.Equal(4))
+				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_NAME]).To(gomega.Equal("kcl2"))
+				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_VERSION]).To(gomega.Equal("0.0.1"))
+				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_DESCRIPTION]).To(gomega.Equal("This is the kcl package named kcl2"))
 			})
 		}
 	})
