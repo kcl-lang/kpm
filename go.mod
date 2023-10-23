@@ -10,7 +10,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/urfave/cli/v2 v2.25.0
 	gotest.tools/v3 v3.4.0
-	kcl-lang.io/kcl-go v0.6.0-alpha.1
+	kcl-lang.io/kcl-go v0.6.0
 )
 
 require (
@@ -91,7 +91,7 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	kcl-lang.io/kcl-artifact-go v0.6.0-alpha.1 // indirect
+	kcl-lang.io/kcl-artifact-go v0.6.0 // indirect
 )
 
 require (
