@@ -49,7 +49,7 @@ kpm init helloworld
 您可以为 helloworld 包增加一个 README.md 文件保存在包的根目录下，用来展示在 AH 的首页中。
 ```
 echo "## Introduction" >> helloworld/README.md
-echo "This is a kcl package named helloworld.” >> helloworld/README.md
+echo "This is a kcl package named helloworld." >> helloworld/README.md
 ```
 
 ### 4. 提交您的包
@@ -64,7 +64,7 @@ git add .
 
 使用 `git commit -s` 命令提交您的包, 我们推荐您的 commit message 遵循  “publish package <pkg_name>” 的格式。
 ```
-git commit -m “publish package helloworld” -s
+git commit -m"publish package helloworld" -s
 ```
 
 使用 `git push` 命令将您的包提交到您的分支 publish-pkg-<pkg_name> 中
