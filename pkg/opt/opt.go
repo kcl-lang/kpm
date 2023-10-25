@@ -52,6 +52,11 @@ func (opts *CompileOptions) ExtendEntries(entries []string) {
 	opts.entries = append(opts.entries, entries...)
 }
 
+// SetEntries will set the entries of the compiler.
+func (opts *CompileOptions) SetEntries(entries []string) {
+	opts.entries = entries
+}
+
 // SetHasSettingsYaml will set the 'hasSettingsYaml' flag.
 func (opts *CompileOptions) SetHasSettingsYaml(hasSettingsYaml bool) {
 	opts.hasSettingsYaml = hasSettingsYaml
