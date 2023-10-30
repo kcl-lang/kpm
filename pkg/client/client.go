@@ -344,9 +344,9 @@ func (c *KpmClient) CompileOciPkg(ociSource, version string, opts *opt.CompileOp
 	localPath := ociOpts.AddStoragePathSuffix(tmpDir)
 
 	// 2. Pull the tar.
-	err = oci.Pull(localPath, ociOpts.Reg, ociOpts.Repo, ociOpts.Tag, c.GetSettings())
+	err = c.pullTarFromOci(localPath, ociOpts)
 
-	if err != (*reporter.KpmEvent)(nil) {
+	if err != nil {
 		return nil, err
 	}
 
@@ -1012,10 +1012,11 @@ func (c *KpmClient) pullTarFromOci(localPath string, ociOpts *opt.OciOptions) er
 		tagSelected = ociOpts.Tag
 	}
 
+	full_repo := utils.JoinPath(ociOpts.Reg, ociOpts.Repo)
 	reporter.ReportEventTo(
 		reporter.NewEvent(
 			reporter.Pulling,
-			fmt.Sprintf("pulling '%s'.", ociCli.GetReference()),
+			fmt.Sprintf("pulling '%s:%s' from '%s'.", ociOpts.Repo, tagSelected, full_repo),
 		),
 		c.logWriter,
 	)

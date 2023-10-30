@@ -765,8 +765,8 @@ honnef.co/go/tools v0.0.1-2020.1.3/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9
 honnef.co/go/tools v0.0.1-2020.1.4/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9vFzvIQ3k=
 kcl-lang.io/kcl-artifact-go v0.6.0 h1:J/1FKzgGRqzFDkq0amBWxCdXXRMrtg5oT3IGtoo9sgU=
 kcl-lang.io/kcl-artifact-go v0.6.0/go.mod h1:c07mqi9Hu2UjPW7lYfHhAAWOlZiB7lo7Vkr4jL5ov/M=
-kcl-lang.io/kcl-go v0.6.0 h1:gmbTZ5VfLxL2I2lGnVG2Tpin750YMHTFQeINfj7jKBk=
-kcl-lang.io/kcl-go v0.6.0/go.mod h1:1/xEscOhVGNabr9+rYC5peFDIjphbthYqk8UyHzaPRk=
+kcl-lang.io/kcl-go v0.6.1 h1:we/e3qvllsOoQj0YQht+yNxI+QFLWEmYn4FQ3zAvv9E=
+kcl-lang.io/kcl-go v0.6.1/go.mod h1:1/xEscOhVGNabr9+rYC5peFDIjphbthYqk8UyHzaPRk=
 oras.land/oras-go v1.2.3 h1:v8PJl+gEAntI1pJ/LCrDgsuk+1PKVavVEPsYIHFE5uY=
 oras.land/oras-go v1.2.3/go.mod h1:M/uaPdYklze0Vf3AakfarnpoEckvw0ESbRdN8Z1vdJg=
 oras.land/oras-go/v2 v2.3.0 h1:lqX1aXdN+DAmDTKjiDyvq85cIaI4RkIKp/PghWlAGIU=

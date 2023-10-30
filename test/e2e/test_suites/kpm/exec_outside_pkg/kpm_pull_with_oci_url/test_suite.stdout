@@ -1,4 +1,4 @@
 kpm: start to pull 'oci://localhost:5001/test/k8s'.
 kpm: the lastest version '1.27' will be pulled.
-kpm: pulling 'localhost:5001/test/k8s'.
+kpm: pulling '/test/k8s:1.27' from 'localhost:5001/test/k8s'.
 kpm: pulled 'oci://localhost:5001/test/k8s' in '<workspace>/localhost:5001/test/k8s' successfully.
