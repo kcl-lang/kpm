@@ -77,8 +77,8 @@ func RunWithOpt(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 				opts.Merge(kcl.WithKFilenames(filepath.Join(opts.PkgPath(), entry)))
 			}
 		}
-	} else {
-		// no entry
+	} else if !opts.HasSettingsYaml() && len(opts.KFilenameList) == 0 {
+		// If no entry, no kcl files and no settings files.
 		opts.Merge(kcl.WithKFilenames(opts.PkgPath()))
 	}
 	opts.Merge(kcl.WithWorkDir(opts.PkgPath()))
