@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/otiai10/copy"
@@ -711,14 +712,14 @@ func TestUpdateWithKclMod(t *testing.T) {
 	expected_content, err := os.ReadFile(expected_path)
 
 	assert.Equal(t, err, nil)
-	assert.Equal(t, string(got_content), string(expected_content))
+	expect := strings.ReplaceAll(string(expected_content), "\r\n", "\n")
+	assert.Equal(t, string(got_content), expect)
 
 	defer func() {
 		err := os.RemoveAll(dest_testDir)
 		assert.Equal(t, err, nil)
 	}()
 }
-
 
 func TestUpdateWithKclModlock(t *testing.T) {
 	kpmcli, err := NewKpmClient()

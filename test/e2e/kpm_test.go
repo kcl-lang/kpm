@@ -232,7 +232,7 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_NAME]).To(gomega.Equal("kcl2"))
 				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_VERSION]).To(gomega.Equal("0.0.1"))
 				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_DESCRIPTION]).To(gomega.Equal("This is the kcl package named kcl2"))
-				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_SUM]).To(gomega.Equal("zQ7PTOcJi4gzXqypCWML6bsjToQU+E9Q2WZw/N3WnNY="))
+				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_SUM]).To(gomega.Equal("Y/QXruiaxcJcmOnKWl4UEFuUqKTtbi4jTTeuEjeGV8s="))
 			})
 		}
 	})
