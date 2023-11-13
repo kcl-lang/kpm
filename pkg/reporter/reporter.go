@@ -98,6 +98,8 @@ const (
 	AddItselfAsDep
 	PkgTagExists
 	DependencyNotFound
+	RemoveDep
+	AddDep
 	KclModNotFound
 	CompileFailed
 	FailedParseVersion

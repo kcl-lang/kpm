@@ -38,8 +38,10 @@ func HashDir(dir string) (string, error) {
 
 		// files in the ".git "directory will cause the same repository, cloned at different times,
 		// has different checksum.
-		if strings.Contains(path, ".git") {
-			return nil
+		for _, ignore := range ignores {
+			if strings.Contains(path, ignore) {
+				return nil
+			}
 		}
 
 		f, err := os.Open(path)

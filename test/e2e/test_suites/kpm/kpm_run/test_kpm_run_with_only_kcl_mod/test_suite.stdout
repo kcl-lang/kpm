@@ -1,4 +1,4 @@
-kpm: downloading 'test/k8s:1.27' from 'localhost:5001/test/k8s:1.27'.
+kpm: adding 'k8s'
 apiVersion: v1
 kind: Pod
 metadata:

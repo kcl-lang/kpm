@@ -176,7 +176,7 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 					gomega.Expect(stderr).To(gomega.ContainSubstring(expectedStderr))
 				}
 
-				bytes, err := os.ReadFile(filepath.Join(testDataRoot, ts.Name, "expected_oci_manifest.json"))
+				bytes, err := os.ReadFile(filepath.Join(testDataRoot, "expected_oci_manifest.json"))
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 
 				// 2. fetch the metadata in OCI manifest to check if the metadata is correct
@@ -209,6 +209,8 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 					To(gomega.Equal(manifest_got.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_VERSION]))
 				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_DESCRIPTION]).
 					To(gomega.Equal(manifest_got.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_DESCRIPTION]))
+				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_SUM]).
+					To(gomega.Equal(manifest_got.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_SUM]))
 			})
 
 			ginkgo.It("testing 'fetch api '", func() {
@@ -226,10 +228,11 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 				var manifest_expect v1.Manifest
 				err = json.Unmarshal([]byte(jsonstr), &manifest_expect)
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
-				gomega.Expect(len(manifest_expect.Annotations)).To(gomega.Equal(4))
+				gomega.Expect(len(manifest_expect.Annotations)).To(gomega.Equal(5))
 				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_NAME]).To(gomega.Equal("kcl2"))
 				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_VERSION]).To(gomega.Equal("0.0.1"))
 				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_DESCRIPTION]).To(gomega.Equal("This is the kcl package named kcl2"))
+				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_SUM]).To(gomega.Equal("zQ7PTOcJi4gzXqypCWML6bsjToQU+E9Q2WZw/N3WnNY="))
 			})
 		}
 	})

@@ -194,3 +194,8 @@ func (KclPkg *KclPkg) GetPkgVersion() string {
 func (KclPkg *KclPkg) GetPkgDescription() string {
 	return KclPkg.ModFile.Pkg.Description
 }
+
+// GenCheckSum generates the checksum of the current kcl package.
+func (KclPkg *KclPkg) GenCheckSum() (string, error) {
+	return utils.HashDir(KclPkg.HomePath)
+}

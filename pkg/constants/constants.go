@@ -17,5 +17,6 @@ const (
 	DEFAULT_KCL_OCI_MANIFEST_NAME        = "org.kcllang.package.name"
 	DEFAULT_KCL_OCI_MANIFEST_VERSION     = "org.kcllang.package.version"
 	DEFAULT_KCL_OCI_MANIFEST_DESCRIPTION = "org.kcllang.package.description"
+	DEFAULT_KCL_OCI_MANIFEST_SUM         = "org.kcllang.package.sum"
 	DEFAULT_CREATE_OCI_MANIFEST_TIME     = "org.opencontainers.image.created"
 )
