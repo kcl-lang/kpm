@@ -243,7 +243,7 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 	return nil
 }
 
-// / UpdateDeps will update the dependencies.
+// UpdateDeps will update the dependencies.
 func (c *KpmClient) UpdateDeps(kclPkg *pkg.KclPkg) error {
 	_, err := c.ResolveDepsMetadataInJsonStr(kclPkg, true)
 	if err != nil {
