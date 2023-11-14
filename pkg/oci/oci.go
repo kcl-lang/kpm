@@ -338,10 +338,16 @@ func Push(localPath, hostName, repoName, tag string, settings *settings.Settings
 	return ociClient.Push(localPath, tag)
 }
 
-func GenOciManifestFromPkg(kclPkg *pkg.KclPkg) map[string]string {
+// GenOciManifestFromPkg will generate the oci manifest from the kcl package.
+func GenOciManifestFromPkg(kclPkg *pkg.KclPkg) (map[string]string, error) {
 	res := make(map[string]string)
 	res[constants.DEFAULT_KCL_OCI_MANIFEST_NAME] = kclPkg.GetPkgName()
 	res[constants.DEFAULT_KCL_OCI_MANIFEST_VERSION] = kclPkg.GetPkgVersion()
 	res[constants.DEFAULT_KCL_OCI_MANIFEST_DESCRIPTION] = kclPkg.GetPkgDescription()
-	return res
+	sum, err := kclPkg.GenCheckSum()
+	if err != nil {
+		return nil, err
+	}
+	res[constants.DEFAULT_KCL_OCI_MANIFEST_SUM] = sum
+	return res, nil
 }

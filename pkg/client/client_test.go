@@ -8,8 +8,10 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/opt"
@@ -686,4 +688,65 @@ func TestParseOciOptionFromString(t *testing.T) {
 	assert.Equal(t, ociOption.Reg, "test_reg")
 	assert.Equal(t, ociOption.Repo, "/test_oci_repo")
 	assert.Equal(t, ociOption.Tag, "test_tag")
+}
+
+func TestUpdateWithKclMod(t *testing.T) {
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	testDir := getTestDir("test_update")
+	src_testDir := filepath.Join(testDir, "test_update_kcl_mod")
+	dest_testDir := filepath.Join(testDir, "test_update_kcl_mod_tmp")
+	err = copy.Copy(src_testDir, dest_testDir)
+	assert.Equal(t, err, nil)
+
+	kclPkg, err := pkg.LoadKclPkg(dest_testDir)
+	assert.Equal(t, err, nil)
+	err = kpmcli.UpdateDeps(kclPkg)
+	assert.Equal(t, err, nil)
+	got_lock_file := filepath.Join(dest_testDir, "kcl.mod.lock")
+	got_content, err := os.ReadFile(got_lock_file)
+	assert.Equal(t, err, nil)
+
+	expected_path := filepath.Join(dest_testDir, "expected")
+	expected_content, err := os.ReadFile(expected_path)
+
+	assert.Equal(t, err, nil)
+	expect := strings.ReplaceAll(string(expected_content), "\r\n", "\n")
+	assert.Equal(t, string(got_content), expect)
+
+	defer func() {
+		err := os.RemoveAll(dest_testDir)
+		assert.Equal(t, err, nil)
+	}()
+}
+
+func TestUpdateWithKclModlock(t *testing.T) {
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	testDir := getTestDir("test_update")
+	src_testDir := filepath.Join(testDir, "test_update_kcl_mod_lock")
+	dest_testDir := filepath.Join(testDir, "test_update_kcl_mod_lock_tmp")
+	err = copy.Copy(src_testDir, dest_testDir)
+	assert.Equal(t, err, nil)
+
+	kclPkg, err := pkg.LoadKclPkg(dest_testDir)
+	assert.Equal(t, err, nil)
+	err = kpmcli.UpdateDeps(kclPkg)
+	assert.Equal(t, err, nil)
+	got_lock_file := filepath.Join(dest_testDir, "kcl.mod.lock")
+	got_content, err := os.ReadFile(got_lock_file)
+	assert.Equal(t, err, nil)
+
+	expected_path := filepath.Join(dest_testDir, "expected")
+	expected_content, err := os.ReadFile(expected_path)
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, string(got_content), string(expected_content))
+
+	defer func() {
+		err := os.RemoveAll(dest_testDir)
+		assert.Equal(t, err, nil)
+	}()
 }

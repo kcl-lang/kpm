@@ -37,6 +37,7 @@ func main() {
 		cmd.NewLogoutCmd(kpmcli),
 		cmd.NewPushCmd(kpmcli),
 		cmd.NewPullCmd(kpmcli),
+		cmd.NewUpdateCmd(kpmcli),
 	}
 	app.Flags = []cli.Flag{
 		&cli.BoolFlag{

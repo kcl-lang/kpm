@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/otiai10/copy"
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/constants"
@@ -22,6 +23,7 @@ import (
 	"kcl-lang.io/kpm/pkg/runner"
 	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/utils"
+	"oras.land/oras-go/v2"
 )
 
 // KpmClient is the client of kpm.
@@ -82,6 +84,50 @@ func (c *KpmClient) GetSettings() *settings.Settings {
 	return &c.settings
 }
 
+func (c *KpmClient) LoadPkgFromPath(pkgPath string) (*pkg.KclPkg, error) {
+	modFile, err := c.LoadModFile(pkgPath)
+	if err != nil {
+		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod' in '%s'.", pkgPath))
+	}
+
+	// Get dependencies from kcl.mod.lock.
+	deps, err := c.LoadLockDeps(pkgPath)
+
+	if err != nil {
+		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod.lock' in '%s'.", pkgPath))
+	}
+
+	return &pkg.KclPkg{
+		ModFile:      *modFile,
+		HomePath:     pkgPath,
+		Dependencies: *deps,
+	}, nil
+}
+
+func (c *KpmClient) LoadModFile(pkgPath string) (*pkg.ModFile, error) {
+	modFile := new(pkg.ModFile)
+	err := modFile.LoadModFile(filepath.Join(pkgPath, pkg.MOD_FILE))
+	if err != nil {
+		return nil, err
+	}
+
+	modFile.HomePath = pkgPath
+
+	if modFile.Dependencies.Deps == nil {
+		modFile.Dependencies.Deps = make(map[string]pkg.Dependency)
+	}
+	err = c.FillDependenciesInfo(modFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return modFile, nil
+}
+
+func (c *KpmClient) LoadLockDeps(pkgPath string) (*pkg.Dependencies, error) {
+	return pkg.LoadLockDeps(pkgPath)
+}
+
 // ResolveDepsIntoMap will calculate the map of kcl package name and local storage path of the external packages.
 func (c *KpmClient) ResolveDepsIntoMap(kclPkg *pkg.KclPkg) (map[string]string, error) {
 	err := c.ResolvePkgDepsMetadata(kclPkg, true)
@@ -115,8 +161,29 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 	}
 
 	// alian the dependencies between kcl.mod and kcl.mod.lock
+	// clean the dependencies in kcl.mod.lock which not in kcl.mod
+	for name := range kclPkg.Dependencies.Deps {
+		if _, ok := kclPkg.ModFile.Dependencies.Deps[name]; !ok {
+			reporter.ReportEventTo(
+				reporter.NewEvent(
+					reporter.RemoveDep,
+					fmt.Sprintf("removing '%s'", name),
+				),
+				c.logWriter,
+			)
+			delete(kclPkg.Dependencies.Deps, name)
+		}
+	}
+	// add the dependencies in kcl.mod which not in kcl.mod.lock
 	for name, d := range kclPkg.ModFile.Dependencies.Deps {
 		if _, ok := kclPkg.Dependencies.Deps[name]; !ok {
+			reporter.ReportEventTo(
+				reporter.NewEvent(
+					reporter.AddDep,
+					fmt.Sprintf("adding '%s'", name),
+				),
+				c.logWriter,
+			)
 			kclPkg.Dependencies.Deps[name] = d
 		}
 	}
@@ -170,6 +237,20 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 
 	// update the kcl.mod and kcl.mod.lock.
 	err := kclPkg.UpdateModAndLockFile()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateDeps will update the dependencies.
+func (c *KpmClient) UpdateDeps(kclPkg *pkg.KclPkg) error {
+	_, err := c.ResolveDepsMetadataInJsonStr(kclPkg, true)
+	if err != nil {
+		return err
+	}
+
+	err = kclPkg.UpdateModAndLockFile()
 	if err != nil {
 		return err
 	}
@@ -564,10 +645,33 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 
 // FillDepInfo will fill registry information for a dependency.
 func (c *KpmClient) FillDepInfo(dep *pkg.Dependency) error {
-	if dep.Source.Oci != nil {
+	if dep.Source.Git == nil {
 		dep.Source.Oci.Reg = c.GetSettings().DefaultOciRegistry()
 		urlpath := utils.JoinPath(c.GetSettings().DefaultOciRepo(), dep.Name)
 		dep.Source.Oci.Repo = urlpath
+		manifest := ocispec.Manifest{}
+		jsonDesc, err := c.FetchOciManifestIntoJsonStr(opt.OciFetchOptions{
+			FetchBytesOptions: oras.DefaultFetchBytesOptions,
+			OciOptions: opt.OciOptions{
+				Reg:  c.GetSettings().DefaultOciRegistry(),
+				Repo: fmt.Sprintf("%s/%s", c.GetSettings().DefaultOciRepo(), dep.Name),
+				Tag:  dep.Version,
+			},
+		})
+
+		if err != nil {
+			return err
+		}
+
+		err = json.Unmarshal([]byte(jsonDesc), &manifest)
+		if err != nil {
+			return err
+		}
+
+		if value, ok := manifest.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_SUM]; ok {
+			dep.Sum = value
+		}
+		return nil
 	}
 	return nil
 }
