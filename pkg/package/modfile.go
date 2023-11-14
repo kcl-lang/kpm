@@ -220,7 +220,7 @@ func NewModFile(opts *opt.InitOptions) *ModFile {
 }
 
 // Load the kcl.mod file.
-func (mod *ModFile) loadModFile(filepath string) error {
+func (mod *ModFile) LoadModFile(filepath string) error {
 
 	modData, err := os.ReadFile(filepath)
 	if err != nil {
@@ -239,7 +239,7 @@ func (mod *ModFile) loadModFile(filepath string) error {
 // LoadModFile load the contents of the 'kcl.mod' file in the path.
 func LoadModFile(homePath string) (*ModFile, error) {
 	modFile := new(ModFile)
-	err := modFile.loadModFile(filepath.Join(homePath, MOD_FILE))
+	err := modFile.LoadModFile(filepath.Join(homePath, MOD_FILE))
 	if err != nil {
 		return nil, err
 	}

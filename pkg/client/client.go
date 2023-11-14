@@ -84,6 +84,50 @@ func (c *KpmClient) GetSettings() *settings.Settings {
 	return &c.settings
 }
 
+func (c *KpmClient) LoadPkgFromPath(pkgPath string) (*pkg.KclPkg, error) {
+	modFile, err := c.LoadModFile(pkgPath)
+	if err != nil {
+		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod' in '%s'.", pkgPath))
+	}
+
+	// Get dependencies from kcl.mod.lock.
+	deps, err := c.LoadLockDeps(pkgPath)
+
+	if err != nil {
+		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod.lock' in '%s'.", pkgPath))
+	}
+
+	return &pkg.KclPkg{
+		ModFile:      *modFile,
+		HomePath:     pkgPath,
+		Dependencies: *deps,
+	}, nil
+}
+
+func (c *KpmClient) LoadModFile(pkgPath string) (*pkg.ModFile, error) {
+	modFile := new(pkg.ModFile)
+	err := modFile.LoadModFile(filepath.Join(pkgPath, pkg.MOD_FILE))
+	if err != nil {
+		return nil, err
+	}
+
+	modFile.HomePath = pkgPath
+
+	if modFile.Dependencies.Deps == nil {
+		modFile.Dependencies.Deps = make(map[string]pkg.Dependency)
+	}
+	err = c.FillDependenciesInfo(modFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return modFile, nil
+}
+
+func (c *KpmClient) LoadLockDeps(pkgPath string) (*pkg.Dependencies, error) {
+	return pkg.LoadLockDeps(pkgPath)
+}
+
 // ResolveDepsIntoMap will calculate the map of kcl package name and local storage path of the external packages.
 func (c *KpmClient) ResolveDepsIntoMap(kclPkg *pkg.KclPkg) (map[string]string, error) {
 	err := c.ResolvePkgDepsMetadata(kclPkg, true)
@@ -97,33 +141,6 @@ func (c *KpmClient) ResolveDepsIntoMap(kclPkg *pkg.KclPkg) (map[string]string, e
 	}
 
 	return pkgMap, nil
-}
-
-// / fillPkgInfoFromOciMenifast will fill the package information from the oci manifest.
-func (c *KpmClient) fillPkgInfoFromOciMenifast(name, tag string, dep pkg.Dependency) (pkg.Dependency, error) {
-	manifest := ocispec.Manifest{}
-	jsonDesc, err := c.FetchOciManifestIntoJsonStr(opt.OciFetchOptions{
-		FetchBytesOptions: oras.DefaultFetchBytesOptions,
-		OciOptions: opt.OciOptions{
-			Reg:  c.GetSettings().DefaultOciRegistry(),
-			Repo: fmt.Sprintf("%s/%s", c.GetSettings().DefaultOciRepo(), name),
-			Tag:  tag,
-		},
-	})
-
-	if err != nil {
-		return dep, err
-	}
-
-	err = json.Unmarshal([]byte(jsonDesc), &manifest)
-	if err != nil {
-		return dep, err
-	}
-
-	if value, ok := manifest.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_SUM]; ok {
-		dep.Sum = value
-	}
-	return dep, nil
 }
 
 // ResolveDepsMetadata will calculate the local storage path of the external package,
@@ -167,10 +184,6 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 				),
 				c.logWriter,
 			)
-			d, err := c.fillPkgInfoFromOciMenifast(name, d.Version, d)
-			if err != nil {
-				return err
-			}
 			kclPkg.Dependencies.Deps[name] = d
 		}
 	}
@@ -632,10 +645,33 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 
 // FillDepInfo will fill registry information for a dependency.
 func (c *KpmClient) FillDepInfo(dep *pkg.Dependency) error {
-	if dep.Source.Oci != nil {
+	if dep.Source.Git == nil {
 		dep.Source.Oci.Reg = c.GetSettings().DefaultOciRegistry()
 		urlpath := utils.JoinPath(c.GetSettings().DefaultOciRepo(), dep.Name)
 		dep.Source.Oci.Repo = urlpath
+		manifest := ocispec.Manifest{}
+		jsonDesc, err := c.FetchOciManifestIntoJsonStr(opt.OciFetchOptions{
+			FetchBytesOptions: oras.DefaultFetchBytesOptions,
+			OciOptions: opt.OciOptions{
+				Reg:  c.GetSettings().DefaultOciRegistry(),
+				Repo: fmt.Sprintf("%s/%s", c.GetSettings().DefaultOciRepo(), dep.Name),
+				Tag:  dep.Version,
+			},
+		})
+
+		if err != nil {
+			return err
+		}
+
+		err = json.Unmarshal([]byte(jsonDesc), &manifest)
+		if err != nil {
+			return err
+		}
+
+		if value, ok := manifest.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_SUM]; ok {
+			dep.Sum = value
+		}
+		return nil
 	}
 	return nil
 }

@@ -9,7 +9,6 @@ import (
 	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/errors"
-	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 )
 
@@ -18,7 +17,7 @@ func NewUpdateCmd(kpmcli *client.KpmClient) *cli.Command {
 	return &cli.Command{
 		Hidden: false,
 		Name:   "update",
-		Usage:  "Update dependencies listed in kcl.mod.lock",
+		Usage:  "Update dependencies listed in kcl.mod.lock based on kcl.mod",
 		Action: func(c *cli.Context) error {
 			return KpmUpdate(c, kpmcli)
 		},
@@ -40,7 +39,7 @@ func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
 	}
 
 	for _, pkg_path := range pkg_paths {
-		kclPkg, err := pkg.LoadKclPkg(pkg_path)
+		kclPkg, err := kpmcli.LoadPkgFromPath(pkg_path)
 		if err != nil {
 			return err
 		}
@@ -49,7 +48,7 @@ func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
 		if err != nil {
 			return err
 		}
-		
+
 		err = kclPkg.ValidateKpmHome(globalPkgPath)
 		if err != (*reporter.KpmEvent)(nil) {
 			return err
