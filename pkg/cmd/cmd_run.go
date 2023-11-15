@@ -81,6 +81,20 @@ func NewRunCmd(kpmcli *client.KpmClient) *cli.Command {
 }
 
 func KpmRun(c *cli.Context, kpmcli *client.KpmClient) error {
+	// acquire the lock of the package cache.
+	err := kpmcli.AcquirePackageCacheLock()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		// release the lock of the package cache after the function returns.
+		releaseErr := kpmcli.ReleasePackageCacheLock()
+		if releaseErr != nil && err == nil {
+			err = releaseErr
+		}
+	}()
+
 	kclOpts := CompileOptionFromCli(c)
 	runEntry, errEvent := runner.FindRunEntryFrom(c.Args().Slice())
 	if errEvent != nil {

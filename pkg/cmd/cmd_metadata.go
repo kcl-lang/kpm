@@ -37,6 +37,20 @@ func NewMetadataCmd(kpmcli *client.KpmClient) *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
+			// acquire the lock of the package cache.
+			err := kpmcli.AcquirePackageCacheLock()
+			if err != nil {
+				return err
+			}
+
+			defer func() {
+				// release the lock of the package cache after the function returns.
+				releaseErr := kpmcli.ReleasePackageCacheLock()
+				if releaseErr != nil && err == nil {
+					err = releaseErr
+				}
+			}()
+
 			pwd, err := os.Getwd()
 			if err != nil {
 				return errors.InternalBug

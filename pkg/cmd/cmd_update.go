@@ -25,6 +25,20 @@ func NewUpdateCmd(kpmcli *client.KpmClient) *cli.Command {
 }
 
 func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
+	// acquire the lock of the package cache.
+	err := kpmcli.AcquirePackageCacheLock()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		// release the lock of the package cache after the function returns.
+		releaseErr := kpmcli.ReleasePackageCacheLock()
+		if releaseErr != nil && err == nil {
+			err = releaseErr
+		}
+	}()
+
 	input_paths := c.Args().Slice()
 
 	pkg_paths := []string{}
