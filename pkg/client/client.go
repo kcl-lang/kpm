@@ -645,7 +645,11 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 
 // FillDepInfo will fill registry information for a dependency.
 func (c *KpmClient) FillDepInfo(dep *pkg.Dependency) error {
-	if dep.Source.Git == nil {
+	if dep.Source.Local != nil {
+		dep.LocalFullPath = dep.Source.Local.Path
+		return nil
+	}
+	if dep.Source.Oci != nil {
 		dep.Source.Oci.Reg = c.GetSettings().DefaultOciRegistry()
 		urlpath := utils.JoinPath(c.GetSettings().DefaultOciRepo(), dep.Name)
 		dep.Source.Oci.Repo = urlpath
