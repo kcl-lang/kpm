@@ -701,6 +701,13 @@ func (c *KpmClient) Download(dep *pkg.Dependency, localPath string) (*pkg.Depend
 		}
 		dep.Version = dep.Source.Git.Tag
 		dep.LocalFullPath = localPath
+		// Creating symbolic links in a global cache is not an optimal solution.
+		// This allows kclvm to locate the package by default.
+		// This feature is unstable and will be removed soon.
+		err = utils.CreateSymlink(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
+		if err != nil {
+			return nil, err
+		}
 		dep.FullName = dep.GenDepFullName()
 	}
 
@@ -711,6 +718,13 @@ func (c *KpmClient) Download(dep *pkg.Dependency, localPath string) (*pkg.Depend
 		}
 		dep.Version = dep.Source.Oci.Tag
 		dep.LocalFullPath = localPath
+		// Creating symbolic links in a global cache is not an optimal solution.
+		// This allows kclvm to locate the package by default.
+		// This feature is unstable and will be removed soon.
+		err = utils.CreateSymlink(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
+		if err != nil {
+			return nil, err
+		}
 		dep.FullName = dep.GenDepFullName()
 	}
 
