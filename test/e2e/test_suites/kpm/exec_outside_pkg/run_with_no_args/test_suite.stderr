@@ -1,1 +1,2 @@
-kpm: failed to load package, please check the package path '<workspace>' is valid
+kpm: could not load 'kcl.mod' in '<workspace>'
+kpm: open <workspace>/kcl.mod: no such file or directory

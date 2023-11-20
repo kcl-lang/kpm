@@ -109,7 +109,7 @@ func pushTarPackage(ociUrl, localTarPath string, vendorMode bool, kpmcli *client
 		if kclPkg != nil && utils.DirExists(kclPkg.HomePath) {
 			err = os.RemoveAll(kclPkg.HomePath)
 			if err != nil {
-				err = errors.InternalBug
+				err = reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, failed to clean the temp dir.")
 			}
 		}
 	}()
@@ -141,7 +141,7 @@ func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, vendorMode bool, kpmcli *cli
 		if kclPkg != nil && utils.DirExists(tarPath) {
 			err = os.RemoveAll(tarPath)
 			if err != nil {
-				err = errors.InternalBug
+				err = reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, failed to clean the temp dir.")
 			}
 		}
 	}()
@@ -167,7 +167,7 @@ func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, vendorMode bool, kpmcli *cli
 			"only support url scheme 'oci://'.",
 		)
 	}
-	
+
 	ociOpts.Annotations, err = oci.GenOciManifestFromPkg(kclPkg)
 	if err != nil {
 		return err

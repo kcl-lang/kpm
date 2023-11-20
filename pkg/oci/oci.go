@@ -9,7 +9,6 @@ import (
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/thoas/go-funk"
 	"kcl-lang.io/kpm/pkg/constants"
-	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -36,7 +35,11 @@ func Login(hostname, username, password string, setting *settings.Settings) erro
 	authClient, err := dockerauth.NewClientWithDockerFallback(setting.CredentialsFile)
 
 	if err != nil {
-		return errors.FailedLogin
+		return reporter.NewErrorEvent(
+			reporter.FailedLogin,
+			err,
+			fmt.Sprintf("failed to login '%s', please check registry, username and password is valid", hostname),
+		)
 	}
 
 	err = authClient.LoginWithOpts(
@@ -48,7 +51,11 @@ func Login(hostname, username, password string, setting *settings.Settings) erro
 	)
 
 	if err != nil {
-		return errors.FailedLogin
+		return reporter.NewErrorEvent(
+			reporter.FailedLogin,
+			err,
+			fmt.Sprintf("failed to login '%s', please check registry, username and password is valid", hostname),
+		)
 	}
 
 	return nil
@@ -60,13 +67,13 @@ func Logout(hostname string, setting *settings.Settings) error {
 	authClient, err := dockerauth.NewClientWithDockerFallback(setting.CredentialsFile)
 
 	if err != nil {
-		return errors.FailedLogout
+		return reporter.NewErrorEvent(reporter.FailedLogout, err, fmt.Sprintf("failed to logout '%s'", hostname))
 	}
 
 	err = authClient.Logout(context.Background(), hostname)
 
 	if err != nil {
-		return errors.FailedLogout
+		return reporter.NewErrorEvent(reporter.FailedLogout, err, fmt.Sprintf("failed to logout '%s'", hostname))
 	}
 
 	return nil

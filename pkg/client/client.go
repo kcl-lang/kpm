@@ -87,14 +87,14 @@ func (c *KpmClient) GetSettings() *settings.Settings {
 func (c *KpmClient) LoadPkgFromPath(pkgPath string) (*pkg.KclPkg, error) {
 	modFile, err := c.LoadModFile(pkgPath)
 	if err != nil {
-		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod' in '%s'.", pkgPath))
+		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod' in '%s'", pkgPath))
 	}
 
 	// Get dependencies from kcl.mod.lock.
 	deps, err := c.LoadLockDeps(pkgPath)
 
 	if err != nil {
-		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod.lock' in '%s'.", pkgPath))
+		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod.lock' in '%s'", pkgPath))
 	}
 
 	return &pkg.KclPkg{
@@ -271,7 +271,7 @@ func (c *KpmClient) ResolveDepsMetadataInJsonStr(kclPkg *pkg.KclPkg, update bool
 	// 2. Serialize to JSON
 	jsonData, err := json.Marshal(kclPkg.Dependencies)
 	if err != nil {
-		return "", errors.InternalBug
+		return "", reporter.NewErrorEvent(reporter.Bug, err, "internal bug: failed to marshal the dependencies into json")
 	}
 
 	return string(jsonData), nil
@@ -299,12 +299,12 @@ func (c *KpmClient) Compile(kclPkg *pkg.KclPkg, kclvmCompiler *runner.Compiler) 
 func (c *KpmClient) CompileWithOpts(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 	pkgPath, err := filepath.Abs(opts.PkgPath())
 	if err != nil {
-		return nil, errors.InternalBug
+		return nil, reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it.")
 	}
 
 	kclPkg, err := pkg.LoadKclPkg(pkgPath)
 	if err != nil {
-		return nil, fmt.Errorf("kpm: failed to load package, please check the package path '%s' is valid", pkgPath)
+		return nil, err
 	}
 
 	kclPkg.SetVendorMode(opts.IsVendor())
@@ -417,7 +417,7 @@ func (c *KpmClient) CompileOciPkg(ociSource, version string, opts *opt.CompileOp
 	// 1. Create the temporary directory to pull the tar.
 	tmpDir, err := os.MkdirTemp("", "")
 	if err != nil {
-		return nil, errors.InternalBug
+		return nil, reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it.")
 	}
 	// clean the temp dir.
 	defer os.RemoveAll(tmpDir)
@@ -434,7 +434,11 @@ func (c *KpmClient) CompileOciPkg(ociSource, version string, opts *opt.CompileOp
 	// 3.Get the (*.tar) file path.
 	matches, err := filepath.Glob(filepath.Join(localPath, constants.KCL_PKG_TAR))
 	if err != nil || len(matches) != 1 {
-		return nil, errors.FailedPull
+		if err != nil {
+			return nil, reporter.NewErrorEvent(reporter.FailedGetPkg, err, "failed to pull kcl package")
+		} else {
+			return nil, errors.FailedPull
+		}
 	}
 
 	return c.CompileTarPkg(matches[0], opts)
@@ -572,14 +576,14 @@ func (c *KpmClient) Package(kclPkg *pkg.KclPkg, tarPath string, vendorMode bool)
 	if vendorMode {
 		err := c.VendorDeps(kclPkg)
 		if err != nil {
-			return errors.FailedToVendorDependency
+			return reporter.NewErrorEvent(reporter.FailedVendor, err, "failed to vendor dependencies")
 		}
 	}
 
 	// Tar the current kcl package into a "*.tar" file.
 	err := utils.TarDir(kclPkg.HomePath, tarPath)
 	if err != nil {
-		return errors.FailedToPackage
+		return reporter.NewErrorEvent(reporter.FailedPackage, err, "failed to package the kcl module")
 	}
 	return nil
 }
@@ -616,24 +620,24 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 				// If there is, copy it into the 'vendor' directory.
 				err := copy.Copy(cacheFullPath, vendorFullPath)
 				if err != nil {
-					return errors.FailedToVendorDependency
+					return err
 				}
 			} else if utils.DirExists(d.GetLocalFullPath(kclPkg.HomePath)) && check(d, d.GetLocalFullPath(kclPkg.HomePath)) {
 				// If there is, copy it into the 'vendor' directory.
 				err := copy.Copy(d.GetLocalFullPath(kclPkg.HomePath), vendorFullPath)
 				if err != nil {
-					return errors.FailedToVendorDependency
+					return err
 				}
 			} else {
 				// re-download if not.
 				err = c.AddDepToPkg(kclPkg, &d)
 				if err != nil {
-					return errors.FailedToVendorDependency
+					return err
 				}
 				// re-vendor again with new kcl.mod and kcl.mod.lock
 				err = c.VendorDeps(kclPkg)
 				if err != nil {
-					return errors.FailedToVendorDependency
+					return err
 				}
 				return nil
 			}

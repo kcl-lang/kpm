@@ -59,6 +59,7 @@ const (
 	FailedCreateStorePath
 	FailedPush
 	FailedGetPkg
+	FailedVendor
 	FailedAccessPkgPath
 	UnKnownPullWhat
 	UnknownEnv
@@ -67,6 +68,9 @@ const (
 	FailedLoadKclMod
 	FailedLoadKclModLock
 	FailedCreateFile
+	FailedPackage
+	FailedLogin
+	FailedLogout
 	FileExists
 	CheckSumMismatch
 	CalSumFailed

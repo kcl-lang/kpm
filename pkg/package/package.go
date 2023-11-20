@@ -32,14 +32,14 @@ func NewKclPkg(opts *opt.InitOptions) KclPkg {
 func LoadKclPkg(pkgPath string) (*KclPkg, error) {
 	modFile, err := LoadModFile(pkgPath)
 	if err != nil {
-		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod' in '%s'.", pkgPath))
+		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod' in '%s'", pkgPath))
 	}
 
 	// Get dependencies from kcl.mod.lock.
 	deps, err := LoadLockDeps(pkgPath)
 
 	if err != nil {
-		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod.lock' in '%s'.", pkgPath))
+		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod.lock' in '%s'", pkgPath))
 	}
 
 	return &KclPkg{

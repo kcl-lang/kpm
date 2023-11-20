@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/utils"
 )
@@ -39,5 +38,5 @@ func TestLogin(t *testing.T) {
 	userPwd := "invalid_password"
 
 	err := Login(hostName, userName, userPwd, &settings)
-	assert.Equal(t, err, errors.FailedLogin)
+	assert.Equal(t, err.Error(), "kpm: failed to login 'ghcr.io', please check registry, username and password is valid\nkpm: Get \"https://ghcr.io/v2/\": denied: denied\n")
 }

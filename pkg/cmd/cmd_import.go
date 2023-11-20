@@ -4,11 +4,12 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kcl-go/pkg/tools/gen"
 	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/reporter"
-	"os"
 )
 
 // NewImportCmd new a Command for `kpm import`.
@@ -82,7 +83,7 @@ func NewImportCmd(kpmcli *client.KpmClient) *cli.Command {
 
 			outputWriter, err := os.Create(outputFile)
 			if err != nil {
-				return fmt.Errorf("kpm: failed to create output file: %s", outputFile)
+				return reporter.NewErrorEvent(reporter.FailedCreateFile, err, fmt.Sprintf("failed to create output file: %s", outputFile))
 			}
 
 			return gen.GenKcl(outputWriter, inputFile, nil, opt)
