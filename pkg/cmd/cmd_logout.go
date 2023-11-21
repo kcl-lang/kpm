@@ -21,14 +21,13 @@ func NewLogoutCmd(kpmcli *client.KpmClient) *cli.Command {
 				return reporter.NewErrorEvent(
 					reporter.InvalidCmd,
 					fmt.Errorf("registry must be specified"),
-					"run 'kpm logout help' for more information",
 				)
 			}
 			err := kpmcli.LogoutOci(c.Args().First())
 			if err != nil {
 				return err
 			}
-			reporter.ReportMsgTo("kpm: Logout Succeeded", kpmcli.GetLogWriter())
+			reporter.ReportMsgTo("Logout Succeeded", kpmcli.GetLogWriter())
 			return nil
 		},
 	}

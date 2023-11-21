@@ -40,7 +40,6 @@ func NewPkgCmd(kpmcli *client.KpmClient) *cli.Command {
 				return reporter.NewErrorEvent(
 					reporter.InvalidCmd,
 					fmt.Errorf("the directory where the tar is generated is required"),
-					"run 'kpm pkg help' for more information",
 				)
 			}
 
@@ -53,7 +52,7 @@ func NewPkgCmd(kpmcli *client.KpmClient) *cli.Command {
 			kclPkg, err := pkg.LoadKclPkg(pwd)
 
 			if err != nil {
-				reporter.ExitWithReport("kpm: failed to load package in " + pwd + ".")
+				reporter.ExitWithReport("failed to load package in " + pwd + ".")
 				return err
 			}
 

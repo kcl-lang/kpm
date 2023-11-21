@@ -60,7 +60,7 @@ func TestRunPkgInPathInvalidPath(t *testing.T) {
 	opts.SetPkgPath(filepath.Join(pkgPath, "test_kcl"))
 	result, err := RunPkgInPath(opts)
 	assert.NotEqual(t, err, nil)
-	assert.Equal(t, err.Error(), fmt.Sprintf("kpm: failed to compile the kcl package\nkpm: Cannot find the kcl file, please check the file path %s\n", filepath.Join(pkgPath, "test_kcl", "not_exist.k")))
+	assert.Equal(t, err.Error(), fmt.Sprintf("error: failed to compile the kcl package\nerror: Cannot find the kcl file, please check the file path %s\n", filepath.Join(pkgPath, "test_kcl", "not_exist.k")))
 	assert.Equal(t, result, "")
 }
 
@@ -71,7 +71,7 @@ func TestRunPkgInPathInvalidPkg(t *testing.T) {
 	opts.Merge(kcl.WithKFilenames(filepath.Join(pkgPath, "invalid_pkg", "not_exist.k")))
 	result, err := RunPkgInPath(opts)
 	assert.NotEqual(t, err, nil)
-	assert.Equal(t, true, strings.Contains(err.Error(), fmt.Sprintf("kpm: could not load 'kcl.mod' in '%s'\n", pkgPath)))
+	assert.Equal(t, true, strings.Contains(err.Error(), fmt.Sprintf("could not load 'kcl.mod' in '%s'\n", pkgPath)))
 	assert.Equal(t, result, "")
 }
 

@@ -164,11 +164,8 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 	// clean the dependencies in kcl.mod.lock which not in kcl.mod
 	for name := range kclPkg.Dependencies.Deps {
 		if _, ok := kclPkg.ModFile.Dependencies.Deps[name]; !ok {
-			reporter.ReportEventTo(
-				reporter.NewEvent(
-					reporter.RemoveDep,
-					fmt.Sprintf("removing '%s'", name),
-				),
+			reporter.ReportMsgTo(
+				fmt.Sprintf("removing '%s'", name),
 				c.logWriter,
 			)
 			delete(kclPkg.Dependencies.Deps, name)
@@ -177,11 +174,8 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 	// add the dependencies in kcl.mod which not in kcl.mod.lock
 	for name, d := range kclPkg.ModFile.Dependencies.Deps {
 		if _, ok := kclPkg.Dependencies.Deps[name]; !ok {
-			reporter.ReportEventTo(
-				reporter.NewEvent(
-					reporter.AddDep,
-					fmt.Sprintf("adding '%s'", name),
-				),
+			reporter.ReportMsgTo(
+				fmt.Sprintf("adding '%s'", name),
 				c.logWriter,
 			)
 			kclPkg.Dependencies.Deps[name] = d
@@ -446,7 +440,7 @@ func (c *KpmClient) CompileOciPkg(ociSource, version string, opts *opt.CompileOp
 
 // createIfNotExist will create a file if it does not exist.
 func (c *KpmClient) createIfNotExist(filepath string, storeFunc func() error) error {
-	reporter.ReportMsgTo(fmt.Sprintf("kpm: creating new :%s", filepath), c.GetLogWriter())
+	reporter.ReportMsgTo(fmt.Sprintf("creating new :%s", filepath), c.GetLogWriter())
 	err := utils.CreateFileIfNotExist(
 		filepath,
 		storeFunc,
@@ -456,7 +450,7 @@ func (c *KpmClient) createIfNotExist(filepath string, storeFunc func() error) er
 			if errEvent.Type() != reporter.FileExists {
 				return err
 			} else {
-				reporter.ReportMsgTo(fmt.Sprintf("kpm: '%s' already exists", filepath), c.GetLogWriter())
+				reporter.ReportMsgTo(fmt.Sprintf("'%s' already exists", filepath), c.GetLogWriter())
 			}
 		} else {
 			return err
@@ -494,8 +488,8 @@ func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pk
 		return nil, err
 	}
 
-	reporter.ReportEventTo(
-		reporter.NewEvent(reporter.Adding, fmt.Sprintf("adding dependency '%s'.", d.Name)),
+	reporter.ReportMsgTo(
+		fmt.Sprintf("adding dependency '%s'", d.Name),
 		c.logWriter,
 	)
 	// 2. download the dependency to the local path.
@@ -515,11 +509,8 @@ func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pk
 		succeedMsgInfo = fmt.Sprintf("%s:%s", d.Name, d.Version)
 	}
 
-	reporter.ReportEventTo(
-		reporter.NewEvent(
-			reporter.Adding,
-			fmt.Sprintf("add dependency '%s' successfully.", succeedMsgInfo),
-		),
+	reporter.ReportMsgTo(
+		fmt.Sprintf("add dependency '%s' successfully", succeedMsgInfo),
 		c.logWriter,
 	)
 	return kclPkg, nil
@@ -564,7 +555,7 @@ func (c *KpmClient) PackagePkg(kclPkg *pkg.KclPkg, vendorMode bool) (string, err
 	err = c.Package(kclPkg, kclPkg.DefaultTarPath(), vendorMode)
 
 	if err != nil {
-		reporter.ExitWithReport("kpm: failed to package pkg " + kclPkg.GetPkgName() + ".")
+		reporter.ExitWithReport("failed to package pkg " + kclPkg.GetPkgName() + ".")
 		return "", err
 	}
 	return kclPkg.DefaultTarPath(), nil
@@ -751,11 +742,8 @@ func (c *KpmClient) Download(dep *pkg.Dependency, localPath string) (*pkg.Depend
 
 // DownloadFromGit will download the dependency from the git repository.
 func (c *KpmClient) DownloadFromGit(dep *pkg.Git, localPath string) (string, error) {
-	reporter.ReportEventTo(
-		reporter.NewEvent(
-			reporter.DownloadingFromGit,
-			fmt.Sprintf("downloading '%s' with tag '%s'.", dep.Url, dep.Tag),
-		),
+	reporter.ReportMsgTo(
+		fmt.Sprintf("downloading '%s' with tag '%s'", dep.Url, dep.Tag),
 		c.logWriter,
 	)
 
@@ -787,8 +775,8 @@ func (c *KpmClient) DownloadFromOci(dep *pkg.Oci, localPath string) (string, err
 			return "", err
 		}
 
-		reporter.ReportEventTo(
-			reporter.NewEvent(reporter.SelectLatestVersion, "the lastest version '", tagSelected, "' will be added."),
+		reporter.ReportMsgTo(
+			fmt.Sprintf("the lastest version '%s' will be added", tagSelected),
 			c.logWriter,
 		)
 
@@ -798,11 +786,8 @@ func (c *KpmClient) DownloadFromOci(dep *pkg.Oci, localPath string) (string, err
 		tagSelected = dep.Tag
 	}
 
-	reporter.ReportEventTo(
-		reporter.NewEvent(
-			reporter.DownloadingFromOCI,
-			fmt.Sprintf("downloading '%s:%s' from '%s/%s:%s'.", dep.Repo, tagSelected, dep.Reg, dep.Repo, tagSelected),
-		),
+	reporter.ReportMsgTo(
+		fmt.Sprintf("downloading '%s:%s' from '%s/%s:%s'", dep.Repo, tagSelected, dep.Reg, dep.Repo, tagSelected),
 		c.logWriter,
 	)
 
@@ -864,24 +849,18 @@ func (c *KpmClient) PullFromOci(localPath, source, tag string) error {
 		return reporter.NewErrorEvent(
 			reporter.UnKnownPullWhat,
 			errors.FailedPull,
-			"oci url or package name must be specified.",
+			"oci url or package name must be specified",
 		)
 	}
 
 	if len(tag) == 0 {
-		reporter.ReportEventTo(
-			reporter.NewEvent(
-				reporter.PullingStarted,
-				fmt.Sprintf("start to pull '%s'.", source),
-			),
+		reporter.ReportMsgTo(
+			fmt.Sprintf("start to pull '%s'", source),
 			c.logWriter,
 		)
 	} else {
-		reporter.ReportEventTo(
-			reporter.NewEvent(
-				reporter.PullingStarted,
-				fmt.Sprintf("start to pull '%s' with tag '%s'.", source, tag),
-			),
+		reporter.ReportMsgTo(
+			fmt.Sprintf("start to pull '%s' with tag '%s'", source, tag),
 			c.logWriter,
 		)
 	}
@@ -930,8 +909,8 @@ func (c *KpmClient) PullFromOci(localPath, source, tag string) error {
 		)
 	}
 
-	reporter.ReportEventTo(
-		reporter.NewEvent(reporter.PullingFinished, fmt.Sprintf("pulled '%s' in '%s' successfully.", source, storagePath)),
+	reporter.ReportMsgTo(
+		fmt.Sprintf("pulled '%s' in '%s' successfully", source, storagePath),
 		c.logWriter,
 	)
 	return nil
@@ -1130,8 +1109,8 @@ func (c *KpmClient) pullTarFromOci(localPath string, ociOpts *opt.OciOptions) er
 		if err != nil {
 			return err
 		}
-		reporter.ReportEventTo(
-			reporter.NewEvent(reporter.SelectLatestVersion, "the lastest version '", tagSelected, "' will be pulled."),
+		reporter.ReportMsgTo(
+			fmt.Sprintf("the lastest version '%s' will be pulled", tagSelected),
 			c.logWriter,
 		)
 	} else {
@@ -1139,11 +1118,8 @@ func (c *KpmClient) pullTarFromOci(localPath string, ociOpts *opt.OciOptions) er
 	}
 
 	full_repo := utils.JoinPath(ociOpts.Reg, ociOpts.Repo)
-	reporter.ReportEventTo(
-		reporter.NewEvent(
-			reporter.Pulling,
-			fmt.Sprintf("pulling '%s:%s' from '%s'.", ociOpts.Repo, tagSelected, full_repo),
-		),
+	reporter.ReportMsgTo(
+		fmt.Sprintf("pulling '%s:%s' from '%s'", ociOpts.Repo, tagSelected, full_repo),
 		c.logWriter,
 	)
 

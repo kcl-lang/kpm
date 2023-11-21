@@ -174,7 +174,7 @@ func TestSettingEnv(t *testing.T) {
 	assert.Equal(t, settings.DefaultOciRegistry(), "test_reg")
 	assert.Equal(t, settings.DefaultOciRepo(), "test_repo")
 	assert.Equal(t, settings.ErrorEvent.Type(), reporter.UnknownEnv)
-	assert.Equal(t, settings.ErrorEvent.Error(), "kpm: unknown environment variable 'OCI_REG_PLAIN_HTTP=true'\nkpm: invalid environment variable.\n\n")
+	assert.Equal(t, settings.ErrorEvent.Error(), "error: unknown environment variable 'OCI_REG_PLAIN_HTTP=true'\nerror: invalid environment variable\n")
 	assert.Equal(t, settings.DefaultOciPlainHttp(), false)
 
 	err = os.Setenv("OCI_REG_PLAIN_HTTP", "on")

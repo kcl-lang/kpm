@@ -1,5 +1,5 @@
-kpm: adding dependency 'kcl1'.
-kpm: the lastest version '0.0.1' will be added.
-kpm: downloading 'test/kcl1:0.0.1' from 'localhost:5001/test/kcl1:0.0.1'.
-kpm: downloading 'test/k8s:1.27' from 'localhost:5001/test/k8s:1.27'.
-kpm: add dependency 'kcl1' successfully.
+adding dependency 'kcl1'
+the lastest version '0.0.1' will be added
+downloading 'test/kcl1:0.0.1' from 'localhost:5001/test/kcl1:0.0.1'
+downloading 'test/k8s:1.27' from 'localhost:5001/test/k8s:1.27'
+add dependency 'kcl1' successfully

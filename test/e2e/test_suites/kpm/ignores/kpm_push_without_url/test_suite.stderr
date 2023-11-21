@@ -1,2 +1,1 @@
-kpm: oci url must be specified.
-kpm: run 'kpm push help' for more information.
+error: oci url must be specified

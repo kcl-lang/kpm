@@ -1,2 +1,2 @@
-kpm: only support url scheme 'oci://'.
-kpm: invalid oci url.
+error: only support url scheme 'oci://'
+error: invalid oci url

@@ -1,2 +1,1 @@
-kpm: run 'kpm login help' for more information
-kpm: registry must be specified
+error: registry must be specified

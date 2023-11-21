@@ -156,10 +156,10 @@ func (settings *Settings) LoadSettingsFromEnv() (*Settings, *reporter.KpmEvent) 
 
 	// Load the env OCI_REG_PLAIN_HTTP
 	plainHttp := os.Getenv(DEFAULT_OCI_PLAIN_HTTP_ENV)
-	var err *reporter.KpmEvent
+	var err error
 	if len(plainHttp) > 0 {
 		settings.Conf.DefaultOciPlainHttp, err = isOn(plainHttp)
-		if err != (*reporter.KpmEvent)(nil) {
+		if err != nil {
 			return settings, reporter.NewErrorEvent(
 				reporter.UnknownEnv,
 				err,
@@ -170,16 +170,13 @@ func (settings *Settings) LoadSettingsFromEnv() (*Settings, *reporter.KpmEvent) 
 	return settings, nil
 }
 
-func isOn(input string) (bool, *reporter.KpmEvent) {
+func isOn(input string) (bool, error) {
 	if strings.ToLower(input) == ON {
 		return true, nil
 	} else if strings.ToLower(input) == OFF {
 		return false, nil
 	} else {
-		return false, reporter.NewErrorEvent(
-			reporter.UnknownEnv,
-			errors.UnknownEnv,
-		)
+		return false, errors.UnknownEnv
 	}
 }
 

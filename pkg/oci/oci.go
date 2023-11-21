@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
@@ -105,7 +106,7 @@ func NewOciClient(regName, repoName string, settings *settings.Settings) (*OciCl
 		return nil, reporter.NewErrorEvent(
 			reporter.RepoNotFound,
 			err,
-			fmt.Sprintf("repository '%s' not found.", repoPath),
+			fmt.Sprintf("repository '%s' not found", repoPath),
 		)
 	}
 	ctx := context.Background()
@@ -147,7 +148,7 @@ func (ociClient *OciClient) Pull(localPath, tag string) error {
 		return reporter.NewErrorEvent(
 			reporter.FailedGetPkg,
 			err,
-			fmt.Sprintf("failed to get package with '%s' from '%s'.", tag, ociClient.repo.Reference.String()),
+			fmt.Sprintf("failed to get package with '%s' from '%s'", tag, ociClient.repo.Reference.String()),
 		)
 	}
 
@@ -172,7 +173,7 @@ func (ociClient *OciClient) TheLatestTag() (string, error) {
 		return "", reporter.NewErrorEvent(
 			reporter.FailedSelectLatestVersion,
 			err,
-			fmt.Sprintf("failed to select latest version from '%s'.", ociClient.repo.Reference.String()),
+			fmt.Sprintf("failed to select latest version from '%s'", ociClient.repo.Reference.String()),
 		)
 	}
 
@@ -259,8 +260,8 @@ func (ociClient *OciClient) PushWithOciManifest(localPath, tag string, opts *opt
 		return reporter.NewErrorEvent(reporter.FailedPush, err, fmt.Sprintf("failed to push '%s'", ociClient.repo.Reference))
 	}
 
-	reporter.ReportMsgTo(fmt.Sprintf("kpm: pushed [registry] %s", ociClient.repo.Reference), ociClient.logWriter)
-	reporter.ReportMsgTo(fmt.Sprintf("kpm: digest: %s", desc.Digest), ociClient.logWriter)
+	reporter.ReportMsgTo(fmt.Sprintf("pushed [registry] %s", ociClient.repo.Reference), ociClient.logWriter)
+	reporter.ReportMsgTo(fmt.Sprintf("digest: %s", desc.Digest), ociClient.logWriter)
 	return nil
 }
 
@@ -305,8 +306,9 @@ func Pull(localPath, hostName, repoName, tag string, settings *settings.Settings
 		if err != nil {
 			return err
 		}
-		reporter.ReportEventToStdout(
-			reporter.NewEvent(reporter.SelectLatestVersion, "the lastest version '", tagSelected, "' will be pulled."),
+		reporter.ReportMsgTo(
+			fmt.Sprintf("the lastest version '%s' will be pulled", tagSelected),
+			os.Stdout,
 		)
 	} else {
 		tagSelected = tag

@@ -1,2 +1,2 @@
-kpm: repository 'invalid_url/' not found.
-kpm: invalid reference: invalid repository
+error: repository 'invalid_url/' not found
+error: invalid reference: invalid repository
