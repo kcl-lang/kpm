@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -70,7 +71,7 @@ func TestRunPkgInPathInvalidPkg(t *testing.T) {
 	opts.Merge(kcl.WithKFilenames(filepath.Join(pkgPath, "invalid_pkg", "not_exist.k")))
 	result, err := RunPkgInPath(opts)
 	assert.NotEqual(t, err, nil)
-	assert.Equal(t, err.Error(), fmt.Sprintf("kpm: failed to load package, please check the package path '%s' is valid", pkgPath))
+	assert.Equal(t, true, strings.Contains(err.Error(), fmt.Sprintf("kpm: could not load 'kcl.mod' in '%s'\n", pkgPath)))
 	assert.Equal(t, result, "")
 }
 

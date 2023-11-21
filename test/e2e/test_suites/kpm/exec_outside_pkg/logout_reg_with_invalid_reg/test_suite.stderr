@@ -1,1 +1,2 @@
-kpm: failed to logout, the registry not logged in.
+kpm: failed to logout 'invalid_registry'
+kpm: not logged in

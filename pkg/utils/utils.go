@@ -183,7 +183,7 @@ func TarDir(srcDir string, tarPath string) error {
 func UnTarDir(tarPath string, destDir string) error {
 	file, err := os.Open(tarPath)
 	if err != nil {
-		return errors.KclPacakgeTarNotFound
+		return reporter.NewErrorEvent(reporter.FailedCreateFile, err, fmt.Sprintf("failed to open '%s'", tarPath))
 	}
 	defer file.Close()
 
@@ -195,7 +195,7 @@ func UnTarDir(tarPath string, destDir string) error {
 			break
 		}
 		if err != nil {
-			return errors.FailedUnTarKclPackage
+			return reporter.NewErrorEvent(reporter.FailedCreateFile, err, fmt.Sprintf("failed to open '%s'", tarPath))
 		}
 
 		destFilePath := filepath.Join(destDir, header.Name)
@@ -211,12 +211,12 @@ func UnTarDir(tarPath string, destDir string) error {
 			}
 			outFile, err := os.Create(destFilePath)
 			if err != nil {
-				return errors.FailedUnTarKclPackage
+				return reporter.NewErrorEvent(reporter.FailedCreateFile, err, fmt.Sprintf("failed to open '%s'", tarPath))
 			}
 			defer outFile.Close()
 
 			if _, err := io.Copy(outFile, tarReader); err != nil {
-				return errors.FailedUnTarKclPackage
+				return reporter.NewErrorEvent(reporter.FailedCreateFile, err, fmt.Sprintf("failed to open '%s'", tarPath))
 			}
 		default:
 			return errors.UnknownTarFormat
@@ -235,14 +235,14 @@ func DirExists(path string) bool {
 func CreateSubdirInUserHome(subdir string) (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return "", errors.InternalBug
+		return "", reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, failed to load user home directory")
 	}
 
 	dirPath := filepath.Join(homeDir, subdir)
 	if !DirExists(dirPath) {
 		err = os.MkdirAll(dirPath, 0755)
 		if err != nil {
-			return "", errors.InternalBug
+			return "", reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, failed to create directory")
 		}
 	}
 
@@ -255,7 +255,7 @@ func CreateSymlink(oldName, newName string) error {
 	if DirExists(newName) {
 		err := os.Remove(newName)
 		if err != nil {
-			return errors.InternalBug
+			return err
 		}
 	}
 
@@ -415,7 +415,7 @@ func CheckPackageSum(checkedSum, localPath string) bool {
 func AbsTarPath(tarPath string) (string, error) {
 	absTarPath, err := filepath.Abs(tarPath)
 	if err != nil {
-		return "", errors.InternalBug
+		return "", err
 	}
 
 	if filepath.Ext(absTarPath) != ".tar" {

@@ -25,7 +25,7 @@ func NewInitCmd(kpmcli *client.KpmClient) *cli.Command {
 			pwd, err := os.Getwd()
 
 			if err != nil {
-				reporter.Fatal("kpm: internal bugs, please contact us to fix it")
+				return reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, failed to load working directory.")
 			}
 
 			var pkgName string

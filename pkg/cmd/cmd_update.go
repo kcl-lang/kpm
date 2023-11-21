@@ -8,7 +8,6 @@ import (
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/env"
-	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/reporter"
 )
 
@@ -45,7 +44,7 @@ func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
 	if len(input_paths) == 0 {
 		pwd, err := os.Getwd()
 		if err != nil {
-			return errors.InternalBug
+			return reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it")
 		}
 		pkg_paths = append(pkg_paths, pwd)
 	} else {

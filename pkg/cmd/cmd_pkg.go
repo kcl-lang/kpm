@@ -9,7 +9,6 @@ import (
 
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kpm/pkg/client"
-	"kcl-lang.io/kpm/pkg/errors"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/utils"
@@ -48,7 +47,7 @@ func NewPkgCmd(kpmcli *client.KpmClient) *cli.Command {
 			pwd, err := os.Getwd()
 
 			if err != nil {
-				reporter.ExitWithReport("kpm: internal bug: failed to load working directory")
+				return reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, failed to load working directory.")
 			}
 
 			kclPkg, err := pkg.LoadKclPkg(pwd)
@@ -62,7 +61,7 @@ func NewPkgCmd(kpmcli *client.KpmClient) *cli.Command {
 			if !utils.DirExists(tarPath) {
 				err := os.MkdirAll(tarPath, os.ModePerm)
 				if err != nil {
-					return errors.InternalBug
+					return reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, failed to create the target directory")
 				}
 			}
 

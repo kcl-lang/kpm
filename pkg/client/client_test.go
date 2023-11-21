@@ -124,10 +124,7 @@ func TestInitEmptyPkg(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	testKclPkg, err := pkg.LoadKclPkg(testDir)
-	if err != nil {
-		t.Errorf("Failed to 'LoadKclPkg'.")
-	}
-
+	assert.Equal(t, err, nil)
 	assert.Equal(t, testKclPkg.ModFile.Pkg.Name, "test_name")
 	assert.Equal(t, testKclPkg.ModFile.Pkg.Version, "0.0.1")
 	assert.Equal(t, testKclPkg.ModFile.Pkg.Edition, "0.0.1")
@@ -180,16 +177,9 @@ func TestUpdateKclModAndLock(t *testing.T) {
 	kclPkg.ModFile.Dependencies.Deps["test"] = dep
 
 	err = kclPkg.ModFile.StoreModFile()
-
-	if err != nil {
-		t.Errorf("failed to LockDepsVersion.")
-	}
-
+	assert.Equal(t, err, nil)
 	err = kclPkg.LockDepsVersion()
-
-	if err != nil {
-		t.Errorf("failed to LockDepsVersion.")
-	}
+	assert.Equal(t, err, nil)
 
 	expectDir := getTestDir("expected")
 

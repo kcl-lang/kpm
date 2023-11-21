@@ -178,7 +178,7 @@ func GetSourceKindFrom(source string) EntryKind {
 func FindModRootFrom(startPath string) (string, *reporter.KpmEvent) {
 	info, err := os.Stat(startPath)
 	if err != nil {
-		return "", reporter.NewErrorEvent(reporter.CompileFailed, fmt.Errorf("failed to access path '%s'", startPath))
+		return "", reporter.NewErrorEvent(reporter.CompileFailed, err, fmt.Sprintf("failed to access path '%s'", startPath))
 	}
 	var start string
 	// If the start path is a kcl file, find from the parent dir of the kcl file.
@@ -188,7 +188,7 @@ func FindModRootFrom(startPath string) (string, *reporter.KpmEvent) {
 		// If the start path is a dir, find from the start path.
 		start = startPath
 	} else {
-		return "", reporter.NewErrorEvent(reporter.CompileFailed, fmt.Errorf("invalid file path '%s'", startPath))
+		return "", reporter.NewErrorEvent(reporter.CompileFailed, err, fmt.Sprintf("invalid file path '%s'", startPath))
 	}
 
 	if _, err := os.Stat(filepath.Join(start, constants.KCL_MOD)); err == nil {

@@ -187,7 +187,7 @@ func isOn(input string) (bool, *reporter.KpmEvent) {
 func GetFullPath(jsonFileName string) (string, error) {
 	home, err := env.GetAbsPkgPath()
 	if err != nil {
-		return "", errors.InternalBug
+		return "", reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, failed to load working directory")
 	}
 
 	return filepath.Join(home, jsonFileName), nil

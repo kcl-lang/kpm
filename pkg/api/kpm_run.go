@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -118,7 +117,7 @@ func RunCurrentPkg(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 	opts.SetPkgPath(pwd)
 
 	if err != nil {
-		reporter.ExitWithReport("kpm: internal bug: failed to load working directory")
+		return nil, reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, failed to load working directory.")
 	}
 
 	return RunPkgWithOpt(opts)
@@ -168,7 +167,7 @@ func RunOciPkg(ociRef, version string, opts *opt.CompileOptions) (*kcl.KCLResult
 	// 1. Create the temporary directory to pull the tar.
 	tmpDir, err := os.MkdirTemp("", "")
 	if err != nil {
-		return nil, errors.InternalBug
+		return nil, reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it.")
 	}
 	// clean the temp dir.
 	defer os.RemoveAll(tmpDir)
@@ -185,7 +184,11 @@ func RunOciPkg(ociRef, version string, opts *opt.CompileOptions) (*kcl.KCLResult
 	// 3.Get the (*.tar) file path.
 	matches, err := filepath.Glob(filepath.Join(localPath, constants.KCL_PKG_TAR))
 	if err != nil || len(matches) != 1 {
-		return nil, errors.FailedPull
+		if err != nil {
+			return nil, reporter.NewErrorEvent(reporter.FailedGetPkg, err, "failed to pull kcl package")
+		} else {
+			return nil, errors.FailedPull
+		}
 	}
 
 	// 4. Untar the tar file.
@@ -210,12 +213,12 @@ func RunOciPkg(ociRef, version string, opts *opt.CompileOptions) (*kcl.KCLResult
 func run(kpmcli *client.KpmClient, opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 	pkgPath, err := filepath.Abs(opts.PkgPath())
 	if err != nil {
-		return nil, errors.InternalBug
+		return nil, reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it.")
 	}
 
 	kclPkg, err := pkg.LoadKclPkg(pkgPath)
 	if err != nil {
-		return nil, fmt.Errorf("kpm: failed to load package, please check the package path '%s' is valid", pkgPath)
+		return nil, err
 	}
 
 	kclPkg.SetVendorMode(opts.IsVendor())
