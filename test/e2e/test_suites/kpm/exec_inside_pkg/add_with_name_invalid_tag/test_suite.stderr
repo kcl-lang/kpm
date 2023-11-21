@@ -1,2 +1,2 @@
-kpm: failed to get package with 'not_exist_tag' from 'localhost:5001/test/k8s'.
-kpm: failed to resolve not_exist_tag: localhost:5001/test/k8s:not_exist_tag: not found
+error: failed to get package with 'not_exist_tag' from 'localhost:5001/test/k8s'
+error: failed to resolve not_exist_tag: localhost:5001/test/k8s:not_exist_tag: not found

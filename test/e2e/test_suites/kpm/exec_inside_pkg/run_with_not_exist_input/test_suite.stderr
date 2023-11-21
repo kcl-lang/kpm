@@ -1,2 +1,2 @@
-kpm: failed to compile the kcl package
-kpm: Cannot find the kcl file, please check the file path
+error: failed to compile the kcl package
+error: Cannot find the kcl file, please check the file path

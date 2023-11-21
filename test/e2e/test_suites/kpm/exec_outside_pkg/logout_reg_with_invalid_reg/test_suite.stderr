@@ -1,2 +1,2 @@
-kpm: failed to logout 'invalid_registry'
-kpm: not logged in
+error: failed to logout 'invalid_registry'
+error: not logged in

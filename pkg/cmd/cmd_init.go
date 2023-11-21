@@ -73,7 +73,7 @@ func NewInitCmd(kpmcli *client.KpmClient) *cli.Command {
 				return err
 			}
 
-			reporter.ReportMsgTo(fmt.Sprintf("kpm: package '%s' init finished", pkgName), kpmcli.GetLogWriter())
+			reporter.ReportMsgTo(fmt.Sprintf("package '%s' init finished", pkgName), kpmcli.GetLogWriter())
 			return nil
 		},
 	}

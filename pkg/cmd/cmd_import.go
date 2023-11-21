@@ -49,7 +49,7 @@ func NewImportCmd(kpmcli *client.KpmClient) *cli.Command {
 		},
 		Action: func(c *cli.Context) error {
 			if c.Args().Len() != 1 {
-				return fmt.Errorf("kpm: invalid arguments")
+				return fmt.Errorf("invalid arguments")
 			}
 			inputFile := c.Args().First()
 
@@ -68,17 +68,17 @@ func NewImportCmd(kpmcli *client.KpmClient) *cli.Command {
 			case "auto":
 				opt.Mode = gen.ModeAuto
 			default:
-				return fmt.Errorf("kpm: invalid mode: %s", c.String("mode"))
+				return fmt.Errorf("invalid mode: %s", c.String("mode"))
 			}
 
 			outputFile := c.String("output")
 			if outputFile == "" {
 				outputFile = "generated.k"
-				reporter.ReportMsgTo("kpm: output file not specified, use default: generated.k", kpmcli.GetLogWriter())
+				reporter.ReportMsgTo("output file not specified, use default: generated.k", kpmcli.GetLogWriter())
 			}
 
 			if _, err := os.Stat(outputFile); err == nil && !c.Bool("force") {
-				return fmt.Errorf("kpm: output file already exist, use --force to overwrite: %s", outputFile)
+				return fmt.Errorf("output file already exist, use --force to overwrite: %s", outputFile)
 			}
 
 			outputWriter, err := os.Create(outputFile)

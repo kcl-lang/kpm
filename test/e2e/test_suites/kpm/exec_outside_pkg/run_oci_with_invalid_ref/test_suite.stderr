@@ -1,2 +1,2 @@
-kpm: failed to get package with 'invalid_tag' from 'localhost:5001/test/invalid_oci_repo'.
-kpm: failed to resolve invalid_tag: localhost:5001/test/invalid_oci_repo:invalid_tag: not found
+error: failed to get package with 'invalid_tag' from 'localhost:5001/test/invalid_oci_repo'
+error: failed to resolve invalid_tag: localhost:5001/test/invalid_oci_repo:invalid_tag: not found

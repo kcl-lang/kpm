@@ -36,7 +36,6 @@ func NewLoginCmd(kpmcli *client.KpmClient) *cli.Command {
 				return reporter.NewErrorEvent(
 					reporter.InvalidCmd,
 					fmt.Errorf("registry must be specified"),
-					"run 'kpm login help' for more information",
 				)
 			}
 			registry := c.Args().First()

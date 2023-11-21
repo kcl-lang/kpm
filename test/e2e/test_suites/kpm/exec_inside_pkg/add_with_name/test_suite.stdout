@@ -1,4 +1,4 @@
-kpm: adding dependency 'k8s'.
-kpm: the lastest version '1.27' will be added.
-kpm: downloading 'test/k8s:1.27' from 'localhost:5001/test/k8s:1.27'.
-kpm: add dependency 'k8s' successfully.
+adding dependency 'k8s'
+the lastest version '1.27' will be added
+downloading 'test/k8s:1.27' from 'localhost:5001/test/k8s:1.27'
+add dependency 'k8s' successfully

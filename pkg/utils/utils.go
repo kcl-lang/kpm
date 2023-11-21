@@ -68,7 +68,7 @@ func HashDir(dir string) (string, error) {
 func StoreToFile(filePath string, dataStr string) error {
 	file, err := os.Create(filePath)
 	if err != nil {
-		reporter.ExitWithReport("kpm: failed to create file: ", filePath, err)
+		reporter.ExitWithReport("failed to create file: ", filePath, err)
 		return err
 	}
 	defer file.Close()
