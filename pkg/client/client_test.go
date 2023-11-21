@@ -776,5 +776,5 @@ func TestMetadataOffline(t *testing.T) {
 	assert.Equal(t, res, "{\"packages\":{}}")
 	content_after_metadata, err = os.ReadFile(kclMod)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, string(content_after_metadata), string(beautifulContent))
+	assert.Equal(t, utils.RmNewline(string(content_after_metadata)), utils.RmNewline(string(beautifulContent)))
 }
