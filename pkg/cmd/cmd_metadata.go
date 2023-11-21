@@ -79,13 +79,6 @@ func NewMetadataCmd(kpmcli *client.KpmClient) *cli.Command {
 				return err
 			}
 
-			if autoUpdate {
-				err = kclPkg.UpdateModAndLockFile()
-				if err != nil {
-					return err
-				}
-			}
-
 			fmt.Println(jsonStr)
 
 			return nil

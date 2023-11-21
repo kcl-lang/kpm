@@ -234,11 +234,12 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 			}
 		}
 	}
-
-	// update the kcl.mod and kcl.mod.lock.
-	err := kclPkg.UpdateModAndLockFile()
-	if err != nil {
-		return err
+	if update {
+		// update the kcl.mod and kcl.mod.lock.
+		err := kclPkg.UpdateModAndLockFile()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
