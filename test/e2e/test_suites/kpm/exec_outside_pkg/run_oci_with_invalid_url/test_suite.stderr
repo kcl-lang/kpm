@@ -1,2 +1,2 @@
-error: repository 'invalid_url/' not found
-error: invalid reference: invalid repository
+repository 'invalid_url/' not found
+invalid reference: invalid repository

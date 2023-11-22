@@ -1,2 +1,2 @@
-error: failed to compile the kcl package
-error: Cannot find the kcl file, please check the file path
+failed to compile the kcl package
+Cannot find the kcl file, please check the file path

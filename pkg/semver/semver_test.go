@@ -17,11 +17,11 @@ func TestLatestVersion(t *testing.T) {
 	assert.Equal(t, latest, "")
 
 	latest, err = LatestVersion([]string{"invalid_version"})
-	assert.Equal(t, err.Error(), "error: failed to parse version invalid_version\nerror: Malformed version: invalid_version\n")
+	assert.Equal(t, err.Error(), "failed to parse version invalid_version\nMalformed version: invalid_version\n")
 	assert.Equal(t, latest, "")
 
 	latest, err = LatestVersion([]string{"1.2.3", "1.4.0", "1.3.5", "invalid_version"})
-	assert.Equal(t, err.Error(), "error: failed to parse version invalid_version\nerror: Malformed version: invalid_version\n")
+	assert.Equal(t, err.Error(), "failed to parse version invalid_version\nMalformed version: invalid_version\n")
 	assert.Equal(t, latest, "")
 }
 

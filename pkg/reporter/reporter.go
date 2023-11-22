@@ -126,10 +126,10 @@ func (e *KpmEvent) Error() string {
 	result := ""
 	if e.msg != "" {
 		// append msg
-		result = fmt.Sprintf("error: %s\n", e.msg)
+		result = fmt.Sprintf("%s\n", e.msg)
 	}
 	if e.err != nil {
-		result = fmt.Sprintf("%serror: %s\n", result, e.err.Error())
+		result = fmt.Sprintf("%s%s\n", result, e.err.Error())
 	}
 	return result
 }
@@ -137,7 +137,7 @@ func (e *KpmEvent) Error() string {
 // Event returns the msg of the event without error message.
 func (e *KpmEvent) Event() string {
 	if e.msg != "" {
-		return fmt.Sprintf("error: %s\n", e.msg)
+		return fmt.Sprintf("%s\n", e.msg)
 	}
 	return ""
 }
