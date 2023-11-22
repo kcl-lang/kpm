@@ -38,5 +38,5 @@ func TestLogin(t *testing.T) {
 	userPwd := "invalid_password"
 
 	err := Login(hostName, userName, userPwd, &settings)
-	assert.Equal(t, err.Error(), "error: failed to login 'ghcr.io', please check registry, username and password is valid\nerror: Get \"https://ghcr.io/v2/\": denied: denied\n")
+	assert.Equal(t, err.Error(), "failed to login 'ghcr.io', please check registry, username and password is valid\nGet \"https://ghcr.io/v2/\": denied: denied\n")
 }

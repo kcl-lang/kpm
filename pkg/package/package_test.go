@@ -87,7 +87,7 @@ func TestValidateKpmHome(t *testing.T) {
 	oldValue := os.Getenv(env.PKG_PATH)
 	os.Setenv(env.PKG_PATH, "test_home_path")
 	err := kclPkg.ValidateKpmHome(os.Getenv(env.PKG_PATH))
-	assert.Equal(t, err.Error(), "error: environment variable KCL_PKG_PATH cannot be set to the same path as the current KCL package.\n")
+	assert.Equal(t, err.Error(), "environment variable KCL_PKG_PATH cannot be set to the same path as the current KCL package.\n")
 	assert.Equal(t, err.Type(), reporter.InvalidKpmHomeInCurrentPkg)
 	os.Setenv(env.PKG_PATH, oldValue)
 }

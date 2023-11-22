@@ -1,2 +1,2 @@
-error: only support url scheme 'oci://'
-error: invalid oci url
+only support url scheme 'oci://'
+invalid oci url

@@ -1,2 +1,2 @@
-error: could not load 'kcl.mod' in '<workspace>'
-error: open <workspace>/kcl.mod: no such file or directory
+could not load 'kcl.mod' in '<workspace>'
+open <workspace>/kcl.mod: no such file or directory

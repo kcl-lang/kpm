@@ -1,2 +1,2 @@
-error: only allows one package to be compiled at a time
-error: cannot compile multiple packages [<workspace>/test_kpm_run_with_multi_pkg/kcl1 <workspace>/test_kpm_run_with_multi_pkg/kcl2] at the same time
+only allows one package to be compiled at a time
+cannot compile multiple packages [<workspace>/test_kpm_run_with_multi_pkg/kcl1 <workspace>/test_kpm_run_with_multi_pkg/kcl2] at the same time

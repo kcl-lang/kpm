@@ -1,2 +1,2 @@
-error: repository 'invalid_rul/' not found
-error: invalid reference: invalid repository
+repository 'invalid_rul/' not found
+invalid reference: invalid repository
