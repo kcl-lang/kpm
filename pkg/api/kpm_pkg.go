@@ -1,12 +1,14 @@
 package api
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kcl-go/pkg/spec/gpyrpc"
 	"kcl-lang.io/kpm/pkg/client"
+	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/errors"
 	pkg "kcl-lang.io/kpm/pkg/package"
 )
@@ -112,6 +114,81 @@ func (pkg *KclPackage) GetSchemaTypeMappingNamed(schemaName string) (map[string]
 		return IsSchemaNamed(kt, schemaName)
 	}
 	return pkg.GetSchemaTypeMappingWithFilters([]KclTypeFilterFunc{IsSchemaType, namedFilterFunc})
+}
+
+// GetAllFullSchemaTypeMapping returns all the full schema types of the package.
+func (pkg *KclPackage) GetAllFullSchemaTypeMapping() (map[string]map[string]*KclType, error) {
+	cli, err := client.NewKpmClient()
+	if err != nil {
+		return nil, err
+	}
+	return pkg.GetFullSchemaTypeMappingWithFilters(cli, []KclTypeFilterFunc{IsSchemaType})
+}
+
+// GetFullSchemaTypeMappingWithFilters returns the full schema type filtered by the filter functions.
+func (pkg *KclPackage) GetFullSchemaTypeMappingWithFilters(kpmcli *client.KpmClient, fileterFuncs []KclTypeFilterFunc) (map[string]map[string]*KclType, error) {
+	schemaTypes := make(map[string]map[string]*KclType)
+	err := filepath.Walk(pkg.GetPkgHomePath(), func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			fileteredKtypeMap := make(map[string]*KclType)
+
+			depsMap, err := kpmcli.ResolveDepsIntoMap(pkg.pkg)
+			if err != nil {
+				return err
+			}
+
+			opts := kcl.NewOption()
+			opts.Merge(kcl.WithKFilenames(path))
+			for depName, depPath := range depsMap {
+				opts.Merge(kcl.WithExternalPkgs(fmt.Sprintf(constants.EXTERNAL_PKGS_ARG_PATTERN, depName, depPath)))
+			}
+
+			schemaTypeList, err := kcl.GetFullSchemaType([]string{path}, "", *opts)
+			if err != nil && err.Error() != errors.NoKclFiles.Error() {
+				return err
+			}
+
+			schemaTypeMap := make(map[string]*gpyrpc.KclType)
+			for _, schemaType := range schemaTypeList {
+				schemaTypeMap[schemaType.SchemaName] = schemaType
+			}
+
+			relPath, err := filepath.Rel(pkg.GetPkgHomePath(), path)
+			if err != nil {
+				return err
+			}
+			if len(schemaTypeMap) != 0 && schemaTypeMap != nil {
+				for kName, kType := range schemaTypeMap {
+					kTy := NewKclTypes(kName, relPath, kType)
+					filterPassed := true
+					for _, filterFunc := range fileterFuncs {
+						if !filterFunc(kTy) {
+							filterPassed = false
+							break
+						}
+					}
+					if filterPassed {
+						fileteredKtypeMap[kName] = kTy
+					}
+				}
+				if len(fileteredKtypeMap) > 0 {
+					schemaTypes[relPath] = fileteredKtypeMap
+				}
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return schemaTypes, nil
 }
 
 // GetSchemaTypeMappingWithFilters returns the schema type filtered by the filter functions.
