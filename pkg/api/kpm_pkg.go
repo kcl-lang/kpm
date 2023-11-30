@@ -103,7 +103,11 @@ func (pkg *KclPackage) GetPkgProfile() pkg.Profile {
 //
 // And, the value is a map of schema types, the key is the schema name, the value is the schema type.
 func (pkg *KclPackage) GetAllSchemaTypeMapping() (map[string]map[string]*KclType, error) {
-	return pkg.GetSchemaTypeMappingWithFilters([]KclTypeFilterFunc{IsSchemaType})
+	cli, err := client.NewKpmClient()
+	if err != nil {
+		return nil, err
+	}
+	return pkg.GetFullSchemaTypeMappingWithFilters(cli, []KclTypeFilterFunc{IsSchemaType})
 }
 
 // GetSchemaTypeMappingNamed returns the schema type filtered by schema name.
@@ -114,15 +118,6 @@ func (pkg *KclPackage) GetSchemaTypeMappingNamed(schemaName string) (map[string]
 		return IsSchemaNamed(kt, schemaName)
 	}
 	return pkg.GetSchemaTypeMappingWithFilters([]KclTypeFilterFunc{IsSchemaType, namedFilterFunc})
-}
-
-// GetAllFullSchemaTypeMapping returns all the full schema types of the package.
-func (pkg *KclPackage) GetAllFullSchemaTypeMapping() (map[string]map[string]*KclType, error) {
-	cli, err := client.NewKpmClient()
-	if err != nil {
-		return nil, err
-	}
-	return pkg.GetFullSchemaTypeMappingWithFilters(cli, []KclTypeFilterFunc{IsSchemaType})
 }
 
 // GetFullSchemaTypeMappingWithFilters returns the full schema type filtered by the filter functions.
@@ -142,7 +137,6 @@ func (pkg *KclPackage) GetFullSchemaTypeMappingWithFilters(kpmcli *client.KpmCli
 			}
 
 			opts := kcl.NewOption()
-			opts.Merge(kcl.WithKFilenames(path))
 			for depName, depPath := range depsMap {
 				opts.Merge(kcl.WithExternalPkgs(fmt.Sprintf(constants.EXTERNAL_PKGS_ARG_PATTERN, depName, depPath)))
 			}
