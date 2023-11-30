@@ -37,7 +37,7 @@ func TestPackageApi(t *testing.T) {
 	schemas, err := pkg.GetAllSchemaTypeMapping()
 	assert.Equal(t, err, nil)
 	assert.Equal(t, len(schemas), 3)
-	assert.Equal(t, len(schemas["."]), 2)
+	assert.Equal(t, len(schemas["."]), 4)
 	assert.Equal(t, len(schemas[filepath.Join("sub")]), 1)
 	assert.Equal(t, len(schemas[filepath.Join("sub", "sub1")]), 2)
 
@@ -132,6 +132,27 @@ func TestGetSchemaTypeMappingWithFilters(t *testing.T) {
 	assert.Equal(t, schemas[filepath.Join("sub", "sub1")]["SchemaWithSameName"].SchemaName, "SchemaWithSameName")
 	assert.Equal(t, schemas[filepath.Join(".")]["SchemaWithSameName"].Name, "SchemaWithSameName")
 	assert.Equal(t, schemas[filepath.Join("sub", "sub1")]["SchemaWithSameName"].RelPath, filepath.Join("sub", "sub1"))
+}
+
+func TestGetFullSchemaTypeMappingWithFilters(t *testing.T) {
+	pkg_path := filepath.Join(getTestDir("test_kpm_package"), "get_schema_ty", "aaa")
+	pkg, err := GetKclPackage(pkg_path)
+	assert.Equal(t, err, nil)
+	kpmcli, err := client.NewKpmClient()
+	assert.Equal(t, err, nil)
+	err = kpmcli.ResolvePkgDepsMetadata(pkg.pkg, true)
+	assert.Equal(t, err, nil)
+
+	filterFunc := func(kt *KclType) bool {
+		return kt.Type == "schema"
+	}
+
+	schemas, err := pkg.GetFullSchemaTypeMappingWithFilters(kpmcli, []KclTypeFilterFunc{filterFunc})
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(schemas), 1)
+
+	assert.Equal(t, schemas[filepath.Join(".")]["B"].Type, "schema")
+	assert.Equal(t, schemas[filepath.Join(".")]["B"].SchemaName, "B")
 }
 
 func TestGetSchemaTypeUnderEmptyDir(t *testing.T) {
