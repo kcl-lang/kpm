@@ -37,7 +37,7 @@ func TestPackageApi(t *testing.T) {
 	schemas, err := pkg.GetAllSchemaTypeMapping()
 	assert.Equal(t, err, nil)
 	assert.Equal(t, len(schemas), 3)
-	assert.Equal(t, len(schemas["."]), 2)
+	assert.Equal(t, len(schemas["."]), 4)
 	assert.Equal(t, len(schemas[filepath.Join("sub")]), 1)
 	assert.Equal(t, len(schemas[filepath.Join("sub", "sub1")]), 2)
 
