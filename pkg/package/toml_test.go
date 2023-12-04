@@ -167,5 +167,5 @@ func TestUnMarshalTOMLWithProfile(t *testing.T) {
 	assert.Equal(t, modfile.Pkg.Name, "kpm")
 	assert.Equal(t, modfile.Pkg.Version, "0.0.1")
 	assert.Equal(t, modfile.Pkg.Edition, "0.0.1")
-	assert.Equal(t, modfile.Profiles.Entries, []string{"main.k", "xxx/xxx/dir", "test.yaml"})
+	assert.Equal(t, *modfile.Profiles.Entries, []string{"main.k", "xxx/xxx/dir", "test.yaml"})
 }
