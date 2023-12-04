@@ -147,7 +147,7 @@ const PROFILE_PATTERN = "[profile]"
 
 func (p *Profile) MarshalTOML() string {
 	var sb strings.Builder
-	if len(p.Entries) != 0 {
+	if p != nil {
 		sb.WriteString(PROFILE_PATTERN)
 		sb.WriteString(NEWLINE)
 		var buf bytes.Buffer
@@ -202,7 +202,7 @@ func (mod *ModFile) UnmarshalTOML(data interface{}) error {
 		if err != nil {
 			return err
 		}
-		mod.Profiles = p
+		mod.Profiles = &p
 	}
 	return nil
 }

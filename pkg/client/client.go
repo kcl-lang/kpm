@@ -313,7 +313,8 @@ func (c *KpmClient) CompileWithOpts(opts *opt.CompileOptions) (*kcl.KCLResultLis
 	if err != (*reporter.KpmEvent)(nil) {
 		return nil, err
 	}
-
+	// add all the options from 'kcl.mod'
+	opts.Merge(*kclPkg.GetKclOpts())
 	if len(opts.Entries()) > 0 {
 		// add entry from '--input'
 		for _, entry := range opts.Entries() {
@@ -323,10 +324,7 @@ func (c *KpmClient) CompileWithOpts(opts *opt.CompileOptions) (*kcl.KCLResultLis
 				opts.Merge(kcl.WithKFilenames(filepath.Join(opts.PkgPath(), entry)))
 			}
 		}
-		// add entry from 'kcl.mod'
-	} else if len(kclPkg.GetEntryKclFilesFromModFile()) > 0 {
-		opts.Merge(*kclPkg.GetKclOpts())
-	} else if !opts.HasSettingsYaml() {
+	} else if len(kclPkg.GetEntryKclFilesFromModFile()) == 0 && !opts.HasSettingsYaml() {
 		// no entry
 		opts.Merge(kcl.WithKFilenames(opts.PkgPath()))
 	}
