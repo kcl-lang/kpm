@@ -166,20 +166,10 @@ func CompileOptionFromCli(c *cli.Context) *opt.CompileOptions {
 	}
 
 	// --argument, -D
-	argumentsOpt := c.StringSlice(FLAG_ARGUMENT)
-	if len(argumentsOpt) != 0 {
-		for _, arg := range argumentsOpt {
-			opts.Merge(kcl.WithOptions(arg))
-		}
-	}
+	opts.Merge(kcl.WithOptions(c.StringSlice(FLAG_ARGUMENT)...))
 
 	// --overrides, -O
-	overridesOpt := c.StringSlice(FLAG_OVERRIDES)
-	if len(overridesOpt) != 0 {
-		for _, override := range overridesOpt {
-			opts.Merge(kcl.WithOverrides(override))
-		}
-	}
+	opts.Merge(kcl.WithOverrides(c.StringSlice(FLAG_OVERRIDES)...))
 
 	// --disable_none, -n
 	opts.Merge(kcl.WithDisableNone(c.Bool(FLAG_DISABLE_NONE)))

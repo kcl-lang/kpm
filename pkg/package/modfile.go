@@ -34,22 +34,25 @@ type ModFile struct {
 	// Whether the current package uses the vendor mode
 	// In the vendor mode, kpm will look for the package in the vendor subdirectory
 	// in the current package directory.
-	VendorMode bool    `toml:"-"`
-	Profiles   Profile `toml:"profile"`
+	VendorMode bool     `toml:"-"`
+	Profiles   *Profile `toml:"profile"`
 	Dependencies
 }
 
 // Profile is the profile section of 'kcl.mod'.
 // It is used to specify the compilation options of the current package.
 type Profile struct {
-	Entries []string `toml:"entries"`
+	Entries     *[]string `toml:"entries"`
+	DisableNone *bool     `toml:"disable_none"`
+	SortKeys    *bool     `toml:"sort_keys"`
+	Selectors   *[]string `toml:"selectors"`
+	Overrides   *[]string `toml:"overrides"`
+	Options     *[]string `toml:"arguments"`
 }
 
 // NewProfile will create a new profile.
 func NewProfile() Profile {
-	return Profile{
-		Entries: []string{},
-	}
+	return Profile{}
 }
 
 // IntoKclOptions will transform the profile into kcl options.
@@ -57,16 +60,46 @@ func (profile *Profile) IntoKclOptions() *kcl.Option {
 
 	opts := kcl.NewOption()
 
-	for _, entry := range profile.Entries {
-		ext := filepath.Ext(entry)
-		if ext == ".yaml" {
-			opts.Merge(kcl.WithSettings(entry))
-		} else {
-			opts.Merge(kcl.WithKFilenames(entry))
+	if profile.Entries != nil {
+		for _, entry := range *profile.Entries {
+			ext := filepath.Ext(entry)
+			if ext == ".yaml" {
+				opts.Merge(kcl.WithSettings(entry))
+			} else {
+				opts.Merge(kcl.WithKFilenames(entry))
+			}
 		}
 	}
 
+	if profile.DisableNone != nil {
+		opts.Merge(kcl.WithDisableNone(*profile.DisableNone))
+	}
+
+	if profile.SortKeys != nil {
+		opts.Merge(kcl.WithSortKeys(*profile.SortKeys))
+	}
+
+	if profile.Selectors != nil {
+		opts.Merge(kcl.WithSelectors(*profile.Selectors...))
+	}
+
+	if profile.Overrides != nil {
+		opts.Merge(kcl.WithOverrides(*profile.Overrides...))
+	}
+
+	if profile.Options != nil {
+		opts.Merge(kcl.WithOptions(*profile.Options...))
+	}
+
 	return opts
+}
+
+// GetEntries will get the entry kcl files from profile.
+func (profile *Profile) GetEntries() []string {
+	if profile.Entries == nil {
+		return []string{}
+	}
+	return *profile.Entries
 }
 
 // FillDependenciesInfo will fill registry information for all dependencies in a kcl.mod.
@@ -79,6 +112,14 @@ func (modFile *ModFile) FillDependenciesInfo() error {
 		modFile.Deps[k] = v
 	}
 	return nil
+}
+
+// GetEntries will get the entry kcl files from kcl.mod.
+func (modFile *ModFile) GetEntries() []string {
+	if modFile.Profiles == nil {
+		return []string{}
+	}
+	return modFile.Profiles.GetEntries()
 }
 
 // 'Dependencies' is dependencies section of 'kcl.mod'.

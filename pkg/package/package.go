@@ -60,12 +60,20 @@ func LoadKclPkgFromTar(pkgTarPath string) (*KclPkg, error) {
 
 // GetKclOpts will return the kcl options from kcl.mod.
 func (kclPkg *KclPkg) GetKclOpts() *kcl.Option {
+	if kclPkg.ModFile.Profiles == nil {
+		return kcl.NewOption()
+	}
 	return kclPkg.ModFile.Profiles.IntoKclOptions()
 }
 
 // GetEntryKclFilesFromModFile will return the entry kcl files from kcl.mod.
 func (kclPkg *KclPkg) GetEntryKclFilesFromModFile() []string {
-	return kclPkg.ModFile.Profiles.Entries
+	return kclPkg.ModFile.GetEntries()
+}
+
+// HasProfile will return true if the current kcl package has the profile.
+func (kclPkg *KclPkg) HasProfile() bool {
+	return kclPkg.ModFile.Profiles != nil
 }
 
 func (kclPkg *KclPkg) IsVendorMode() bool {
@@ -170,7 +178,7 @@ func (kclPkg *KclPkg) GetPkgEdition() string {
 
 // GetPkgProfile returns the profile of package.
 func (kclPkg *KclPkg) GetPkgProfile() Profile {
-	return kclPkg.ModFile.Profiles
+	return *kclPkg.ModFile.Profiles
 }
 
 // GetPkgTarName returns the kcl package tar name "<package_name>-v<package_version>.tar"

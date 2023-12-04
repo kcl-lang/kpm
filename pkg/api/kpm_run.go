@@ -243,7 +243,7 @@ func run(kpmcli *client.KpmClient, opts *opt.CompileOptions) (*kcl.KCLResultList
 			}
 		}
 		// add entry from 'kcl.mod'
-	} else if len(kclPkg.GetEntryKclFilesFromModFile()) > 0 {
+	} else if kclPkg.HasProfile() {
 		opts.Merge(*kclPkg.GetKclOpts())
 	} else if !opts.HasSettingsYaml() {
 		// no entry
