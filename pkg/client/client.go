@@ -162,10 +162,12 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 
 	// alian the dependencies between kcl.mod and kcl.mod.lock
 	// clean the dependencies in kcl.mod.lock which not in kcl.mod
-	for name := range kclPkg.Dependencies.Deps {
-		if _, ok := kclPkg.ModFile.Dependencies.Deps[name]; !ok {
+	// clean the dependencies in kcl.mod.lock and kcl.mod which have different version
+	for name, dep := range kclPkg.Dependencies.Deps {
+		modDep, ok := kclPkg.ModFile.Dependencies.Deps[name]
+		if !ok || !dep.WithTheSameVersion(modDep) {
 			reporter.ReportMsgTo(
-				fmt.Sprintf("removing '%s'", name),
+				fmt.Sprintf("removing '%s' with version '%s'", name, dep.Version),
 				c.logWriter,
 			)
 			delete(kclPkg.Dependencies.Deps, name)
@@ -175,7 +177,7 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 	for name, d := range kclPkg.ModFile.Dependencies.Deps {
 		if _, ok := kclPkg.Dependencies.Deps[name]; !ok {
 			reporter.ReportMsgTo(
-				fmt.Sprintf("adding '%s'", name),
+				fmt.Sprintf("adding '%s' with version '%s'", name, d.Version),
 				c.logWriter,
 			)
 			kclPkg.Dependencies.Deps[name] = d

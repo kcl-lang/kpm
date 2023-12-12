@@ -24,6 +24,26 @@ func TestModFileWithDesc(t *testing.T) {
 	assert.Equal(t, err, nil)
 }
 
+func TestWithTheSameVersion(t *testing.T) {
+	d := Dependency{
+		Name:    "test",
+		Version: "0.0.1",
+	}
+
+	d2 := Dependency{
+		Name:    "test",
+		Version: "0.0.2",
+	}
+
+	assert.Equal(t, d.WithTheSameVersion(d2), false)
+
+	d2.Version = "0.0.1"
+	assert.Equal(t, d.WithTheSameVersion(d2), true)
+
+	d2.Name = "test2"
+	assert.Equal(t, d.WithTheSameVersion(d2), false)
+}
+
 func TestModFileExists(t *testing.T) {
 	testDir := initTestDir("test_data_modfile")
 	// there is no 'kcl.mod' and 'kcl.mod.lock'.

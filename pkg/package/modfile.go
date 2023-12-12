@@ -139,6 +139,12 @@ type Dependency struct {
 	Source        `json:"-"`
 }
 
+// WithTheSameVersion will check whether two dependencies have the same version.
+func (d Dependency) WithTheSameVersion(other Dependency) bool {
+	return d.Name == other.Name &&
+		d.Version == other.Version
+}
+
 // GetLocalFullPath will get the local path of a dependency.
 func (dep *Dependency) GetLocalFullPath(rootpath string) string {
 	if dep.IsFromLocal() {
