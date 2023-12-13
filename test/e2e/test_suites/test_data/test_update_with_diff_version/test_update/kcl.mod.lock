@@ -1,0 +1,9 @@
+[dependencies]
+  [dependencies.k8s]
+    name = "k8s"
+    full_name = "k8s_1.27"
+    version = "1.27"
+    sum = "xnYM1FWHAy3m+KcQMQb2rjZouTxumqYt6FGZpu2T4yM="
+    reg = "localhost:5001"
+    repo = "test/k8s"
+    oci_tag = "1.27"
