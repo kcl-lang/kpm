@@ -154,3 +154,23 @@ func TestRunTarPkg(t *testing.T) {
 		os.RemoveAll(untarPath)
 	}
 }
+
+func TestRunWithNoSumCheck(t *testing.T) {
+	pkgPath := getTestDir("test_run_with_nosumcheck")
+	opts := opt.DefaultCompileOptions()
+	opts.SetPkgPath(pkgPath)
+	opts.SetNoSumCheck(true)
+	_, err := RunPkgInPath(opts)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), false)
+
+	opts = opt.DefaultCompileOptions()
+	opts.SetPkgPath(pkgPath)
+	opts.SetNoSumCheck(false)
+	_, err = RunPkgInPath(opts)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), true)
+	defer func() {
+		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
+	}()
+}

@@ -13,6 +13,7 @@ OPTIONS:
    --input value [ --input value ]                              a kcl file as the compile entry file
    --tag value                                                  the tag for oci artifact
    --vendor                                                     run in vendor mode (default: false)
+   --no_sum_check                                               do not check the checksum of the package and update kcl.mod.lock (default: false)
    --setting value, -Y value [ --setting value, -Y value ]      specify the input setting file
    --argument value, -D value [ --argument value, -D value ]    specify the top-level argument
    --overrides value, -O value [ --overrides value, -O value ]  specify the configuration override path and value

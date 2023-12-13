@@ -19,6 +19,7 @@ type CompileOptions struct {
 	isVendor        bool
 	hasSettingsYaml bool
 	entries         []string
+	noSumCheck      bool
 	// Add a writer to control the output of the compiler.
 	writer io.Writer
 	*kcl.Option
@@ -30,6 +31,16 @@ func DefaultCompileOptions() *CompileOptions {
 		writer: os.Stdout,
 		Option: kcl.NewOption(),
 	}
+}
+
+// SetNoSumCheck will set the 'no_sum_check' flag.
+func (opts *CompileOptions) SetNoSumCheck(noSumCheck bool) {
+	opts.noSumCheck = noSumCheck
+}
+
+// NoSumCheck will return the 'no_sum_check' flag.
+func (opts *CompileOptions) NoSumCheck() bool {
+	return opts.noSumCheck
 }
 
 // AddEntry will add a compile entry file to the compiler.
@@ -110,6 +121,7 @@ func (opts *InitOptions) Validate() error {
 type AddOptions struct {
 	LocalPath    string
 	RegistryOpts RegistryOptions
+	NoSumCheck   bool
 }
 
 func (opts *AddOptions) Validate() error {

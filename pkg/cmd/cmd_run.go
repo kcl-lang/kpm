@@ -38,6 +38,11 @@ func NewRunCmd(kpmcli *client.KpmClient) *cli.Command {
 				Name:  FLAG_VENDOR,
 				Usage: "run in vendor mode",
 			},
+			// --no_sum_check
+			&cli.BoolFlag{
+				Name:  FLAG_NO_SUM_CHECK,
+				Usage: "do not check the checksum of the package and update kcl.mod.lock",
+			},
 
 			// KCL arg: --setting, -Y
 			&cli.StringSliceFlag{
@@ -86,6 +91,8 @@ func KpmRun(c *cli.Context, kpmcli *client.KpmClient) error {
 	if err != nil {
 		return err
 	}
+
+	kpmcli.SetNoSumCheck(c.Bool(FLAG_NO_SUM_CHECK))
 
 	defer func() {
 		// release the lock of the package cache after the function returns.
