@@ -17,6 +17,12 @@ func NewUpdateCmd(kpmcli *client.KpmClient) *cli.Command {
 		Hidden: false,
 		Name:   "update",
 		Usage:  "Update dependencies listed in kcl.mod.lock based on kcl.mod",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:  FLAG_NO_SUM_CHECK,
+				Usage: "do not check the checksum of the package and update kcl.mod.lock",
+			},
+		},
 		Action: func(c *cli.Context) error {
 			return KpmUpdate(c, kpmcli)
 		},
@@ -24,6 +30,8 @@ func NewUpdateCmd(kpmcli *client.KpmClient) *cli.Command {
 }
 
 func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
+	kpmcli.SetNoSumCheck(c.Bool(FLAG_NO_SUM_CHECK))
+
 	// acquire the lock of the package cache.
 	err := kpmcli.AcquirePackageCacheLock()
 	if err != nil {
@@ -67,12 +75,7 @@ func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
 			return err
 		}
 
-		_, err = kpmcli.ResolveDepsMetadataInJsonStr(kclPkg, true)
-		if err != nil {
-			return err
-		}
-
-		err = kclPkg.UpdateModAndLockFile()
+		err = kpmcli.UpdateDeps(kclPkg)
 		if err != nil {
 			return err
 		}

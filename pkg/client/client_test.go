@@ -778,3 +778,93 @@ func TestMetadataOffline(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.RmNewline(string(content_after_metadata)), utils.RmNewline(string(beautifulContent)))
 }
+
+func TestAddWithNoSumCheck(t *testing.T) {
+	pkgPath := getTestDir("test_add_no_sum_check")
+	err := copy.Copy(filepath.Join(pkgPath, "kcl.mod.bak"), filepath.Join(pkgPath, "kcl.mod"))
+	assert.Equal(t, err, nil)
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	kclPkg, err := kpmcli.LoadPkgFromPath(pkgPath)
+	assert.Equal(t, err, nil)
+
+	opts := opt.AddOptions{
+		LocalPath: pkgPath,
+		RegistryOpts: opt.RegistryOptions{
+			Oci: &opt.OciOptions{
+				Reg:     "ghcr.io",
+				Repo:    "kcl-lang",
+				PkgName: "helloworld",
+				Tag:     "0.1.0",
+			},
+		},
+		NoSumCheck: true,
+	}
+
+	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), false)
+
+	opts.NoSumCheck = false
+	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), true)
+	defer func() {
+		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
+		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod"))
+	}()
+}
+
+func TestRunWithNoSumCheck(t *testing.T) {
+	pkgPath := getTestDir("test_run_no_sum_check")
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	opts := opt.DefaultCompileOptions()
+	opts.SetNoSumCheck(true)
+	opts.SetPkgPath(pkgPath)
+
+	_, err = kpmcli.CompileWithOpts(opts)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), false)
+
+	opts = opt.DefaultCompileOptions()
+	opts.SetPkgPath(pkgPath)
+	opts.SetNoSumCheck(false)
+	_, err = kpmcli.CompileWithOpts(opts)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), true)
+
+	defer func() {
+		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
+	}()
+}
+
+func TestUpdateWithNoSumCheck(t *testing.T) {
+	pkgPath := getTestDir("test_update_no_sum_check")
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	kpmcli.SetNoSumCheck(true)
+	kclPkg, err := kpmcli.LoadPkgFromPath(pkgPath)
+	assert.Equal(t, err, nil)
+
+	err = kpmcli.UpdateDeps(kclPkg)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), false)
+
+	kpmcli.SetNoSumCheck(false)
+	kclPkg, err = kpmcli.LoadPkgFromPath(pkgPath)
+	assert.Equal(t, err, nil)
+
+	err = kpmcli.UpdateDeps(kclPkg)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), true)
+
+	defer func() {
+		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
+	}()
+}

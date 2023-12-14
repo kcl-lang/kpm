@@ -32,6 +32,10 @@ func NewAddCmd(kpmcli *client.KpmClient) *cli.Command {
 				Name:  "tag",
 				Usage: "Git repository tag",
 			},
+			&cli.BoolFlag{
+				Name:  FLAG_NO_SUM_CHECK,
+				Usage: "do not check the checksum of the package and update kcl.mod.lock",
+			},
 		},
 
 		Action: func(c *cli.Context) error {
@@ -120,6 +124,7 @@ func onlyOnceOption(c *cli.Context, name string) (*string, *reporter.KpmEvent) {
 
 // parseAddOptions will parse the user cli inputs.
 func parseAddOptions(c *cli.Context, kpmcli *client.KpmClient, localPath string) (*opt.AddOptions, error) {
+	noSumCheck := c.Bool(FLAG_NO_SUM_CHECK)
 	// parse from 'kpm add -git https://xxx/xxx.git -tag v0.0.1'.
 	if c.NArg() == 0 {
 		gitOpts, err := parseGitRegistryOptions(c)
@@ -132,6 +137,7 @@ func parseAddOptions(c *cli.Context, kpmcli *client.KpmClient, localPath string)
 		return &opt.AddOptions{
 			LocalPath:    localPath,
 			RegistryOpts: *gitOpts,
+			NoSumCheck:   noSumCheck,
 		}, nil
 	} else {
 		localPkg, err := parseLocalPathOptions(c)
@@ -144,11 +150,13 @@ func parseAddOptions(c *cli.Context, kpmcli *client.KpmClient, localPath string)
 			return &opt.AddOptions{
 				LocalPath:    localPath,
 				RegistryOpts: *ociReg,
+				NoSumCheck:   noSumCheck,
 			}, nil
 		} else {
 			return &opt.AddOptions{
 				LocalPath:    localPath,
 				RegistryOpts: *localPkg,
+				NoSumCheck:   noSumCheck,
 			}, nil
 		}
 	}

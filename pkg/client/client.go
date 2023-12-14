@@ -34,6 +34,8 @@ type KpmClient struct {
 	homePath string
 	// The settings of kpm loaded from the global configuration file.
 	settings settings.Settings
+	// The flag of whether to check the checksum of the package and update kcl.mod.lock.
+	noSumCheck bool
 }
 
 // NewKpmClient will create a new kpm client with default settings.
@@ -54,6 +56,16 @@ func NewKpmClient() (*KpmClient, error) {
 		settings:  *settings,
 		homePath:  homePath,
 	}, nil
+}
+
+// SetNoSumCheck will set the 'noSumCheck' flag.
+func (c *KpmClient) SetNoSumCheck(noSumCheck bool) {
+	c.noSumCheck = noSumCheck
+}
+
+// GetNoSumCheck will return the 'noSumCheck' flag.
+func (c *KpmClient) GetNoSumCheck() bool {
+	return c.noSumCheck
 }
 
 func (c *KpmClient) SetLogWriter(writer io.Writer) {
@@ -148,6 +160,8 @@ func (c *KpmClient) ResolveDepsIntoMap(kclPkg *pkg.KclPkg) (map[string]string, e
 // If the package does not exist, it will re-download to the local.
 func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) error {
 	var searchPath string
+	kclPkg.NoSumCheck = c.noSumCheck
+
 	if kclPkg.IsVendorMode() {
 		// In the vendor mode, the search path is the vendor subdirectory of the current package.
 		err := c.VendorDeps(kclPkg)
@@ -193,7 +207,7 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 				kclPkg.Dependencies.Deps[name] = d
 			}
 		} else {
-			if utils.DirExists(searchFullPath) && utils.CheckPackageSum(d.Sum, searchFullPath) {
+			if utils.DirExists(searchFullPath) && (c.GetNoSumCheck() || utils.CheckPackageSum(d.Sum, searchFullPath)) {
 				// Find it and update the local path of the dependency.
 				d.LocalFullPath = searchFullPath
 				kclPkg.Dependencies.Deps[name] = d
@@ -298,6 +312,8 @@ func (c *KpmClient) CompileWithOpts(opts *opt.CompileOptions) (*kcl.KCLResultLis
 	if err != nil {
 		return nil, reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it.")
 	}
+
+	c.noSumCheck = opts.NoSumCheck()
 
 	kclPkg, err := pkg.LoadKclPkg(pkgPath)
 	if err != nil {
@@ -483,6 +499,9 @@ func (c *KpmClient) InitEmptyPkg(kclPkg *pkg.KclPkg) error {
 
 // AddDepWithOpts will add a dependency to the current kcl package.
 func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pkg.KclPkg, error) {
+	c.noSumCheck = opt.NoSumCheck
+	kclPkg.NoSumCheck = opt.NoSumCheck
+
 	// 1. get the name and version of the repository from the input arguments.
 	d, err := pkg.ParseOpt(&opt.RegistryOpts)
 	if err != nil {
@@ -1006,6 +1025,29 @@ func (c *KpmClient) ParseOciOptionFromString(oci string, tag string) (*opt.OciOp
 	return ociOpt, nil
 }
 
+// dependencyExists will check whether the dependency exists in the local filesystem.
+func (c *KpmClient) dependencyExists(dep *pkg.Dependency, lockDeps *pkg.Dependencies) *pkg.Dependency {
+
+	// If the flag '--no_sum_check' is set, skip the checksum check.
+	if c.noSumCheck {
+		// If the dependent package does exist locally
+		if utils.DirExists(filepath.Join(c.homePath, dep.FullName)) {
+			return dep
+		}
+	}
+
+	lockDep, present := lockDeps.Deps[dep.Name]
+	// Check if the sum of this dependency in kcl.mod.lock has been chanaged.
+	if !c.noSumCheck && present {
+		// If the dependent package does not exist locally, then method 'check' will return false.
+		if c.noSumCheck || check(lockDep, filepath.Join(c.homePath, dep.FullName)) {
+			return dep
+		}
+	}
+
+	return nil
+}
+
 // downloadDeps will download all the dependencies of the current kcl package.
 func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencies) (*pkg.Dependencies, error) {
 	newDeps := pkg.Dependencies{
@@ -1018,16 +1060,12 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 			return nil, errors.InvalidDependency
 		}
 
-		lockDep, present := lockDeps.Deps[d.Name]
-
-		// Check if the sum of this dependency in kcl.mod.lock has been chanaged.
-		if present {
-			// If the dependent package does not exist locally, then method 'check' will return false.
-			if check(lockDep, filepath.Join(c.homePath, d.FullName)) {
-				newDeps.Deps[d.Name] = lockDep
-				continue
-			}
+		existDep := c.dependencyExists(&d, &lockDeps)
+		if existDep != nil {
+			newDeps.Deps[d.Name] = *existDep
+			continue
 		}
+
 		expectedSum := lockDeps.Deps[d.Name].Sum
 		// Clean the cache
 		if len(c.homePath) == 0 || len(d.FullName) == 0 {
@@ -1044,7 +1082,7 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 		}
 
 		if !lockedDep.IsFromLocal() {
-			if expectedSum != "" && lockedDep.Sum != expectedSum && lockDep.FullName == d.FullName {
+			if !c.noSumCheck && expectedSum != "" && lockedDep.Sum != expectedSum && existDep.FullName == d.FullName {
 				return nil, reporter.NewErrorEvent(
 					reporter.CheckSumMismatch,
 					errors.CheckSumMismatchError,

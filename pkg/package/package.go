@@ -19,6 +19,8 @@ type KclPkg struct {
 	// The dependencies in the current kcl package are the dependencies of kcl.mod.lock,
 	// not the dependencies in kcl.mod.
 	Dependencies
+	// The flag 'NoSumCheck' is true if the checksum of the current kcl package is not checked.
+	NoSumCheck bool
 }
 
 func NewKclPkg(opts *opt.InitOptions) KclPkg {
@@ -98,9 +100,11 @@ func (kclPkg *KclPkg) UpdateModAndLockFile() error {
 	}
 
 	// Generate file kcl.mod.lock.
-	err = kclPkg.LockDepsVersion()
-	if err != nil {
-		return err
+	if !kclPkg.NoSumCheck {
+		err = kclPkg.LockDepsVersion()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

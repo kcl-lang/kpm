@@ -105,6 +105,7 @@ func getAbsInputPath(pkgPath string, inputPath string) (string, error) {
 // RunPkgWithOpt will compile the kcl package with the compile options.
 func RunPkgWithOpt(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 	kpmcli, err := client.NewKpmClient()
+	kpmcli.SetNoSumCheck(opts.NoSumCheck())
 	if err != nil {
 		return nil, err
 	}
@@ -140,6 +141,7 @@ func RunTarPkg(tarPath string, opts *opt.CompileOptions) (*kcl.KCLResultList, er
 
 	opts.SetPkgPath(destDir)
 	kpmcli, err := client.NewKpmClient()
+	kpmcli.SetNoSumCheck(opts.NoSumCheck())
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +159,7 @@ func RunOciPkg(ociRef, version string, opts *opt.CompileOptions) (*kcl.KCLResult
 	if err != nil {
 		return nil, err
 	}
-
+	kpmcli.SetNoSumCheck(opts.NoSumCheck())
 	ociOpts, err := kpmcli.ParseOciOptionFromString(ociRef, version)
 
 	if err != nil {
