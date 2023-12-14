@@ -9,7 +9,7 @@ func TestGetVersionInStr(t *testing.T) {
 	}{
 		{
 			name: "test get version in string",
-			want: "0.4.3",
+			want: "0.4.4",
 		},
 	}
 	for _, tt := range tests {
