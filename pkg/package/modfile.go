@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"kcl-lang.io/kcl-go/pkg/kcl"
@@ -128,15 +129,22 @@ type Dependencies struct {
 }
 
 type Dependency struct {
-	Name     string `json:"name" toml:"name,omitempty"`
-	FullName string `json:"-" toml:"full_name,omitempty"`
-	Version  string `json:"-" toml:"version,omitempty"`
-	Sum      string `json:"-" toml:"sum,omitempty"`
+	Name      string `json:"name" toml:"name,omitempty"`
+	AliasName string `json:"alias_name" toml:"-"`
+	FullName  string `json:"-" toml:"full_name,omitempty"`
+	Version   string `json:"-" toml:"version,omitempty"`
+	Sum       string `json:"-" toml:"sum,omitempty"`
 	// The actual local path of the package.
 	// In vendor mode is "current_kcl_package/vendor"
 	// In non-vendor mode is "$KCL_PKG_PATH"
 	LocalFullPath string `json:"manifest_path" toml:"-"`
 	Source        `json:"-"`
+}
+
+// SetName will set the name and alias name of a dependency.
+func (d *Dependency) SetNameAndAlias(name string) {
+	d.Name = name
+	d.AliasName = strings.ReplaceAll(d.Name, "-", "_")
 }
 
 // WithTheSameVersion will check whether two dependencies have the same version.
@@ -326,6 +334,8 @@ func (deps *Dependencies) loadLockFile(filepath string) error {
 
 // Parse out some information for a Dependency from registry url.
 func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
+	dep := Dependency{}
+
 	if opt.Git != nil {
 		gitSource := Git{
 			Url:    opt.Git.Url,
@@ -334,14 +344,13 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 			Tag:    opt.Git.Tag,
 		}
 
-		return &Dependency{
-			Name:     ParseRepoNameFromGitSource(gitSource),
-			FullName: ParseRepoFullNameFromGitSource(gitSource),
-			Source: Source{
-				Git: &gitSource,
-			},
-			Version: gitSource.Tag,
-		}, nil
+		dep.SetNameAndAlias(ParseRepoNameFromGitSource(gitSource))
+		dep.FullName = ParseRepoFullNameFromGitSource(gitSource)
+		dep.Source = Source{
+			Git: &gitSource,
+		}
+		dep.Version = gitSource.Tag
+		return &dep, nil
 	}
 	if opt.Oci != nil {
 		repoPath := utils.JoinPath(opt.Oci.Repo, opt.Oci.PkgName)
@@ -351,31 +360,29 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 			Tag:  opt.Oci.Tag,
 		}
 
-		return &Dependency{
-			Name:     opt.Oci.PkgName,
-			FullName: opt.Oci.PkgName + "_" + opt.Oci.Tag,
-			Source: Source{
-				Oci: &ociSource,
-			},
-			Version: opt.Oci.Tag,
-		}, nil
+		dep.SetNameAndAlias(opt.Oci.PkgName)
+		dep.FullName = opt.Oci.PkgName + "_" + opt.Oci.Tag
+		dep.Source = Source{
+			Oci: &ociSource,
+		}
+		dep.Version = opt.Oci.Tag
+		return &dep, nil
 	}
 	if opt.Local != nil {
 		depPkg, err := LoadKclPkg(opt.Local.Path)
 		if err != nil {
 			return nil, err
 		}
-		return &Dependency{
-			Name:          depPkg.ModFile.Pkg.Name,
-			FullName:      depPkg.ModFile.Pkg.Name + "_" + depPkg.ModFile.Pkg.Version,
-			LocalFullPath: opt.Local.Path,
-			Source: Source{
-				Local: &Local{
-					Path: opt.Local.Path,
-				},
+
+		dep.SetNameAndAlias(depPkg.ModFile.Pkg.Name)
+		dep.FullName = depPkg.ModFile.Pkg.Name + "_" + depPkg.ModFile.Pkg.Version
+		dep.Source = Source{
+			Local: &Local{
+				Path: opt.Local.Path,
 			},
-			Version: depPkg.ModFile.Pkg.Version,
-		}, nil
+		}
+		dep.Version = depPkg.ModFile.Pkg.Version
+		return &dep, nil
 
 	}
 	return nil, nil

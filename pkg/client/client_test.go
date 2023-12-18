@@ -234,15 +234,17 @@ func TestVendorDeps(t *testing.T) {
 	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
 
 	depKcl1 := pkg.Dependency{
-		Name:     "kcl1",
-		FullName: "kcl1",
-		Sum:      kcl1Sum,
+		Name:      "kcl1",
+		AliasName: "kcl1",
+		FullName:  "kcl1",
+		Sum:       kcl1Sum,
 	}
 
 	depKcl2 := pkg.Dependency{
-		Name:     "kcl2",
-		FullName: "kcl2",
-		Sum:      kcl2Sum,
+		Name:      "kcl2",
+		AliasName: "kcl2",
+		FullName:  "kcl2",
+		Sum:       kcl2Sum,
 	}
 
 	kclPkg := pkg.KclPkg{
@@ -291,9 +293,9 @@ func TestVendorDeps(t *testing.T) {
 func TestResolveDepsWithOnlyKclMod(t *testing.T) {
 	testDir := getTestDir("resolve_dep_with_kclmod")
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl.mod.lock")), false)
-	kclPkg, err := pkg.LoadKclPkg(testDir)
-	assert.Equal(t, err, nil)
 	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	kclPkg, err := kpmcli.LoadPkgFromPath(testDir)
 	assert.Equal(t, err, nil)
 	depsMap, err := kpmcli.ResolveDepsIntoMap(kclPkg)
 	assert.Equal(t, err, nil)
@@ -316,15 +318,17 @@ func TestResolveDepsVendorMode(t *testing.T) {
 	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
 
 	depKcl1 := pkg.Dependency{
-		Name:     "kcl1",
-		FullName: "kcl1",
-		Sum:      kcl1Sum,
+		Name:      "kcl1",
+		AliasName: "kcl1",
+		FullName:  "kcl1",
+		Sum:       kcl1Sum,
 	}
 
 	depKcl2 := pkg.Dependency{
-		Name:     "kcl2",
-		FullName: "kcl2",
-		Sum:      kcl2Sum,
+		Name:      "kcl2",
+		AliasName: "kcl2",
+		FullName:  "kcl2",
+		Sum:       kcl2Sum,
 	}
 
 	kclPkg := pkg.KclPkg{
@@ -382,15 +386,17 @@ func TestCompileWithEntryFile(t *testing.T) {
 
 	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1"))
 	depKcl1 := pkg.Dependency{
-		Name:     "kcl1",
-		FullName: "kcl1",
-		Sum:      kcl1Sum,
+		Name:      "kcl1",
+		AliasName: "kcl1",
+		FullName:  "kcl1",
+		Sum:       kcl1Sum,
 	}
 	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
 	depKcl2 := pkg.Dependency{
-		Name:     "kcl2",
-		FullName: "kcl2",
-		Sum:      kcl2Sum,
+		Name:      "kcl2",
+		AliasName: "kcl2",
+		FullName:  "kcl2",
+		Sum:       kcl2Sum,
 	}
 
 	kclPkg := pkg.KclPkg{
@@ -499,6 +505,7 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 
 	expectedDep.Deps["konfig"] = pkg.Dependency{
 		Name:          "konfig",
+		AliasName:     "konfig",
 		FullName:      "konfig_v0.0.1",
 		LocalFullPath: filepath.Join(globalPkgPath, "konfig_v0.0.1"),
 	}
@@ -521,6 +528,7 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 
 	expectedDep.Deps["konfig"] = pkg.Dependency{
 		Name:          "konfig",
+		AliasName:     "konfig",
 		FullName:      "konfig_v0.0.1",
 		LocalFullPath: filepath.Join(vendorDir, "konfig_v0.0.1"),
 	}
@@ -534,16 +542,17 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 		assert.Equal(t, err, nil)
 	}
 
-	kclpkg, err = pkg.LoadKclPkg(testDir)
+	kclpkg, err = kpmcli.LoadPkgFromPath(testDir)
 	assert.Equal(t, err, nil)
 	kpmcli.homePath = "not_exist"
-	res, err = kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
+	res, err = kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, false)
+	fmt.Printf("err: %v\n", err)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(vendorDir), false)
 	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "konfig_v0.0.1")), false)
 	jsonPath, err := json.Marshal(filepath.Join("not_exist", "konfig_v0.0.1"))
 	assert.Equal(t, err, nil)
-	expectedStr := fmt.Sprintf("{\"packages\":{\"konfig\":{\"name\":\"konfig\",\"manifest_path\":%s}}}", string(jsonPath))
+	expectedStr := fmt.Sprintf("{\"packages\":{\"konfig\":{\"name\":\"konfig\",\"alias_name\":\"konfig\",\"manifest_path\":%s}}}", string(jsonPath))
 	assert.Equal(t, res, expectedStr)
 	defer func() {
 		if r := os.RemoveAll(filepath.Join("not_exist", "konfig_v0.0.1")); r != nil {

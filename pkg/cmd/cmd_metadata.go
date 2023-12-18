@@ -9,7 +9,6 @@ import (
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/env"
-	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 )
 
@@ -55,7 +54,7 @@ func NewMetadataCmd(kpmcli *client.KpmClient) *cli.Command {
 				return reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it")
 			}
 
-			kclPkg, err := pkg.LoadKclPkg(pwd)
+			kclPkg, err := kpmcli.LoadPkgFromPath(pwd)
 			if err != nil {
 				return err
 			}

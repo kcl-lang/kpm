@@ -244,7 +244,7 @@ func (deps *Dependencies) UnmarshalModTOML(data interface{}) error {
 
 	for k, v := range meta {
 		dep := Dependency{}
-		dep.Name = k
+		dep.SetNameAndAlias(k)
 
 		err := dep.UnmarshalModTOML(v)
 		if err != nil {
@@ -367,6 +367,11 @@ func (dep *Dependencies) MarshalLockTOML() (string, error) {
 func (dep *Dependencies) UnmarshalLockTOML(data string) error {
 	if _, err := toml.NewDecoder(strings.NewReader(data)).Decode(dep); err != nil {
 		return reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, "failed to load kcl.mod.lock")
+	}
+
+	for name, d := range dep.Deps {
+		d.SetNameAndAlias(name)
+		dep.Deps[name] = d
 	}
 
 	return nil

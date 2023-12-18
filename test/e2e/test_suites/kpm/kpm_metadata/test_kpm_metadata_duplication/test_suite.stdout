@@ -1,0 +1,1 @@
+{"packages":{"dep-with-line":{"name":"dep-with-line","alias_name":"dep_with_line","manifest_path":"<workspace>/test_kpm_metadata_duplication/dep-with-line"},"dep_with-line":{"name":"dep_with-line","alias_name":"dep_with_line","manifest_path":"<workspace>/test_kpm_metadata_duplication/dep_with-line"}}}

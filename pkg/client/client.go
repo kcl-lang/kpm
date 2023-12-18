@@ -148,8 +148,16 @@ func (c *KpmClient) ResolveDepsIntoMap(kclPkg *pkg.KclPkg) (map[string]string, e
 	}
 
 	var pkgMap map[string]string = make(map[string]string)
-	for name, d := range kclPkg.Dependencies.Deps {
-		pkgMap[name] = d.GetLocalFullPath(kclPkg.HomePath)
+	for _, d := range kclPkg.Dependencies.Deps {
+		if _, ok := pkgMap[d.AliasName]; ok {
+			return nil, reporter.NewErrorEvent(
+				reporter.PathIsEmpty,
+				fmt.Errorf("dependency name conflict, '%s' already exists", d.AliasName),
+				"because '-' in the original dependency names is replaced with '_'\n",
+				"please check your dependencies with '-' or '_' in dependency name",
+			)
+		}
+		pkgMap[d.AliasName] = d.GetLocalFullPath(kclPkg.HomePath)
 	}
 
 	return pkgMap, nil
@@ -201,11 +209,14 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 	for name, d := range kclPkg.Dependencies.Deps {
 		searchFullPath := filepath.Join(searchPath, d.FullName)
 		if !update {
-			if utils.DirExists(searchFullPath) {
-				// Find it and update the local path of the dependency.
-				d.LocalFullPath = searchFullPath
-				kclPkg.Dependencies.Deps[name] = d
+			if d.IsFromLocal() {
+				searchFullPath = d.GetLocalFullPath(kclPkg.HomePath)
 			}
+
+			// Find it and update the local path of the dependency.
+			d.LocalFullPath = searchFullPath
+			kclPkg.Dependencies.Deps[name] = d
+
 		} else {
 			if utils.DirExists(searchFullPath) && (c.GetNoSumCheck() || utils.CheckPackageSum(d.Sum, searchFullPath)) {
 				// Find it and update the local path of the dependency.
@@ -315,7 +326,7 @@ func (c *KpmClient) CompileWithOpts(opts *opt.CompileOptions) (*kcl.KCLResultLis
 
 	c.noSumCheck = opts.NoSumCheck()
 
-	kclPkg, err := pkg.LoadKclPkg(pkgPath)
+	kclPkg, err := c.LoadPkgFromPath(pkgPath)
 	if err != nil {
 		return nil, err
 	}
@@ -659,9 +670,20 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 }
 
 // FillDepInfo will fill registry information for a dependency.
-func (c *KpmClient) FillDepInfo(dep *pkg.Dependency) error {
+func (c *KpmClient) FillDepInfo(homePath string, dep *pkg.Dependency) error {
 	if dep.Source.Local != nil {
 		dep.LocalFullPath = dep.Source.Local.Path
+		// If the path is relative, it is converted to an absolute path from the current package path.
+		if !filepath.IsAbs(dep.LocalFullPath) {
+			dep.LocalFullPath = filepath.Join(homePath, dep.LocalFullPath)
+		}
+
+		depPkg, err := c.LoadPkgFromPath(dep.LocalFullPath)
+		if err != nil {
+			return err
+		}
+		dep.Version = depPkg.GetPkgVersion()
+		dep.FullName = depPkg.GetPkgFullName()
 		return nil
 	}
 	if dep.Source.Oci != nil {
@@ -698,7 +720,7 @@ func (c *KpmClient) FillDepInfo(dep *pkg.Dependency) error {
 // FillDependenciesInfo will fill registry information for all dependencies in a kcl.mod.
 func (c *KpmClient) FillDependenciesInfo(modFile *pkg.ModFile) error {
 	for k, v := range modFile.Deps {
-		err := c.FillDepInfo(&v)
+		err := c.FillDepInfo(modFile.HomePath, &v)
 		if err != nil {
 			return err
 		}
