@@ -147,9 +147,13 @@ func (c *KpmClient) ResolveDepsIntoMap(kclPkg *pkg.KclPkg) (map[string]string, e
 		return nil, err
 	}
 
+	depMetadatas, err := kclPkg.GetDepsMetadata()
+	if err != nil {
+		return nil, err
+	}
 	var pkgMap map[string]string = make(map[string]string)
-	for name, d := range kclPkg.Dependencies.Deps {
-		pkgMap[name] = d.GetLocalFullPath(kclPkg.HomePath)
+	for _, d := range depMetadatas.Deps {
+		pkgMap[d.GetAliasName()] = d.GetLocalFullPath(kclPkg.HomePath)
 	}
 
 	return pkgMap, nil
@@ -201,11 +205,14 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 	for name, d := range kclPkg.Dependencies.Deps {
 		searchFullPath := filepath.Join(searchPath, d.FullName)
 		if !update {
-			if utils.DirExists(searchFullPath) {
-				// Find it and update the local path of the dependency.
-				d.LocalFullPath = searchFullPath
-				kclPkg.Dependencies.Deps[name] = d
+			if d.IsFromLocal() {
+				searchFullPath = d.GetLocalFullPath(kclPkg.HomePath)
 			}
+
+			// Find it and update the local path of the dependency.
+			d.LocalFullPath = searchFullPath
+			kclPkg.Dependencies.Deps[name] = d
+
 		} else {
 			if utils.DirExists(searchFullPath) && (c.GetNoSumCheck() || utils.CheckPackageSum(d.Sum, searchFullPath)) {
 				// Find it and update the local path of the dependency.
@@ -280,7 +287,11 @@ func (c *KpmClient) ResolveDepsMetadataInJsonStr(kclPkg *pkg.KclPkg, update bool
 	}
 
 	// 2. Serialize to JSON
-	jsonData, err := json.Marshal(kclPkg.Dependencies)
+	depMetadatas, err := kclPkg.GetDepsMetadata()
+	if err != nil {
+		return "", err
+	}
+	jsonData, err := json.Marshal(&depMetadatas)
 	if err != nil {
 		return "", reporter.NewErrorEvent(reporter.Bug, err, "internal bug: failed to marshal the dependencies into json")
 	}

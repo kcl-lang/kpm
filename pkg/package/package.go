@@ -23,6 +23,10 @@ type KclPkg struct {
 	NoSumCheck bool
 }
 
+func (p *KclPkg) GetDepsMetadata() (*Dependencies, error) {
+	return p.Dependencies.ToDepMetadata(p.HomePath)
+}
+
 func NewKclPkg(opts *opt.InitOptions) KclPkg {
 	return KclPkg{
 		ModFile:      *NewModFile(opts),

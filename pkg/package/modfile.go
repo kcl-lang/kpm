@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"kcl-lang.io/kcl-go/pkg/kcl"
@@ -127,6 +128,28 @@ type Dependencies struct {
 	Deps map[string]Dependency `json:"packages" toml:"dependencies,omitempty"`
 }
 
+// ToDepMetadata will transform the dependencies into metadata.
+// And check whether the dependency name conflicts.
+func (deps *Dependencies) ToDepMetadata(pkgHome string) (*Dependencies, error) {
+	depMetadata := Dependencies{
+		Deps: make(map[string]Dependency),
+	}
+	for _, d := range deps.Deps {
+		if _, ok := depMetadata.Deps[d.GetAliasName()]; ok {
+			return nil, reporter.NewErrorEvent(
+				reporter.PathIsEmpty,
+				fmt.Errorf("dependency name conflict, '%s' already exists", d.GetAliasName()),
+				"because '-' in the original dependency names is replaced with '_'\n",
+				"please check your dependencies with '-' or '_' in dependency name",
+			)
+		}
+		d.Name = d.GetAliasName()
+		depMetadata.Deps[d.GetAliasName()] = d
+	}
+
+	return &depMetadata, nil
+}
+
 type Dependency struct {
 	Name     string `json:"name" toml:"name,omitempty"`
 	FullName string `json:"-" toml:"full_name,omitempty"`
@@ -137,6 +160,11 @@ type Dependency struct {
 	// In non-vendor mode is "$KCL_PKG_PATH"
 	LocalFullPath string `json:"manifest_path" toml:"-"`
 	Source        `json:"-"`
+}
+
+// SetName will set the name and alias name of a dependency.
+func (d *Dependency) GetAliasName() string {
+	return strings.ReplaceAll(d.Name, "-", "_")
 }
 
 // WithTheSameVersion will check whether two dependencies have the same version.
@@ -365,6 +393,7 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		return &Dependency{
 			Name:          depPkg.ModFile.Pkg.Name,
 			FullName:      depPkg.ModFile.Pkg.Name + "_" + depPkg.ModFile.Pkg.Version,
