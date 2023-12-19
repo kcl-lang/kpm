@@ -235,14 +235,12 @@ func TestVendorDeps(t *testing.T) {
 
 	depKcl1 := pkg.Dependency{
 		Name:      "kcl1",
-		AliasName: "kcl1",
 		FullName:  "kcl1",
 		Sum:       kcl1Sum,
 	}
 
 	depKcl2 := pkg.Dependency{
 		Name:      "kcl2",
-		AliasName: "kcl2",
 		FullName:  "kcl2",
 		Sum:       kcl2Sum,
 	}
@@ -319,14 +317,12 @@ func TestResolveDepsVendorMode(t *testing.T) {
 
 	depKcl1 := pkg.Dependency{
 		Name:      "kcl1",
-		AliasName: "kcl1",
 		FullName:  "kcl1",
 		Sum:       kcl1Sum,
 	}
 
 	depKcl2 := pkg.Dependency{
 		Name:      "kcl2",
-		AliasName: "kcl2",
 		FullName:  "kcl2",
 		Sum:       kcl2Sum,
 	}
@@ -387,14 +383,12 @@ func TestCompileWithEntryFile(t *testing.T) {
 	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1"))
 	depKcl1 := pkg.Dependency{
 		Name:      "kcl1",
-		AliasName: "kcl1",
 		FullName:  "kcl1",
 		Sum:       kcl1Sum,
 	}
 	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
 	depKcl2 := pkg.Dependency{
 		Name:      "kcl2",
-		AliasName: "kcl2",
 		FullName:  "kcl2",
 		Sum:       kcl2Sum,
 	}
@@ -505,7 +499,6 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 
 	expectedDep.Deps["konfig"] = pkg.Dependency{
 		Name:          "konfig",
-		AliasName:     "konfig",
 		FullName:      "konfig_v0.0.1",
 		LocalFullPath: filepath.Join(globalPkgPath, "konfig_v0.0.1"),
 	}
@@ -528,7 +521,6 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 
 	expectedDep.Deps["konfig"] = pkg.Dependency{
 		Name:          "konfig",
-		AliasName:     "konfig",
 		FullName:      "konfig_v0.0.1",
 		LocalFullPath: filepath.Join(vendorDir, "konfig_v0.0.1"),
 	}
@@ -552,7 +544,7 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "konfig_v0.0.1")), false)
 	jsonPath, err := json.Marshal(filepath.Join("not_exist", "konfig_v0.0.1"))
 	assert.Equal(t, err, nil)
-	expectedStr := fmt.Sprintf("{\"packages\":{\"konfig\":{\"name\":\"konfig\",\"alias_name\":\"konfig\",\"manifest_path\":%s}}}", string(jsonPath))
+	expectedStr := fmt.Sprintf("{\"packages\":{\"konfig\":{\"name\":\"konfig\",\"manifest_path\":%s}}}", string(jsonPath))
 	assert.Equal(t, res, expectedStr)
 	defer func() {
 		if r := os.RemoveAll(filepath.Join("not_exist", "konfig_v0.0.1")); r != nil {

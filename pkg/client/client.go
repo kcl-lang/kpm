@@ -149,15 +149,15 @@ func (c *KpmClient) ResolveDepsIntoMap(kclPkg *pkg.KclPkg) (map[string]string, e
 
 	var pkgMap map[string]string = make(map[string]string)
 	for _, d := range kclPkg.Dependencies.Deps {
-		if _, ok := pkgMap[d.AliasName]; ok {
+		if _, ok := pkgMap[d.GetAliasName()]; ok {
 			return nil, reporter.NewErrorEvent(
 				reporter.PathIsEmpty,
-				fmt.Errorf("dependency name conflict, '%s' already exists", d.AliasName),
+				fmt.Errorf("dependency name conflict, '%s' already exists", d.GetAliasName()),
 				"because '-' in the original dependency names is replaced with '_'\n",
 				"please check your dependencies with '-' or '_' in dependency name",
 			)
 		}
-		pkgMap[d.AliasName] = d.GetLocalFullPath(kclPkg.HomePath)
+		pkgMap[d.GetAliasName()] = d.GetLocalFullPath(kclPkg.HomePath)
 	}
 
 	return pkgMap, nil
@@ -326,7 +326,7 @@ func (c *KpmClient) CompileWithOpts(opts *opt.CompileOptions) (*kcl.KCLResultLis
 
 	c.noSumCheck = opts.NoSumCheck()
 
-	kclPkg, err := c.LoadPkgFromPath(pkgPath)
+	kclPkg, err := pkg.LoadKclPkg(pkgPath)
 	if err != nil {
 		return nil, err
 	}
@@ -670,20 +670,9 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 }
 
 // FillDepInfo will fill registry information for a dependency.
-func (c *KpmClient) FillDepInfo(homePath string, dep *pkg.Dependency) error {
+func (c *KpmClient) FillDepInfo(dep *pkg.Dependency) error {
 	if dep.Source.Local != nil {
 		dep.LocalFullPath = dep.Source.Local.Path
-		// If the path is relative, it is converted to an absolute path from the current package path.
-		if !filepath.IsAbs(dep.LocalFullPath) {
-			dep.LocalFullPath = filepath.Join(homePath, dep.LocalFullPath)
-		}
-
-		depPkg, err := c.LoadPkgFromPath(dep.LocalFullPath)
-		if err != nil {
-			return err
-		}
-		dep.Version = depPkg.GetPkgVersion()
-		dep.FullName = depPkg.GetPkgFullName()
 		return nil
 	}
 	if dep.Source.Oci != nil {
@@ -720,7 +709,7 @@ func (c *KpmClient) FillDepInfo(homePath string, dep *pkg.Dependency) error {
 // FillDependenciesInfo will fill registry information for all dependencies in a kcl.mod.
 func (c *KpmClient) FillDependenciesInfo(modFile *pkg.ModFile) error {
 	for k, v := range modFile.Deps {
-		err := c.FillDepInfo(modFile.HomePath, &v)
+		err := c.FillDepInfo(&v)
 		if err != nil {
 			return err
 		}
