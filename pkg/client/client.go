@@ -147,16 +147,12 @@ func (c *KpmClient) ResolveDepsIntoMap(kclPkg *pkg.KclPkg) (map[string]string, e
 		return nil, err
 	}
 
+	depMetadatas, err := kclPkg.GetDepsMetadata()
+	if err != nil {
+		return nil, err
+	}
 	var pkgMap map[string]string = make(map[string]string)
-	for _, d := range kclPkg.Dependencies.Deps {
-		if _, ok := pkgMap[d.GetAliasName()]; ok {
-			return nil, reporter.NewErrorEvent(
-				reporter.PathIsEmpty,
-				fmt.Errorf("dependency name conflict, '%s' already exists", d.GetAliasName()),
-				"because '-' in the original dependency names is replaced with '_'\n",
-				"please check your dependencies with '-' or '_' in dependency name",
-			)
-		}
+	for _, d := range depMetadatas.Deps {
 		pkgMap[d.GetAliasName()] = d.GetLocalFullPath(kclPkg.HomePath)
 	}
 
@@ -291,7 +287,11 @@ func (c *KpmClient) ResolveDepsMetadataInJsonStr(kclPkg *pkg.KclPkg, update bool
 	}
 
 	// 2. Serialize to JSON
-	jsonData, err := json.Marshal(kclPkg.Dependencies)
+	depMetadatas, err := kclPkg.GetDepsMetadata()
+	if err != nil {
+		return "", err
+	}
+	jsonData, err := json.Marshal(&depMetadatas)
 	if err != nil {
 		return "", reporter.NewErrorEvent(reporter.Bug, err, "internal bug: failed to marshal the dependencies into json")
 	}

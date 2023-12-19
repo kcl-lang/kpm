@@ -128,6 +128,28 @@ type Dependencies struct {
 	Deps map[string]Dependency `json:"packages" toml:"dependencies,omitempty"`
 }
 
+// ToDepMetadata will transform the dependencies into metadata.
+// And check whether the dependency name conflicts.
+func (deps *Dependencies) ToDepMetadata(pkgHome string) (*Dependencies, error) {
+	depMetadata := Dependencies{
+		Deps: make(map[string]Dependency),
+	}
+	for _, d := range deps.Deps {
+		if _, ok := depMetadata.Deps[d.GetAliasName()]; ok {
+			return nil, reporter.NewErrorEvent(
+				reporter.PathIsEmpty,
+				fmt.Errorf("dependency name conflict, '%s' already exists", d.GetAliasName()),
+				"because '-' in the original dependency names is replaced with '_'\n",
+				"please check your dependencies with '-' or '_' in dependency name",
+			)
+		}
+		d.Name = d.GetAliasName()
+		depMetadata.Deps[d.GetAliasName()] = d
+	}
+
+	return &depMetadata, nil
+}
+
 type Dependency struct {
 	Name     string `json:"name" toml:"name,omitempty"`
 	FullName string `json:"-" toml:"full_name,omitempty"`
