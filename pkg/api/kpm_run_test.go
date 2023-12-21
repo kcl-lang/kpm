@@ -178,7 +178,7 @@ func TestRunWithNoSumCheck(t *testing.T) {
 func TestRunPkgWithOpts(t *testing.T) {
 	pkgPath := getTestDir("test_run_pkg_in_path")
 
-	result, err := RunPkgWithOpts(
+	result, err := RunWithOpts(
 		opt.WithNoSumCheck(false),
 		opt.WithEntries([]string{filepath.Join(pkgPath, "test_kcl", "main.k")}),
 		opt.WithKclOption(kcl.WithWorkDir(filepath.Join(pkgPath, "test_kcl"))),
