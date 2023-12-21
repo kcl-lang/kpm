@@ -174,3 +174,19 @@ func TestRunWithNoSumCheck(t *testing.T) {
 		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
 	}()
 }
+
+func TestRunPkgWithOpts(t *testing.T) {
+	pkgPath := getTestDir("test_run_pkg_in_path")
+
+	result, err := RunPkgWithOpts(
+		opt.WithNoSumCheck(false),
+		opt.WithEntries([]string{filepath.Join(pkgPath, "test_kcl", "main.k")}),
+		opt.WithKclOption(kcl.WithWorkDir(filepath.Join(pkgPath, "test_kcl"))),
+	)
+
+	assert.Equal(t, err, nil)
+	expected, _ := os.ReadFile(filepath.Join(pkgPath, "expected"))
+	assert.Equal(t, utils.RmNewline(string(result.GetRawYamlResult())), utils.RmNewline(string(expected)))
+	expectedJson, _ := os.ReadFile(filepath.Join(pkgPath, "expected.json"))
+	assert.Equal(t, utils.RmNewline(string(result.GetRawJsonResult())), utils.RmNewline(string(expectedJson)))
+}

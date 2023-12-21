@@ -25,6 +25,47 @@ type CompileOptions struct {
 	*kcl.Option
 }
 
+// MergeOptions will merge the input options.
+func MergeOptions(opts ...CompileOptions) CompileOptions {
+	var opt = DefaultCompileOptions()
+	for _, o := range opts {
+		opt.Merge(*o.Option)
+		opt.isVendor = o.isVendor
+		opt.hasSettingsYaml = o.hasSettingsYaml
+		opt.entries = append(opt.entries, o.entries...)
+		opt.noSumCheck = o.noSumCheck
+	}
+	return *opt
+}
+
+// WithKclOption will add a kcl option to the compiler.
+func WithKclOption(opt kcl.Option) CompileOptions {
+	var opts = DefaultCompileOptions()
+	opts.Merge(opt)
+	return *opts
+}
+
+// WithEntries will add entries to the compiler.
+func WithEntries(entries []string) CompileOptions {
+	var opt = DefaultCompileOptions()
+	opt.entries = entries
+	return *opt
+}
+
+// WithEntry will add an entry to the compiler.
+func WithVendor(isVendor bool) CompileOptions {
+	var opt = DefaultCompileOptions()
+	opt.isVendor = isVendor
+	return *opt
+}
+
+// WithNoSumCheck will set the 'no_sum_check' flag.
+func WithNoSumCheck(is bool) CompileOptions {
+	var opt = DefaultCompileOptions()
+	opt.noSumCheck = is
+	return *opt
+}
+
 // DefaultCompileOptions returns a default CompileOptions.
 func DefaultCompileOptions() *CompileOptions {
 	return &CompileOptions{

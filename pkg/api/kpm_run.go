@@ -66,7 +66,7 @@ func RunPkgInPath(opts *opt.CompileOptions) (string, error) {
 	return compileResult.GetRawYamlResult(), nil
 }
 
-// CompileWithOpts will compile the kcl program without kcl package.
+// CompileWithOpt will compile the kcl program without kcl package.
 func RunWithOpt(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 	if len(opts.Entries()) > 0 {
 		for _, entry := range opts.Entries() {
@@ -82,6 +82,12 @@ func RunWithOpt(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 	}
 	opts.Merge(kcl.WithWorkDir(opts.PkgPath()))
 	return kcl.RunWithOpts(*opts.Option)
+}
+
+// RunPkgWithOpts will compile the kcl package with the compile options.
+func RunPkgWithOpts(opts ...opt.CompileOptions) (*kcl.KCLResultList, error) {
+	mergedOpts := opt.MergeOptions(opts...)
+	return RunPkgWithOpt(&mergedOpts)
 }
 
 // getAbsInputPath will return the abs path of the file path described by '--input'.
