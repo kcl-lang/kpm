@@ -83,12 +83,12 @@ func TestDownloadLatestOci(t *testing.T) {
 	err := os.MkdirAll(testPath, 0755)
 	assert.Equal(t, err, nil)
 	depFromOci := pkg.Dependency{
-		Name:    "k8s",
+		Name:    "helloworld",
 		Version: "",
 		Source: pkg.Source{
 			Oci: &pkg.Oci{
 				Reg:  "ghcr.io",
-				Repo: "kcl-lang/k8s",
+				Repo: "kcl-lang/helloworld",
 				Tag:  "",
 			},
 		},
@@ -97,19 +97,19 @@ func TestDownloadLatestOci(t *testing.T) {
 	assert.Equal(t, err, nil)
 	dep, err := kpmcli.Download(&depFromOci, testPath)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, dep.Name, "k8s")
-	assert.Equal(t, dep.FullName, "k8s_1.28")
-	assert.Equal(t, dep.Version, "1.28")
-	assert.Equal(t, dep.Sum, "aTxPUVZyr9MdiB3YdiY/8pCh9sC55yURnZdGlJsKG6Q=")
+	assert.Equal(t, dep.Name, "helloworld")
+	assert.Equal(t, dep.FullName, "helloworld_0.1.1")
+	assert.Equal(t, dep.Version, "0.1.1")
+	assert.Equal(t, dep.Sum, "7OO4YK2QuRWPq9C7KTzcWcti5yUnueCjptT3OXiPVeQ=")
 	assert.NotEqual(t, dep.Source.Oci, nil)
 	assert.Equal(t, dep.Source.Oci.Reg, "ghcr.io")
-	assert.Equal(t, dep.Source.Oci.Repo, "kcl-lang/k8s")
-	assert.Equal(t, dep.Source.Oci.Tag, "1.28")
-	assert.Equal(t, dep.LocalFullPath, testPath+"1.28")
+	assert.Equal(t, dep.Source.Oci.Repo, "kcl-lang/helloworld")
+	assert.Equal(t, dep.Source.Oci.Tag, "0.1.1")
+	assert.Equal(t, dep.LocalFullPath, testPath+"0.1.1")
 	assert.Equal(t, err, nil)
 
 	// Check whether the tar downloaded by `kpm add` has been deleted.
-	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "k8s_1.28.tar")), false)
+	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "helloworld_0.1.1.tar")), false)
 
 	err = os.RemoveAll(getTestDir("download"))
 	assert.Equal(t, err, nil)
