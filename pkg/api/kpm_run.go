@@ -84,10 +84,10 @@ func RunWithOpt(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 	return kcl.RunWithOpts(*opts.Option)
 }
 
-// RunPkgWithOpts will compile the kcl package with the compile options.
-func RunPkgWithOpts(opts ...opt.CompileOptions) (*kcl.KCLResultList, error) {
+// RunWithOpts will compile the kcl package with the compile options.
+func RunWithOpts(opts ...opt.CompileOptions) (*kcl.KCLResultList, error) {
 	mergedOpts := opt.MergeOptions(opts...)
-	return RunPkgWithOpt(&mergedOpts)
+	return runPkgWithOpt(&mergedOpts)
 }
 
 // getAbsInputPath will return the abs path of the file path described by '--input'.
@@ -109,7 +109,17 @@ func getAbsInputPath(pkgPath string, inputPath string) (string, error) {
 }
 
 // RunPkgWithOpt will compile the kcl package with the compile options.
+// Deprecated: This method will not be maintained in the future. Use RunWithOpts instead.
 func RunPkgWithOpt(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
+	kpmcli, err := client.NewKpmClient()
+	kpmcli.SetNoSumCheck(opts.NoSumCheck())
+	if err != nil {
+		return nil, err
+	}
+	return run(kpmcli, opts)
+}
+
+func runPkgWithOpt(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 	kpmcli, err := client.NewKpmClient()
 	kpmcli.SetNoSumCheck(opts.NoSumCheck())
 	if err != nil {
