@@ -2,6 +2,7 @@ package client
 
 import (
 	"archive/tar"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -234,15 +235,15 @@ func TestVendorDeps(t *testing.T) {
 	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
 
 	depKcl1 := pkg.Dependency{
-		Name:      "kcl1",
-		FullName:  "kcl1",
-		Sum:       kcl1Sum,
+		Name:     "kcl1",
+		FullName: "kcl1",
+		Sum:      kcl1Sum,
 	}
 
 	depKcl2 := pkg.Dependency{
-		Name:      "kcl2",
-		FullName:  "kcl2",
-		Sum:       kcl2Sum,
+		Name:     "kcl2",
+		FullName: "kcl2",
+		Sum:      kcl2Sum,
 	}
 
 	kclPkg := pkg.KclPkg{
@@ -316,15 +317,15 @@ func TestResolveDepsVendorMode(t *testing.T) {
 	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
 
 	depKcl1 := pkg.Dependency{
-		Name:      "kcl1",
-		FullName:  "kcl1",
-		Sum:       kcl1Sum,
+		Name:     "kcl1",
+		FullName: "kcl1",
+		Sum:      kcl1Sum,
 	}
 
 	depKcl2 := pkg.Dependency{
-		Name:      "kcl2",
-		FullName:  "kcl2",
-		Sum:       kcl2Sum,
+		Name:     "kcl2",
+		FullName: "kcl2",
+		Sum:      kcl2Sum,
 	}
 
 	kclPkg := pkg.KclPkg{
@@ -382,15 +383,15 @@ func TestCompileWithEntryFile(t *testing.T) {
 
 	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1"))
 	depKcl1 := pkg.Dependency{
-		Name:      "kcl1",
-		FullName:  "kcl1",
-		Sum:       kcl1Sum,
+		Name:     "kcl1",
+		FullName: "kcl1",
+		Sum:      kcl1Sum,
 	}
 	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
 	depKcl2 := pkg.Dependency{
-		Name:      "kcl2",
-		FullName:  "kcl2",
-		Sum:       kcl2Sum,
+		Name:     "kcl2",
+		FullName: "kcl2",
+		Sum:      kcl2Sum,
 	}
 
 	kclPkg := pkg.KclPkg{
@@ -845,9 +846,11 @@ func TestRunWithNoSumCheck(t *testing.T) {
 
 func TestUpdateWithNoSumCheck(t *testing.T) {
 	pkgPath := getTestDir("test_update_no_sum_check")
-
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
+
+	var buf bytes.Buffer
+	kpmcli.SetLogWriter(&buf)
 
 	kpmcli.SetNoSumCheck(true)
 	kclPkg, err := kpmcli.LoadPkgFromPath(pkgPath)
@@ -856,6 +859,7 @@ func TestUpdateWithNoSumCheck(t *testing.T) {
 	err = kpmcli.UpdateDeps(kclPkg)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), false)
+	assert.Equal(t, buf.String(), "")
 
 	kpmcli.SetNoSumCheck(false)
 	kclPkg, err = kpmcli.LoadPkgFromPath(pkgPath)
@@ -864,6 +868,7 @@ func TestUpdateWithNoSumCheck(t *testing.T) {
 	err = kpmcli.UpdateDeps(kclPkg)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), true)
+	assert.Equal(t, buf.String(), "adding 'helloworld' with version '0.1.1'\ndownloading 'kcl-lang/helloworld:0.1.1' from 'ghcr.io/kcl-lang/helloworld:0.1.1'\n")
 
 	defer func() {
 		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
