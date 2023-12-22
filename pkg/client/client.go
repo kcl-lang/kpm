@@ -204,6 +204,8 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 				kclPkg.Dependencies.Deps[name] = d
 			}
 		}
+	} else {
+		kclPkg.Dependencies.Deps = kclPkg.ModFile.Dependencies.Deps
 	}
 
 	for name, d := range kclPkg.Dependencies.Deps {
