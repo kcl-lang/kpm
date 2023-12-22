@@ -178,27 +178,31 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 		searchPath = c.homePath
 	}
 
-	// alian the dependencies between kcl.mod and kcl.mod.lock
-	// clean the dependencies in kcl.mod.lock which not in kcl.mod
-	// clean the dependencies in kcl.mod.lock and kcl.mod which have different version
-	for name, dep := range kclPkg.Dependencies.Deps {
-		modDep, ok := kclPkg.ModFile.Dependencies.Deps[name]
-		if !ok || !dep.WithTheSameVersion(modDep) {
-			reporter.ReportMsgTo(
-				fmt.Sprintf("removing '%s' with version '%s'", name, dep.Version),
-				c.logWriter,
-			)
-			delete(kclPkg.Dependencies.Deps, name)
+	// If under the mode of '--no_sum_check', the checksum of the package will not be checked.
+	// There is no kcl.mod.lock, and the dependencies in kcl.mod and kcl.mod.lock do not need to be aligned.
+	if !c.noSumCheck {
+		// alian the dependencies between kcl.mod and kcl.mod.lock
+		// clean the dependencies in kcl.mod.lock which not in kcl.mod
+		// clean the dependencies in kcl.mod.lock and kcl.mod which have different version
+		for name, dep := range kclPkg.Dependencies.Deps {
+			modDep, ok := kclPkg.ModFile.Dependencies.Deps[name]
+			if !ok || !dep.WithTheSameVersion(modDep) {
+				reporter.ReportMsgTo(
+					fmt.Sprintf("removing '%s' with version '%s'", name, dep.Version),
+					c.logWriter,
+				)
+				delete(kclPkg.Dependencies.Deps, name)
+			}
 		}
-	}
-	// add the dependencies in kcl.mod which not in kcl.mod.lock
-	for name, d := range kclPkg.ModFile.Dependencies.Deps {
-		if _, ok := kclPkg.Dependencies.Deps[name]; !ok {
-			reporter.ReportMsgTo(
-				fmt.Sprintf("adding '%s' with version '%s'", name, d.Version),
-				c.logWriter,
-			)
-			kclPkg.Dependencies.Deps[name] = d
+		// add the dependencies in kcl.mod which not in kcl.mod.lock
+		for name, d := range kclPkg.ModFile.Dependencies.Deps {
+			if _, ok := kclPkg.Dependencies.Deps[name]; !ok {
+				reporter.ReportMsgTo(
+					fmt.Sprintf("adding '%s' with version '%s'", name, d.Version),
+					c.logWriter,
+				)
+				kclPkg.Dependencies.Deps[name] = d
+			}
 		}
 	}
 

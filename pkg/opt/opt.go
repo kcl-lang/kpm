@@ -30,10 +30,23 @@ func MergeOptions(opts ...CompileOptions) CompileOptions {
 	var opt = DefaultCompileOptions()
 	for _, o := range opts {
 		opt.Merge(*o.Option)
-		opt.isVendor = o.isVendor
-		opt.hasSettingsYaml = o.hasSettingsYaml
+		if o.writer != nil {
+			opt.writer = o.writer
+		}
+
+		if o.isVendor {
+			opt.isVendor = o.isVendor
+		}
+
+		if o.hasSettingsYaml {
+			opt.hasSettingsYaml = o.hasSettingsYaml
+		}
+
+		if o.noSumCheck {
+			opt.noSumCheck = o.noSumCheck
+		}
+
 		opt.entries = append(opt.entries, o.entries...)
-		opt.noSumCheck = o.noSumCheck
 	}
 	return *opt
 }
