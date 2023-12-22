@@ -24,9 +24,10 @@ func (kvt KpmVersionType) String() string {
 
 // All the kpm versions.
 const (
-	KpmAbiVersion         KpmVersionType = KpmAbiVersion_0_4_5
-	KpmVersionType_latest                = KpmAbiVersion_0_4_5
+	KpmAbiVersion         KpmVersionType = KpmAbiVersion_0_4_6
+	KpmVersionType_latest                = KpmAbiVersion_0_4_6
 
+	KpmAbiVersion_0_4_6 KpmVersionType = "0.4.6"
 	KpmAbiVersion_0_4_5 KpmVersionType = "0.4.5"
 	KpmAbiVersion_0_4_4 KpmVersionType = "0.4.4"
 	KpmAbiVersion_0_4_3 KpmVersionType = "0.4.3"
