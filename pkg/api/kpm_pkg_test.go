@@ -5,7 +5,9 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/client"
+	"kcl-lang.io/kpm/pkg/opt"
 )
 
 func TestPackageApi(t *testing.T) {
@@ -168,4 +170,26 @@ func TestGetSchemaTypeUnderEmptyDir(t *testing.T) {
 	assert.Equal(t, len(schemas), 1)
 	assert.Equal(t, schemas[filepath.Join(".")]["SchemaInMain"].Type, "schema")
 	assert.Equal(t, schemas[filepath.Join(".")]["SchemaInMain"].SchemaName, "SchemaInMain")
+}
+
+func TestGetEntries(t *testing.T) {
+	testPath := getTestDir("test_get_entries")
+	pkgPath := filepath.Join(testPath, "no_entries")
+	pkg, err := GetKclPackage(pkgPath)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(pkg.GetPkgProfile().GetEntries()), 0)
+
+	pkgPath = filepath.Join(testPath, "with_path_entries")
+	pkg, err = GetKclPackage(pkgPath)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(pkg.GetPkgProfile().GetEntries()), 1)
+
+	res, err := RunWithOpts(
+		opt.WithEntries(pkg.GetPkgProfile().GetEntries()),
+		opt.WithKclOption(kcl.WithWorkDir(pkgPath)),
+	)
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, res.GetRawYamlResult(), "sub: test in sub")
+	assert.Equal(t, res.GetRawJsonResult(), "[{\"sub\": \"test in sub\"}]")
 }
