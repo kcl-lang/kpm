@@ -93,7 +93,7 @@ func (pkg *KclPackage) GetPkgHomePath() string {
 }
 
 // GetPkgProfile returns the profile of the package.
-func (pkg *KclPackage) GetPkgProfile() pkg.Profile {
+func (pkg *KclPackage) GetPkgProfile() *pkg.Profile {
 	return pkg.pkg.GetPkgProfile()
 }
 

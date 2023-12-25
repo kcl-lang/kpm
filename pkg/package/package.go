@@ -185,8 +185,8 @@ func (kclPkg *KclPkg) GetPkgEdition() string {
 }
 
 // GetPkgProfile returns the profile of package.
-func (kclPkg *KclPkg) GetPkgProfile() Profile {
-	return *kclPkg.ModFile.Profiles
+func (kclPkg *KclPkg) GetPkgProfile() *Profile {
+	return kclPkg.ModFile.Profiles
 }
 
 // GetPkgTarName returns the kcl package tar name "<package_name>-v<package_version>.tar"

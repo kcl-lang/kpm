@@ -97,7 +97,7 @@ func (profile *Profile) IntoKclOptions() *kcl.Option {
 
 // GetEntries will get the entry kcl files from profile.
 func (profile *Profile) GetEntries() []string {
-	if profile.Entries == nil {
+	if profile == nil || profile.Entries == nil {
 		return []string{}
 	}
 	return *profile.Entries
