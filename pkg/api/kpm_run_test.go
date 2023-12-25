@@ -190,3 +190,16 @@ func TestRunPkgWithOpts(t *testing.T) {
 	expectedJson, _ := os.ReadFile(filepath.Join(pkgPath, "expected.json"))
 	assert.Equal(t, utils.RmNewline(string(result.GetRawJsonResult())), utils.RmNewline(string(expectedJson)))
 }
+
+func TestRunWithOptsAndNoSumCheck(t *testing.T) {
+	pkgPath := getTestDir("test_run_pkg_in_path")
+
+	res, err := RunWithOpts(
+		opt.WithNoSumCheck(true),
+		opt.WithEntries([]string{filepath.Join(pkgPath, "test_run_no_sum_check", "main.k")}),
+		opt.WithKclOption(kcl.WithWorkDir(filepath.Join(pkgPath, "test_run_no_sum_check"))),
+	)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, res.GetRawYamlResult(), "a: Hello World!")
+	assert.Equal(t, err, nil)
+}

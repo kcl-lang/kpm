@@ -181,6 +181,9 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 	// If under the mode of '--no_sum_check', the checksum of the package will not be checked.
 	// There is no kcl.mod.lock, and the dependencies in kcl.mod and kcl.mod.lock do not need to be aligned.
 	if !c.noSumCheck {
+		// If not under the mode of '--no_sum_check',
+		// all the dependencies in kcl.mod.lock are the dependencies of the current package.
+		//
 		// alian the dependencies between kcl.mod and kcl.mod.lock
 		// clean the dependencies in kcl.mod.lock which not in kcl.mod
 		// clean the dependencies in kcl.mod.lock and kcl.mod which have different version
@@ -204,6 +207,10 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 				kclPkg.Dependencies.Deps[name] = d
 			}
 		}
+	} else {
+		// If under the mode of '--no_sum_check', the checksum of the package will not be checked.
+		// All the dependencies in kcl.mod are the dependencies of the current package.
+		kclPkg.Dependencies.Deps = kclPkg.ModFile.Dependencies.Deps
 	}
 
 	for name, d := range kclPkg.Dependencies.Deps {
