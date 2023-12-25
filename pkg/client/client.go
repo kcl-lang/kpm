@@ -1104,7 +1104,10 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 		}
 
 		if !lockedDep.IsFromLocal() {
-			if !c.noSumCheck && expectedSum != "" && lockedDep.Sum != expectedSum && existDep.FullName == d.FullName {
+			if !c.noSumCheck && expectedSum != "" &&
+				lockedDep.Sum != expectedSum &&
+				existDep != nil &&
+				existDep.FullName == d.FullName {
 				return nil, reporter.NewErrorEvent(
 					reporter.CheckSumMismatch,
 					errors.CheckSumMismatchError,
