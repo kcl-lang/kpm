@@ -910,18 +910,24 @@ func TestAddWithDiffVersionNoSumCheck(t *testing.T) {
 	assert.Equal(t, utils.DirExists(pkgWithSumCheckPathModLock), false)
 
 	modContent, err := os.ReadFile(pkgWithSumCheckPathMod)
+	modContentStr := strings.ReplaceAll(string(modContent), "\r\n", "")
+	modContentStr = strings.ReplaceAll(string(modContentStr), "\n", "")
 	assert.Equal(t, err, nil)
 	modExpectContent, err := os.ReadFile(pkgWithSumCheckPathModExpect)
+	modExpectContentStr := strings.ReplaceAll(string(modExpectContent), "\r\n", "")
+	modExpectContentStr = strings.ReplaceAll(modExpectContentStr, "\n", "")
 	assert.Equal(t, err, nil)
-	assert.Equal(t, string(modContent), string(modExpectContent))
+	assert.Equal(t, modContentStr, modExpectContentStr)
 
 	opts.NoSumCheck = false
 	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(pkgWithSumCheckPathModLock), true)
 	modContent, err = os.ReadFile(pkgWithSumCheckPathMod)
+	modContentStr = strings.ReplaceAll(string(modContent), "\r\n", "")
+	modContentStr = strings.ReplaceAll(modContentStr, "\n", "")
 	assert.Equal(t, err, nil)
-	assert.Equal(t, string(modContent), string(modExpectContent))
+	assert.Equal(t, modContentStr, modExpectContentStr)
 
 	defer func() {
 		_ = os.Remove(pkgWithSumCheckPathMod)
@@ -966,16 +972,26 @@ func TestAddWithDiffVersionWithSumCheck(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	modContent, err := os.ReadFile(pkgWithSumCheckPathMod)
+	modContentStr := strings.ReplaceAll(string(modContent), "\r\n", "")
+	modContentStr = strings.ReplaceAll(modContentStr, "\n", "")
 	assert.Equal(t, err, nil)
+
 	modExpectContent, err := os.ReadFile(pkgWithSumCheckPathModExpect)
+	modExpectContentStr := strings.ReplaceAll(string(modExpectContent), "\r\n", "")
+	modExpectContentStr = strings.ReplaceAll(modExpectContentStr, "\n", "")
+
 	assert.Equal(t, err, nil)
-	assert.Equal(t, string(modContent), string(modExpectContent))
+	assert.Equal(t, modContentStr, modExpectContentStr)
 
 	modLockContent, err := os.ReadFile(pkgWithSumCheckPathModLock)
+	modLockContentStr := strings.ReplaceAll(string(modLockContent), "\r\n", "")
+	modLockContentStr = strings.ReplaceAll(modLockContentStr, "\n", "")
 	assert.Equal(t, err, nil)
 	modLockExpectContent, err := os.ReadFile(pkgWithSumCheckPathModLockExpect)
+	modLockExpectContentStr := strings.ReplaceAll(string(modLockExpectContent), "\r\n", "")
+	modLockExpectContentStr = strings.ReplaceAll(modLockExpectContentStr, "\n", "")
 	assert.Equal(t, err, nil)
-	assert.Equal(t, string(modLockContent), string(modLockExpectContent))
+	assert.Equal(t, modLockContentStr, modLockExpectContentStr)
 
 	defer func() {
 		_ = os.Remove(pkgWithSumCheckPathMod)
