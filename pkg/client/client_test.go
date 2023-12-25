@@ -874,3 +874,111 @@ func TestUpdateWithNoSumCheck(t *testing.T) {
 		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
 	}()
 }
+
+func TestAddWithDiffVersionNoSumCheck(t *testing.T) {
+	pkgPath := getTestDir("test_add_diff_version")
+
+	pkgWithSumCheckPath := filepath.Join(pkgPath, "no_sum_check")
+	pkgWithSumCheckPathModBak := filepath.Join(pkgWithSumCheckPath, "kcl.mod.bak")
+	pkgWithSumCheckPathMod := filepath.Join(pkgWithSumCheckPath, "kcl.mod")
+	pkgWithSumCheckPathModExpect := filepath.Join(pkgWithSumCheckPath, "kcl.mod.expect")
+	pkgWithSumCheckPathModLock := filepath.Join(pkgWithSumCheckPath, "kcl.mod.lock")
+
+	err := copy.Copy(pkgWithSumCheckPathModBak, pkgWithSumCheckPathMod)
+	assert.Equal(t, err, nil)
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	kclPkg, err := kpmcli.LoadPkgFromPath(pkgWithSumCheckPath)
+	assert.Equal(t, err, nil)
+
+	opts := opt.AddOptions{
+		LocalPath: pkgPath,
+		RegistryOpts: opt.RegistryOptions{
+			Oci: &opt.OciOptions{
+				Reg:     "ghcr.io",
+				Repo:    "kcl-lang",
+				PkgName: "helloworld",
+				Tag:     "0.1.1",
+			},
+		},
+		NoSumCheck: true,
+	}
+
+	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, utils.DirExists(pkgWithSumCheckPathModLock), false)
+
+	modContent, err := os.ReadFile(pkgWithSumCheckPathMod)
+	assert.Equal(t, err, nil)
+	modExpectContent, err := os.ReadFile(pkgWithSumCheckPathModExpect)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, string(modContent), string(modExpectContent))
+
+	opts.NoSumCheck = false
+	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, utils.DirExists(pkgWithSumCheckPathModLock), true)
+	modContent, err = os.ReadFile(pkgWithSumCheckPathMod)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, string(modContent), string(modExpectContent))
+
+	defer func() {
+		_ = os.Remove(pkgWithSumCheckPathMod)
+		_ = os.Remove(pkgWithSumCheckPathModLock)
+	}()
+}
+
+func TestAddWithDiffVersionWithSumCheck(t *testing.T) {
+	pkgPath := getTestDir("test_add_diff_version")
+
+	pkgWithSumCheckPath := filepath.Join(pkgPath, "with_sum_check")
+	pkgWithSumCheckPathModBak := filepath.Join(pkgWithSumCheckPath, "kcl.mod.bak")
+	pkgWithSumCheckPathMod := filepath.Join(pkgWithSumCheckPath, "kcl.mod")
+	pkgWithSumCheckPathModExpect := filepath.Join(pkgWithSumCheckPath, "kcl.mod.expect")
+	pkgWithSumCheckPathModLock := filepath.Join(pkgWithSumCheckPath, "kcl.mod.lock")
+	pkgWithSumCheckPathModLockBak := filepath.Join(pkgWithSumCheckPath, "kcl.mod.lock.bak")
+	pkgWithSumCheckPathModLockExpect := filepath.Join(pkgWithSumCheckPath, "kcl.mod.lock.expect")
+
+	err := copy.Copy(pkgWithSumCheckPathModBak, pkgWithSumCheckPathMod)
+	assert.Equal(t, err, nil)
+	err = copy.Copy(pkgWithSumCheckPathModLockBak, pkgWithSumCheckPathModLock)
+	assert.Equal(t, err, nil)
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	kclPkg, err := kpmcli.LoadPkgFromPath(pkgWithSumCheckPath)
+	assert.Equal(t, err, nil)
+
+	opts := opt.AddOptions{
+		LocalPath: pkgPath,
+		RegistryOpts: opt.RegistryOptions{
+			Oci: &opt.OciOptions{
+				Reg:     "ghcr.io",
+				Repo:    "kcl-lang",
+				PkgName: "helloworld",
+				Tag:     "0.1.1",
+			},
+		},
+	}
+
+	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
+	assert.Equal(t, err, nil)
+
+	modContent, err := os.ReadFile(pkgWithSumCheckPathMod)
+	assert.Equal(t, err, nil)
+	modExpectContent, err := os.ReadFile(pkgWithSumCheckPathModExpect)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, string(modContent), string(modExpectContent))
+
+	modLockContent, err := os.ReadFile(pkgWithSumCheckPathModLock)
+	assert.Equal(t, err, nil)
+	modLockExpectContent, err := os.ReadFile(pkgWithSumCheckPathModLockExpect)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, string(modLockContent), string(modLockExpectContent))
+
+	defer func() {
+		_ = os.Remove(pkgWithSumCheckPathMod)
+		_ = os.Remove(pkgWithSumCheckPathModLock)
+	}()
+}
