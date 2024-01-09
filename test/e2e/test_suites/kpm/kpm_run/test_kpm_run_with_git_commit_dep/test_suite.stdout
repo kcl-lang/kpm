@@ -1,0 +1,27 @@
+workload:
+  containers:
+    nginx:
+      image: nginx:v1
+      command:
+      - /bin/sh
+      - -c
+      - echo hi
+      args:
+      - /bin/sh
+      - -c
+      - echo hi
+      env:
+        env1: VALUE
+        env2: secret://sec-name/key
+      workingDir: /tmp
+      readinessProbe:
+        probeHandler:
+          url: http://localhost:80
+        initialDelaySeconds: 10
+  replicas: 2
+monitoring:
+  interval: 30s
+  timeout: 15s
+  path: /metrics
+  port: web
+  scheme: http

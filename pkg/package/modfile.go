@@ -2,6 +2,7 @@
 package pkg
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -169,8 +170,18 @@ func (d *Dependency) GetAliasName() string {
 
 // WithTheSameVersion will check whether two dependencies have the same version.
 func (d Dependency) WithTheSameVersion(other Dependency) bool {
-	return d.Name == other.Name &&
-		d.Version == other.Version
+
+	sameNameAndVersion := d.Name == other.Name && d.Version == other.Version
+
+	sameGitSrc := true
+	if d.Source.Git != nil && other.Source.Git != nil {
+		sameGitSrc = d.Source.Git.Url == other.Source.Git.Url &&
+			(d.Source.Git.Branch == other.Source.Git.Branch ||
+				d.Source.Git.Commit == other.Source.Git.Commit ||
+				d.Source.Git.Tag == other.Source.Git.Tag)
+	}
+
+	return sameNameAndVersion && sameGitSrc
 }
 
 // GetLocalFullPath will get the local path of a dependency.
@@ -232,6 +243,32 @@ type Git struct {
 	Branch string `toml:"branch,omitempty"`
 	Commit string `toml:"commit,omitempty"`
 	Tag    string `toml:"git_tag,omitempty"`
+}
+
+// GetValidGitReference will get the valid git reference from git source.
+// Only one of branch, tag or commit is allowed.
+func (git *Git) GetValidGitReference() (string, error) {
+	nonEmptyFields := 0
+	var nonEmptyRef string
+
+	if git.Tag != "" {
+		nonEmptyFields++
+		nonEmptyRef = git.Tag
+	}
+	if git.Commit != "" {
+		nonEmptyFields++
+		nonEmptyRef = git.Commit
+	}
+	if git.Branch != "" {
+		nonEmptyFields++
+		nonEmptyRef = git.Branch
+	}
+
+	if nonEmptyFields != 1 {
+		return "", errors.New("only one of branch, tag or commit is allowed")
+	}
+
+	return nonEmptyRef, nil
 }
 
 // ModFileExists returns whether a 'kcl.mod' file exists in the path.
@@ -362,13 +399,23 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 			Tag:    opt.Git.Tag,
 		}
 
+		gitRef, err := gitSource.GetValidGitReference()
+		if err != nil {
+			return nil, err
+		}
+
+		fullName, err := ParseRepoFullNameFromGitSource(gitSource)
+		if err != nil {
+			return nil, err
+		}
+
 		return &Dependency{
 			Name:     ParseRepoNameFromGitSource(gitSource),
-			FullName: ParseRepoFullNameFromGitSource(gitSource),
+			FullName: fullName,
 			Source: Source{
 				Git: &gitSource,
 			},
-			Version: gitSource.Tag,
+			Version: gitRef,
 		}, nil
 	}
 	if opt.Oci != nil {
@@ -413,11 +460,15 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 const PKG_NAME_PATTERN = "%s_%s"
 
 // ParseRepoFullNameFromGitSource will extract the kcl package name from the git url.
-func ParseRepoFullNameFromGitSource(gitSrc Git) string {
-	if len(gitSrc.Tag) != 0 {
-		return fmt.Sprintf(PKG_NAME_PATTERN, utils.ParseRepoNameFromGitUrl(gitSrc.Url), gitSrc.Tag)
+func ParseRepoFullNameFromGitSource(gitSrc Git) (string, error) {
+	ref, err := gitSrc.GetValidGitReference()
+	if err != nil {
+		return "", err
 	}
-	return utils.ParseRepoNameFromGitUrl(gitSrc.Url)
+	if len(ref) != 0 {
+		return fmt.Sprintf(PKG_NAME_PATTERN, utils.ParseRepoNameFromGitUrl(gitSrc.Url), ref), nil
+	}
+	return utils.ParseRepoNameFromGitUrl(gitSrc.Url), nil
 }
 
 // ParseRepoNameFromGitSource will extract the kcl package name from the git url.

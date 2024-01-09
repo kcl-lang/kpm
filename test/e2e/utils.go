@@ -61,7 +61,7 @@ func CopyDir(srcDir, dstDir string) {
 	}
 }
 
-var KEYS = []string{"<workspace>", "<ignore>", "<un_ordered>"}
+var KEYS = []string{"<workspace>", "<ignore>", "<un_ordered>", "<user_home>"}
 
 // IsIgnore will reture whether the expected result in 'expectedStr' should be ignored.
 func IsIgnore(expectedStr string) bool {

@@ -111,6 +111,7 @@ func (source *Source) MarshalTOML() string {
 
 const GTI_URL_PATTERN = "git = \"%s\""
 const GTI_TAG_PATTERN = "tag = \"%s\""
+const GTI_COMMIT_PATTERN = "commit = \"%s\""
 const SEPARATOR = ", "
 
 func (git *Git) MarshalTOML() string {
@@ -121,6 +122,10 @@ func (git *Git) MarshalTOML() string {
 	if len(git.Tag) != 0 {
 		sb.WriteString(SEPARATOR)
 		sb.WriteString(fmt.Sprintf(GTI_TAG_PATTERN, git.Tag))
+	}
+	if len(git.Commit) != 0 {
+		sb.WriteString(SEPARATOR)
+		sb.WriteString(fmt.Sprintf(GTI_COMMIT_PATTERN, git.Commit))
 	}
 	return sb.String()
 }
@@ -266,7 +271,10 @@ func (dep *Dependency) UnmarshalModTOML(data interface{}) error {
 	dep.Source = source
 	var version string
 	if source.Git != nil {
-		version = source.Git.Tag
+		version, err = source.Git.GetValidGitReference()
+		if err != nil {
+			return err
+		}
 	}
 	if source.Oci != nil {
 		version = source.Oci.Tag
@@ -312,6 +320,7 @@ func (source *Source) UnmarshalModTOML(data interface{}) error {
 
 const GTI_URL_FLAG = "git"
 const GTI_TAG_FLAG = "tag"
+const GTI_COMMIT_FLAG = "commit"
 
 func (git *Git) UnmarshalModTOML(data interface{}) error {
 	meta, ok := data.(map[string]interface{})
@@ -325,6 +334,10 @@ func (git *Git) UnmarshalModTOML(data interface{}) error {
 
 	if v, ok := meta[GTI_TAG_FLAG].(string); ok {
 		git.Tag = v
+	}
+
+	if v, ok := meta[GTI_COMMIT_FLAG].(string); ok {
+		git.Commit = v
 	}
 
 	return nil
