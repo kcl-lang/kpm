@@ -171,6 +171,29 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 		}
 	})
 
+	ginkgo.Context("testing 'kpm add '", func() {
+		testSuitesRoot := filepath.Join(filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "kpm"), "kpm_add")
+		testSuites := LoadAllTestSuites(testSuitesRoot)
+		testDataRoot := filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "test_data")
+		for _, ts := range testSuites {
+			ts := ts
+			ginkgo.It(ts.GetTestSuiteInfo(), func() {
+				workspace := GetWorkspace()
+				CopyDir(filepath.Join(testDataRoot, ts.Name), filepath.Join(workspace, ts.Name))
+
+				input := ReplaceAllKeyByValue(ts.Input, "<workspace>", filepath.Join(workspace, ts.Name))
+				stdout, stderr, err := ExecKpmWithWorkDir(input, filepath.Join(workspace, ts.Name))
+
+				expectedStdout := ReplaceAllKeyByValue(ts.ExpectStdout, "<workspace>", workspace)
+				expectedStderr := ReplaceAllKeyByValue(ts.ExpectStderr, "<workspace>", workspace)
+
+				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+				gomega.Expect(stdout).To(gomega.ContainSubstring(expectedStdout))
+				gomega.Expect(stderr).To(gomega.ContainSubstring(expectedStderr))
+			})
+		}
+	})
+
 	ginkgo.Context("testing 'kpm metadata '", func() {
 		testSuitesRoot := filepath.Join(filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "kpm"), "kpm_metadata")
 		testSuites := LoadAllTestSuites(testSuitesRoot)
@@ -184,9 +207,15 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 
 				input := ReplaceAllKeyByValue(ts.Input, "<workspace>", filepath.Join(workspace, ts.Name))
 				stdout, stderr, err := ExecKpmWithWorkDir(input, filepath.Join(workspace, ts.Name))
+				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 
 				expectedStdout := ReplaceAllKeyByValue(ts.ExpectStdout, "<workspace>", workspace)
 				expectedStderr := ReplaceAllKeyByValue(ts.ExpectStderr, "<workspace>", workspace)
+
+				home, err := os.UserHomeDir()
+				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+				expectedStdout = ReplaceAllKeyByValue(expectedStdout, "<user_home>", home)
+				expectedStderr = ReplaceAllKeyByValue(expectedStderr, "<user_home>", home)
 
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 				gomega.Expect(stdout).To(gomega.ContainSubstring(expectedStdout))

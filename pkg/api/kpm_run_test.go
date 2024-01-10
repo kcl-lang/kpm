@@ -192,14 +192,25 @@ func TestRunPkgWithOpts(t *testing.T) {
 }
 
 func TestRunWithOptsAndNoSumCheck(t *testing.T) {
-	pkgPath := getTestDir("test_run_pkg_in_path")
+	pkgPath := filepath.Join(getTestDir("test_run_pkg_in_path"), "test_run_no_sum_check")
+	testCases := []string{"dep_git_commit", "dep_git_tag", "dep_oci"}
 
-	res, err := RunWithOpts(
-		opt.WithNoSumCheck(true),
-		opt.WithEntries([]string{filepath.Join(pkgPath, "test_run_no_sum_check", "main.k")}),
-		opt.WithKclOption(kcl.WithWorkDir(filepath.Join(pkgPath, "test_run_no_sum_check"))),
-	)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, res.GetRawYamlResult(), "a: Hello World!")
-	assert.Equal(t, err, nil)
+	for _, testCase := range testCases {
+
+		pathMainK := filepath.Join(pkgPath, testCase, "main.k")
+		workDir := filepath.Join(pkgPath, testCase)
+		modLock := filepath.Join(workDir, "kcl.mod.lock")
+		expected, err := os.ReadFile(filepath.Join(pkgPath, testCase, "expected"))
+		assert.Equal(t, err, nil)
+
+		res, err := RunWithOpts(
+			opt.WithNoSumCheck(true),
+			opt.WithEntries([]string{pathMainK}),
+			opt.WithKclOption(kcl.WithWorkDir(workDir)),
+		)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, utils.DirExists(modLock), false)
+		assert.Equal(t, utils.RmNewline(res.GetRawYamlResult()), utils.RmNewline(string(expected)))
+		assert.Equal(t, err, nil)
+	}
 }

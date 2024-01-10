@@ -736,7 +736,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, localPath string) (*pkg.Depend
 		if err != nil {
 			return nil, err
 		}
-		dep.Version = dep.Source.Git.Tag
+
 		dep.LocalFullPath = localPath
 		// Creating symbolic links in a global cache is not an optimal solution.
 		// This allows kclvm to locate the package by default.
@@ -746,6 +746,12 @@ func (c *KpmClient) Download(dep *pkg.Dependency, localPath string) (*pkg.Depend
 			return nil, err
 		}
 		dep.FullName = dep.GenDepFullName()
+		// If the dependency is from git commit, the version is the commit id.
+		// If the dependency is from git tag, the version is the tag.
+		dep.Version, err = dep.Source.Git.GetValidGitReference()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if dep.Source.Oci != nil {
@@ -784,12 +790,27 @@ func (c *KpmClient) Download(dep *pkg.Dependency, localPath string) (*pkg.Depend
 
 // DownloadFromGit will download the dependency from the git repository.
 func (c *KpmClient) DownloadFromGit(dep *pkg.Git, localPath string) (string, error) {
+	var msg string
+	if len(dep.Tag) != 0 {
+		msg = fmt.Sprintf("with tag '%s'", dep.Tag)
+	}
+
+	if len(dep.Commit) != 0 {
+		msg = fmt.Sprintf("with commit '%s'", dep.Commit)
+	}
+
 	reporter.ReportMsgTo(
-		fmt.Sprintf("downloading '%s' with tag '%s'", dep.Url, dep.Tag),
+		fmt.Sprintf("cloning '%s' %s", dep.Url, msg),
 		c.logWriter,
 	)
 
-	_, err := git.Clone(dep.Url, dep.Tag, localPath, c.logWriter)
+	_, err := git.CloneWithOpts(
+		git.WithCommit(dep.Commit),
+		git.WithTag(dep.Tag),
+		git.WithRepoURL(dep.Url),
+		git.WithLocalPath(localPath),
+		git.WithWriter(c.logWriter),
+	)
 
 	if err != nil {
 		return localPath, reporter.NewErrorEvent(

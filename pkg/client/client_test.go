@@ -998,3 +998,66 @@ func TestAddWithDiffVersionWithSumCheck(t *testing.T) {
 		_ = os.Remove(pkgWithSumCheckPathModLock)
 	}()
 }
+
+func TestAddWithGitCommit(t *testing.T) {
+	pkgPath := getTestDir("add_with_git_commit")
+
+	testPkgPath := filepath.Join(pkgPath, "test_pkg")
+	testPkgPathModBak := filepath.Join(testPkgPath, "kcl.mod.bak")
+	testPkgPathMod := filepath.Join(testPkgPath, "kcl.mod")
+	testPkgPathModExpect := filepath.Join(testPkgPath, "kcl.mod.expect")
+	testPkgPathModLock := filepath.Join(testPkgPath, "kcl.mod.lock")
+	testPkgPathModLockBak := filepath.Join(testPkgPath, "kcl.mod.lock.bak")
+	testPkgPathModLockExpect := filepath.Join(testPkgPath, "kcl.mod.lock.expect")
+
+	err := copy.Copy(testPkgPathModBak, testPkgPathMod)
+	assert.Equal(t, err, nil)
+	err = copy.Copy(testPkgPathModLockBak, testPkgPathModLock)
+	assert.Equal(t, err, nil)
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	kclPkg, err := kpmcli.LoadPkgFromPath(testPkgPath)
+	assert.Equal(t, err, nil)
+
+	opts := opt.AddOptions{
+		LocalPath: pkgPath,
+		RegistryOpts: opt.RegistryOptions{
+			Git: &opt.GitOptions{
+				Url:    "https://github.com/KusionStack/catalog.git",
+				Commit: "a29e3db",
+			},
+		},
+	}
+	kpmcli.SetLogWriter(nil)
+	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
+
+	assert.Equal(t, err, nil)
+
+	modContent, err := os.ReadFile(testPkgPathMod)
+	modContentStr := strings.ReplaceAll(string(modContent), "\r\n", "")
+	modContentStr = strings.ReplaceAll(modContentStr, "\n", "")
+	assert.Equal(t, err, nil)
+
+	modExpectContent, err := os.ReadFile(testPkgPathModExpect)
+	modExpectContentStr := strings.ReplaceAll(string(modExpectContent), "\r\n", "")
+	modExpectContentStr = strings.ReplaceAll(modExpectContentStr, "\n", "")
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, modContentStr, modExpectContentStr)
+
+	modLockContent, err := os.ReadFile(testPkgPathModLock)
+	modLockContentStr := strings.ReplaceAll(string(modLockContent), "\r\n", "")
+	modLockContentStr = strings.ReplaceAll(modLockContentStr, "\n", "")
+	assert.Equal(t, err, nil)
+	modLockExpectContent, err := os.ReadFile(testPkgPathModLockExpect)
+	modLockExpectContentStr := strings.ReplaceAll(string(modLockExpectContent), "\r\n", "")
+	modLockExpectContentStr = strings.ReplaceAll(modLockExpectContentStr, "\n", "")
+	assert.Equal(t, err, nil)
+	assert.Equal(t, modLockContentStr, modLockExpectContentStr)
+
+	defer func() {
+		_ = os.Remove(testPkgPathMod)
+		_ = os.Remove(testPkgPathModLock)
+	}()
+}

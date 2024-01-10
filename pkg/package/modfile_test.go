@@ -87,8 +87,7 @@ func TestModFileExists(t *testing.T) {
 }
 
 func TestParseOpt(t *testing.T) {
-
-	dep, err := ParseOpt(&opt.RegistryOptions{
+	_, err := ParseOpt(&opt.RegistryOptions{
 		Git: &opt.GitOptions{
 			Url:    "test.git",
 			Branch: "test_branch",
@@ -96,12 +95,54 @@ func TestParseOpt(t *testing.T) {
 			Tag:    "test_tag",
 		},
 	})
+	assert.Equal(t, err.Error(), "only one of branch, tag or commit is allowed")
+
+	dep, err := ParseOpt(&opt.RegistryOptions{
+		Git: &opt.GitOptions{
+			Url:    "test.git",
+			Branch: "test_branch",
+			Commit: "",
+			Tag:    "",
+		},
+	})
+	assert.Equal(t, err, nil)
+	assert.Equal(t, dep.Name, "test")
+	assert.Equal(t, dep.FullName, "test_test_branch")
+	assert.Equal(t, dep.Url, "test.git")
+	assert.Equal(t, dep.Branch, "test_branch")
+	assert.Equal(t, dep.Commit, "")
+	assert.Equal(t, dep.Git.Tag, "")
+
+	dep, err = ParseOpt(&opt.RegistryOptions{
+		Git: &opt.GitOptions{
+			Url:    "test.git",
+			Branch: "",
+			Commit: "test_commit",
+			Tag:    "",
+		},
+	})
+	assert.Equal(t, err, nil)
+	assert.Equal(t, dep.Name, "test")
+	assert.Equal(t, dep.FullName, "test_test_commit")
+	assert.Equal(t, dep.Url, "test.git")
+	assert.Equal(t, dep.Branch, "")
+	assert.Equal(t, dep.Commit, "test_commit")
+	assert.Equal(t, dep.Git.Tag, "")
+
+	dep, err = ParseOpt(&opt.RegistryOptions{
+		Git: &opt.GitOptions{
+			Url:    "test.git",
+			Branch: "",
+			Commit: "",
+			Tag:    "test_tag",
+		},
+	})
 	assert.Equal(t, err, nil)
 	assert.Equal(t, dep.Name, "test")
 	assert.Equal(t, dep.FullName, "test_test_tag")
 	assert.Equal(t, dep.Url, "test.git")
-	assert.Equal(t, dep.Branch, "test_branch")
-	assert.Equal(t, dep.Commit, "test_commit")
+	assert.Equal(t, dep.Branch, "")
+	assert.Equal(t, dep.Commit, "")
 	assert.Equal(t, dep.Git.Tag, "test_tag")
 }
 

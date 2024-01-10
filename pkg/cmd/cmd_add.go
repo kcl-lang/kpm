@@ -32,6 +32,10 @@ func NewAddCmd(kpmcli *client.KpmClient) *cli.Command {
 				Name:  "tag",
 				Usage: "Git repository tag",
 			},
+			&cli.StringSliceFlag{
+				Name:  "commit",
+				Usage: "Git repository commit",
+			},
 			&cli.BoolFlag{
 				Name:  FLAG_NO_SUM_CHECK,
 				Usage: "do not check the checksum of the package and update kcl.mod.lock",
@@ -111,14 +115,14 @@ func KpmAdd(c *cli.Context, kpmcli *client.KpmClient) error {
 }
 
 // onlyOnceOption is used to check that the value of some parameters can only appear once.
-func onlyOnceOption(c *cli.Context, name string) (*string, *reporter.KpmEvent) {
+func onlyOnceOption(c *cli.Context, name string) (string, *reporter.KpmEvent) {
 	inputOpt := c.StringSlice(name)
 	if len(inputOpt) > 1 {
-		return nil, reporter.NewErrorEvent(reporter.InvalidCmd, fmt.Errorf("the argument '%s' cannot be used multiple times", name))
+		return "", reporter.NewErrorEvent(reporter.InvalidCmd, fmt.Errorf("the argument '%s' cannot be used multiple times", name))
 	} else if len(inputOpt) == 1 {
-		return &inputOpt[0], nil
+		return inputOpt[0], nil
 	} else {
-		return nil, nil
+		return "", nil
 	}
 }
 
@@ -176,18 +180,25 @@ func parseGitRegistryOptions(c *cli.Context) (*opt.RegistryOptions, *reporter.Kp
 		return nil, err
 	}
 
-	if gitUrl == nil {
+	gitCommit, err := onlyOnceOption(c, "commit")
+
+	if err != (*reporter.KpmEvent)(nil) {
+		return nil, err
+	}
+
+	if gitUrl == "" {
 		return nil, reporter.NewErrorEvent(reporter.InvalidGitUrl, fmt.Errorf("the argument 'git' is required"))
 	}
 
-	if gitTag == nil {
-		return nil, reporter.NewErrorEvent(reporter.WithoutGitTag, fmt.Errorf("the argument 'tag' is required"))
+	if (gitTag == "" && gitCommit == "") || (gitTag != "" && gitCommit != "") {
+		return nil, reporter.NewErrorEvent(reporter.WithoutGitTag, fmt.Errorf("invalid arguments, one of commit or tag should be passed"))
 	}
 
 	return &opt.RegistryOptions{
 		Git: &opt.GitOptions{
-			Url: *gitUrl,
-			Tag: *gitTag,
+			Url:    gitUrl,
+			Tag:    gitTag,
+			Commit: gitCommit,
 		},
 	}, nil
 }

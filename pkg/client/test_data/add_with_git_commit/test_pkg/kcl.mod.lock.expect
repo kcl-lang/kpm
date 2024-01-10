@@ -1,0 +1,8 @@
+[dependencies]
+  [dependencies.catalog]
+    name = "catalog"
+    full_name = "catalog_a29e3db"
+    version = "a29e3db"
+    sum = "kFmlrYJbJUFFTEXjC9cquc80WB+UpZ/6oMPKrfgyeks="
+    url = "https://github.com/KusionStack/catalog.git"
+    commit = "a29e3db"
