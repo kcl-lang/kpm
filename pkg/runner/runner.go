@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
+	"kcl-lang.io/kcl-go/scripts"
 	"kcl-lang.io/kpm/pkg/opt"
 )
 
@@ -44,6 +45,10 @@ func (compiler *Compiler) AddKclOption(opt kcl.Option) *Compiler {
 func (compiler *Compiler) AddDepPath(depName string, depPath string) *Compiler {
 	compiler.opts.Merge(kcl.WithExternalPkgs(fmt.Sprintf(EXTERNAL_PKGS_ARG_PATTERN, depName, depPath)))
 	return compiler
+}
+
+func (compiler *Compiler) GetKclVersion() string {
+	return string(scripts.KclvmVersionType_latest)
 }
 
 // Call KCL Compiler and return the result.
