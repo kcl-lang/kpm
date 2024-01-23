@@ -1,6 +1,6 @@
 [package]
 name = "test_run_no_sum_check"
-edition = "v0.7.0"
+edition = "0.0.1"
 version = "0.0.1"
 
 [dependencies]
