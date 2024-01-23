@@ -28,7 +28,7 @@
 Use the following command to ensure that you install `KCL compiler` successfully.
 
 ```shell
-kcl -V
+kcl -v
 ```
 
 ### Install `kpm`
