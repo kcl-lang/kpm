@@ -138,8 +138,11 @@ func KpmRun(c *cli.Context, kpmcli *client.KpmClient) error {
 				compileResult, err = kpmcli.CompileWithOpts(kclOpts)
 			}
 		} else if runEntry.IsTar() {
-			// 'kpm run' compile the package from the kcl pakcage tar.
+			// 'kpm run' compile the package from the kcl package tar.
 			compileResult, err = kpmcli.CompileTarPkg(runEntry.PackageSource(), kclOpts)
+		} else if runEntry.IsGit() {
+			// 'kpm run' compile the package from the git url
+			compileResult, err = kpmcli.CompileGitPkg(runEntry.PackageSource(), c.String(FLAG_TAG), kclOpts)
 		} else {
 			// 'kpm run' compile the package from the OCI reference or url.
 			compileResult, err = kpmcli.CompileOciPkg(runEntry.PackageSource(), c.String(FLAG_TAG), kclOpts)

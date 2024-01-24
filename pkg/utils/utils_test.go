@@ -138,6 +138,29 @@ func TestIsUrl(t *testing.T) {
 	assert.Equal(t, IsURL("https://"), false)
 }
 
+func TestIsGitRepoUrl(t *testing.T) {
+	assert.Equal(t, IsGitRepoUrl("invalid url"), false)
+	assert.Equal(t, IsGitRepoUrl("ftp://github.com/user/project.git"), false)
+	assert.Equal(t, IsGitRepoUrl("https://github.com/user/project"), true)
+	assert.Equal(t, IsGitRepoUrl("git@github.com:user/project.git"), true)
+	assert.Equal(t, IsGitRepoUrl("https://github.com/user/project.git"), true)
+	assert.Equal(t, IsGitRepoUrl("https://github.com/user/project.git"), true)
+	assert.Equal(t, IsGitRepoUrl("git@192.168.101.127:user/project.git"), true)
+	assert.Equal(t, IsGitRepoUrl("https://192.168.101.127/user/project.git"), true)
+	assert.Equal(t, IsGitRepoUrl("http://192.168.101.127/user/project.git"), true)
+	assert.Equal(t, IsGitRepoUrl("ssh://user@host.xz:port/path/to/repo.git/"), true)
+	assert.Equal(t, IsGitRepoUrl("ssh://user@host.xz/path/to/repo.git/"), true)
+	assert.Equal(t, IsGitRepoUrl("ssh://host.xz:port/path/to/repo.git/"), true)
+	assert.Equal(t, IsGitRepoUrl("ssh://host.xz/path/to/repo.git/"), true)
+	assert.Equal(t, IsGitRepoUrl("ssh://user@host.xz/path/to/repo.git/"), true)
+	assert.Equal(t, IsGitRepoUrl("ssh://user@host.xz/~user/path/to/repo.git/"), true)
+	assert.Equal(t, IsGitRepoUrl("ssh://host.xz/~user/path/to/repo.git/"), true)
+	assert.Equal(t, IsGitRepoUrl("ssh://user@host.xz/~/path/to/repo.git"), true)
+	assert.Equal(t, IsGitRepoUrl("git://host.xz/path/to/repo.git/"), true)
+	assert.Equal(t, IsGitRepoUrl("http://host.xz/path/to/repo.git/"), true)
+	assert.Equal(t, IsGitRepoUrl("https://host.xz/path/to/repo.git/"), true)
+}
+
 func TestIsRef(t *testing.T) {
 	assert.Equal(t, IsRef("invalid ref"), false)
 	assert.Equal(t, IsRef("ghcr.io/xxx/xxx"), true)

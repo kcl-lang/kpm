@@ -9,6 +9,7 @@ const (
 	UrlEntry                             = "url"
 	RefEntry                             = "ref"
 	TarEntry                             = "tar"
+	GitEntry						     = "git"	
 	KCL_MOD                              = "kcl.mod"
 	OCI_SEPARATOR                        = ":"
 	KCL_PKG_TAR                          = "*.tar"
