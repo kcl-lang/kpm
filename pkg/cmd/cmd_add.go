@@ -111,6 +111,15 @@ func KpmAdd(c *cli.Context, kpmcli *client.KpmClient) error {
 	if err != nil {
 		return err
 	}
+
+	// Check git tag consistency if git options are provided
+	if addOpts.RegistryOpts.Git != nil && addOpts.RegistryOpts.Git.Tag != "" {
+		consistencyCheck := checkGitTagConsistency(kclPkg, addOpts.RegistryOpts.Git.Tag)
+		if consistencyCheck != nil {
+			reporter.Report(consistencyCheck)
+		}
+	}
+
 	return nil
 }
 
@@ -256,4 +265,14 @@ func parseOciPkgNameAndVersion(s string) (string, string, error) {
 	}
 
 	return parts[0], parts[1], nil
+}
+
+func checkGitTagConsistency(kclPkg *pkg.KclPkg, gitTag string) *reporter.KpmEvent {
+	if kclPkg.GetPkgVersion() != gitTag {
+		return reporter.NewErrorEvent(
+			reporter.Bug,
+			fmt.Errorf("Git tag '%s' is inconsistent with the version field '%s' in kcl.mod", gitTag, kclPkg.GetPkgVersion()),
+		)
+	}
+	return nil
 }
