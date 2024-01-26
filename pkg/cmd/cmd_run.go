@@ -10,6 +10,7 @@ import (
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/api"
 	"kcl-lang.io/kpm/pkg/client"
+	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/runner"
@@ -108,7 +109,7 @@ func KpmRun(c *cli.Context, kpmcli *client.KpmClient) error {
 		return errEvent
 	}
 
-	// 'kpm run' compile the current package undor '$pwd'.
+	// 'kpm run' compile the current package under '$pwd'.
 	if runEntry.IsEmpty() {
 		pwd, err := os.Getwd()
 		kclOpts.SetPkgPath(pwd)
@@ -141,8 +142,9 @@ func KpmRun(c *cli.Context, kpmcli *client.KpmClient) error {
 			// 'kpm run' compile the package from the kcl package tar.
 			compileResult, err = kpmcli.CompileTarPkg(runEntry.PackageSource(), kclOpts)
 		} else if runEntry.IsGit() {
+			gitOpts := git.NewCloneOptions(runEntry.PackageSource(), "", c.String(FLAG_TAG), "", "", nil)
 			// 'kpm run' compile the package from the git url
-			compileResult, err = kpmcli.CompileGitPkg(runEntry.PackageSource(), c.String(FLAG_TAG), kclOpts)
+			compileResult, err = kpmcli.CompileGitPkg(gitOpts, kclOpts)
 		} else {
 			// 'kpm run' compile the package from the OCI reference or url.
 			compileResult, err = kpmcli.CompileOciPkg(runEntry.PackageSource(), c.String(FLAG_TAG), kclOpts)

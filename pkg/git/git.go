@@ -24,6 +24,17 @@ type CloneOptions struct {
 // CloneOption is a function that modifies CloneOptions
 type CloneOption func(*CloneOptions)
 
+func NewCloneOptions(repoUrl, commit, tag, branch, localpath string, Writer io.Writer) *CloneOptions {
+	return &CloneOptions{
+		RepoURL:   repoUrl,
+		Commit:    commit,
+		Tag:       tag,
+		Branch:    branch,
+		LocalPath: localpath,
+		Writer:    Writer,
+	}
+}
+
 // WithRepoURL sets the repo URL for CloneOptions
 func WithRepoURL(repoURL string) CloneOption {
 	return func(o *CloneOptions) {
