@@ -25,66 +25,41 @@ type CompileOptions struct {
 	*kcl.Option
 }
 
-// MergeOptions will merge the input options.
-// When combining multiple options, the 'WithLogWriter' should be set at the end.
-func MergeOptions(opts ...CompileOptions) CompileOptions {
-	var opt = DefaultCompileOptions()
-	for _, o := range opts {
-		opt.Merge(*o.Option)
-		opt.writer = o.writer
-
-		if o.isVendor {
-			opt.isVendor = o.isVendor
-		}
-
-		if o.hasSettingsYaml {
-			opt.hasSettingsYaml = o.hasSettingsYaml
-		}
-
-		if o.noSumCheck {
-			opt.noSumCheck = o.noSumCheck
-		}
-
-		opt.entries = append(opt.entries, o.entries...)
-	}
-	return *opt
-}
+type Option func(*CompileOptions)
 
 // WithKclOption will add a kcl option to the compiler.
-func WithKclOption(opt kcl.Option) CompileOptions {
-	var opts = DefaultCompileOptions()
-	opts.Merge(opt)
-	return *opts
+func WithKclOption(opt kcl.Option) Option {
+	return func(opts *CompileOptions) {
+		opts.Merge(opt)
+	}
 }
 
 // WithEntries will add entries to the compiler.
-func WithEntries(entries []string) CompileOptions {
-	var opt = DefaultCompileOptions()
-	opt.entries = entries
-	return *opt
+func WithEntries(entries []string) Option {
+	return func(opt *CompileOptions) {
+		opt.entries = append(opt.entries, entries...)
+	}
 }
 
 // WithEntry will add an entry to the compiler.
-func WithVendor(isVendor bool) CompileOptions {
-	var opt = DefaultCompileOptions()
-	opt.isVendor = isVendor
-	return *opt
+func WithVendor(isVendor bool) Option {
+	return func(opt *CompileOptions) {
+		opt.isVendor = isVendor
+	}
 }
 
 // WithNoSumCheck will set the 'no_sum_check' flag.
-func WithNoSumCheck(is bool) CompileOptions {
-	var opt = DefaultCompileOptions()
-	opt.noSumCheck = is
-	return *opt
+func WithNoSumCheck(is bool) Option {
+	return func(opt *CompileOptions) {
+		opt.noSumCheck = is
+	}
 }
 
 // WithLogWriter will set the log writer of the compiler.
-// When multiple log writers are set, the compiler will write to the last log writer.
-// When combining multiple options, the log should be set at the end.
-func WithLogWriter(writer io.Writer) CompileOptions {
-	var opt = DefaultCompileOptions()
-	opt.writer = writer
-	return *opt
+func WithLogWriter(writer io.Writer) Option {
+	return func(opt *CompileOptions) {
+		opt.writer = writer
+	}
 }
 
 // DefaultCompileOptions returns a default CompileOptions.

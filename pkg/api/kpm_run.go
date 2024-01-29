@@ -86,10 +86,12 @@ func RunWithOpt(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 }
 
 // RunWithOpts will compile the kcl package with the compile options.
-// Note: When combining multiple options, the 'WithLogWriter' should be set at the end.
-func RunWithOpts(opts ...opt.CompileOptions) (*kcl.KCLResultList, error) {
-	mergedOpts := opt.MergeOptions(opts...)
-	return runPkgWithOpt(&mergedOpts)
+func RunWithOpts(opts ...opt.Option) (*kcl.KCLResultList, error) {
+	mergedOpts := opt.DefaultCompileOptions()
+	for _, opt := range opts {
+		opt(mergedOpts)
+	}
+	return runPkgWithOpt(mergedOpts)
 }
 
 // getAbsInputPath will return the abs path of the file path described by '--input'.

@@ -20,39 +20,3 @@ func TestWorkDirAsPkgPath(t *testing.T) {
 	opts.SetEntries([]string{"override.k"})
 	assert.Equal(t, opts.Entries(), []string{"override.k"})
 }
-
-func TestCompilationMerge(t *testing.T) {
-	opts := MergeOptions(
-		WithEntries([]string{"test.k"}),
-	)
-	assert.Equal(t, opts.Entries(), []string{"test.k"})
-	assert.Equal(t, opts.NoSumCheck(), false)
-	assert.Equal(t, opts.IsVendor(), false)
-
-	opts = MergeOptions(
-		opts,
-		WithNoSumCheck(true),
-	)
-
-	assert.Equal(t, opts.Entries(), []string{"test.k"})
-	assert.Equal(t, opts.NoSumCheck(), true)
-	assert.Equal(t, opts.IsVendor(), false)
-
-	opts = MergeOptions(
-		opts,
-		WithVendor(true),
-	)
-
-	assert.Equal(t, opts.Entries(), []string{"test.k"})
-	assert.Equal(t, opts.NoSumCheck(), true)
-	assert.Equal(t, opts.IsVendor(), true)
-
-	opts = MergeOptions(
-		opts,
-		WithEntries([]string{"test1.k"}),
-	)
-
-	assert.Equal(t, opts.Entries(), []string{"test.k", "test1.k"})
-	assert.Equal(t, opts.NoSumCheck(), true)
-	assert.Equal(t, opts.IsVendor(), true)
-}
