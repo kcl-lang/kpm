@@ -230,9 +230,9 @@ func TestRunWithOptsWithNoLog(t *testing.T) {
 	pathMainK := filepath.Join(pkgPath, "main.k")
 
 	_, err := RunWithOpts(
+		opt.WithLogWriter(nil),
 		opt.WithEntries([]string{pathMainK}),
 		opt.WithKclOption(kcl.WithWorkDir(pkgPath)),
-		opt.WithLogWriter(nil),
 	)
 
 	assert.Equal(t, err, nil)

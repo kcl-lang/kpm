@@ -36,29 +36,29 @@ func WithKclOption(opt kcl.Option) Option {
 
 // WithEntries will add entries to the compiler.
 func WithEntries(entries []string) Option {
-	return func(opt *CompileOptions) {
-		opt.entries = append(opt.entries, entries...)
+	return func(opts *CompileOptions) {
+		opts.entries = append(opts.entries, entries...)
 	}
 }
 
 // WithEntry will add an entry to the compiler.
 func WithVendor(isVendor bool) Option {
-	return func(opt *CompileOptions) {
-		opt.isVendor = isVendor
+	return func(opts *CompileOptions) {
+		opts.isVendor = isVendor
 	}
 }
 
 // WithNoSumCheck will set the 'no_sum_check' flag.
 func WithNoSumCheck(is bool) Option {
-	return func(opt *CompileOptions) {
-		opt.noSumCheck = is
+	return func(opts *CompileOptions) {
+		opts.noSumCheck = is
 	}
 }
 
 // WithLogWriter will set the log writer of the compiler.
 func WithLogWriter(writer io.Writer) Option {
-	return func(opt *CompileOptions) {
-		opt.writer = writer
+	return func(opts *CompileOptions) {
+		opts.writer = writer
 	}
 }
 
