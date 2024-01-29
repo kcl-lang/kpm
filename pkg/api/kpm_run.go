@@ -86,6 +86,7 @@ func RunWithOpt(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 }
 
 // RunWithOpts will compile the kcl package with the compile options.
+// Note: When combining multiple options, the 'WithLogWriter' should be set at the end.
 func RunWithOpts(opts ...opt.CompileOptions) (*kcl.KCLResultList, error) {
 	mergedOpts := opt.MergeOptions(opts...)
 	return runPkgWithOpt(&mergedOpts)

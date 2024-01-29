@@ -26,13 +26,12 @@ type CompileOptions struct {
 }
 
 // MergeOptions will merge the input options.
+// When combining multiple options, the 'WithLogWriter' should be set at the end.
 func MergeOptions(opts ...CompileOptions) CompileOptions {
 	var opt = DefaultCompileOptions()
 	for _, o := range opts {
 		opt.Merge(*o.Option)
-		if o.writer != nil {
-			opt.writer = o.writer
-		}
+		opt.writer = o.writer
 
 		if o.isVendor {
 			opt.isVendor = o.isVendor
@@ -76,6 +75,15 @@ func WithVendor(isVendor bool) CompileOptions {
 func WithNoSumCheck(is bool) CompileOptions {
 	var opt = DefaultCompileOptions()
 	opt.noSumCheck = is
+	return *opt
+}
+
+// WithLogWriter will set the log writer of the compiler.
+// When multiple log writers are set, the compiler will write to the last log writer.
+// When combining multiple options, the log should be set at the end.
+func WithLogWriter(writer io.Writer) CompileOptions {
+	var opt = DefaultCompileOptions()
+	opt.writer = writer
 	return *opt
 }
 
