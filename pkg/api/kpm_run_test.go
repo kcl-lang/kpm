@@ -239,7 +239,8 @@ func TestRunWithOptsWithNoLog(t *testing.T) {
 	os.Stdout = old
 	w.Close()
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	_, err = buf.ReadFrom(r)
+	assert.Equal(t, err, nil)
 
 	assert.Equal(t, buf.String(), "")
 }
