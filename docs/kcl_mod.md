@@ -87,11 +87,11 @@ entries = [
 entries = [
    "entry1.k",
    "subdir/entry2.k",
-   "{k8s:KCL_MOD}/core/api/v1/deployment.k"
+   "${k8s:KCL_MOD}/core/api/v1/deployment.k"
 ]
 ```
 
-The `mod relative paths` must contains the preffix `{k8s:KCL_MOD}`, `k8s` is the package name, `{k8s:KCL_MOD}` means the package root path of the package `k8s`. Therefore, if the package root path of `k8s` is `/.kcl/kpm/k8s`, the `entries` show above will take `/usr/my_pkg/entry1.k`, `/usr/my_pkg/subdir/entry2.k` and `/.kcl/kpm/k8s/core/api/v1/deployment.k` as the entry point of the kcl compiler. 
+The `mod relative paths` must contains the preffix `${k8s:KCL_MOD}`, `k8s` is the package name, `${k8s:KCL_MOD}` means the package root path of the package `k8s`. Therefore, if the package root path of `k8s` is `/.kcl/kpm/k8s`, the `entries` show above will take `/usr/my_pkg/entry1.k`, `/usr/my_pkg/subdir/entry2.k` and `/.kcl/kpm/k8s/core/api/v1/deployment.k` as the entry point of the kcl compiler. 
 
 ### Note
 You can use `normal path` to specify the compilation entry point in the current package path, and use `mod relative path` to specify the entry point in a third-party package.
