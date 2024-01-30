@@ -13,6 +13,37 @@
 <img src="https://img.shields.io/badge/PRs-welcome-brightgreen">
 </p>
 
+# 注意 !
+
+KPM CLI 将在 v0.8.0 版本后被弃用，并且 KPM CLI 将被 KCL CLI 替代 - https://github.com/kcl-lang/cli.
+
+受到影响的部分如下所示:
+
+```
+kpm
+├── pkg
+│   ├── api
+│   ├── client
+│   ├── cmd       # KPM CLI 将在 v0.8.0 版本后被弃用.
+│   ├── constants
+│   ├── env
+│   ├── errors
+│   ├── git
+│   ├── oci
+│   ├── opt
+│   ├── package
+│   ├── reporter
+│   ├── runner
+│   ├── semver
+│   ├── settings
+│   ├── utils
+│   └── version
+├── scripts
+├── test
+│   └── e2e      # KPM CLI 的 e2e 测试将在 v0.8.0 版本后被弃用.
+├── ......
+```
+
 ## 介绍
 
 `kpm` 是 KCL 包管理器。`kpm` 会下载您的 KCL 包的依赖项、编译您的 KCL 包、制作可分发的包并将其上传到 KCL 包的仓库中。

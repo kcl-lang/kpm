@@ -1,7 +1,10 @@
+// Deprecated: The entire contents of this file will be deprecated.
+// Please use the kcl cli - https://github.com/kcl-lang/cli.
 package version
 
 import "testing"
 
+// Deprecated: This function will be removed in a future version.
 func TestGetVersionInStr(t *testing.T) {
 	tests := []struct {
 		name string
