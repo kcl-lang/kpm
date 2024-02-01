@@ -201,6 +201,10 @@ For more information about [OCI registry support](./docs/kpm_oci.md).
 
 - A: `go install` will install the binary file to `$GOPATH/bin` by default. You need to add `$GOPATH/bin` to the environment variable `PATH`.
 
+## Contributing
+
+- See [contribution guideline](https://kcl-lang.io/docs/community/contribute/).
+
 ## Learn More
 
 - [OCI registry support](./docs/kpm_oci-zh.md).
