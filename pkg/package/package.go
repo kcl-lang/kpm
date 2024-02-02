@@ -24,7 +24,7 @@ type KclPkg struct {
 }
 
 func (p *KclPkg) GetDepsMetadata() (*Dependencies, error) {
-	return p.Dependencies.ToDepMetadata(p.HomePath)
+	return p.Dependencies.ToDepMetadata()
 }
 
 func NewKclPkg(opts *opt.InitOptions) KclPkg {
