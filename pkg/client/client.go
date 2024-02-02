@@ -1080,7 +1080,7 @@ func (c *KpmClient) dependencyExists(dep *pkg.Dependency, lockDeps *pkg.Dependen
 	}
 
 	lockDep, present := lockDeps.Deps[dep.Name]
-	// Check if the sum of this dependency in kcl.mod.lock has been chanaged.
+	// Check if the sum of this dependency in kcl.mod.lock has been changed.
 	if !c.noSumCheck && present {
 		// If the dependent package does not exist locally, then method 'check' will return false.
 		if c.noSumCheck || check(lockDep, filepath.Join(c.homePath, dep.FullName)) {
