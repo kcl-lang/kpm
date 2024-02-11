@@ -1,5 +1,6 @@
 COMMANDS:
    init      initialize new module in current directory
+   graph     prints the module dependency graph
    add       add new dependency
    pkg       package a kcl package into tar
    metadata  output the resolved dependencies of a package

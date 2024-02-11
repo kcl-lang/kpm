@@ -1071,42 +1071,38 @@ func (c *KpmClient) ParseOciOptionFromString(oci string, tag string) (*opt.OciOp
 
 // PrintDependencyGraph will print the dependency graph of kcl package dependencies
 func (c *KpmClient) PrintDependencyGraph(kclPkg *pkg.KclPkg) error {
-	// create the main graph with a single root vertex.
-	root := fmt.Sprint(kclPkg.GetPkgName())
-	mainGraph := graph.New(graph.StringHash, graph.Directed())
-	err := mainGraph.AddVertex(root)
+	_, depGraph, err := c.downloadDeps(kclPkg.Dependencies, kclPkg.ModFile.Dependencies)
 	if err != nil {
 		return err
 	}
 
-	// get the dependency graphs and merge them into the main graph at root vertex.
-	_, depGraphs, err := c.downloadDeps(kclPkg.Dependencies, kclPkg.ModFile.Dependencies)
+	// add the root vertex(package name) to the dependency graph.
+	root := fmt.Sprint(kclPkg.GetPkgName()) 
+	err = depGraph.AddVertex(root)
 	if err != nil {
 		return err
 	}
 
-	for _, g := range depGraphs {
-		mainGraph, err = graph.Union(mainGraph, g)
-		if err != nil {
-			return err
-		}
-		src, err := FindSource(g)
-		if err != nil {
-			return err
-		}
-		err = mainGraph.AddEdge(root, src)
+	sources, err := FindSource(depGraph)
+	if err != nil {
+		return err
+	}
+
+	// make an edge between the root vertex and all the sources of the dependency graph.
+	for _, source := range sources {
+		err = depGraph.AddEdge(source, root)
 		if err != nil {
 			return err
 		}
 	}
 
-	adjMap, err := mainGraph.AdjacencyMap()
+	adjMap, err := depGraph.AdjacencyMap()
 	if err != nil {
 		return err
 	}
 
 	// print the dependency graph to stdout.
-	err = graph.BFS(mainGraph, root, func(source string) bool {
+	err = graph.BFS(depGraph, root, func(source string) bool {
 		for target := range adjMap[source] {
 			reporter.ReportMsgTo(
 				fmt.Sprint(source, target),
@@ -1146,22 +1142,13 @@ func (c *KpmClient) dependencyExists(dep *pkg.Dependency, lockDeps *pkg.Dependen
 }
 
 // downloadDeps will download all the dependencies of the current kcl package.
-func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencies) (*pkg.Dependencies, []graph.Graph[string, string], error) {
+func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencies) (*pkg.Dependencies, graph.Graph[string, string], error) {
 	newDeps := pkg.Dependencies{
 		Deps: make(map[string]pkg.Dependency),
 	}
 
-	depGraphs := make([]graph.Graph[string, string], len(deps.Deps))
-	i := 0
-
 	// Traverse all dependencies in kcl.mod
 	for _, d := range deps.Deps {
-		depGraphs[i] = graph.New(graph.StringHash, graph.Directed())
-		err := depGraphs[i].AddVertex(fmt.Sprintf("%s@%s", d.Name, d.Version))
-		if err != nil {
-			return nil, nil, err
-		}
-		i++
 		if len(d.Name) == 0 {
 			return nil, nil, errors.InvalidDependency
 		}
@@ -1205,7 +1192,15 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 		lockDeps.Deps[d.Name] = *lockedDep
 	}
 
-	i = 0
+	depGraph := graph.New(graph.StringHash, graph.Directed())
+
+	for _, d := range newDeps.Deps {
+		err := depGraph.AddVertex(fmt.Sprintf("%s@%s", d.Name, d.Version))
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+
 	// Recursively download the dependencies of the new dependencies.
 	for _, d := range newDeps.Deps {
 		// Load kcl.mod file of the new downloaded dependencies.
@@ -1222,27 +1217,25 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 		}
 
 		// Download the dependencies.
-		nested, nestedDepGraphs, err := c.downloadDeps(deppkg.ModFile.Dependencies, lockDeps)
+		nested, nestedDepGraph, err := c.downloadDeps(deppkg.ModFile.Dependencies, lockDeps)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		// merge the depGraph with the nestedDepGraphs.
-		src, err := FindSource(depGraphs[i])
+		source := fmt.Sprintf("%s@%s", d.Name, d.Version)
+		sourcesOfNestedDepGraph, err := FindSource(nestedDepGraph)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		for _, g := range nestedDepGraphs {
-			depGraphs[i], err = graph.Union(g, depGraphs[i])
-			if err != nil {
-				return nil, nil, err
-			}
-			srcOfNestedg, err := FindSource(g)
-			if err != nil {
-				return nil, nil, err
-			}
-			err = depGraphs[i].AddEdge(src, srcOfNestedg)
+		depGraph, err = graph.Union(depGraph, nestedDepGraph)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		// make an edge between the source of all nested dep graph and main dep graph 
+		for _, sourceOfNestedDepGraph := range sourcesOfNestedDepGraph {
+			err = depGraph.AddEdge(source, sourceOfNestedDepGraph)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -1254,10 +1247,9 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 				newDeps.Deps[d.Name] = d
 			}
 		}
-		i++
 	}
 
-	return &newDeps, depGraphs, nil
+	return &newDeps, depGraph, nil
 }
 
 // pullTarFromOci will pull a kcl package tar file from oci registry.
@@ -1331,22 +1323,21 @@ func check(dep pkg.Dependency, newDepPath string) bool {
 	return dep.Sum == sum
 }
 
-func FindSource[K comparable, T any](g graph.Graph[K, T]) (K, error) {
-	var src K
+func FindSource[K comparable, T any](g graph.Graph[K, T]) ([]K, error) {
 	if !g.Traits().IsDirected {
-		return src, fmt.Errorf("cannot find source of a non-DAG graph ")
+		return nil, fmt.Errorf("cannot find source of a non-DAG graph ")
 	}
 
 	predecessorMap, err := g.PredecessorMap()
 	if err != nil {
-		return src, fmt.Errorf("failed to get predecessor map: %w", err)
+		return nil, fmt.Errorf("failed to get predecessor map: %w", err)
 	}
 
+	var sources []K
 	for vertex, predecessors := range predecessorMap {
 		if len(predecessors) == 0 {
-			src = vertex
-			break
+			sources = append(sources, vertex)
 		}
 	}
-	return src, nil
+	return sources, nil
 }
