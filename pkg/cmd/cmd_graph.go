@@ -3,8 +3,10 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
+	"github.com/dominikbraun/graph"
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/env"
@@ -60,7 +62,27 @@ func KpmGraph(c *cli.Context, kpmcli *client.KpmClient) error {
 		return err
 	}
 
-	err = kpmcli.PrintDependencyGraph(kclPkg)
+	depGraph, err := kpmcli.GetDependencyGraph(kclPkg)
+	if err != nil {
+		return err
+	}
+
+	adjMap, err := depGraph.AdjacencyMap()
+	if err != nil {
+		return err
+	}
+
+	// print the dependency graph to stdout.
+	root := fmt.Sprintf("%s@%s", kclPkg.GetPkgName(), kclPkg.GetPkgVersion()) 
+	err = graph.BFS(depGraph, root, func(source string) bool {
+		for target := range adjMap[source] {
+			reporter.ReportMsgTo(
+				fmt.Sprint(source, " ", target),
+				kpmcli.GetLogWriter(),
+			)
+		}
+		return false
+	})
 	if err != nil {
 		return err
 	}

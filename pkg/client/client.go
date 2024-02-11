@@ -17,6 +17,7 @@ import (
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/git"
+	pkgGraph "kcl-lang.io/kpm/pkg/graph"
 	"kcl-lang.io/kpm/pkg/oci"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
@@ -1069,53 +1070,34 @@ func (c *KpmClient) ParseOciOptionFromString(oci string, tag string) (*opt.OciOp
 	return ociOpt, nil
 }
 
-// PrintDependencyGraph will print the dependency graph of kcl package dependencies
-func (c *KpmClient) PrintDependencyGraph(kclPkg *pkg.KclPkg) error {
-	_, depGraph, err := c.downloadDeps(kclPkg.Dependencies, kclPkg.ModFile.Dependencies)
+// GetDependencyGraph will get the dependency graph of kcl package dependencies
+func (c *KpmClient) GetDependencyGraph(kclPkg *pkg.KclPkg) (graph.Graph[string, string], error) {
+	_, depGraph, err := c.downloadDeps(kclPkg.ModFile.Dependencies, kclPkg.Dependencies)
 	if err != nil {
-		return err
+		return nil, err
+	}
+
+	sources, err := pkgGraph.FindSources(depGraph)
+	if err != nil {
+		return nil, err
 	}
 
 	// add the root vertex(package name) to the dependency graph.
-	root := fmt.Sprint(kclPkg.GetPkgName()) 
+	root := fmt.Sprintf("%s@%s", kclPkg.GetPkgName(), kclPkg.GetPkgVersion())
 	err = depGraph.AddVertex(root)
 	if err != nil {
-		return err
-	}
-
-	sources, err := FindSource(depGraph)
-	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// make an edge between the root vertex and all the sources of the dependency graph.
 	for _, source := range sources {
-		err = depGraph.AddEdge(source, root)
+		err = depGraph.AddEdge(root, source)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	adjMap, err := depGraph.AdjacencyMap()
-	if err != nil {
-		return err
-	}
-
-	// print the dependency graph to stdout.
-	err = graph.BFS(depGraph, root, func(source string) bool {
-		for target := range adjMap[source] {
-			reporter.ReportMsgTo(
-				fmt.Sprint(source, target),
-				c.logWriter,
-			)
-		}
-		return false
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return depGraph, nil
 }
 
 // dependencyExists will check whether the dependency exists in the local filesystem.
@@ -1194,13 +1176,6 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 
 	depGraph := graph.New(graph.StringHash, graph.Directed())
 
-	for _, d := range newDeps.Deps {
-		err := depGraph.AddVertex(fmt.Sprintf("%s@%s", d.Name, d.Version))
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-
 	// Recursively download the dependencies of the new dependencies.
 	for _, d := range newDeps.Deps {
 		// Load kcl.mod file of the new downloaded dependencies.
@@ -1223,20 +1198,25 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 		}
 
 		source := fmt.Sprintf("%s@%s", d.Name, d.Version)
-		sourcesOfNestedDepGraph, err := FindSource(nestedDepGraph)
+		err = depGraph.AddVertex(source)
+		if err != nil && err != graph.ErrVertexAlreadyExists {
+			return nil, nil, err
+		}
+
+		sourcesOfNestedDepGraph, err := pkgGraph.FindSources(nestedDepGraph)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		depGraph, err = graph.Union(depGraph, nestedDepGraph)
+		depGraph, err = pkgGraph.Union(depGraph, nestedDepGraph)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		// make an edge between the source of all nested dep graph and main dep graph 
+		// make an edge between the source of all nested dep graph and main dep graph
 		for _, sourceOfNestedDepGraph := range sourcesOfNestedDepGraph {
 			err = depGraph.AddEdge(source, sourceOfNestedDepGraph)
-			if err != nil {
+			if err != nil && err != graph.ErrEdgeAlreadyExists {
 				return nil, nil, err
 			}
 		}
@@ -1321,23 +1301,4 @@ func check(dep pkg.Dependency, newDepPath string) bool {
 	}
 
 	return dep.Sum == sum
-}
-
-func FindSource[K comparable, T any](g graph.Graph[K, T]) ([]K, error) {
-	if !g.Traits().IsDirected {
-		return nil, fmt.Errorf("cannot find source of a non-DAG graph ")
-	}
-
-	predecessorMap, err := g.PredecessorMap()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get predecessor map: %w", err)
-	}
-
-	var sources []K
-	for vertex, predecessors := range predecessorMap {
-		if len(predecessors) == 0 {
-			sources = append(sources, vertex)
-		}
-	}
-	return sources, nil
 }
