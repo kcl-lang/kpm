@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -849,6 +850,35 @@ func (c *KpmClient) DownloadFromGit(dep *pkg.Git, localPath string) (string, err
 	}
 
 	return localPath, err
+}
+
+// Parse kcl.mod file and extract dependencies
+func ParseKclModFile(c *KpmClient, kclPkg *pkg.KclPkg) (map[string][]string, error) {
+	// Get path to kcl.mod file
+	modFilePath := kclPkg.ModFile.GetModFilePath()
+
+	// Parse kcl.mod file
+	modFileBytes, err := ioutil.ReadFile(modFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Initialize map to store dependencies
+	dependencies := make(map[string][]string)
+
+	// Parse each line in the mod file
+	lines := strings.Split(string(modFileBytes), "\n")
+	for _, line := range lines {
+		// Extract dependency name and version
+		parts := strings.Fields(line)
+		if len(parts) >= 2 {
+			dependency := parts[0]
+			version := parts[1]
+			dependencies[dependency] = append(dependencies[dependency], version)
+		}
+	}
+
+	return dependencies, nil
 }
 
 // DownloadFromOci will download the dependency from the oci repository.
