@@ -853,7 +853,7 @@ func (c *KpmClient) DownloadFromGit(dep *pkg.Git, localPath string) (string, err
 }
 
 // Parse kcl.mod file and extract dependencies
-func ParseKclModFile(c *KpmClient, kclPkg *pkg.KclPkg) (map[string][]string, error) {
+func (c *KpmClient) ParseKclModFile(kclPkg *pkg.KclPkg) (map[string][]string, error) {
 	// Get path to kcl.mod file
 	modFilePath := kclPkg.ModFile.GetModFilePath()
 
