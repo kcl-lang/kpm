@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -830,7 +829,7 @@ func (c *KpmClient) ParseKclModFile(kclPkg *pkg.KclPkg) (map[string][]string, er
 	modFilePath := kclPkg.ModFile.GetModFilePath()
 
 	// Parse kcl.mod file
-	modFileBytes, err := ioutil.ReadFile(modFilePath)
+	modFileBytes, err := os.ReadFile(modFilePath)
 	if err != nil {
 		return nil, err
 	}
