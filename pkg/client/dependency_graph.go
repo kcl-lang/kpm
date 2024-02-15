@@ -1,7 +1,18 @@
 package client
 
+import pkg "kcl-lang.io/kpm/pkg/package"
+
 // Construct dependency graph
 type DependencyGraph map[string][]string
+
+// Function to construct dependency graph by parsing kcl.mod file
+func ConstructDependencyGraphFromModFile(kpmClient *KpmClient, kclPkg *pkg.KclPkg) (DependencyGraph, error) {
+	dependencies, err := kpmClient.ParseKclModFile(kclPkg)
+	if err != nil {
+		return nil, err
+	}
+	return ConstructDependencyGraph(dependencies), nil
+}
 
 // Function to construct dependency graph from dependency map
 func ConstructDependencyGraph(dependencies map[string][]string) DependencyGraph {
