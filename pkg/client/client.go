@@ -451,6 +451,8 @@ func (c *KpmClient) CompileGitPkg(gitOpts *git.CloneOptions, compileOpts *opt.Co
 
 	// 2. clone the git repo
 	_, err = git.CloneWithOpts(
+		git.WithCommit(gitOpts.Commit),
+		git.WithBranch(gitOpts.Branch),
 		git.WithTag(gitOpts.Tag),
 		git.WithRepoURL(gitOpts.RepoURL),
 		git.WithLocalPath(tmpDir),
