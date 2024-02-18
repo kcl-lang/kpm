@@ -44,6 +44,7 @@ func TestGetSourceKindFrom(t *testing.T) {
 	assert.Equal(t, string(GetSourceKindFrom("./testdata_external/external/main.k")), constants.FileEntry)
 	assert.Equal(t, string(GetSourceKindFrom("main.tar")), constants.TarEntry)
 	assert.Equal(t, string(GetSourceKindFrom("oci://test_url")), constants.UrlEntry)
+	assert.Equal(t, string(GetSourceKindFrom("https://github.com/test_org/test")), constants.GitEntry)
 	assert.Equal(t, string(GetSourceKindFrom("test_ref:0.0.1")), constants.RefEntry)
 	assert.Equal(t, string(GetSourceKindFrom("invalid input")), "")
 }

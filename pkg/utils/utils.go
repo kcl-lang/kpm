@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	goerrors "errors"
@@ -376,6 +377,12 @@ func JoinPath(base, elem string) string {
 func IsURL(str string) bool {
 	u, err := url.Parse(str)
 	return err == nil && u.Scheme != "" && u.Host != ""
+}
+
+// IsGitRepoUrl will check whether the string 'str' is a git repo url
+func IsGitRepoUrl(str string) bool {
+	r := regexp.MustCompile(`((git|ssh|http(s)?)|(git@[\w\.]+))(:(//)?)([\w\.@\:/\-~]+)(\.git)?(/)?`)
+	return r.MatchString(str)
 }
 
 // IsRef will check whether the string 'str' is a reference.

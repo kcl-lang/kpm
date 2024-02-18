@@ -67,6 +67,10 @@ func (e *Entry) IsTar() bool {
 	return e.kind == constants.TarEntry
 }
 
+func (e *Entry) IsGit() bool {
+	return e.kind == constants.GitEntry
+}
+
 // IsEmpty will return true if the entry is empty.
 func (e *Entry) IsEmpty() bool {
 	return len(e.packageSource) == 0
@@ -166,6 +170,8 @@ func GetSourceKindFrom(source string) EntryKind {
 		return constants.FileEntry
 	} else if utils.IsTar(source) {
 		return constants.TarEntry
+	} else if utils.IsGitRepoUrl(source) {
+		return constants.GitEntry
 	} else if utils.IsURL(source) {
 		return constants.UrlEntry
 	} else if utils.IsRef(source) {

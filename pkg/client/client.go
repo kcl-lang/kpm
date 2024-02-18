@@ -439,6 +439,33 @@ func (c *KpmClient) CompileTarPkg(tarPath string, opts *opt.CompileOptions) (*kc
 	return c.CompileWithOpts(opts)
 }
 
+// CompileGitPkg will compile the kcl package from the git url.
+func (c *KpmClient) CompileGitPkg(gitOpts *git.CloneOptions, compileOpts *opt.CompileOptions) (*kcl.KCLResultList, error) {
+	// 1. Create the temporary directory to pull the tar.
+	tmpDir, err := os.MkdirTemp("", "")
+	if err != nil {
+		return nil, reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it.")
+	}
+	// clean the temp dir.
+	defer os.RemoveAll(tmpDir)
+
+	// 2. clone the git repo
+	_, err = git.CloneWithOpts(
+		git.WithCommit(gitOpts.Commit),
+		git.WithBranch(gitOpts.Branch),
+		git.WithTag(gitOpts.Tag),
+		git.WithRepoURL(gitOpts.RepoURL),
+		git.WithLocalPath(tmpDir),
+	)
+	if err != nil {
+		return nil, reporter.NewErrorEvent(reporter.FailedGetPkg, err, "failed to get the git repository")
+	}
+
+	compileOpts.SetPkgPath(tmpDir)
+
+	return c.CompileWithOpts(compileOpts)
+}
+
 // CompileOciPkg will compile the kcl package from the OCI reference or url.
 func (c *KpmClient) CompileOciPkg(ociSource, version string, opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 	ociOpts, err := c.ParseOciOptionFromString(ociSource, version)
