@@ -186,6 +186,39 @@ func TestCyclicDependency(t *testing.T) {
 	assert.Equal(t, err, nil)
 }
 
+func TestParseKclModFile(t *testing.T) {
+	testDir := getTestDir("test_parse_kcl_mod_file")
+	kpmcli, err := NewKpmClient()
+	assert.Nil(t, err, "error creating KpmClient")
+
+	// Create a sample kcl.mod file for testing
+	modFileContent := `
+        [dependencies]
+        teleport = "0.1.0"
+        rabbitmq = "0.0.1"
+        agent = { version = "0.1.0", someAttribute = "value" }
+    `
+	modFilePath := filepath.Join(testDir, "kcl.mod")
+	err = os.WriteFile(modFilePath, []byte(modFileContent), 0644)
+	assert.Nil(t, err, "error writing mod file")
+
+	// Create a mock KclPkg
+	mockKclPkg, err := kpmcli.LoadPkgFromPath(testDir)
+	assert.Nil(t, err, "error loading package from path")
+
+	// Test the ParseKclModFile function
+	dependencies, err := kpmcli.ParseKclModFile(mockKclPkg)
+	assert.Nil(t, err, "error parsing kcl.mod file")
+
+	expectedDependencies := map[string]map[string]string{
+		"teleport": {"version": "0.1.0"},
+		"rabbitmq": {"version": "0.0.1"},
+		"agent":    {"version": "0.1.0", "someAttribute": "value"},
+	}
+
+	assert.Equal(t, expectedDependencies, dependencies, "parsed dependencies do not match expected dependencies")
+}
+
 func TestInitEmptyPkg(t *testing.T) {
 	testDir := initTestDir("test_init_empty_mod")
 	kclPkg := pkg.NewKclPkg(&opt.InitOptions{Name: "test_name", InitPath: testDir})
