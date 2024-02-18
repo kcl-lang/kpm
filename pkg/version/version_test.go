@@ -1,7 +1,10 @@
+// Deprecated: The entire contents of this file will be deprecated.
+// Please use the kcl cli - https://github.com/kcl-lang/cli.
 package version
 
 import "testing"
 
+// Deprecated: This function will be removed in a future version.
 func TestGetVersionInStr(t *testing.T) {
 	tests := []struct {
 		name string
@@ -9,7 +12,7 @@ func TestGetVersionInStr(t *testing.T) {
 	}{
 		{
 			name: "test get version in string",
-			want: "0.6.0",
+			want: "0.7.0",
 		},
 	}
 	for _, tt := range tests {

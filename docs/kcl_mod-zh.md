@@ -121,11 +121,11 @@ entries = [
 entries = [
    "entry1.k",
    "subdir/entry2.k",
-   "{k8s:KCL_MOD}/core/api/v1/deployment.k"
+   "${k8s:KCL_MOD}/core/api/v1/deployment.k"
 ]
 ```
 
-`mod relative paths` 必须包含前缀 `{k8s:KCL_MOD}`，其中 `k8s` 是包名，`{k8s:KCL_MOD}` 表示包 k8s 的包根路径。因此，如果 `k8s` 的包根路径是 `/.kcl/kpm/k8s`，则上面的 `entries` 将把 `/usr/my_pkg/entry1.k`、`/usr/my_pkg/subdir/entry2.k` 和 `/.kcl/kpm/k8s/core/api/v1/deployment.k` 作为 `kcl` 编译器的入口点。
+`mod relative paths` 必须包含前缀 `${k8s:KCL_MOD}`，其中 `k8s` 是包名，`${k8s:KCL_MOD}` 表示包 k8s 的包根路径。因此，如果 `k8s` 的包根路径是 `/.kcl/kpm/k8s`，则上面的 `entries` 将把 `/usr/my_pkg/entry1.k`、`/usr/my_pkg/subdir/entry2.k` 和 `/.kcl/kpm/k8s/core/api/v1/deployment.k` 作为 `kcl` 编译器的入口点。
 
 ### 注意
 你可以使用 `normal path` 指定当前包路径中的编译入口点，使用 `mod relative path` 指定三方包中的入口点。

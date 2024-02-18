@@ -13,6 +13,37 @@
 <img src="https://img.shields.io/badge/PRs-welcome-brightgreen">
 </p>
 
+# NOTE !
+
+The KPM CLI will be deprecated after v0.8.0, and the KPM CLI will be replaced by the KCL CLI - https://github.com/kcl-lang/cli.
+
+The affected parts are shown below:
+
+```
+kpm
+├── pkg
+│   ├── api
+│   ├── client
+│   ├── cmd       # The KPM CLI will deprecated after v0.8.0.
+│   ├── constants
+│   ├── env
+│   ├── errors
+│   ├── git
+│   ├── oci
+│   ├── opt
+│   ├── package
+│   ├── reporter
+│   ├── runner
+│   ├── semver
+│   ├── settings
+│   ├── utils
+│   └── version
+├── scripts
+├── test
+│   └── e2e      # The e2e test for KPM CLI will deprecated after v0.8.0.
+├── ......
+```
+
 ## Introduction
 
 `kpm` is the KCL package manager. `kpm` downloads your KCL package's dependencies, compiles your KCL packages, makes packages, and uploads them to the kcl package registry.
@@ -169,6 +200,10 @@ For more information about [OCI registry support](./docs/kpm_oci.md).
 ##### Q: I am using `go install` to install `kpm`, but I get the error `command not found`.
 
 - A: `go install` will install the binary file to `$GOPATH/bin` by default. You need to add `$GOPATH/bin` to the environment variable `PATH`.
+
+## Contributing
+
+- See [contribution guideline](https://kcl-lang.io/docs/community/contribute/).
 
 ## Learn More
 

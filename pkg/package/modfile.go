@@ -131,7 +131,7 @@ type Dependencies struct {
 
 // ToDepMetadata will transform the dependencies into metadata.
 // And check whether the dependency name conflicts.
-func (deps *Dependencies) ToDepMetadata(pkgHome string) (*Dependencies, error) {
+func (deps *Dependencies) ToDepMetadata() (*Dependencies, error) {
 	depMetadata := Dependencies{
 		Deps: make(map[string]Dependency),
 	}

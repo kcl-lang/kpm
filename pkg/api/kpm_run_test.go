@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -213,4 +214,33 @@ func TestRunWithOptsAndNoSumCheck(t *testing.T) {
 		assert.Equal(t, utils.RmNewline(res.GetRawYamlResult()), utils.RmNewline(string(expected)))
 		assert.Equal(t, err, nil)
 	}
+}
+
+func TestRunWithOptsWithNoLog(t *testing.T) {
+	pkgPath := filepath.Join(getTestDir("test_run_pkg_in_path"), "test_run_with_no_log")
+
+	defer func() {
+		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
+	}()
+
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	pathMainK := filepath.Join(pkgPath, "main.k")
+
+	_, err := RunWithOpts(
+		opt.WithLogWriter(nil),
+		opt.WithEntries([]string{pathMainK}),
+		opt.WithKclOption(kcl.WithWorkDir(pkgPath)),
+	)
+
+	assert.Equal(t, err, nil)
+	os.Stdout = old
+	w.Close()
+	var buf bytes.Buffer
+	_, err = buf.ReadFrom(r)
+	assert.Equal(t, err, nil)
+
+	assert.Equal(t, buf.String(), "")
 }
