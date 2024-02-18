@@ -126,7 +126,7 @@ func TestDependencyGraph(t *testing.T) {
 	kclPkg, err := kpmcli.LoadPkgFromPath(testDir)
 	assert.Equal(t, err, nil)
 
-	depGraph, err := kpmcli.GetDependencyGraph(kclPkg)
+	_, depGraph, err := kpmcli.InitGraphAndDownloadDeps(kclPkg)
 	assert.Equal(t, err, nil)
 	adjMap, err := depGraph.AdjacencyMap()
 	assert.Equal(t, err, nil)
@@ -155,6 +155,10 @@ func TestDependencyGraph(t *testing.T) {
 			"k8s@1.28": {},
 		},
 	)
+}
+
+func TestCyclicDependency(t *testing.T) {
+	
 }
 
 func TestInitEmptyPkg(t *testing.T) {

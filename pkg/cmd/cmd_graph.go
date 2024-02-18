@@ -62,7 +62,7 @@ func KpmGraph(c *cli.Context, kpmcli *client.KpmClient) error {
 		return err
 	}
 
-	depGraph, err := kpmcli.GetDependencyGraph(kclPkg)
+	_, depGraph, err := kpmcli.InitGraphAndDownloadDeps(kclPkg)
 	if err != nil {
 		return err
 	}

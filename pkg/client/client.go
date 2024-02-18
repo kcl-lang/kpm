@@ -17,7 +17,6 @@ import (
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/git"
-	pkgGraph "kcl-lang.io/kpm/pkg/graph"
 	"kcl-lang.io/kpm/pkg/oci"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
@@ -596,7 +595,7 @@ func (c *KpmClient) AddDepToPkg(kclPkg *pkg.KclPkg, d *pkg.Dependency) error {
 	}
 
 	// download all the dependencies.
-	changedDeps, _, err := c.downloadDeps(kclPkg.ModFile.Dependencies, kclPkg.Dependencies)
+	changedDeps, _, err := c.InitGraphAndDownloadDeps(kclPkg)
 
 	if err != nil {
 		return err
@@ -1097,34 +1096,24 @@ func (c *KpmClient) ParseOciOptionFromString(oci string, tag string) (*opt.OciOp
 	return ociOpt, nil
 }
 
-// GetDependencyGraph will get the dependency graph of kcl package dependencies
-func (c *KpmClient) GetDependencyGraph(kclPkg *pkg.KclPkg) (graph.Graph[string, string], error) {
-	_, depGraph, err := c.downloadDeps(kclPkg.ModFile.Dependencies, kclPkg.Dependencies)
-	if err != nil {
-		return nil, err
-	}
+// InitGraphAndDownloadDeps initializes a dependency graph and call downloadDeps function.
+func (c *KpmClient) InitGraphAndDownloadDeps(kclPkg *pkg.KclPkg) (*pkg.Dependencies, graph.Graph[string, string], error) {
 
-	sources, err := pkgGraph.FindSources(depGraph)
-	if err != nil {
-		return nil, err
-	}
+	depGraph := graph.New(graph.StringHash, graph.Directed(), graph.PreventCycles())
 
 	// add the root vertex(package name) to the dependency graph.
 	root := fmt.Sprintf("%s@%s", kclPkg.GetPkgName(), kclPkg.GetPkgVersion())
-	err = depGraph.AddVertex(root)
+	err := depGraph.AddVertex(root)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	// make an edge between the root vertex and all the sources of the dependency graph.
-	for _, source := range sources {
-		err = depGraph.AddEdge(root, source)
-		if err != nil {
-			return nil, err
-		}
+	changedDeps, err := c.downloadDeps(kclPkg.ModFile.Dependencies, kclPkg.Dependencies, depGraph, root)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	return depGraph, nil
+	return changedDeps, depGraph, nil
 }
 
 // dependencyExists will check whether the dependency exists in the local filesystem.
@@ -1151,7 +1140,7 @@ func (c *KpmClient) dependencyExists(dep *pkg.Dependency, lockDeps *pkg.Dependen
 }
 
 // downloadDeps will download all the dependencies of the current kcl package.
-func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencies) (*pkg.Dependencies, graph.Graph[string, string], error) {
+func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencies, depGraph graph.Graph[string, string], parent string) (*pkg.Dependencies, error) {
 	newDeps := pkg.Dependencies{
 		Deps: make(map[string]pkg.Dependency),
 	}
@@ -1159,7 +1148,7 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 	// Traverse all dependencies in kcl.mod
 	for _, d := range deps.Deps {
 		if len(d.Name) == 0 {
-			return nil, nil, errors.InvalidDependency
+			return nil, errors.InvalidDependency
 		}
 
 		existDep := c.dependencyExists(&d, &lockDeps)
@@ -1171,16 +1160,15 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 		expectedSum := lockDeps.Deps[d.Name].Sum
 		// Clean the cache
 		if len(c.homePath) == 0 || len(d.FullName) == 0 {
-			return nil, nil, errors.InternalBug
+			return nil, errors.InternalBug
 		}
 		dir := filepath.Join(c.homePath, d.FullName)
 		os.RemoveAll(dir)
 
 		// download dependencies
-
 		lockedDep, err := c.Download(&d, dir)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		if !lockedDep.IsFromLocal() {
@@ -1188,7 +1176,7 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 				lockedDep.Sum != expectedSum &&
 				existDep != nil &&
 				existDep.FullName == d.FullName {
-				return nil, nil, reporter.NewErrorEvent(
+				return nil, reporter.NewErrorEvent(
 					reporter.CheckSumMismatch,
 					errors.CheckSumMismatchError,
 					fmt.Sprintf("checksum for '%s' changed in lock file", lockedDep.Name),
@@ -1201,10 +1189,16 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 		lockDeps.Deps[d.Name] = *lockedDep
 	}
 
-	depGraph := graph.New(graph.StringHash, graph.Directed())
+	// necessary to make a copy as when we are updating kcl.mod in below for loop
+	// then newDeps.Deps gets updated and range gets an extra value to iterate through
+	// this messes up the dependency graph
+	newDepsCopy := make(map[string]pkg.Dependency)
+	for k, v := range newDeps.Deps {
+		newDepsCopy[k] = v
+	}
 
 	// Recursively download the dependencies of the new dependencies.
-	for _, d := range newDeps.Deps {
+	for _, d := range newDepsCopy {
 		// Load kcl.mod file of the new downloaded dependencies.
 		deppkg, err := pkg.LoadKclPkg(filepath.Join(c.homePath, d.FullName))
 		if len(d.LocalFullPath) != 0 {
@@ -1215,37 +1209,31 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 			if os.IsNotExist(err) {
 				continue
 			}
-			return nil, nil, err
-		}
-
-		// Download the dependencies.
-		nested, nestedDepGraph, err := c.downloadDeps(deppkg.ModFile.Dependencies, lockDeps)
-		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		source := fmt.Sprintf("%s@%s", d.Name, d.Version)
 		err = depGraph.AddVertex(source)
 		if err != nil && err != graph.ErrVertexAlreadyExists {
-			return nil, nil, err
+			return nil, err
 		}
 
-		sourcesOfNestedDepGraph, err := pkgGraph.FindSources(nestedDepGraph)
+		err = depGraph.AddEdge(parent, source)
 		if err != nil {
-			return nil, nil, err
-		}
-
-		depGraph, err = pkgGraph.Union(depGraph, nestedDepGraph)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		// make an edge between the source of all nested dep graph and main dep graph
-		for _, sourceOfNestedDepGraph := range sourcesOfNestedDepGraph {
-			err = depGraph.AddEdge(source, sourceOfNestedDepGraph)
-			if err != nil && err != graph.ErrEdgeAlreadyExists {
-				return nil, nil, err
+			if err == graph.ErrEdgeCreatesCycle {
+				return nil, reporter.NewErrorEvent(
+					reporter.CircularDependencyExist,
+					nil,
+					"adding dependencies results in a cycle",
+				)
 			}
+			return nil, err
+		}
+
+		// Download the dependencies.
+		nested, err := c.downloadDeps(deppkg.ModFile.Dependencies, lockDeps, depGraph, source)
+		if err != nil {
+			return nil, err
 		}
 
 		// Update kcl.mod.
@@ -1256,7 +1244,7 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 		}
 	}
 
-	return &newDeps, depGraph, nil
+	return &newDeps, nil
 }
 
 // pullTarFromOci will pull a kcl package tar file from oci registry.
