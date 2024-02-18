@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dominikbraun/graph"
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 	"kcl-lang.io/kpm/pkg/env"
@@ -115,6 +116,45 @@ func TestDownloadLatestOci(t *testing.T) {
 
 	err = os.RemoveAll(getTestDir("download"))
 	assert.Equal(t, err, nil)
+}
+
+func TestDependencyGraph(t *testing.T) {
+	testDir := getTestDir("test_dependency_graph")
+	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl.mod.lock")), false)
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	kclPkg, err := kpmcli.LoadPkgFromPath(testDir)
+	assert.Equal(t, err, nil)
+
+	depGraph, err := kpmcli.GetDependencyGraph(kclPkg)
+	assert.Equal(t, err, nil)
+	adjMap, err := depGraph.AdjacencyMap()
+	assert.Equal(t, err, nil)
+
+	edgeProp := graph.EdgeProperties{
+		Attributes: map[string]string{},
+		Weight:     0,
+		Data:       nil,
+	}
+	assert.Equal(t, adjMap,
+		map[string]map[string]graph.Edge[string]{
+			"dependency_graph@0.0.1": {
+				"teleport@0.1.0": {Source: "dependency_graph@0.0.1", Target: "teleport@0.1.0", Properties: edgeProp},
+				"rabbitmq@0.0.1": {Source: "dependency_graph@0.0.1", Target: "rabbitmq@0.0.1", Properties: edgeProp},
+				"agent@0.1.0":    {Source: "dependency_graph@0.0.1", Target: "agent@0.1.0", Properties: edgeProp},
+			},
+			"teleport@0.1.0": {
+				"k8s@1.28": {Source: "teleport@0.1.0", Target: "k8s@1.28", Properties: edgeProp},
+			},
+			"rabbitmq@0.0.1": {
+				"k8s@1.28": {Source: "rabbitmq@0.0.1", Target: "k8s@1.28", Properties: edgeProp},
+			},
+			"agent@0.1.0": {
+				"k8s@1.28": {Source: "agent@0.1.0", Target: "k8s@1.28", Properties: edgeProp},
+			},
+			"k8s@1.28": {},
+		},
+	)
 }
 
 func TestInitEmptyPkg(t *testing.T) {
