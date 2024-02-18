@@ -162,12 +162,14 @@ func TestParseKclModFile(t *testing.T) {
 	kpmcli, err := NewKpmClient()
 	assert.Nil(t, err, "error creating KpmClient")
 
-	// Create a sample kcl.mod file for testing
+	// Create a sample kcl.mod file for testing with various dependency scenarios
 	modFileContent := `
         [dependencies]
         teleport = "0.1.0"
         rabbitmq = "0.0.1"
         agent = { version = "0.1.0", someAttribute = "value" }
+        gitdep = { git = "git://example.com/repo.git", tag = "v1.0.0" }
+        localdep = { path = "/path/to/local/dependency" }
     `
 	modFilePath := filepath.Join(testDir, "kcl.mod")
 	err = os.WriteFile(modFilePath, []byte(modFileContent), 0644)
@@ -185,6 +187,8 @@ func TestParseKclModFile(t *testing.T) {
 		"teleport": {"version": "0.1.0"},
 		"rabbitmq": {"version": "0.0.1"},
 		"agent":    {"version": "0.1.0", "someAttribute": "value"},
+		"gitdep":   {"git": "git://example.com/repo.git", "tag": "v1.0.0"},
+		"localdep": {"path": "/path/to/local/dependency"},
 	}
 
 	assert.Equal(t, expectedDependencies, dependencies, "parsed dependencies do not match expected dependencies")

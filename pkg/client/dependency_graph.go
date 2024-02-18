@@ -22,6 +22,15 @@ func ConstructDependencyGraph(dependencies map[string]map[string]string) Depende
 		fullPath := dependency
 		if version, ok := details["version"]; ok {
 			fullPath += "@" + version
+		} else if gitURL, ok := details["git"]; ok {
+			fullPath += "@" + gitURL
+			if tag, ok := details["tag"]; ok {
+				fullPath += "#" + tag
+			} else if commit, ok := details["commit"]; ok {
+				fullPath += "@" + commit
+			}
+		} else if path, ok := details["path"]; ok {
+			fullPath += "@" + path
 		}
 		graph[fullPath] = make([]string, 0)
 	}
