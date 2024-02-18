@@ -24,6 +24,16 @@ func TestWithGitOptions(t *testing.T) {
 	assert.Equal(t, cloneOpts.Writer, nil)
 }
 
+func TestNewCloneOptions(t *testing.T) {
+	cloneOpts := NewCloneOptions("https://github.com/kcl-lang/kcl", "", "v1.0.0", "", "", nil)
+	assert.Equal(t, cloneOpts.RepoURL, "https://github.com/kcl-lang/kcl")
+	assert.Equal(t, cloneOpts.Tag, "v1.0.0")
+	assert.Equal(t, cloneOpts.Commit, "")
+	assert.Equal(t, cloneOpts.Branch, "")
+	assert.Equal(t, cloneOpts.LocalPath, "")
+	assert.Equal(t, cloneOpts.Writer, nil)
+}
+
 func TestValidateGitOptions(t *testing.T) {
 	cloneOpts := &CloneOptions{}
 	WithBranch("test_branch")(cloneOpts)

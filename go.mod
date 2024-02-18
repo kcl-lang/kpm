@@ -35,6 +35,7 @@ require (
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
+	github.com/dominikbraun/graph v0.23.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect

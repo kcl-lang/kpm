@@ -12,9 +12,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/dominikbraun/graph"
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 	"kcl-lang.io/kpm/pkg/env"
+	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/runner"
@@ -114,6 +116,45 @@ func TestDownloadLatestOci(t *testing.T) {
 
 	err = os.RemoveAll(getTestDir("download"))
 	assert.Equal(t, err, nil)
+}
+
+func TestDependencyGraph(t *testing.T) {
+	testDir := getTestDir("test_dependency_graph")
+	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl.mod.lock")), false)
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	kclPkg, err := kpmcli.LoadPkgFromPath(testDir)
+	assert.Equal(t, err, nil)
+
+	depGraph, err := kpmcli.GetDependencyGraph(kclPkg)
+	assert.Equal(t, err, nil)
+	adjMap, err := depGraph.AdjacencyMap()
+	assert.Equal(t, err, nil)
+
+	edgeProp := graph.EdgeProperties{
+		Attributes: map[string]string{},
+		Weight:     0,
+		Data:       nil,
+	}
+	assert.Equal(t, adjMap,
+		map[string]map[string]graph.Edge[string]{
+			"dependency_graph@0.0.1": {
+				"teleport@0.1.0": {Source: "dependency_graph@0.0.1", Target: "teleport@0.1.0", Properties: edgeProp},
+				"rabbitmq@0.0.1": {Source: "dependency_graph@0.0.1", Target: "rabbitmq@0.0.1", Properties: edgeProp},
+				"agent@0.1.0":    {Source: "dependency_graph@0.0.1", Target: "agent@0.1.0", Properties: edgeProp},
+			},
+			"teleport@0.1.0": {
+				"k8s@1.28": {Source: "teleport@0.1.0", Target: "k8s@1.28", Properties: edgeProp},
+			},
+			"rabbitmq@0.0.1": {
+				"k8s@1.28": {Source: "rabbitmq@0.0.1", Target: "k8s@1.28", Properties: edgeProp},
+			},
+			"agent@0.1.0": {
+				"k8s@1.28": {Source: "agent@0.1.0", Target: "k8s@1.28", Properties: edgeProp},
+			},
+			"k8s@1.28": {},
+		},
+	)
 }
 
 func TestInitEmptyPkg(t *testing.T) {
@@ -842,6 +883,29 @@ func TestRunWithNoSumCheck(t *testing.T) {
 	defer func() {
 		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
 	}()
+}
+
+func TestRemoteRun(t *testing.T) {
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	opts := opt.DefaultCompileOptions()
+	gitOpts := git.NewCloneOptions("https://github.com/KusionStack/catalog", "", "0.1.2", "", "", nil)
+
+	opts.SetEntries([]string{"models/samples/hellocollaset/prod/main.k"})
+	result, err := kpmcli.CompileGitPkg(gitOpts, opts)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, result.GetRawJsonResult(), "[{\"hellocollaset\": {\"workload\": {\"containers\": {\"nginx\": {\"image\": \"nginx:v2\"}}}}}]")
+
+	opts.SetEntries([]string{"models/samples/pgadmin/base/base.k"})
+	result, err = kpmcli.CompileGitPkg(gitOpts, opts)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, result.GetRawJsonResult(), "[{\"pgadmin\": {\"workload\": {\"containers\": {\"pgadmin\": {\"image\": \"dpage/pgadmin4:latest\", \"env\": {\"PGADMIN_DEFAULT_EMAIL\": \"admin@admin.com\", \"PGADMIN_DEFAULT_PASSWORD\": \"secret://pgadmin-secret/pgadmin-default-password\", \"PGADMIN_PORT\": \"80\"}, \"resources\": {\"cpu\": \"500m\", \"memory\": \"512Mi\"}}}, \"secrets\": {\"pgadmin-secret\": {\"type\": \"opaque\", \"data\": {\"pgadmin-default-password\": \"*******\"}}}, \"replicas\": 1, \"ports\": [{\"port\": 80, \"protocol\": \"TCP\", \"public\": false}]}, \"database\": {\"pgadmin\": {\"type\": \"cloud\", \"version\": \"14.0\"}}}}]")
+
+	opts.SetEntries([]string{"models/samples/wordpress/prod/main.k"})
+	result, err = kpmcli.CompileGitPkg(gitOpts, opts)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, result.GetRawJsonResult(), "[{\"wordpress\": {\"workload\": {\"containers\": {\"wordpress\": {\"image\": \"wordpress:6.3\", \"env\": {\"WORDPRESS_DB_HOST\": \"$(KUSION_DB_HOST_WORDPRESS)\", \"WORDPRESS_DB_USER\": \"$(KUSION_DB_USERNAME_WORDPRESS)\", \"WORDPRESS_DB_PASSWORD\": \"$(KUSION_DB_PASSWORD_WORDPRESS)\", \"WORDPRESS_DB_NAME\": \"mysql\"}, \"resources\": {\"cpu\": \"500m\", \"memory\": \"512Mi\"}}}, \"replicas\": 1, \"ports\": [{\"port\": 80, \"protocol\": \"TCP\", \"public\": false}]}, \"database\": {\"wordpress\": {\"type\": \"cloud\", \"version\": \"8.0\"}}}}]")
 }
 
 func TestUpdateWithNoSumCheck(t *testing.T) {
