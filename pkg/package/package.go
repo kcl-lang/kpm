@@ -114,11 +114,6 @@ func (kclPkg *KclPkg) UpdateModAndLockFile() error {
 	return nil
 }
 
-// update compile edition of package
-func (kclPkg *KclPkg) UpdatePkgEdition(newEdition string) {
-	kclPkg.ModFile.Pkg.Edition = newEdition
-}
-
 // LockDepsVersion locks the dependencies of the current kcl package into kcl.mod.lock.
 func (kclPkg *KclPkg) LockDepsVersion() error {
 	fullPath := filepath.Join(kclPkg.HomePath, MOD_LOCK_FILE)
