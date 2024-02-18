@@ -327,11 +327,6 @@ func (c *KpmClient) Compile(kclPkg *pkg.KclPkg, kclvmCompiler *runner.Compiler) 
 		kclvmCompiler.AddDepPath(dName, dPath)
 	}
 
-	kclPkg.UpdatePkgEdition(kclvmCompiler.GetKclVersion())
-	if err := kclPkg.ModFile.StoreModFile(); err != nil {
-		return nil, err
-	}
-
 	return kclvmCompiler.Run()
 }
 

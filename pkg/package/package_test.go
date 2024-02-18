@@ -9,6 +9,7 @@ import (
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/reporter"
+	"kcl-lang.io/kpm/pkg/runner"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -47,7 +48,7 @@ func TestLoadKclPkg(t *testing.T) {
 	}
 	assert.Equal(t, kclPkg.ModFile.Pkg.Name, "test_name")
 	assert.Equal(t, kclPkg.ModFile.Pkg.Version, "0.0.1")
-	assert.Equal(t, kclPkg.ModFile.Pkg.Edition, "0.0.1")
+	assert.Equal(t, kclPkg.ModFile.Pkg.Edition, runner.GetKclVersion())
 	assert.Equal(t, len(kclPkg.ModFile.Dependencies.Deps), 0)
 	assert.Equal(t, len(kclPkg.Dependencies.Deps), 0)
 }

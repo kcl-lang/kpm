@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"kcl-lang.io/kpm/pkg/opt"
+	"kcl-lang.io/kpm/pkg/runner"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -81,7 +82,7 @@ func TestModFileExists(t *testing.T) {
 	}
 
 	NewModFile, err := LoadModFile(testDir)
-	if err != nil || NewModFile.Pkg.Name != "test_kcl_pkg" || NewModFile.Pkg.Version != "0.0.1" || NewModFile.Pkg.Edition != "0.0.1" {
+	if err != nil || NewModFile.Pkg.Name != "test_kcl_pkg" || NewModFile.Pkg.Version != "0.0.1" || NewModFile.Pkg.Edition != runner.GetKclVersion() {
 		t.Errorf("test 'LoadModFile' failed.")
 	}
 }

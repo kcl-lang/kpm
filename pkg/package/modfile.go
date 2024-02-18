@@ -12,6 +12,7 @@ import (
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/reporter"
+	"kcl-lang.io/kpm/pkg/runner"
 	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/utils"
 )
@@ -315,7 +316,7 @@ func (mfile *ModFile) GetModLockFilePath() string {
 }
 
 const defaultVerion = "0.0.1"
-const defaultEdition = "0.0.1"
+var defaultEdition = runner.GetKclVersion()
 
 func NewModFile(opts *opt.InitOptions) *ModFile {
 	return &ModFile{

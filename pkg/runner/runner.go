@@ -47,11 +47,12 @@ func (compiler *Compiler) AddDepPath(depName string, depPath string) *Compiler {
 	return compiler
 }
 
-func (compiler *Compiler) GetKclVersion() string {
-	return string(scripts.KclvmVersionType_latest)
-}
-
 // Call KCL Compiler and return the result.
 func (compiler *Compiler) Run() (*kcl.KCLResultList, error) {
 	return kcl.RunWithOpts(*compiler.opts.Option)
+}
+
+// GetKclVersion fetches the kcl version
+func GetKclVersion() string {
+	return string(scripts.KclvmVersionType_latest)
 }
