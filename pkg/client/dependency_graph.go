@@ -15,10 +15,15 @@ func ConstructDependencyGraphFromModFile(kpmClient *KpmClient, kclPkg *pkg.KclPk
 }
 
 // Function to construct dependency graph from dependency map
-func ConstructDependencyGraph(dependencies map[string][]string) DependencyGraph {
+func ConstructDependencyGraph(dependencies map[string]map[string]string) DependencyGraph {
 	graph := make(DependencyGraph)
-	for dependency, versions := range dependencies {
-		graph[dependency] = versions
+	for dependency, details := range dependencies {
+		// Construct full module path including version or other attributes
+		fullPath := dependency
+		if version, ok := details["version"]; ok {
+			fullPath += "@" + version
+		}
+		graph[fullPath] = make([]string, 0)
 	}
 	return graph
 }
