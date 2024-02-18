@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/BurntSushi/toml"
 	"github.com/dominikbraun/graph"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/otiai10/copy"
@@ -851,29 +852,36 @@ func (c *KpmClient) DownloadFromGit(dep *pkg.Git, localPath string) (string, err
 	return localPath, err
 }
 
-// Parse kcl.mod file and extract dependencies
 func (c *KpmClient) ParseKclModFile(kclPkg *pkg.KclPkg) (map[string][]string, error) {
 	// Get path to kcl.mod file
 	modFilePath := kclPkg.ModFile.GetModFilePath()
 
-	// Parse kcl.mod file
+	// Read the content of the kcl.mod file
 	modFileBytes, err := os.ReadFile(modFilePath)
 	if err != nil {
 		return nil, err
 	}
 
-	// Initialize map to store dependencies
-	dependencies := make(map[string][]string)
+	// Normalize line endings for Windows systems
+	modFileContent := strings.ReplaceAll(string(modFileBytes), "\r\n", "\n")
 
-	// Parse each line in the mod file
-	lines := strings.Split(string(modFileBytes), "\n")
-	for _, line := range lines {
-		// Extract dependency name and version
-		parts := strings.Fields(line)
-		if len(parts) >= 2 {
-			dependency := parts[0]
-			version := parts[1]
-			dependencies[dependency] = append(dependencies[dependency], version)
+	// Parse the TOML content
+	var modFileData map[string]interface{}
+	if err := toml.Unmarshal([]byte(modFileContent), &modFileData); err != nil {
+		return nil, err
+	}
+
+	// Extract dependency information
+	dependencies := make(map[string][]string)
+	if deps, ok := modFileData["dependencies"].(map[string]interface{}); ok {
+		for dep, versions := range deps {
+			if v, ok := versions.([]interface{}); ok {
+				for _, ver := range v {
+					if version, ok := ver.(string); ok {
+						dependencies[dep] = append(dependencies[dep], version)
+					}
+				}
+			}
 		}
 	}
 
