@@ -852,7 +852,7 @@ func (c *KpmClient) DownloadFromGit(dep *pkg.Git, localPath string) (string, err
 	return localPath, err
 }
 
-func (c *KpmClient) ParseKclModFile(kclPkg *pkg.KclPkg) (map[string][]string, error) {
+func (c *KpmClient) ParseKclModFile(kclPkg *pkg.KclPkg) (map[string]map[string]string, error) {
 	// Get path to kcl.mod file
 	modFilePath := kclPkg.ModFile.GetModFilePath()
 
@@ -872,16 +872,23 @@ func (c *KpmClient) ParseKclModFile(kclPkg *pkg.KclPkg) (map[string][]string, er
 	}
 
 	// Extract dependency information
-	dependencies := make(map[string][]string)
+	dependencies := make(map[string]map[string]string)
 	if deps, ok := modFileData["dependencies"].(map[string]interface{}); ok {
-		for dep, versions := range deps {
-			if v, ok := versions.([]interface{}); ok {
-				for _, ver := range v {
-					if version, ok := ver.(string); ok {
-						dependencies[dep] = append(dependencies[dep], version)
-					}
+		for dep, details := range deps {
+			dependency := make(map[string]string)
+			switch d := details.(type) {
+			case string:
+				// For simple version strings
+				dependency["version"] = d
+			case map[string]interface{}:
+				// For dependencies with attributes
+				for key, value := range d {
+					dependency[key] = fmt.Sprintf("%v", value)
 				}
+			default:
+				return nil, fmt.Errorf("unsupported dependency format")
 			}
+			dependencies[dep] = dependency
 		}
 	}
 
