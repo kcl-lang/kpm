@@ -19,6 +19,7 @@ import (
 	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
+	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/runner"
 	"kcl-lang.io/kpm/pkg/utils"
 )
@@ -158,7 +159,31 @@ func TestDependencyGraph(t *testing.T) {
 }
 
 func TestCyclicDependency(t *testing.T) {
-	
+	testDir := getTestDir("test_cyclic_dependency")
+	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "aaa")), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "aaa/kcl.mod")), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "bbb")), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "bbb/kcl.mod")), true)
+
+	pkg_path := filepath.Join(testDir, "aaa")
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	kclPkg, err := kpmcli.LoadPkgFromPath(pkg_path)
+	assert.Equal(t, err, nil)
+
+	currentDir, err := os.Getwd()
+	assert.Equal(t, err, nil)
+	err = os.Chdir(pkg_path)
+	assert.Equal(t, err, nil)
+
+	_, _, err = kpmcli.InitGraphAndDownloadDeps(kclPkg)
+	assert.Equal(t, err, reporter.NewErrorEvent(
+		reporter.CircularDependencyExist, nil, "adding dependencies results in a cycle",
+	))
+
+	err = os.Chdir(currentDir)
+	assert.Equal(t, err, nil)
 }
 
 func TestInitEmptyPkg(t *testing.T) {
