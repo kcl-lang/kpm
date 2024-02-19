@@ -179,7 +179,7 @@ func TestCyclicDependency(t *testing.T) {
 
 	_, _, err = kpmcli.InitGraphAndDownloadDeps(kclPkg)
 	assert.Equal(t, err, reporter.NewErrorEvent(
-		reporter.CircularDependencyExist, nil, "adding dependencies results in a cycle",
+		reporter.CircularDependencyExist, nil, "adding bbb as a dependency results in a cycle",
 	))
 
 	err = os.Chdir(currentDir)

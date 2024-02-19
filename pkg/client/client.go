@@ -1211,8 +1211,8 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 			}
 			return nil, err
 		}
-
 		source := fmt.Sprintf("%s@%s", d.Name, d.Version)
+		source = strings.TrimRight(source, "@")
 		err = depGraph.AddVertex(source)
 		if err != nil && err != graph.ErrVertexAlreadyExists {
 			return nil, err
@@ -1224,7 +1224,7 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 				return nil, reporter.NewErrorEvent(
 					reporter.CircularDependencyExist,
 					nil,
-					"adding dependencies results in a cycle",
+					fmt.Sprintf("adding %s as a dependency results in a cycle", source),
 				)
 			}
 			return nil, err

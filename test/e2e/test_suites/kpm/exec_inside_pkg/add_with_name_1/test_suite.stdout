@@ -1,5 +1,3 @@
 adding dependency 'kcl1'
 the lastest version '0.0.1' will be added
 downloading 'test/kcl1:0.0.1' from 'localhost:5001/test/kcl1:0.0.1'
-downloading 'test/k8s:1.27' from 'localhost:5001/test/k8s:1.27'
-adding dependencies results in a cycle
