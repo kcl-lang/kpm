@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -158,11 +159,22 @@ func TestDependencyGraph(t *testing.T) {
 }
 
 func TestParseKclModFile(t *testing.T) {
-	testDir := getTestDir("test_parse_kcl_mod_file")
-	kpmcli, err := NewKpmClient()
-	assert.Nil(t, err, "error creating KpmClient")
+	// Create a temporary directory for testing
+	testDir, err := os.MkdirTemp("", "test_parse_kcl_mod_file")
+	if err != nil {
+		t.Fatalf("error creating temp directory: %v", err)
+	}
+	defer os.RemoveAll(testDir) // Clean up the temporary directory
 
-	// Create a sample kcl.mod file for testing with various dependency scenarios
+	kpmcli, err := NewKpmClient()
+	if err != nil {
+		t.Fatalf("error creating KpmClient: %v", err)
+	}
+
+	// Construct the modFilePath using filepath.Join
+	modFilePath := filepath.Join(testDir, "kcl.mod")
+
+	// Write modFileContent to modFilePath
 	modFileContent := `
         [dependencies]
         teleport = "0.1.0"
@@ -171,17 +183,21 @@ func TestParseKclModFile(t *testing.T) {
         gitdep = { git = "git://example.com/repo.git", tag = "v1.0.0" }
         localdep = { path = "/path/to/local/dependency" }
     `
-	modFilePath := filepath.Join(testDir, "kcl.mod")
-	err = os.WriteFile(modFilePath, []byte(modFileContent), 0644)
-	assert.Nil(t, err, "error writing mod file")
+	if err := os.WriteFile(modFilePath, []byte(modFileContent), 0644); err != nil {
+		t.Fatalf("error writing mod file: %v", err)
+	}
 
 	// Create a mock KclPkg
 	mockKclPkg, err := kpmcli.LoadPkgFromPath(testDir)
-	assert.Nil(t, err, "error loading package from path")
+	if err != nil {
+		t.Fatalf("error loading package from path: %v", err)
+	}
 
 	// Test the ParseKclModFile function
 	dependencies, err := kpmcli.ParseKclModFile(mockKclPkg)
-	assert.Nil(t, err, "error parsing kcl.mod file")
+	if err != nil {
+		t.Fatalf("error parsing kcl.mod file: %v", err)
+	}
 
 	expectedDependencies := map[string]map[string]string{
 		"teleport": {"version": "0.1.0"},
@@ -191,7 +207,9 @@ func TestParseKclModFile(t *testing.T) {
 		"localdep": {"path": "/path/to/local/dependency"},
 	}
 
-	assert.Equal(t, expectedDependencies, dependencies, "parsed dependencies do not match expected dependencies")
+	if !reflect.DeepEqual(expectedDependencies, dependencies) {
+		t.Fatalf("parsed dependencies do not match expected dependencies")
+	}
 }
 
 func TestInitEmptyPkg(t *testing.T) {
