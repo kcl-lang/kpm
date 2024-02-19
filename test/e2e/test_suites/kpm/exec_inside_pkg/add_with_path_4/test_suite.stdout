@@ -2,4 +2,4 @@
 downloading 'test/k8s:1.27' from 'localhost:5001/test/k8s:1.27'
 downloading 'test/kcl2:0.0.1' from 'localhost:5001/test/kcl2:0.0.1'
 downloading 'test/kcl1:0.0.1' from 'localhost:5001/test/kcl1:0.0.1'
-add dependency 'a_kcl_pkg_dep_pkg_name:0.0.1' successfully
+adding dependencies results in a cycle
