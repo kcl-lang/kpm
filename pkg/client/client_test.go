@@ -242,7 +242,7 @@ func TestInitEmptyPkg(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, testKclPkg.ModFile.Pkg.Name, "test_name")
 	assert.Equal(t, testKclPkg.ModFile.Pkg.Version, "0.0.1")
-	assert.Equal(t, testKclPkg.ModFile.Pkg.Edition, "0.0.1")
+	assert.Equal(t, testKclPkg.ModFile.Pkg.Edition, runner.GetKclVersion())
 }
 
 func TestUpdateKclModAndLock(t *testing.T) {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
+	"kcl-lang.io/kcl-go/scripts"
 	"kcl-lang.io/kpm/pkg/opt"
 )
 
@@ -49,4 +50,9 @@ func (compiler *Compiler) AddDepPath(depName string, depPath string) *Compiler {
 // Call KCL Compiler and return the result.
 func (compiler *Compiler) Run() (*kcl.KCLResultList, error) {
 	return kcl.RunWithOpts(*compiler.opts.Option)
+}
+
+// GetKclVersion fetches the kcl version
+func GetKclVersion() string {
+	return string(scripts.KclvmVersionType_latest)
 }
