@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/BurntSushi/toml"
 	"github.com/dominikbraun/graph"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/otiai10/copy"
@@ -850,6 +851,49 @@ func (c *KpmClient) DownloadFromGit(dep *pkg.Git, localPath string) (string, err
 	}
 
 	return localPath, err
+}
+
+func (c *KpmClient) ParseKclModFile(kclPkg *pkg.KclPkg) (map[string]map[string]string, error) {
+	// Get path to kcl.mod file
+	modFilePath := kclPkg.ModFile.GetModFilePath()
+
+	// Read the content of the kcl.mod file
+	modFileBytes, err := os.ReadFile(modFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	// Normalize line endings for Windows systems
+	modFileContent := strings.ReplaceAll(string(modFileBytes), "\r\n", "\n")
+
+	// Parse the TOML content
+	var modFileData map[string]interface{}
+	if err := toml.Unmarshal([]byte(modFileContent), &modFileData); err != nil {
+		return nil, err
+	}
+
+	// Extract dependency information
+	dependencies := make(map[string]map[string]string)
+	if deps, ok := modFileData["dependencies"].(map[string]interface{}); ok {
+		for dep, details := range deps {
+			dependency := make(map[string]string)
+			switch d := details.(type) {
+			case string:
+				// For simple version strings
+				dependency["version"] = d
+			case map[string]interface{}:
+				// For dependencies with attributes
+				for key, value := range d {
+					dependency[key] = fmt.Sprintf("%v", value)
+				}
+			default:
+				return nil, fmt.Errorf("unsupported dependency format")
+			}
+			dependencies[dep] = dependency
+		}
+	}
+
+	return dependencies, nil
 }
 
 // DownloadFromOci will download the dependency from the oci repository.
