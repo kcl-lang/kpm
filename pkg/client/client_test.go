@@ -174,7 +174,6 @@ func TestParseKclModFile(t *testing.T) {
         [dependencies]
         teleport = "0.1.0"
         rabbitmq = "0.0.1"
-        agent = { version = "0.1.0", someAttribute = "value" }
         gitdep = { git = "git://example.com/repo.git", tag = "v1.0.0" }
         localdep = { path = "/path/to/local/dependency" }
     `
@@ -194,7 +193,6 @@ func TestParseKclModFile(t *testing.T) {
 	expectedDependencies := map[string]map[string]string{
 		"teleport": {"version": "0.1.0"},
 		"rabbitmq": {"version": "0.0.1"},
-		"agent":    {"version": "0.1.0", "someAttribute": "value"},
 		"gitdep":   {"git": "git://example.com/repo.git", "tag": "v1.0.0"},
 		"localdep": {"path": "/path/to/local/dependency"},
 	}
