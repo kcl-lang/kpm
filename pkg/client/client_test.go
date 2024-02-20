@@ -137,6 +137,7 @@ func TestDependencyGraph(t *testing.T) {
 		Weight:     0,
 		Data:       nil,
 	}
+
 	assert.Equal(t, adjMap,
 		map[string]map[string]graph.Edge[string]{
 			"dependency_graph@0.0.1": {
@@ -184,6 +185,49 @@ func TestCyclicDependency(t *testing.T) {
 
 	err = os.Chdir(currentDir)
 	assert.Equal(t, err, nil)
+}
+
+func TestParseKclModFile(t *testing.T) {
+	// Create a temporary directory for testing
+	testDir := initTestDir("test_parse_kcl_mod_file")
+
+	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl.mod")), false)
+
+	kpmcli, err := NewKpmClient()
+	assert.Nil(t, err, "error creating KpmClient")
+
+	// Construct the modFilePath using filepath.Join
+	modFilePath := filepath.Join(testDir, "kcl.mod")
+
+	// Write modFileContent to modFilePath
+	modFileContent := `
+        [dependencies]
+        teleport = "0.1.0"
+        rabbitmq = "0.0.1"
+        gitdep = { git = "git://example.com/repo.git", tag = "v1.0.0" }
+        localdep = { path = "/path/to/local/dependency" }
+    `
+
+	err = os.WriteFile(modFilePath, []byte(modFileContent), 0644)
+	assert.Nil(t, err, "error writing mod file")
+
+	// Create a mock KclPkg
+	mockKclPkg, err := kpmcli.LoadPkgFromPath(testDir)
+
+	assert.Nil(t, err, "error loading package from path")
+
+	// Test the ParseKclModFile function
+	dependencies, err := kpmcli.ParseKclModFile(mockKclPkg)
+	assert.Nil(t, err, "error parsing kcl.mod file")
+
+	expectedDependencies := map[string]map[string]string{
+		"teleport": {"version": "0.1.0"},
+		"rabbitmq": {"version": "0.0.1"},
+		"gitdep":   {"git": "git://example.com/repo.git", "tag": "v1.0.0"},
+		"localdep": {"path": "/path/to/local/dependency"},
+	}
+
+	assert.Equal(t, expectedDependencies, dependencies, "parsed dependencies do not match expected dependencies")
 }
 
 func TestInitEmptyPkg(t *testing.T) {
