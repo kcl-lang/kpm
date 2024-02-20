@@ -103,6 +103,7 @@ const (
 	AddItselfAsDep
 	PkgTagExists
 	DependencyNotFound
+	CircularDependencyExist
 	RemoveDep
 	AddDep
 	KclModNotFound
