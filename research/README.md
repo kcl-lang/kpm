@@ -11,7 +11,7 @@ We have to propose a version management feature for KCL package manager.
 
 3. Replacement: Allows substituting a module with another one, altering the module graph to accommodate different dependencies. 
 
-4. Exclusion: Removes specific versions of a module from consideration during dependency resolution. It's specified in the go.mod file of the main module, redirecting requirements to the next higher version.
+4. Exclusion: Removes specific versions of a module from consideration during dependency resolution,redirecting requirements to the next higher version.
 
 5. Upgrades: Updates modules to newer versions, potentially adding or removing indirect dependencies.
 
