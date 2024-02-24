@@ -1,4 +1,4 @@
-# [WIP] Version management strategies
+#  Version management strategies
 
 ## Abstract
 This documentation presents the design and implementation of a version management system tailored for managing dependencies in KCL project. The system encompasses functionalities such as viewing detailed module information, installing dependencies, handling replacements and exclusions, as well as performing upgrades and downgrades. Each functionality is discussed in detail along with example usage scenarios and implementation strategies.
