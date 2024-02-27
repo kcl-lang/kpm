@@ -29,6 +29,10 @@ import (
 
 const OCI_SCHEME = "oci"
 const DEFAULT_OCI_ARTIFACT_TYPE = "application/vnd.oci.image.layer.v1.tar"
+const (
+	OciErrorCodeNameUnknown  = "NAME_UNKNOWN"
+	OciErrorCodeRepoNotFound = "NOT_FOUND"
+)
 
 // Login will login 'hostname' by 'username' and 'password'.
 func Login(hostname, username, password string, setting *settings.Settings) error {
@@ -180,6 +184,19 @@ func (ociClient *OciClient) TheLatestTag() (string, error) {
 	return tagSelected, nil
 }
 
+// RepoIsNotExist will check if the error is caused by the repo not found.
+func RepoIsNotExist(err error) bool {
+	errRes, ok := err.(*errcode.ErrorResponse)
+	if ok {
+		if len(errRes.Errors) == 1 &&
+			(errRes.Errors[0].Code == OciErrorCodeNameUnknown ||
+				errRes.Errors[0].Code == OciErrorCodeRepoNotFound) {
+			return true
+		}
+	}
+	return false
+}
+
 // ContainsTag will check if the tag exists in the repo.
 func (ociClient *OciClient) ContainsTag(tag string) (bool, *reporter.KpmEvent) {
 	var exists bool
@@ -190,12 +207,9 @@ func (ociClient *OciClient) ContainsTag(tag string) (bool, *reporter.KpmEvent) {
 	})
 
 	if err != nil {
-		// If the repo with tag is not found, return false.
-		errRes, ok := err.(*errcode.ErrorResponse)
-		if ok {
-			if len(errRes.Errors) == 1 && errRes.Errors[0].Code == errcode.ErrorCodeNameUnknown {
-				return false, nil
-			}
+		// If the repo with tag is not found, return false.s
+		if RepoIsNotExist(err) {
+			return false, nil
 		}
 		// If the user not login, return error.
 		return false, reporter.NewErrorEvent(
