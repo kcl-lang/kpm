@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -770,7 +771,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, localPath string) (*pkg.Depend
 		// Creating symbolic links in a global cache is not an optimal solution.
 		// This allows kclvm to locate the package by default.
 		// This feature is unstable and will be removed soon.
-		err = utils.CreateSymlink(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
+		err = createDepRef(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
 		if err != nil {
 			return nil, err
 		}
@@ -793,7 +794,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, localPath string) (*pkg.Depend
 		// Creating symbolic links in a global cache is not an optimal solution.
 		// This allows kclvm to locate the package by default.
 		// This feature is unstable and will be removed soon.
-		err = utils.CreateSymlink(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
+		err = createDepRef(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
 		if err != nil {
 			return nil, err
 		}
@@ -1360,4 +1361,15 @@ func check(dep pkg.Dependency, newDepPath string) bool {
 	}
 
 	return dep.Sum == sum
+}
+
+// createDepRef will create a dependency reference for the dependency saved on the local filesystem.
+// On the unix-like system, it will create a symbolic link.
+// On the windows system, it will create a junction.
+func createDepRef(depName, refName string) error {
+	if runtime.GOOS == "windows" {
+		return copy.Copy(depName, refName)
+	} else {
+		return utils.CreateSymlink(depName, refName)
+	}
 }

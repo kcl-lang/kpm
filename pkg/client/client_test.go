@@ -49,6 +49,13 @@ func TestDownloadOci(t *testing.T) {
 	err := os.MkdirAll(testPath, 0755)
 	assert.Equal(t, err, nil)
 
+	defer func() {
+		err := os.RemoveAll(getTestDir("download"))
+		if err != nil {
+			t.Errorf("Failed to remove directory: %v", err)
+		}
+	}()
+
 	depFromOci := pkg.Dependency{
 		Name:    "k8s",
 		Version: "1.27",
@@ -75,15 +82,39 @@ func TestDownloadOci(t *testing.T) {
 	assert.Equal(t, dep.LocalFullPath, testPath)
 
 	// Check whether the tar downloaded by `kpm add` has been deleted.
-	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "k8s_1.27.tar")), false)
+	downloadPath := getTestDir("download")
+	assert.Equal(t, utils.DirExists(filepath.Join(downloadPath, "k8s_1.27.tar")), false)
 
-	err = os.RemoveAll(getTestDir("download"))
+	assert.Equal(t, utils.DirExists(filepath.Join(downloadPath, "k8s_1.27")), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(downloadPath, "k8s")), true)
+
+	// Check whether the reference and the dependency have the same hash.
+	hashDep, err := utils.HashDir(filepath.Join(downloadPath, "k8s_1.27"))
 	assert.Equal(t, err, nil)
+
+	depRefPath := filepath.Join(downloadPath, "k8s")
+	info, err := os.Lstat(depRefPath)
+	assert.Equal(t, err, nil)
+
+	if info.Mode()&os.ModeSymlink != 0 {
+		depRefPath, err = os.Readlink(depRefPath)
+		assert.Equal(t, err, nil)
+	}
+
+	hashRef, err := utils.HashDir(depRefPath)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, hashDep, hashRef)
 }
 
 // TestDownloadLatestOci tests the case that the version is empty.
 func TestDownloadLatestOci(t *testing.T) {
 	testPath := filepath.Join(getTestDir("download"), "a_random_name")
+	defer func() {
+		err := os.RemoveAll(getTestDir("download"))
+		if err != nil {
+			t.Errorf("Failed to remove directory: %v", err)
+		}
+	}()
 	err := os.MkdirAll(testPath, 0755)
 	assert.Equal(t, err, nil)
 	depFromOci := pkg.Dependency{
@@ -115,8 +146,24 @@ func TestDownloadLatestOci(t *testing.T) {
 	// Check whether the tar downloaded by `kpm add` has been deleted.
 	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "helloworld_0.1.1.tar")), false)
 
-	err = os.RemoveAll(getTestDir("download"))
+	assert.Equal(t, utils.DirExists(filepath.Join(getTestDir("download"), "helloworld")), true)
+
+	// Check whether the reference and the dependency have the same hash.
+	hashDep, err := utils.HashDir(dep.LocalFullPath)
 	assert.Equal(t, err, nil)
+
+	depRefPath := filepath.Join(getTestDir("download"), "helloworld")
+	info, err := os.Lstat(depRefPath)
+	assert.Equal(t, err, nil)
+
+	if info.Mode()&os.ModeSymlink != 0 {
+		depRefPath, err = os.Readlink(depRefPath)
+		assert.Equal(t, err, nil)
+	}
+
+	hashRef, err := utils.HashDir(depRefPath)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, hashDep, hashRef)
 }
 
 func TestDependencyGraph(t *testing.T) {
