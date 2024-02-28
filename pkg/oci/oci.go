@@ -189,7 +189,9 @@ func RepoIsNotExist(err error) bool {
 	errRes, ok := err.(*errcode.ErrorResponse)
 	if ok {
 		if len(errRes.Errors) == 1 &&
+			// docker.io and gchr.io will return NAME_UNKNOWN
 			(errRes.Errors[0].Code == OciErrorCodeNameUnknown ||
+				// harbor will return NOT_FOUND
 				errRes.Errors[0].Code == OciErrorCodeRepoNotFound) {
 			return true
 		}
@@ -207,7 +209,7 @@ func (ociClient *OciClient) ContainsTag(tag string) (bool, *reporter.KpmEvent) {
 	})
 
 	if err != nil {
-		// If the repo with tag is not found, return false.s
+		// If the repo with tag is not found, return false.
 		if RepoIsNotExist(err) {
 			return false, nil
 		}
