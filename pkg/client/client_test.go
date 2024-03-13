@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -1186,7 +1187,13 @@ func TestAddWithDiffVersionWithSumCheck(t *testing.T) {
 func TestAddWithGitCommit(t *testing.T) {
 	pkgPath := getTestDir("add_with_git_commit")
 
-	testPkgPath := filepath.Join(pkgPath, "test_pkg")
+	testPkgPath := ""
+	if runtime.GOOS == "windows" {
+		testPkgPath = filepath.Join(pkgPath, "test_pkg_win")
+	} else {
+		testPkgPath = filepath.Join(pkgPath, "test_pkg")
+	}
+
 	testPkgPathModBak := filepath.Join(testPkgPath, "kcl.mod.bak")
 	testPkgPathMod := filepath.Join(testPkgPath, "kcl.mod")
 	testPkgPathModExpect := filepath.Join(testPkgPath, "kcl.mod.expect")
@@ -1205,7 +1212,7 @@ func TestAddWithGitCommit(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	opts := opt.AddOptions{
-		LocalPath: pkgPath,
+		LocalPath: testPkgPath,
 		RegistryOpts: opt.RegistryOptions{
 			Git: &opt.GitOptions{
 				Url:    "https://github.com/KusionStack/catalog.git",
