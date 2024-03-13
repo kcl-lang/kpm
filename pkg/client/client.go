@@ -453,6 +453,7 @@ func (c *KpmClient) CompileGitPkg(gitOpts *git.CloneOptions, compileOpts *opt.Co
 	defer os.RemoveAll(tmpDir)
 
 	// 2. clone the git repo
+	tmpDir = filepath.Join(tmpDir, gitOpts.LocalPath)
 	_, err = git.CloneWithOpts(
 		git.WithCommit(gitOpts.Commit),
 		git.WithBranch(gitOpts.Branch),
