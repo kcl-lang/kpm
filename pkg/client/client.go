@@ -1370,7 +1370,13 @@ func check(dep pkg.Dependency, newDepPath string) bool {
 // On the windows system, it will create a junction.
 func createDepRef(depName, refName string) error {
 	if runtime.GOOS == "windows" {
-		return copy.Copy(depName, refName)
+		// 'go-getter' continuously occupies files in '.git', causing the copy operation to fail
+		opt := copy.Options{
+			Skip: func(srcinfo os.FileInfo, src, dest string) (bool, error) {
+				return filepath.Base(src) == constants.GitPathSuffix, nil
+			},
+		}
+		return copy.Copy(depName, refName, opt)
 	} else {
 		return utils.CreateSymlink(depName, refName)
 	}
