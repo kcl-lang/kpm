@@ -3,6 +3,7 @@ package git
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -48,6 +49,7 @@ func TestCloneWithOptions(t *testing.T) {
 	var buf bytes.Buffer
 
 	tmpdir, err := os.MkdirTemp("", "git")
+	tmpdir = filepath.Join(tmpdir, "git")
 	assert.Equal(t, err, nil)
 	defer func() {
 		rErr := os.RemoveAll(tmpdir)

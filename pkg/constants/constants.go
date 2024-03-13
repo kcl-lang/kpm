@@ -3,6 +3,7 @@ package constants
 const (
 	KFilePathSuffix                      = ".k"
 	TarPathSuffix                        = ".tar"
+	GitPathSuffix                        = ".git"
 	OciScheme                            = "oci"
 	FileEntry                            = "file"
 	FileWithKclModEntry                  = "file_with_kcl_mod"
