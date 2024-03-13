@@ -24,5 +24,6 @@ const (
 	// The pattern of the external package argument.
 	EXTERNAL_PKGS_ARG_PATTERN = "%s=%s"
 
+	// The pattern of the git url
 	GIT_PROTOCOL_URL_PATTERN = "?ref=%s"
 )
