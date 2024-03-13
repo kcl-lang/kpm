@@ -449,11 +449,12 @@ func (c *KpmClient) CompileGitPkg(gitOpts *git.CloneOptions, compileOpts *opt.Co
 	if err != nil {
 		return nil, reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it.")
 	}
+	tmpDir = filepath.Join(tmpDir, constants.GitEntry)
+
 	// clean the temp dir.
 	defer os.RemoveAll(tmpDir)
 
 	// 2. clone the git repo
-	tmpDir = filepath.Join(tmpDir, gitOpts.LocalPath)
 	_, err = git.CloneWithOpts(
 		git.WithCommit(gitOpts.Commit),
 		git.WithBranch(gitOpts.Branch),
