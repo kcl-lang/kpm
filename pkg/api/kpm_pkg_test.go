@@ -191,5 +191,5 @@ func TestGetEntries(t *testing.T) {
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, res.GetRawYamlResult(), "sub: test in sub")
-	assert.Equal(t, res.GetRawJsonResult(), "{\"sub\":\"test in sub\"}")
+	assert.Equal(t, res.GetRawJsonResult(), "{\"sub\":\"test in sub\"}\n")
 }
