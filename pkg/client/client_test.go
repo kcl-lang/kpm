@@ -1014,17 +1014,17 @@ func TestRemoteRun(t *testing.T) {
 	opts.SetEntries([]string{"models/samples/hellocollaset/prod/main.k"})
 	result, err := kpmcli.CompileGitPkg(gitOpts, opts)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, result.GetRawJsonResult(), "[{\"hellocollaset\": {\"workload\": {\"containers\": {\"nginx\": {\"image\": \"nginx:v2\"}}}}}]")
+	assert.Equal(t, result.GetRawJsonResult(), "[{\"hellocollaset\":{\"workload\":{\"containers\":{\"nginx\":{\"image\":\"nginx:v2\"}}}}}]")
 
 	opts.SetEntries([]string{"models/samples/pgadmin/base/base.k"})
 	result, err = kpmcli.CompileGitPkg(gitOpts, opts)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, result.GetRawJsonResult(), "[{\"pgadmin\": {\"workload\": {\"containers\": {\"pgadmin\": {\"image\": \"dpage/pgadmin4:latest\", \"env\": {\"PGADMIN_DEFAULT_EMAIL\": \"admin@admin.com\", \"PGADMIN_DEFAULT_PASSWORD\": \"secret://pgadmin-secret/pgadmin-default-password\", \"PGADMIN_PORT\": \"80\"}, \"resources\": {\"cpu\": \"500m\", \"memory\": \"512Mi\"}}}, \"secrets\": {\"pgadmin-secret\": {\"type\": \"opaque\", \"data\": {\"pgadmin-default-password\": \"*******\"}}}, \"replicas\": 1, \"ports\": [{\"port\": 80, \"protocol\": \"TCP\", \"public\": false}]}, \"database\": {\"pgadmin\": {\"type\": \"cloud\", \"version\": \"14.0\"}}}}]")
+	assert.Equal(t, result.GetRawJsonResult(), "[{\"pgadmin\":{\"workload\":{\"containers\":{\"pgadmin\":{\"image\":\"dpage/pgadmin4:latest\",\"env\":{\"PGADMIN_DEFAULT_EMAIL\":\"admin@admin.com\",\"PGADMIN_DEFAULT_PASSWORD\":\"secret://pgadmin-secret/pgadmin-default-password\",\"PGADMIN_PORT\":\"80\"},\"resources\":{\"cpu\":\"500m\",\"memory\":\"512Mi\"}}},\"secrets\":{\"pgadmin-secret\":{\"type\":\"opaque\",\"data\":{\"pgadmin-default-password\":\"*******\"}}},\"replicas\":1,\"ports\":[{\"port\":80,\"protocol\":\"TCP\",\"public\": false}]},\"database\":{\"pgadmin\":{\"type\":\"cloud\",\"version\":\"14.0\"}}}}]")
 
 	opts.SetEntries([]string{"models/samples/wordpress/prod/main.k"})
 	result, err = kpmcli.CompileGitPkg(gitOpts, opts)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, result.GetRawJsonResult(), "[{\"wordpress\": {\"workload\": {\"containers\": {\"wordpress\": {\"image\": \"wordpress:6.3\", \"env\": {\"WORDPRESS_DB_HOST\": \"$(KUSION_DB_HOST_WORDPRESS)\", \"WORDPRESS_DB_USER\": \"$(KUSION_DB_USERNAME_WORDPRESS)\", \"WORDPRESS_DB_PASSWORD\": \"$(KUSION_DB_PASSWORD_WORDPRESS)\", \"WORDPRESS_DB_NAME\": \"mysql\"}, \"resources\": {\"cpu\": \"500m\", \"memory\": \"512Mi\"}}}, \"replicas\": 1, \"ports\": [{\"port\": 80, \"protocol\": \"TCP\", \"public\": false}]}, \"database\": {\"wordpress\": {\"type\": \"cloud\", \"version\": \"8.0\"}}}}]")
+	assert.Equal(t, result.GetRawJsonResult(), "[{\"wordpress\":{\"workload\":{\"containers\":{\"wordpress\":{\"image\":\"wordpress:6.3\",\"env\":{\"WORDPRESS_DB_HOST\":\"$(KUSION_DB_HOST_WORDPRESS)\",\"WORDPRESS_DB_USER\":\"$(KUSION_DB_USERNAME_WORDPRESS)\",\"WORDPRESS_DB_PASSWORD\":\"$(KUSION_DB_PASSWORD_WORDPRESS)\",\"WORDPRESS_DB_NAME\":\"mysql\"},\"resources\":{\"cpu\":\"500m\",\"memory\":\"512Mi\"}}},\"replicas\":1,\"ports\":[{\"port\":80,\"protocol\":\"TCP\",\"public\":false}]},\"database\":{\"wordpress\":{\"type\":\"cloud\",\"version\":\"8.0\"}}}}]")
 }
 
 func TestUpdateWithNoSumCheck(t *testing.T) {
