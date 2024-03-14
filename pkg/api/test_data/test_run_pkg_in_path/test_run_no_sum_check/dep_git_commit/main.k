@@ -4,7 +4,8 @@ import catalog.models.schema.v1.workload.container as c
 import catalog.models.schema.v1.workload.container.probe as p
 import catalog.models.schema.v1.monitoring as m
 
-ac.AppConfiguration {
+# base.k declares reusable configurations for all stacks.
+helloworld: ac.AppConfiguration {
     workload: wl.Service {
         containers: {
             "nginx": c.Container {
@@ -33,13 +34,5 @@ ac.AppConfiguration {
         }
         # Set the replicas
         replicas: 2
-    }
-    # Add the monitoring configuration backed by Prometheus
-    monitoring: m.Prometheus{
-        interval:       "30s"
-        timeout:        "15s"
-        path:           "/metrics"
-        port:           "web"
-        scheme:         "http"
     }
 }
