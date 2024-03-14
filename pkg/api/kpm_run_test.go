@@ -114,6 +114,7 @@ func TestRunWithOpts(t *testing.T) {
 	opts.AddEntry(filepath.Join(pkgPath, "test_kcl", "main.k"))
 	opts.SetPkgPath(filepath.Join(pkgPath, "test_kcl"))
 	result, err := RunPkgWithOpt(opts)
+	fmt.Printf("err: %v\n", err)
 	assert.Equal(t, err, nil)
 	expected, _ := os.ReadFile(filepath.Join(pkgPath, "expected"))
 	assert.Equal(t, utils.RmNewline(string(result.GetRawYamlResult())), utils.RmNewline(string(expected)))
