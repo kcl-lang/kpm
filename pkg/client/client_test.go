@@ -1036,10 +1036,12 @@ func TestRunGit(t *testing.T) {
 		assert.Equal(t, err, nil)
 
 		var expectObj map[string]interface{}
-		json.Unmarshal(fileBytes, &expectObj)
+		err = json.Unmarshal(fileBytes, &expectObj)
+		assert.Equal(t, err, nil)
 
 		var gotObj map[string]interface{}
-		json.Unmarshal([]byte(result.GetRawJsonResult()), &gotObj)
+		err = json.Unmarshal([]byte(result.GetRawJsonResult()), &gotObj)
+		assert.Equal(t, err, nil)
 
 		assert.Equal(t, gotObj, expectObj)
 	}
