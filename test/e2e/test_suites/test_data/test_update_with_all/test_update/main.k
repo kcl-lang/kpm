@@ -57,26 +57,16 @@ hello: ac.AppConfiguration {
         replicas: 2
         ports: [
             n.Port {
-                type: "aliyun"
                 port: 80
                 targetPort: 8080
                 public: True
             }
         ]
     }
-    # Add the monitoring configuration backed by Prometheus
-    monitoring: m.Prometheus{
-        interval:       "30s"
-        timeout:        "15s"
-        path:           "/metrics"
-        port:           "web"
-        scheme:         "http"
-    }
 }
 
 hellocollaset: ac.AppConfiguration {
     workload: wl.Service {
-        type: "CollaSet"
         containers: {
             "nginx": c.Container {
                 image: "nginx:v1"

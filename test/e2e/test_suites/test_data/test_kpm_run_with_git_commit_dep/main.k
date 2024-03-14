@@ -34,12 +34,7 @@ ac.AppConfiguration {
         # Set the replicas
         replicas: 2
     }
-    # Add the monitoring configuration backed by Prometheus
-    monitoring: m.Prometheus{
-        interval:       "30s"
-        timeout:        "15s"
-        path:           "/metrics"
-        port:           "web"
-        scheme:         "http"
+    accessories: {
+        "test": "test"
     }
 }

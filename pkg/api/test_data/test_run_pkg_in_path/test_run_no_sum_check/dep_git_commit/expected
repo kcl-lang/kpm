@@ -20,3 +20,5 @@ helloworld:
             url: http://localhost:80
           initialDelaySeconds: 10
     replicas: 2
+  accessories:
+    test: aaa

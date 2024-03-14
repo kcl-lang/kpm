@@ -204,7 +204,7 @@ func TestRunWithOptsAndNoSumCheck(t *testing.T) {
 		modLock := filepath.Join(workDir, "kcl.mod.lock")
 		expected, err := os.ReadFile(filepath.Join(pkgPath, testCase, "expected"))
 		assert.Equal(t, err, nil)
-
+		fmt.Printf("testCase: %v\n", testCase)
 		res, err := RunWithOpts(
 			opt.WithNoSumCheck(true),
 			opt.WithEntries([]string{pathMainK}),
