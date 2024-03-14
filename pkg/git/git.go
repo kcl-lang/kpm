@@ -2,13 +2,11 @@ package git
 
 import (
 	"errors"
-	"fmt"
 	"io"
-	"strings"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/hashicorp/go-getter"
 )
 
 // CloneOptions is a struct for specifying options for cloning a git repository
@@ -99,78 +97,32 @@ func (cloneOpts *CloneOptions) Validate() error {
 
 // Clone clones a git repository
 func (cloneOpts *CloneOptions) Clone() (*git.Repository, error) {
-	err := cloneOpts.Validate()
+	if err := cloneOpts.Validate(); err != nil {
+		return nil, err
+	}
+
+	url, err := cloneOpts.ForceGitUrl()
 	if err != nil {
 		return nil, err
 	}
 
-	gitCloneOpts := &git.CloneOptions{
-		URL:      cloneOpts.RepoURL,
-		Progress: nil,
+	client := &getter.Client{
+		Src:       url,
+		Dst:       cloneOpts.LocalPath,
+		Pwd:       cloneOpts.LocalPath,
+		Mode:      getter.ClientModeDir,
+		Detectors: goGetterNoDetectors,
+		Getters:   goGetterGetters,
 	}
 
-	if cloneOpts.Tag != "" {
-		gitCloneOpts.ReferenceName = plumbing.ReferenceName(plumbing.NewTagReferenceName(cloneOpts.Tag))
-	}
-
-	if cloneOpts.Branch != "" {
-		gitCloneOpts.ReferenceName = plumbing.ReferenceName(plumbing.NewBranchReferenceName(cloneOpts.Branch))
-	}
-
-	repo, err := git.PlainClone(cloneOpts.LocalPath, false, gitCloneOpts)
-	if err != nil {
+	if err := client.Get(); err != nil {
 		return nil, err
 	}
-	// if the commit is specified, checkout the commit
-	if cloneOpts.Commit != "" {
-		// Checkout the specific commit
-		w, err := repo.Worktree()
-		if err != nil {
-			return nil, err
-		}
 
-		// checkout the commit
-		err = w.Checkout(&git.CheckoutOptions{
-			Hash: plumbing.NewHash(cloneOpts.Commit),
-		})
+	repo, err := git.PlainOpen(cloneOpts.LocalPath)
 
-		// if the commit is not found, try to find the full commit hash
-		if err != nil {
-			// get all the references
-			commits, err := repo.CommitObjects()
-			if err != nil {
-				return nil, err
-			}
-
-			checkoutFinished := errors.New("checkout by commit finished")
-			// iterate over the references, find the full commit hash and checkout
-			err = commits.ForEach(func(commit *object.Commit) error {
-				// if the commit hash starts with the commit, checkout it
-				if strings.HasPrefix(commit.Hash.String(), cloneOpts.Commit) {
-					err = w.Checkout(&git.CheckoutOptions{
-						Hash: commit.Hash,
-					})
-					if err != nil {
-						return err
-					}
-					return checkoutFinished
-				}
-				return nil
-			})
-
-			if err != nil && err == checkoutFinished {
-				return repo, nil
-			}
-
-			if err != checkoutFinished {
-				if err != nil {
-					return nil, err
-				} else {
-					return nil, fmt.Errorf("commit '%s' not found", cloneOpts.Commit)
-				}
-			}
-			return repo, nil
-		}
+	if err != nil {
+		return nil, err
 	}
 
 	return repo, nil

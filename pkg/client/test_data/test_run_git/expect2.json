@@ -1,0 +1,42 @@
+{
+    "pgadmin": {
+        "workload": {
+            "containers": {
+                "pgadmin": {
+                    "image": "dpage/pgadmin4:latest",
+                    "env": {
+                        "PGADMIN_DEFAULT_EMAIL": "admin@admin.com",
+                        "PGADMIN_DEFAULT_PASSWORD": "secret://pgadmin-secret/pgadmin-default-password",
+                        "PGADMIN_PORT": "80"
+                    },
+                    "resources": {
+                        "cpu": "500m",
+                        "memory": "512Mi"
+                    }
+                }
+            },
+            "secrets": {
+                "pgadmin-secret": {
+                    "type": "opaque",
+                    "data": {
+                        "pgadmin-default-password": "*******"
+                    }
+                }
+            },
+            "replicas": 1,
+            "ports": [
+                {
+                    "port": 80,
+                    "protocol": "TCP",
+                    "public": false
+                }
+            ]
+        },
+        "database": {
+            "pgadmin": {
+                "type": "cloud",
+                "version": "14.0"
+            }
+        }
+    }
+}

@@ -29,18 +29,11 @@ helloworld:
           username: admin
           password: '******'
     replicas: 2
-    type: Deployment
     ports:
     - port: 80
       targetPort: 8080
       protocol: TCP
       public: true
-  monitoring:
-    interval: 30s
-    timeout: 15s
-    path: /metrics
-    port: web
-    scheme: http
 helloworldcollaset:
   workload:
     containers:
@@ -55,8 +48,6 @@ helloworldcollaset:
         - -c
         - echo hi
         workingDir: /tmp
-    replicas: 2
-    type: CollaSet
     ports:
     - port: 80
       protocol: TCP
@@ -72,5 +63,4 @@ helloworldjob:
         - /bin/sh
         - -c
         - echo hello
-    replicas: 2
     schedule: 0 * * * *

@@ -3,6 +3,7 @@ package constants
 const (
 	KFilePathSuffix                      = ".k"
 	TarPathSuffix                        = ".tar"
+	GitPathSuffix                        = ".git"
 	OciScheme                            = "oci"
 	FileEntry                            = "file"
 	FileWithKclModEntry                  = "file_with_kcl_mod"
@@ -23,4 +24,7 @@ const (
 
 	// The pattern of the external package argument.
 	EXTERNAL_PKGS_ARG_PATTERN = "%s=%s"
+
+	// The pattern of the git url
+	GIT_PROTOCOL_URL_PATTERN = "?ref=%s"
 )

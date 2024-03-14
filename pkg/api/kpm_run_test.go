@@ -114,6 +114,7 @@ func TestRunWithOpts(t *testing.T) {
 	opts.AddEntry(filepath.Join(pkgPath, "test_kcl", "main.k"))
 	opts.SetPkgPath(filepath.Join(pkgPath, "test_kcl"))
 	result, err := RunPkgWithOpt(opts)
+	fmt.Printf("err: %v\n", err)
 	assert.Equal(t, err, nil)
 	expected, _ := os.ReadFile(filepath.Join(pkgPath, "expected"))
 	assert.Equal(t, utils.RmNewline(string(result.GetRawYamlResult())), utils.RmNewline(string(expected)))
@@ -203,7 +204,7 @@ func TestRunWithOptsAndNoSumCheck(t *testing.T) {
 		modLock := filepath.Join(workDir, "kcl.mod.lock")
 		expected, err := os.ReadFile(filepath.Join(pkgPath, testCase, "expected"))
 		assert.Equal(t, err, nil)
-
+		fmt.Printf("testCase: %v\n", testCase)
 		res, err := RunWithOpts(
 			opt.WithNoSumCheck(true),
 			opt.WithEntries([]string{pathMainK}),
@@ -234,7 +235,6 @@ func TestRunWithOptsWithNoLog(t *testing.T) {
 		opt.WithEntries([]string{pathMainK}),
 		opt.WithKclOption(kcl.WithWorkDir(pkgPath)),
 	)
-
 	assert.Equal(t, err, nil)
 	os.Stdout = old
 	w.Close()

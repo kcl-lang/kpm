@@ -58,19 +58,10 @@ helloworld: ac.AppConfiguration {
             }
         ]
     }
-    # Add the monitoring configuration backed by Prometheus
-    monitoring: m.Prometheus{
-        interval:       "30s"
-        timeout:        "15s"
-        path:           "/metrics"
-        port:           "web"
-        scheme:         "http"
-    }
 }
 
 helloworldcollaset: ac.AppConfiguration {
     workload: wl.Service {
-        type: "CollaSet"
         containers: {
             "nginx": c.Container {
                 image: "nginx:v1"
