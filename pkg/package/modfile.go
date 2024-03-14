@@ -316,14 +316,18 @@ func (mfile *ModFile) GetModLockFilePath() string {
 }
 
 const defaultVerion = "0.0.1"
+
 var defaultEdition = runner.GetKclVersion()
 
 func NewModFile(opts *opt.InitOptions) *ModFile {
+	if opts.Version == "" {
+		opts.Version = defaultVerion
+	}
 	return &ModFile{
 		HomePath: opts.InitPath,
 		Pkg: Package{
 			Name:    opts.Name,
-			Version: defaultVerion,
+			Version: opts.Version,
 			Edition: defaultEdition,
 		},
 		Dependencies: Dependencies{

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/hashicorp/go-version"
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -144,6 +145,7 @@ func (opts *CompileOptions) LogWriter() io.Writer {
 type InitOptions struct {
 	Name     string
 	InitPath string
+	Version  string
 }
 
 func (opts *InitOptions) Validate() error {
@@ -152,6 +154,12 @@ func (opts *InitOptions) Validate() error {
 	} else if len(opts.InitPath) == 0 {
 		return errors.InternalBug
 	}
+	if opts.Version != "" {
+		if _, err := version.NewSemver(opts.Version); err != nil {
+			return errors.InvalidVersionFormat
+		}
+	}
+
 	return nil
 }
 
