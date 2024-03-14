@@ -35,4 +35,6 @@ helloworld: ac.AppConfiguration {
         # Set the replicas
         replicas: 2
     }
+
+    accessories: {"test": "aaa"}
 }
