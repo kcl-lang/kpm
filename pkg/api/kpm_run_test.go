@@ -235,7 +235,6 @@ func TestRunWithOptsWithNoLog(t *testing.T) {
 		opt.WithEntries([]string{pathMainK}),
 		opt.WithKclOption(kcl.WithWorkDir(pkgPath)),
 	)
-
 	assert.Equal(t, err, nil)
 	os.Stdout = old
 	w.Close()
