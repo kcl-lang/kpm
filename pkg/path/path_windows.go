@@ -12,7 +12,7 @@ var NeedToSanitize map[rune]bool
 
 func init() {
 	NeedToSanitize = map[rune]bool{
-		'<': true, '>': true, ':': true, '"': true, '|': true, '?': true, '*': true,
+		'<': true, '>': true, ':': true, '"': true, '|': true, '?': true, '*': true, '\x00': true,
 	}
 }
 
