@@ -12,8 +12,7 @@ var NeedToSanitize map[rune]bool
 
 func init() {
 	NeedToSanitize = map[rune]bool{
-		'<': true, '>': true, ':': true, '"': true,
-		'/': true, '\\': true, '|': true, '?': true, '*': true,
+		'<': true, '>': true, ':': true, '"': true, '|': true, '?': true, '*': true,
 	}
 }
 
@@ -44,5 +43,6 @@ func SanitizePath(path string) string {
 		}
 		return r
 	}, NeedToSanitize)
+
 	return volumeName + sanitized
 }
