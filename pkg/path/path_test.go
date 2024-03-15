@@ -31,7 +31,7 @@ func TestSanitizePath(t *testing.T) {
 		}{
 			name:     "Windows style path",
 			input:    "C:\\Program Files\\Test<:>*|",
-			expected: "C:\\Program Files\\Test______",
+			expected: "C:\\Program Files\\Test_____",
 		})
 	}
 
