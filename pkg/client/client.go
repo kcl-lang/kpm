@@ -1037,7 +1037,7 @@ func (c *KpmClient) PullFromOci(localPath, source, tag string) error {
 	}
 
 	// Untar the tar file.
-	storagePath := ociOpts.AddStoragePathSuffix(localPath)
+	storagePath := ociOpts.SanitizePathWithSuffix(localPath)
 	err = utils.UnTarDir(matches[0], storagePath)
 	if err != nil {
 		return reporter.NewErrorEvent(
