@@ -16,11 +16,6 @@ func TestSanitizePath(t *testing.T) {
 			input:    "test\x00file",
 			expected: "test_file",
 		},
-		{
-			name:     "Path without invalid characters",
-			input:    "/usr/local/bin/test",
-			expected: "/usr/local/bin/test",
-		},
 	}
 
 	if runtime.GOOS == "windows" {
@@ -32,6 +27,17 @@ func TestSanitizePath(t *testing.T) {
 			name:     "Windows style path",
 			input:    "C:\\Program Files\\Test<:>*|",
 			expected: "C:\\Program Files\\Test_____",
+		},
+		)
+	} else {
+		tests = append(tests, struct {
+			name     string
+			input    string
+			expected string
+		}{
+			name:     "Path without invalid characters",
+			input:    "/usr/local/bin/test",
+			expected: "/usr/local/bin/test",
 		})
 	}
 
