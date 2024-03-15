@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/errors"
+	"kcl-lang.io/kpm/pkg/path"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"oras.land/oras-go/v2"
 )
@@ -276,6 +277,11 @@ func ParseOciUrl(ociUrl string) (*OciOptions, *reporter.KpmEvent) {
 // You will get a path '/usr/test/docker.io/test/testRepo/v0.0.1'.
 func (oci *OciOptions) AddStoragePathSuffix(pathPrefix string) string {
 	return filepath.Join(filepath.Join(filepath.Join(pathPrefix, oci.Reg), oci.Repo), oci.Tag)
+}
+
+// SanitizePathSuffix will take 'Registry/Repo/Tag' as a path suffix and sanitize it.
+func (oci *OciOptions) SanitizePathWithSuffix(pathPrefix string) string {
+	return path.SanitizePath(filepath.Join(filepath.Join(filepath.Join(pathPrefix, oci.Reg), oci.Repo), oci.Tag))
 }
 
 type OciManifestOptions struct {
