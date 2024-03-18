@@ -487,7 +487,7 @@ func (c *KpmClient) CompileOciPkg(ociSource, version string, opts *opt.CompileOp
 	// clean the temp dir.
 	defer os.RemoveAll(tmpDir)
 
-	localPath := ociOpts.AddStoragePathSuffix(tmpDir)
+	localPath := ociOpts.SanitizePathWithSuffix(tmpDir)
 
 	// 2. Pull the tar.
 	err = c.pullTarFromOci(localPath, ociOpts)
@@ -1015,7 +1015,7 @@ func (c *KpmClient) PullFromOci(localPath, source, tag string) error {
 	// clean the temp dir.
 	defer os.RemoveAll(tmpDir)
 
-	storepath := ociOpts.AddStoragePathSuffix(tmpDir)
+	storepath := ociOpts.SanitizePathWithSuffix(tmpDir)
 	err = c.pullTarFromOci(storepath, ociOpts)
 	if err != nil {
 		return err
