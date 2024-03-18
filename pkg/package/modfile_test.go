@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/runner"
 	"kcl-lang.io/kpm/pkg/utils"
@@ -169,7 +170,7 @@ func TestLoadModFile(t *testing.T) {
 	assert.Equal(t, modFile.Pkg.Version, "0.0.1")
 	assert.Equal(t, modFile.Pkg.Edition, "0.0.1")
 
-	assert.Equal(t, len(modFile.Dependencies.Deps), 2)
+	assert.Equal(t, len(modFile.Dependencies.Deps), 3)
 	assert.Equal(t, modFile.Dependencies.Deps["name"].Name, "name")
 	assert.Equal(t, modFile.Dependencies.Deps["name"].Source.Git.Url, "test_url")
 	assert.Equal(t, modFile.Dependencies.Deps["name"].Source.Git.Tag, "test_tag")
@@ -178,6 +179,11 @@ func TestLoadModFile(t *testing.T) {
 	assert.Equal(t, modFile.Dependencies.Deps["oci_name"].Name, "oci_name")
 	assert.Equal(t, modFile.Dependencies.Deps["oci_name"].Version, "oci_tag")
 	assert.Equal(t, modFile.Dependencies.Deps["oci_name"].Source.Oci.Tag, "oci_tag")
+	assert.Equal(t, err, nil)
+
+	assert.Equal(t, modFile.Dependencies.Deps["helloworld"].Name, "helloworld")
+	assert.Equal(t, modFile.Dependencies.Deps["helloworld"].Version, "0.1.1")
+	assert.Equal(t, modFile.Dependencies.Deps["helloworld"].Source.Oci.Tag, "0.1.1")
 	assert.Equal(t, err, nil)
 }
 

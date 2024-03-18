@@ -615,8 +615,8 @@ func TestPackageCurrentPkgPath(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, kclPkg.GetPkgTag(), "0.0.1")
 	assert.Equal(t, kclPkg.GetPkgName(), "test_tar")
-	assert.Equal(t, kclPkg.GetPkgFullName(), "test_tar-0.0.1")
-	assert.Equal(t, kclPkg.GetPkgTarName(), "test_tar-0.0.1.tar")
+	assert.Equal(t, kclPkg.GetPkgFullName(), "test_tar_0.0.1")
+	assert.Equal(t, kclPkg.GetPkgTarName(), "test_tar_0.0.1.tar")
 
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, kclPkg.GetPkgTarName())), false)
 
@@ -1267,4 +1267,51 @@ func TestAddWithGitCommit(t *testing.T) {
 		_ = os.Remove(testPkgPathMod)
 		_ = os.Remove(testPkgPathModLock)
 	}()
+}
+
+func TestLoadPkgFormOci(t *testing.T) {
+	type testCase struct {
+		Reg  string
+		Repo string
+		Tag  string
+		Name string
+	}
+
+	testCases := []testCase{
+		{
+			Reg:  "ghcr.io",
+			Repo: "kusionstack/opsrule",
+			Tag:  "0.0.9",
+			Name: "opsrule",
+		},
+		{
+			Reg:  "ghcr.io",
+			Repo: "kcl-lang/helloworld",
+			Tag:  "0.1.1",
+			Name: "helloworld",
+		},
+	}
+
+	cli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	pkgPath := getTestDir("test_load_pkg_from_oci")
+
+	for _, tc := range testCases {
+		localpath := filepath.Join(pkgPath, tc.Name)
+
+		err = os.MkdirAll(localpath, 0755)
+		assert.Equal(t, err, nil)
+		defer func() {
+			err := os.RemoveAll(localpath)
+			assert.Equal(t, err, nil)
+		}()
+
+		kclpkg, err := cli.DownloadPkgFromOci(&pkg.Oci{
+			Reg:  tc.Reg,
+			Repo: tc.Repo,
+			Tag:  tc.Tag,
+		}, localpath)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, kclpkg.GetPkgName(), tc.Name)
+	}
 }

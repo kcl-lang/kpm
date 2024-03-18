@@ -15,6 +15,8 @@ import (
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/otiai10/copy"
 	"kcl-lang.io/kcl-go/pkg/kcl"
+	"oras.land/oras-go/v2"
+
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/errors"
@@ -26,7 +28,6 @@ import (
 	"kcl-lang.io/kpm/pkg/runner"
 	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/utils"
-	"oras.land/oras-go/v2"
 )
 
 // KpmClient is the client of kpm.
@@ -787,12 +788,12 @@ func (c *KpmClient) Download(dep *pkg.Dependency, localPath string) (*pkg.Depend
 	}
 
 	if dep.Source.Oci != nil {
-		localPath, err := c.DownloadFromOci(dep.Source.Oci, localPath)
+		pkg, err := c.DownloadPkgFromOci(dep.Source.Oci, localPath)
 		if err != nil {
 			return nil, err
 		}
-		dep.Version = dep.Source.Oci.Tag
-		dep.LocalFullPath = localPath
+		dep.Version = pkg.GetPkgVersion()
+		dep.LocalFullPath = pkg.HomePath
 		// Creating symbolic links in a global cache is not an optimal solution.
 		// This allows kclvm to locate the package by default.
 		// This feature is unstable and will be removed soon.
@@ -800,7 +801,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, localPath string) (*pkg.Depend
 		if err != nil {
 			return nil, err
 		}
-		dep.FullName = dep.GenDepFullName()
+		dep.FullName = pkg.GetPkgFullName()
 	}
 
 	if dep.Source.Local != nil {
@@ -898,7 +899,53 @@ func (c *KpmClient) ParseKclModFile(kclPkg *pkg.KclPkg) (map[string]map[string]s
 	return dependencies, nil
 }
 
+// LoadPkgFromOci will download the kcl package from the oci repository and return an `KclPkg`.
+func (c *KpmClient) DownloadPkgFromOci(dep *pkg.Oci, localPath string) (*pkg.KclPkg, error) {
+	ociClient, err := oci.NewOciClient(dep.Reg, dep.Repo, &c.settings)
+	if err != nil {
+		return nil, err
+	}
+	ociClient.SetLogWriter(c.logWriter)
+	// Select the latest tag, if the tag, the user inputed, is empty.
+	var tagSelected string
+	if len(dep.Tag) == 0 {
+		tagSelected, err = ociClient.TheLatestTag()
+		if err != nil {
+			return nil, err
+		}
+
+		reporter.ReportMsgTo(
+			fmt.Sprintf("the lastest version '%s' will be added", tagSelected),
+			c.logWriter,
+		)
+
+		dep.Tag = tagSelected
+		localPath = localPath + dep.Tag
+	} else {
+		tagSelected = dep.Tag
+	}
+
+	reporter.ReportMsgTo(
+		fmt.Sprintf("downloading '%s:%s' from '%s/%s:%s'", dep.Repo, tagSelected, dep.Reg, dep.Repo, tagSelected),
+		c.logWriter,
+	)
+
+	// Pull the package with the tag.
+	err = ociClient.Pull(localPath, tagSelected)
+	if err != nil {
+		return nil, err
+	}
+
+	pkg, err := pkg.FindFirstKclPkgFrom(localPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return pkg, nil
+}
+
 // DownloadFromOci will download the dependency from the oci repository.
+// Deprecated: Use the DownloadPkgFromOci instead.
 func (c *KpmClient) DownloadFromOci(dep *pkg.Oci, localPath string) (string, error) {
 	ociClient, err := oci.NewOciClient(dep.Reg, dep.Repo, &c.settings)
 	if err != nil {
@@ -935,29 +982,29 @@ func (c *KpmClient) DownloadFromOci(dep *pkg.Oci, localPath string) (string, err
 		return "", err
 	}
 
-	matches, finderr := filepath.Glob(filepath.Join(localPath, "*.tar"))
-	if finderr != nil || len(matches) != 1 {
-		if finderr == nil {
-			err = reporter.NewErrorEvent(
+	matches, _ := filepath.Glob(filepath.Join(localPath, "*.tar"))
+	if matches == nil || len(matches) != 1 {
+		// then try to glob tgz file
+		matches, _ = filepath.Glob(filepath.Join(localPath, "*.tgz"))
+		if matches == nil || len(matches) != 1 {
+			return "", reporter.NewErrorEvent(
 				reporter.InvalidKclPkg,
 				err,
 				fmt.Sprintf("failed to find the kcl package tar from '%s'.", localPath),
 			)
 		}
-
-		return "", reporter.NewErrorEvent(
-			reporter.InvalidKclPkg,
-			err,
-			fmt.Sprintf("failed to find the kcl package tar from '%s'.", localPath),
-		)
 	}
 
 	tarPath := matches[0]
-	untarErr := utils.UnTarDir(tarPath, localPath)
-	if untarErr != nil {
+	if utils.IsTar(tarPath) {
+		err = utils.UnTarDir(tarPath, localPath)
+	} else {
+		err = utils.ExtractTarball(tarPath, localPath)
+	}
+	if err != nil {
 		return "", reporter.NewErrorEvent(
 			reporter.FailedUntarKclPkg,
-			untarErr,
+			err,
 			fmt.Sprintf("failed to untar the kcl package tar from '%s' into '%s'.", tarPath, localPath),
 		)
 	}

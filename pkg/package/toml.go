@@ -26,6 +26,8 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+
+	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/reporter"
 )
 
@@ -95,7 +97,11 @@ func (source *Source) MarshalTOML() string {
 	if source.Oci != nil {
 		ociToml := source.Oci.MarshalTOML()
 		if len(ociToml) != 0 {
-			sb.WriteString(ociToml)
+			if len(source.Oci.Reg) != 0 && len(source.Oci.Repo) != 0 {
+				sb.WriteString(fmt.Sprintf(SOURCE_PATTERN, ociToml))
+			} else {
+				sb.WriteString(ociToml)
+			}
 		}
 	}
 
@@ -110,7 +116,7 @@ func (source *Source) MarshalTOML() string {
 }
 
 const GIT_URL_PATTERN = "git = \"%s\""
-const GIT_TAG_PATTERN = "tag = \"%s\""
+const TAG_PATTERN = "tag = \"%s\""
 const GIT_COMMIT_PATTERN = "commit = \"%s\""
 const SEPARATOR = ", "
 
@@ -121,7 +127,7 @@ func (git *Git) MarshalTOML() string {
 	}
 	if len(git.Tag) != 0 {
 		sb.WriteString(SEPARATOR)
-		sb.WriteString(fmt.Sprintf(GIT_TAG_PATTERN, git.Tag))
+		sb.WriteString(fmt.Sprintf(TAG_PATTERN, git.Tag))
 	}
 	if len(git.Commit) != 0 {
 		sb.WriteString(SEPARATOR)
@@ -130,11 +136,20 @@ func (git *Git) MarshalTOML() string {
 	return sb.String()
 }
 
+const OCI_URL_PATTERN = "oci = \"%s\""
+
 func (oci *Oci) MarshalTOML() string {
 	var sb strings.Builder
-	if len(oci.Tag) != 0 {
+	if len(oci.Reg) != 0 && len(oci.Repo) != 0 {
+		sb.WriteString(fmt.Sprintf(OCI_URL_PATTERN, oci.IntoOciUrl()))
+		if len(oci.Tag) != 0 {
+			sb.WriteString(SEPARATOR)
+			sb.WriteString(fmt.Sprintf(TAG_PATTERN, oci.Tag))
+		}
+	} else if len(oci.Reg) == 0 && len(oci.Repo) == 0 && len(oci.Tag) != 0 {
 		sb.WriteString(fmt.Sprintf(`"%s"`, oci.Tag))
 	}
+
 	return sb.String()
 }
 
@@ -295,13 +310,20 @@ func (source *Source) UnmarshalModTOML(data interface{}) error {
 				return err
 			}
 			source.Local = &localPath
-		} else {
+		} else if _, ok := meta["git"]; ok {
 			git := Git{}
 			err := git.UnmarshalModTOML(data)
 			if err != nil {
 				return err
 			}
 			source.Git = &git
+		} else {
+			oci := Oci{}
+			err := oci.UnmarshalModTOML(data)
+			if err != nil {
+				return err
+			}
+			source.Oci = &oci
 		}
 	}
 
@@ -319,7 +341,7 @@ func (source *Source) UnmarshalModTOML(data interface{}) error {
 }
 
 const GIT_URL_FLAG = "git"
-const GIT_TAG_FLAG = "tag"
+const TAG_FLAG = "tag"
 const GIT_COMMIT_FLAG = "commit"
 
 func (git *Git) UnmarshalModTOML(data interface{}) error {
@@ -332,7 +354,7 @@ func (git *Git) UnmarshalModTOML(data interface{}) error {
 		git.Url = v
 	}
 
-	if v, ok := meta[GIT_TAG_FLAG].(string); ok {
+	if v, ok := meta[TAG_FLAG].(string); ok {
 		git.Tag = v
 	}
 
@@ -344,12 +366,23 @@ func (git *Git) UnmarshalModTOML(data interface{}) error {
 }
 
 func (oci *Oci) UnmarshalModTOML(data interface{}) error {
-	meta, ok := data.(string)
-	if !ok {
-		return fmt.Errorf("expected string, got %T", data)
-	}
+	tag, ok := data.(string)
+	if ok {
+		oci.Tag = tag
+	} else if meta, ok := data.(map[string]interface{}); ok {
+		if v, ok := meta[constants.OciScheme].(string); ok {
+			_, err := oci.FromString(v)
+			if err != nil {
+				return err
+			}
+		}
 
-	oci.Tag = meta
+		if v, ok := meta[TAG_FLAG].(string); ok {
+			oci.Tag = v
+		}
+	} else {
+		return fmt.Errorf("unexpected data %T", data)
+	}
 
 	return nil
 }

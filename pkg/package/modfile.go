@@ -4,12 +4,16 @@ package pkg
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/BurntSushi/toml"
 	"kcl-lang.io/kcl-go/pkg/kcl"
+	"oras.land/oras-go/v2/registry"
+
+	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/runner"
@@ -207,9 +211,14 @@ func (dep *Dependency) FillDepInfo() error {
 		if settings.ErrorEvent != nil {
 			return settings.ErrorEvent
 		}
-		dep.Source.Oci.Reg = settings.DefaultOciRegistry()
-		urlpath := utils.JoinPath(settings.DefaultOciRepo(), dep.Name)
-		dep.Source.Oci.Repo = urlpath
+		if dep.Source.Oci.Reg == "" {
+			dep.Source.Oci.Reg = settings.DefaultOciRegistry()
+		}
+
+		if dep.Source.Oci.Repo == "" {
+			urlpath := utils.JoinPath(settings.DefaultOciRepo(), dep.Name)
+			dep.Source.Oci.Repo = urlpath
+		}
 	}
 	return nil
 }
@@ -236,6 +245,41 @@ type Oci struct {
 	Reg  string `toml:"reg,omitempty"`
 	Repo string `toml:"repo,omitempty"`
 	Tag  string `toml:"oci_tag,omitempty"`
+}
+
+func (oci *Oci) IntoOciUrl() string {
+	if oci != nil {
+		u := &url.URL{
+			Scheme: constants.OciScheme,
+			Host:   oci.Reg,
+			Path:   oci.Repo,
+		}
+
+		return u.String()
+	}
+	return ""
+}
+
+func (oci *Oci) FromString(ociUrl string) (*Oci, error) {
+	u, err := url.Parse(ociUrl)
+	if err != nil {
+		return nil, err
+	}
+
+	if u.Scheme != constants.OciScheme {
+		return nil, fmt.Errorf("invalid oci url with schema: %s", u.Scheme)
+	}
+
+	ref, err := registry.ParseReference(u.Host + u.Path)
+	if err != nil {
+		return nil, fmt.Errorf("'%s' invalid URL format: %w", ociUrl, err)
+	}
+
+	oci.Reg = ref.Registry
+	oci.Repo = ref.Repository
+	oci.Tag = ref.ReferenceOrDefault()
+
+	return oci, nil
 }
 
 // Git is the package source from git registry.
