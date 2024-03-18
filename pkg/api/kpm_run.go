@@ -194,7 +194,7 @@ func RunOciPkg(ociRef, version string, opts *opt.CompileOptions) (*kcl.KCLResult
 	// clean the temp dir.
 	defer os.RemoveAll(tmpDir)
 
-	localPath := ociOpts.AddStoragePathSuffix(tmpDir)
+	localPath := ociOpts.SanitizePathWithSuffix(tmpDir)
 
 	// 2. Pull the tar.
 	err = oci.Pull(localPath, ociOpts.Reg, ociOpts.Repo, ociOpts.Tag, kpmcli.GetSettings())

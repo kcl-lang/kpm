@@ -275,6 +275,7 @@ func ParseOciUrl(ociUrl string) (*OciOptions, *reporter.KpmEvent) {
 //	}
 //
 // You will get a path '/usr/test/docker.io/test/testRepo/v0.0.1'.
+// Deprecated: This function will be deprecated, use 'SanitizePathWithSuffix' instead.
 func (oci *OciOptions) AddStoragePathSuffix(pathPrefix string) string {
 	return filepath.Join(filepath.Join(filepath.Join(pathPrefix, oci.Reg), oci.Repo), oci.Tag)
 }
