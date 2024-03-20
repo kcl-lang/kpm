@@ -14,6 +14,8 @@
 </p>
 
 # NOTE !
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkcl-lang%2Fkpm.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkcl-lang%2Fkpm?ref=badge_shield)
+
 
 The KPM CLI will be deprecated after v0.8.0, and the KPM CLI will be replaced by the KCL CLI - https://github.com/kcl-lang/cli.
 
@@ -214,3 +216,7 @@ For more information about [OCI registry support](./docs/kpm_oci.md).
 - [kcl.mod: The KCL package Manifest File](./docs/kcl_mod.md)
 - [How to use kpm to push your kcl package by github action](./docs/push_by_github_action.md)
 - [How to publish KCL package to official Registry](./docs/publish_pkg_to_ah.md)
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkcl-lang%2Fkpm.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkcl-lang%2Fkpm?ref=badge_large)
