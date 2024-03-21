@@ -60,6 +60,19 @@ func TestPackageApi(t *testing.T) {
 	assert.Equal(t, schemas[filepath.Join("sub", "sub1")]["SchemaWithSameName"].SchemaName, "SchemaWithSameName")
 }
 
+func TestApiGetDependenciesInModFile(t *testing.T) {
+	pkg_path := filepath.Join(getTestDir("test_get_mod_deps"), "kcl_pkg")
+	pkg, err := GetKclPackage(pkg_path)
+	assert.Equal(t, err, nil)
+	dep := pkg.GetDependenciesInModFile().Deps["k8s"]
+	assert.Equal(t, dep.Name, "k8s")
+	assert.Equal(t, dep.FullName, "k8s_1.27")
+	assert.Equal(t, dep.Version, "1.27")
+	assert.Equal(t, dep.Source.Oci.Reg, "ghcr.io")
+	assert.Equal(t, dep.Source.Oci.Repo, "kcl-lang/k8s")
+	assert.Equal(t, dep.Source.Oci.Tag, "1.27")
+}
+
 func TestGetAllSchemaTypesMappingNamed(t *testing.T) {
 	pkg_path := filepath.Join(getTestDir("test_kpm_package"), "kcl_pkg")
 	pkg, err := GetKclPackage(pkg_path)

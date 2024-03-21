@@ -87,6 +87,11 @@ func (pkg *KclPackage) GetDependencies() pkg.Dependencies {
 	return pkg.pkg.Dependencies
 }
 
+// GetDependenciesInModFile returns the mod file of the package.
+func (pkg *KclPackage) GetDependenciesInModFile() *pkg.Dependencies {
+	return &pkg.pkg.ModFile.Dependencies
+}
+
 // GetPkgHomePath returns the home path of the package.
 func (pkg *KclPackage) GetPkgHomePath() string {
 	return pkg.pkg.HomePath
