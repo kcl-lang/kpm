@@ -3,8 +3,10 @@ package utils
 import (
 	"archive/tar"
 	"bufio"
+	"compress/gzip"
 	"crypto/sha256"
 	"encoding/base64"
+	goerrors "errors"
 	"fmt"
 	"io"
 	"log"
@@ -14,10 +16,9 @@ import (
 	"regexp"
 	"strings"
 
-	goerrors "errors"
-
 	"github.com/docker/distribution/reference"
 	"github.com/moby/term"
+
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -223,6 +224,57 @@ func UnTarDir(tarPath string, destDir string) error {
 			return errors.UnknownTarFormat
 		}
 	}
+	return nil
+}
+
+// ExtractTarball support extracting tarball with '.tgz' format.
+func ExtractTarball(tarPath, destDir string) error {
+	f, err := os.Open(tarPath)
+	if err != nil {
+		return reporter.NewErrorEvent(reporter.FailedCreateFile, err, fmt.Sprintf("failed to open '%s'", tarPath))
+	}
+	defer f.Close()
+
+	zip, err := gzip.NewReader(f)
+	if err != nil {
+		return reporter.NewErrorEvent(reporter.FailedCreateFile, err, fmt.Sprintf("failed to open '%s'", tarPath))
+	}
+	tarReader := tar.NewReader(zip)
+
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return reporter.NewErrorEvent(reporter.FailedCreateFile, err, fmt.Sprintf("failed to open '%s'", tarPath))
+		}
+
+		destFilePath := filepath.Join(destDir, header.Name)
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(destFilePath, 0755); err != nil {
+				return errors.FailedUnTarKclPackage
+			}
+		case tar.TypeReg:
+			err := os.MkdirAll(filepath.Dir(destFilePath), 0755)
+			if err != nil {
+				return err
+			}
+			outFile, err := os.Create(destFilePath)
+			if err != nil {
+				return reporter.NewErrorEvent(reporter.FailedCreateFile, err, fmt.Sprintf("failed to open '%s'", tarPath))
+			}
+			defer outFile.Close()
+
+			if _, err := io.Copy(outFile, tarReader); err != nil {
+				return reporter.NewErrorEvent(reporter.FailedCreateFile, err, fmt.Sprintf("failed to open '%s'", tarPath))
+			}
+		default:
+			return errors.UnknownTarFormat
+		}
+	}
+
 	return nil
 }
 

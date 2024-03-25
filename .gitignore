@@ -12,10 +12,11 @@
 *.out
 
 # Dependency directories (remove the comment below to include it)
-# vendor/
+vendor/
 build/
 .vscode/
 .kclvm/
+.idea/
 
 # kpm binary
 kpm
