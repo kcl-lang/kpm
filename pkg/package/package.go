@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -53,6 +54,65 @@ func LoadKclPkg(pkgPath string) (*KclPkg, error) {
 		HomePath:     pkgPath,
 		Dependencies: *deps,
 	}, nil
+}
+
+func FindFirstKclPkgFrom(path string) (*KclPkg, error) {
+	matches, _ := filepath.Glob(filepath.Join(path, "*.tar"))
+	if matches == nil || len(matches) != 1 {
+		// then try to glob tgz file
+		matches, _ = filepath.Glob(filepath.Join(path, "*.tgz"))
+		if matches == nil || len(matches) != 1 {
+			pkg, err := LoadKclPkg(path)
+			if err != nil {
+				return nil, reporter.NewErrorEvent(
+					reporter.InvalidKclPkg,
+					err,
+					fmt.Sprintf("failed to find the kcl package tar from '%s'.", path),
+				)
+			}
+
+			return pkg, nil
+		}
+	}
+
+	tarPath := matches[0]
+	unTarPath := filepath.Dir(tarPath)
+	var err error
+	if utils.IsTar(tarPath) {
+		err = utils.UnTarDir(tarPath, unTarPath)
+	} else {
+		err = utils.ExtractTarball(tarPath, unTarPath)
+	}
+	if err != nil {
+		return nil, reporter.NewErrorEvent(
+			reporter.FailedUntarKclPkg,
+			err,
+			fmt.Sprintf("failed to untar the kcl package tar from '%s' into '%s'.", tarPath, unTarPath),
+		)
+	}
+
+	// After untar the downloaded kcl package tar file, remove the tar file.
+	if utils.DirExists(tarPath) {
+		rmErr := os.Remove(tarPath)
+		if rmErr != nil {
+			return nil, reporter.NewErrorEvent(
+				reporter.FailedUntarKclPkg,
+				err,
+				fmt.Sprintf("failed to untar the kcl package tar from '%s' into '%s'.", tarPath, unTarPath),
+			)
+		}
+	}
+
+	pkg, err := LoadKclPkg(unTarPath)
+	if err != nil {
+		return nil, reporter.NewErrorEvent(
+			reporter.InvalidKclPkg,
+			err,
+			fmt.Sprintf("failed to find the kcl package tar from '%s'.", path),
+		)
+	}
+
+	return pkg, nil
 }
 
 func LoadKclPkgFromTar(pkgTarPath string) (*KclPkg, error) {
@@ -166,7 +226,7 @@ func (kclPkg *KclPkg) ValidateKpmHome(kpmHome string) *reporter.KpmEvent {
 // <pkg_name> is the name of package.
 // <pkg_version> is the version of package
 func (kclPkg *KclPkg) GetPkgFullName() string {
-	return kclPkg.ModFile.Pkg.Name + "-" + kclPkg.ModFile.Pkg.Version
+	return fmt.Sprintf(PKG_NAME_PATTERN, kclPkg.ModFile.Pkg.Name, kclPkg.ModFile.Pkg.Version)
 }
 
 // GetPkgName returns name of package.

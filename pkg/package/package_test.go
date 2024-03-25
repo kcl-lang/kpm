@@ -130,8 +130,8 @@ func TestLoadKclPkgFromTar(t *testing.T) {
 
 	assert.Equal(t, kclPkg.GetPkgTag(), "0.0.3")
 	assert.Equal(t, kclPkg.GetPkgName(), "kcl1")
-	assert.Equal(t, kclPkg.GetPkgFullName(), "kcl1-0.0.3")
-	assert.Equal(t, kclPkg.GetPkgTarName(), "kcl1-0.0.3.tar")
+	assert.Equal(t, kclPkg.GetPkgFullName(), "kcl1_0.0.3")
+	assert.Equal(t, kclPkg.GetPkgTarName(), "kcl1_0.0.3.tar")
 
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl1-v0.0.3")), true)
 	err = os.RemoveAll(filepath.Join(testDir, "kcl1-v0.0.3"))

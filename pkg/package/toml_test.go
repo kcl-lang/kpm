@@ -8,6 +8,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/stretchr/testify/assert"
+
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -168,4 +169,115 @@ func TestUnMarshalTOMLWithProfile(t *testing.T) {
 	assert.Equal(t, modfile.Pkg.Version, "0.0.1")
 	assert.Equal(t, modfile.Pkg.Edition, "0.0.1")
 	assert.Equal(t, *modfile.Profiles.Entries, []string{"main.k", "xxx/xxx/dir", "test.yaml"})
+}
+
+func TestUnMarshalOciUrl(t *testing.T) {
+	testDataDir := getTestDir("test_oci_url")
+
+	testCases := []struct {
+		Name          string
+		DepName       string
+		DepFullName   string
+		DepVersion    string
+		DepSourceReg  string
+		DepSourceRepo string
+		DepSourceTag  string
+	}{
+		{"unmarshal_0", "oci_pkg_name", "oci_pkg_name_0.0.1", "0.0.1", "ghcr.io", "test/helloworld", "0.0.1"},
+		{"unmarshal_1", "oci_pkg_name", "oci_pkg_name_0.0.1", "0.0.1", "localhost:5001", "test/helloworld", "0.0.1"},
+	}
+
+	for _, tc := range testCases {
+		modfile, err := LoadModFile(filepath.Join(testDataDir, tc.Name))
+		assert.Equal(t, err, nil)
+		assert.Equal(t, len(modfile.Dependencies.Deps), 1)
+		assert.Equal(t, modfile.Dependencies.Deps["oci_pkg_name"].Name, tc.DepName)
+		assert.Equal(t, modfile.Dependencies.Deps["oci_pkg_name"].FullName, tc.DepFullName)
+		assert.Equal(t, modfile.Dependencies.Deps["oci_pkg_name"].Version, tc.DepVersion)
+		assert.Equal(t, modfile.Dependencies.Deps["oci_pkg_name"].Source.Oci.Reg, tc.DepSourceReg)
+		assert.Equal(t, modfile.Dependencies.Deps["oci_pkg_name"].Source.Oci.Repo, tc.DepSourceRepo)
+		assert.Equal(t, modfile.Dependencies.Deps["oci_pkg_name"].Source.Oci.Tag, tc.DepVersion)
+	}
+}
+
+func TestMarshalOciUrl(t *testing.T) {
+	testDataDir := getTestDir("test_oci_url")
+
+	expectPkgPath := filepath.Join(testDataDir, "marshal_0", "kcl_mod_bk")
+	gotPkgPath := filepath.Join(testDataDir, "marshal_0", "kcl_mod_tmp")
+
+	expect, err := LoadModFile(expectPkgPath)
+	assert.Equal(t, err, nil)
+
+	err = os.MkdirAll(gotPkgPath, 0755)
+	assert.Equal(t, err, nil)
+	gotFile, _ := os.Create(filepath.Join(gotPkgPath, "kcl.mod"))
+
+	defer func() {
+		err = gotFile.Close()
+		assert.Equal(t, err, nil)
+		err = os.RemoveAll(gotPkgPath)
+		assert.Equal(t, err, nil)
+	}()
+
+	modfile := ModFile{
+		Pkg: Package{
+			Name:    "marshal_0",
+			Edition: "v0.8.0",
+			Version: "0.0.1",
+		},
+		Dependencies: Dependencies{
+			make(map[string]Dependency),
+		},
+	}
+
+	ociDep := Dependency{
+		Name:     "oci_pkg",
+		FullName: "oci_pkg_0.0.1",
+		Version:  "0.0.1",
+		Source: Source{
+			Oci: &Oci{
+				Tag: "0.0.1",
+			},
+		},
+	}
+
+	modfile.Dependencies.Deps["oci_pkg_0.0.1"] = ociDep
+
+	got_data := modfile.MarshalTOML()
+	_, err = gotFile.WriteString(got_data)
+	assert.Equal(t, err, nil)
+
+	got, err := LoadModFile(gotPkgPath)
+	assert.Equal(t, err, nil)
+
+	assert.Equal(t, expect.Pkg.Name, got.Pkg.Name)
+	assert.Equal(t, expect.Pkg.Edition, got.Pkg.Edition)
+	assert.Equal(t, expect.Pkg.Version, got.Pkg.Version)
+	assert.Equal(t, len(expect.Dependencies.Deps), len(got.Dependencies.Deps))
+	assert.Equal(t, expect.Dependencies.Deps["oci_pkg"].Name, got.Dependencies.Deps["oci_pkg"].Name)
+	assert.Equal(t, expect.Dependencies.Deps["oci_pkg"].FullName, got.Dependencies.Deps["oci_pkg"].FullName)
+	assert.Equal(t, expect.Dependencies.Deps["oci_pkg"].Source.Oci.Reg, got.Dependencies.Deps["oci_pkg"].Source.Oci.Reg)
+	assert.Equal(t, expect.Dependencies.Deps["oci_pkg"].Source.Oci.Repo, got.Dependencies.Deps["oci_pkg"].Source.Oci.Repo)
+	assert.Equal(t, expect.Dependencies.Deps["oci_pkg"].Source.Oci.Tag, got.Dependencies.Deps["oci_pkg"].Source.Oci.Tag)
+	assert.Equal(t, expect.Dependencies.Deps["oci_pkg"].Source.IntoOciUrl(), got.Dependencies.Deps["oci_pkg"].Source.IntoOciUrl())
+}
+
+func TestMarshalOciUrlIntoFile(t *testing.T) {
+	testDataDir := getTestDir("test_oci_url")
+
+	testCases := []string{"marshal_1", "marshal_2", "marshal_3"}
+
+	for _, tc := range testCases {
+		readKclModPath := filepath.Join(testDataDir, tc)
+		expectPath := filepath.Join(readKclModPath, "expect.mod")
+
+		readKclModFile, err := LoadModFile(readKclModPath)
+		assert.Equal(t, err, nil)
+		writeKclModFileContents := readKclModFile.MarshalTOML()
+		expectKclModFileContents, err := os.ReadFile(expectPath)
+		assert.Equal(t, err, nil)
+
+		assert.Equal(t, utils.RmNewline(string(expectKclModFileContents)), utils.RmNewline(writeKclModFileContents))
+	}
 }
