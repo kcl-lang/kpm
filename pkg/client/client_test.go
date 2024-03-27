@@ -70,7 +70,7 @@ func TestDownloadOci(t *testing.T) {
 	}
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
-	dep, err := kpmcli.Download(&depFromOci, testPath)
+	dep, err := kpmcli.Download(&depFromOci, "", testPath)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, dep.Name, "k8s")
 	assert.Equal(t, dep.FullName, "k8s_1.27")
@@ -131,7 +131,7 @@ func TestDownloadLatestOci(t *testing.T) {
 	}
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
-	dep, err := kpmcli.Download(&depFromOci, testPath)
+	dep, err := kpmcli.Download(&depFromOci, "", testPath)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, dep.Name, "helloworld")
 	assert.Equal(t, dep.FullName, "helloworld_0.1.1")
@@ -227,7 +227,7 @@ func TestCyclicDependency(t *testing.T) {
 
 	_, _, err = kpmcli.InitGraphAndDownloadDeps(kclPkg)
 	assert.Equal(t, err, reporter.NewErrorEvent(
-		reporter.CircularDependencyExist, nil, "adding bbb as a dependency results in a cycle",
+		reporter.CircularDependencyExist, nil, "adding aaa@0.0.1 as a dependency results in a cycle",
 	))
 
 	err = os.Chdir(currentDir)
@@ -1314,4 +1314,54 @@ func TestLoadPkgFormOci(t *testing.T) {
 		assert.Equal(t, err, nil)
 		assert.Equal(t, kclpkg.GetPkgName(), tc.Name)
 	}
+}
+
+func TestAddWithLocalPath(t *testing.T) {
+
+	testpath := getTestDir("add_with_local_path")
+
+	initpath := filepath.Join(testpath, "init")
+	tmppath := filepath.Join(testpath, "tmp")
+	expectpath := filepath.Join(testpath, "expect")
+
+	defer func() {
+		err := os.RemoveAll(tmppath)
+		assert.Equal(t, err, nil)
+	}()
+
+	err := copy.Copy(initpath, tmppath)
+	assert.Equal(t, err, nil)
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	kpmcli.SetLogWriter(nil)
+
+	tmpPkgPath := filepath.Join(tmppath, "pkg")
+	opts := opt.AddOptions{
+		LocalPath: tmpPkgPath,
+		RegistryOpts: opt.RegistryOptions{
+			Oci: &opt.OciOptions{
+				Reg:     "ghcr.io",
+				Repo:    "kcl-lang",
+				PkgName: "helloworld",
+				Tag:     "0.1.1",
+			},
+		},
+	}
+
+	kclPkg, err := kpmcli.LoadPkgFromPath(tmpPkgPath)
+	assert.Equal(t, err, nil)
+
+	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
+	assert.Equal(t, err, nil)
+
+	gotpkg, err := kpmcli.LoadPkgFromPath(tmpPkgPath)
+	assert.Equal(t, err, nil)
+	expectpath = filepath.Join(expectpath, "pkg")
+	expectpkg, err := kpmcli.LoadPkgFromPath(expectpath)
+	assert.Equal(t, err, nil)
+
+	assert.Equal(t, len(gotpkg.Dependencies.Deps), len(expectpkg.Dependencies.Deps))
+	assert.Equal(t, gotpkg.Dependencies.Deps["dep_pkg"].FullName, expectpkg.Dependencies.Deps["dep_pkg"].FullName)
+	assert.Equal(t, gotpkg.Dependencies.Deps["dep_pkg"].Version, expectpkg.Dependencies.Deps["dep_pkg"].Version)
 }

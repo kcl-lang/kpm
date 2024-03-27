@@ -221,13 +221,15 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 		searchFullPath := filepath.Join(searchPath, d.FullName)
 		if !update {
 			if d.IsFromLocal() {
-				searchFullPath = d.GetLocalFullPath(kclPkg.HomePath)
+				depPkg, err := c.LoadPkgFromPath(d.GetLocalFullPath(kclPkg.HomePath))
+				if err != nil {
+					return err
+				}
+				d.FromKclPkg(depPkg)
+			} else {
+				d.LocalFullPath = searchFullPath
 			}
-
-			// Find it and update the local path of the dependency.
-			d.LocalFullPath = searchFullPath
 			kclPkg.Dependencies.Deps[name] = d
-
 		} else {
 			if utils.DirExists(searchFullPath) && (c.GetNoSumCheck() || utils.CheckPackageSum(d.Sum, searchFullPath)) {
 				// Find it and update the local path of the dependency.
@@ -241,6 +243,11 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 					return reporter.NewErrorEvent(reporter.CalSumFailed, err, fmt.Sprintf("failed to calculate checksum for '%s' in '%s'", d.Name, searchFullPath))
 				}
 				d.Sum = sum
+				depPkg, err := c.LoadPkgFromPath(d.GetLocalFullPath(kclPkg.HomePath))
+				if err != nil {
+					return err
+				}
+				d.FromKclPkg(depPkg)
 				kclPkg.Dependencies.Deps[name] = d
 			} else {
 				// Otherwise, re-vendor it.
@@ -714,7 +721,7 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 }
 
 // FillDepInfo will fill registry information for a dependency.
-func (c *KpmClient) FillDepInfo(dep *pkg.Dependency) error {
+func (c *KpmClient) FillDepInfo(dep *pkg.Dependency, homepath string) error {
 	if dep.Source.Local != nil {
 		dep.LocalFullPath = dep.Source.Local.Path
 		return nil
@@ -753,7 +760,7 @@ func (c *KpmClient) FillDepInfo(dep *pkg.Dependency) error {
 // FillDependenciesInfo will fill registry information for all dependencies in a kcl.mod.
 func (c *KpmClient) FillDependenciesInfo(modFile *pkg.ModFile) error {
 	for k, v := range modFile.Deps {
-		err := c.FillDepInfo(&v)
+		err := c.FillDepInfo(&v, modFile.HomePath)
 		if err != nil {
 			return err
 		}
@@ -763,7 +770,7 @@ func (c *KpmClient) FillDependenciesInfo(modFile *pkg.ModFile) error {
 }
 
 // Download will download the dependency to the local path.
-func (c *KpmClient) Download(dep *pkg.Dependency, localPath string) (*pkg.Dependency, error) {
+func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*pkg.Dependency, error) {
 	if dep.Source.Git != nil {
 		_, err := c.DownloadFromGit(dep.Source.Git, localPath)
 		if err != nil {
@@ -788,12 +795,11 @@ func (c *KpmClient) Download(dep *pkg.Dependency, localPath string) (*pkg.Depend
 	}
 
 	if dep.Source.Oci != nil {
-		pkg, err := c.DownloadPkgFromOci(dep.Source.Oci, localPath)
+		kpkg, err := c.DownloadPkgFromOci(dep.Source.Oci, localPath)
 		if err != nil {
 			return nil, err
 		}
-		dep.Version = pkg.GetPkgVersion()
-		dep.LocalFullPath = pkg.HomePath
+		dep.FromKclPkg(kpkg)
 		// Creating symbolic links in a global cache is not an optimal solution.
 		// This allows kclvm to locate the package by default.
 		// This feature is unstable and will be removed soon.
@@ -801,11 +807,14 @@ func (c *KpmClient) Download(dep *pkg.Dependency, localPath string) (*pkg.Depend
 		if err != nil {
 			return nil, err
 		}
-		dep.FullName = pkg.GetPkgFullName()
 	}
 
 	if dep.Source.Local != nil {
-		dep.LocalFullPath = dep.Source.Local.Path
+		kpkg, err := pkg.FindFirstKclPkgFrom(dep.GetLocalFullPath(homePath))
+		if err != nil {
+			return nil, err
+		}
+		dep.FromKclPkg(kpkg)
 	}
 
 	var err error
@@ -1202,7 +1211,7 @@ func (c *KpmClient) InitGraphAndDownloadDeps(kclPkg *pkg.KclPkg) (*pkg.Dependenc
 		return nil, nil, err
 	}
 
-	changedDeps, err := c.downloadDeps(kclPkg.ModFile.Dependencies, kclPkg.Dependencies, depGraph, root)
+	changedDeps, err := c.downloadDeps(kclPkg.ModFile.Dependencies, kclPkg.Dependencies, depGraph, kclPkg.HomePath, root)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1226,7 +1235,7 @@ func (c *KpmClient) dependencyExists(dep *pkg.Dependency, lockDeps *pkg.Dependen
 	if !c.noSumCheck && present {
 		// If the dependent package does not exist locally, then method 'check' will return false.
 		if c.noSumCheck || check(lockDep, filepath.Join(c.homePath, dep.FullName)) {
-			return dep
+			return &lockDep
 		}
 	}
 
@@ -1234,7 +1243,8 @@ func (c *KpmClient) dependencyExists(dep *pkg.Dependency, lockDeps *pkg.Dependen
 }
 
 // downloadDeps will download all the dependencies of the current kcl package.
-func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencies, depGraph graph.Graph[string, string], parent string) (*pkg.Dependencies, error) {
+func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencies, depGraph graph.Graph[string, string], pkghome, parent string) (*pkg.Dependencies, error) {
+
 	newDeps := pkg.Dependencies{
 		Deps: make(map[string]pkg.Dependency),
 	}
@@ -1260,7 +1270,7 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 		os.RemoveAll(dir)
 
 		// download dependencies
-		lockedDep, err := c.Download(&d, dir)
+		lockedDep, err := c.Download(&d, pkghome, dir)
 		if err != nil {
 			return nil, err
 		}
@@ -1325,7 +1335,7 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 		}
 
 		// Download the dependencies.
-		nested, err := c.downloadDeps(deppkg.ModFile.Dependencies, lockDeps, depGraph, source)
+		nested, err := c.downloadDeps(deppkg.ModFile.Dependencies, lockDeps, depGraph, deppkg.HomePath, source)
 		if err != nil {
 			return nil, err
 		}
