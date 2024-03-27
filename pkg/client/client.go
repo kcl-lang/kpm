@@ -221,13 +221,13 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 		searchFullPath := filepath.Join(searchPath, d.FullName)
 		if !update {
 			if d.IsFromLocal() {
-				searchFullPath = d.GetLocalFullPath(kclPkg.HomePath)
+				depPkg, err := c.LoadPkgFromPath(d.GetLocalFullPath(kclPkg.HomePath))
+				if err != nil {
+					return err
+				}
+				d.FromKclPkg(depPkg)
 			}
-
-			// Find it and update the local path of the dependency.
-			d.LocalFullPath = searchFullPath
 			kclPkg.Dependencies.Deps[name] = d
-
 		} else {
 			if utils.DirExists(searchFullPath) && (c.GetNoSumCheck() || utils.CheckPackageSum(d.Sum, searchFullPath)) {
 				// Find it and update the local path of the dependency.
@@ -241,6 +241,11 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 					return reporter.NewErrorEvent(reporter.CalSumFailed, err, fmt.Sprintf("failed to calculate checksum for '%s' in '%s'", d.Name, searchFullPath))
 				}
 				d.Sum = sum
+				depPkg, err := c.LoadPkgFromPath(d.GetLocalFullPath(kclPkg.HomePath))
+				if err != nil {
+					return err
+				}
+				d.FromKclPkg(depPkg)
 				kclPkg.Dependencies.Deps[name] = d
 			} else {
 				// Otherwise, re-vendor it.

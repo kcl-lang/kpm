@@ -183,8 +183,12 @@ func (d *Dependency) GetAliasName() string {
 // WithTheSameVersion will check whether two dependencies have the same version.
 func (d Dependency) WithTheSameVersion(other Dependency) bool {
 
-	sameNameAndVersion := d.Name == other.Name && d.Version == other.Version
+	var sameVersion = true
+	if len(d.Version) != 0 && len(other.Version) != 0 {
+		sameVersion = d.Version == other.Version
 
+	}
+	sameNameAndVersion := d.Name == other.Name && sameVersion
 	sameGitSrc := true
 	if d.Source.Git != nil && other.Source.Git != nil {
 		sameGitSrc = d.Source.Git.Url == other.Source.Git.Url &&
