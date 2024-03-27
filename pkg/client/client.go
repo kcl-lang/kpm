@@ -248,7 +248,10 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 					return err
 				}
 				d.FromKclPkg(depPkg)
-				kclPkg.Dependencies.Deps[name] = d
+				err = c.AddDepToPkg(kclPkg, &d)
+				if err != nil {
+					return err
+				}
 			} else {
 				// Otherwise, re-vendor it.
 				if kclPkg.IsVendorMode() {
@@ -815,6 +818,11 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			return nil, err
 		}
 		dep.FromKclPkg(kpkg)
+		abspath, err := filepath.Abs(dep.GetLocalFullPath(homePath))
+		if err != nil {
+			return nil, err
+		}
+		dep.Source.Local.Path = abspath
 	}
 
 	var err error
