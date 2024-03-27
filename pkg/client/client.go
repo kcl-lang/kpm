@@ -226,6 +226,8 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 					return err
 				}
 				d.FromKclPkg(depPkg)
+			} else {
+				d.LocalFullPath = searchFullPath
 			}
 			kclPkg.Dependencies.Deps[name] = d
 		} else {
