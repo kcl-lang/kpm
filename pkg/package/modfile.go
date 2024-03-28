@@ -202,7 +202,7 @@ func (d Dependency) WithTheSameVersion(other Dependency) bool {
 
 // GetLocalFullPath will get the local path of a dependency.
 func (dep *Dependency) GetLocalFullPath(rootpath string) string {
-	if dep.IsFromLocal() {
+	if len(dep.LocalFullPath) == 0 && dep.IsFromLocal() {
 		if filepath.IsAbs(dep.Source.Local.Path) {
 			return dep.Source.Local.Path
 		}
@@ -248,7 +248,7 @@ func (dep *Dependency) GenDepFullName() string {
 type Source struct {
 	*Git
 	*Oci
-	*Local
+	*Local `toml:"-"`
 }
 
 type Local struct {

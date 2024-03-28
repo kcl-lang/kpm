@@ -1,12 +1,3 @@
-adding 'k8s' with version '1.27'
-downloading 'test/k8s:1.27' from 'localhost:5001/test/k8s:1.27'
-apiVersion: v1
-kind: Pod
-metadata:
-  name: web-app
-spec:
-  containers:
-  - image: nginx
-    name: main-container
-    ports:
-    - containerPort: 80
+adding 'helloworld' with version '0.1.1'
+downloading 'test/helloworld:0.1.1' from 'localhost:5001/test/helloworld:0.1.1'
+a: Hello World!
