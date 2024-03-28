@@ -114,6 +114,28 @@ func (c *KpmClient) LoadPkgFromPath(pkgPath string) (*pkg.KclPkg, error) {
 		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod.lock' in '%s'", pkgPath))
 	}
 
+	// Align the dependencies between kcl.mod and kcl.mod.lock.
+	for name, dep := range modFile.Dependencies.Deps {
+		if dep.Local != nil {
+			if ldep, ok := deps.Deps[name]; ok {
+				var localFullPath string
+				if filepath.IsAbs(dep.Local.Path) {
+					localFullPath = dep.Local.Path
+				} else {
+					localFullPath, err = filepath.Abs(filepath.Join(pkgPath, dep.Local.Path))
+					if err != nil {
+						return nil, reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it.")
+					}
+				}
+				ldep.LocalFullPath = localFullPath
+				dep.LocalFullPath = localFullPath
+				ldep.Source = dep.Source
+				deps.Deps[name] = ldep
+				modFile.Dependencies.Deps[name] = dep
+			}
+		}
+	}
+
 	return &pkg.KclPkg{
 		ModFile:      *modFile,
 		HomePath:     pkgPath,
@@ -195,20 +217,24 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 		for name, dep := range kclPkg.Dependencies.Deps {
 			modDep, ok := kclPkg.ModFile.Dependencies.Deps[name]
 			if !ok || !dep.WithTheSameVersion(modDep) {
-				reporter.ReportMsgTo(
-					fmt.Sprintf("removing '%s' with version '%s'", name, dep.Version),
-					c.logWriter,
-				)
 				delete(kclPkg.Dependencies.Deps, name)
 			}
 		}
 		// add the dependencies in kcl.mod which not in kcl.mod.lock
 		for name, d := range kclPkg.ModFile.Dependencies.Deps {
 			if _, ok := kclPkg.Dependencies.Deps[name]; !ok {
-				reporter.ReportMsgTo(
-					fmt.Sprintf("adding '%s' with version '%s'", name, d.Version),
-					c.logWriter,
-				)
+				if len(d.Version) == 0 {
+					reporter.ReportMsgTo(
+						fmt.Sprintf("adding '%s'", name),
+						c.logWriter,
+					)
+				} else {
+					reporter.ReportMsgTo(
+						fmt.Sprintf("adding '%s' with version '%s'", name, d.Version),
+						c.logWriter,
+					)
+				}
+
 				kclPkg.Dependencies.Deps[name] = d
 			}
 		}
@@ -222,13 +248,15 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 		searchFullPath := filepath.Join(searchPath, d.FullName)
 		if !update {
 			if d.IsFromLocal() {
-				searchFullPath = d.GetLocalFullPath(kclPkg.HomePath)
+				depPkg, err := c.LoadPkgFromPath(d.GetLocalFullPath(kclPkg.HomePath))
+				if err != nil {
+					return err
+				}
+				d.FromKclPkg(depPkg)
+			} else {
+				d.LocalFullPath = searchFullPath
 			}
-
-			// Find it and update the local path of the dependency.
-			d.LocalFullPath = searchFullPath
 			kclPkg.Dependencies.Deps[name] = d
-
 		} else {
 			if utils.DirExists(searchFullPath) && (c.GetNoSumCheck() || utils.CheckPackageSum(d.Sum, searchFullPath)) {
 				// Find it and update the local path of the dependency.
@@ -242,7 +270,15 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 					return reporter.NewErrorEvent(reporter.CalSumFailed, err, fmt.Sprintf("failed to calculate checksum for '%s' in '%s'", d.Name, searchFullPath))
 				}
 				d.Sum = sum
-				kclPkg.Dependencies.Deps[name] = d
+				depPkg, err := c.LoadPkgFromPath(d.GetLocalFullPath(kclPkg.HomePath))
+				if err != nil {
+					return err
+				}
+				d.FromKclPkg(depPkg)
+				err = c.AddDepToPkg(kclPkg, &d)
+				if err != nil {
+					return err
+				}
 			} else {
 				// Otherwise, re-vendor it.
 				if kclPkg.IsVendorMode() {
@@ -268,10 +304,12 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 		}
 	}
 	if update {
-		// update the kcl.mod and kcl.mod.lock.
-		err := kclPkg.UpdateModAndLockFile()
-		if err != nil {
-			return err
+		// Generate file kcl.mod.lock.
+		if !kclPkg.NoSumCheck {
+			err := kclPkg.LockDepsVersion()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -284,9 +322,12 @@ func (c *KpmClient) UpdateDeps(kclPkg *pkg.KclPkg) error {
 		return err
 	}
 
-	err = kclPkg.UpdateModAndLockFile()
-	if err != nil {
-		return err
+	// Generate file kcl.mod.lock.
+	if !kclPkg.NoSumCheck {
+		err := kclPkg.LockDepsVersion()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -342,7 +383,7 @@ func (c *KpmClient) CompileWithOpts(opts *opt.CompileOptions) (*kcl.KCLResultLis
 
 	c.noSumCheck = opts.NoSumCheck()
 
-	kclPkg, err := pkg.LoadKclPkg(pkgPath)
+	kclPkg, err := c.LoadPkgFromPath(pkgPath)
 	if err != nil {
 		return nil, err
 	}
@@ -369,9 +410,15 @@ func (c *KpmClient) CompileWithOpts(opts *opt.CompileOptions) (*kcl.KCLResultLis
 				opts.Merge(kcl.WithKFilenames(filepath.Join(opts.PkgPath(), entry)))
 			}
 		}
-	} else if len(kclPkg.GetEntryKclFilesFromModFile()) == 0 && !opts.HasSettingsYaml() {
-		// no entry
-		opts.Merge(kcl.WithKFilenames(opts.PkgPath()))
+	} else if len(kclPkg.GetEntryKclFilesFromModFile()) == 0 {
+		// No entries profile in kcl.mod and no file settings in the settings file
+		if !opts.HasSettingsYaml() {
+			// No settings file.
+			opts.Merge(kcl.WithKFilenames(opts.PkgPath()))
+		} else if opts.HasSettingsYaml() && len(opts.KFilenameList) == 0 {
+			// Has settings file but no file config in the settings files.
+			opts.Merge(kcl.WithKFilenames(opts.PkgPath()))
+		}
 	}
 	opts.Merge(kcl.WithWorkDir(opts.PkgPath()))
 
@@ -715,7 +762,7 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 }
 
 // FillDepInfo will fill registry information for a dependency.
-func (c *KpmClient) FillDepInfo(dep *pkg.Dependency) error {
+func (c *KpmClient) FillDepInfo(dep *pkg.Dependency, homepath string) error {
 	if dep.Source.Local != nil {
 		dep.LocalFullPath = dep.Source.Local.Path
 		return nil
@@ -754,7 +801,7 @@ func (c *KpmClient) FillDepInfo(dep *pkg.Dependency) error {
 // FillDependenciesInfo will fill registry information for all dependencies in a kcl.mod.
 func (c *KpmClient) FillDependenciesInfo(modFile *pkg.ModFile) error {
 	for k, v := range modFile.Deps {
-		err := c.FillDepInfo(&v)
+		err := c.FillDepInfo(&v, modFile.HomePath)
 		if err != nil {
 			return err
 		}
@@ -764,7 +811,7 @@ func (c *KpmClient) FillDependenciesInfo(modFile *pkg.ModFile) error {
 }
 
 // Download will download the dependency to the local path.
-func (c *KpmClient) Download(dep *pkg.Dependency, localPath string) (*pkg.Dependency, error) {
+func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*pkg.Dependency, error) {
 	if dep.Source.Git != nil {
 		_, err := c.DownloadFromGit(dep.Source.Git, localPath)
 		if err != nil {
@@ -789,12 +836,11 @@ func (c *KpmClient) Download(dep *pkg.Dependency, localPath string) (*pkg.Depend
 	}
 
 	if dep.Source.Oci != nil {
-		pkg, err := c.DownloadPkgFromOci(dep.Source.Oci, localPath)
+		kpkg, err := c.DownloadPkgFromOci(dep.Source.Oci, localPath)
 		if err != nil {
 			return nil, err
 		}
-		dep.Version = pkg.GetPkgVersion()
-		dep.LocalFullPath = pkg.HomePath
+		dep.FromKclPkg(kpkg)
 		// Creating symbolic links in a global cache is not an optimal solution.
 		// This allows kclvm to locate the package by default.
 		// This feature is unstable and will be removed soon.
@@ -802,11 +848,14 @@ func (c *KpmClient) Download(dep *pkg.Dependency, localPath string) (*pkg.Depend
 		if err != nil {
 			return nil, err
 		}
-		dep.FullName = pkg.GetPkgFullName()
 	}
 
 	if dep.Source.Local != nil {
-		dep.LocalFullPath = dep.Source.Local.Path
+		kpkg, err := pkg.FindFirstKclPkgFrom(dep.GetLocalFullPath(homePath))
+		if err != nil {
+			return nil, err
+		}
+		dep.FromKclPkg(kpkg)
 	}
 
 	var err error
@@ -991,7 +1040,7 @@ func (c *KpmClient) DownloadFromOci(dep *pkg.Oci, localPath string) (string, err
 			return "", reporter.NewErrorEvent(
 				reporter.InvalidKclPkg,
 				err,
-				fmt.Sprintf("failed to find the kcl package tar from '%s'.", localPath),
+				fmt.Sprintf("failed to find the kcl package from '%s'.", localPath),
 			)
 		}
 	}
@@ -1006,7 +1055,7 @@ func (c *KpmClient) DownloadFromOci(dep *pkg.Oci, localPath string) (string, err
 		return "", reporter.NewErrorEvent(
 			reporter.FailedUntarKclPkg,
 			err,
-			fmt.Sprintf("failed to untar the kcl package tar from '%s' into '%s'.", tarPath, localPath),
+			fmt.Sprintf("failed to untar the kcl package from '%s' into '%s'.", tarPath, localPath),
 		)
 	}
 
@@ -1206,7 +1255,7 @@ func (c *KpmClient) InitGraphAndDownloadDeps(kclPkg *pkg.KclPkg) (*pkg.Dependenc
 		return nil, nil, err
 	}
 
-	changedDeps, err := c.downloadDeps(kclPkg.ModFile.Dependencies, kclPkg.Dependencies, depGraph, root)
+	changedDeps, err := c.downloadDeps(kclPkg.ModFile.Dependencies, kclPkg.Dependencies, depGraph, kclPkg.HomePath, root)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1230,7 +1279,7 @@ func (c *KpmClient) dependencyExists(dep *pkg.Dependency, lockDeps *pkg.Dependen
 	if !c.noSumCheck && present {
 		// If the dependent package does not exist locally, then method 'check' will return false.
 		if c.noSumCheck || check(lockDep, filepath.Join(c.homePath, dep.FullName)) {
-			return dep
+			return &lockDep
 		}
 	}
 
@@ -1238,7 +1287,8 @@ func (c *KpmClient) dependencyExists(dep *pkg.Dependency, lockDeps *pkg.Dependen
 }
 
 // downloadDeps will download all the dependencies of the current kcl package.
-func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencies, depGraph graph.Graph[module.Version, module.Version], parent module.Version) (*pkg.Dependencies, error) {
+func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencies, depGraph graph.Graph[module.Version, module.Version], pkghome, parent module.Version) (*pkg.Dependencies, error) {
+
 	newDeps := pkg.Dependencies{
 		Deps: make(map[string]pkg.Dependency),
 	}
@@ -1264,7 +1314,7 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 		os.RemoveAll(dir)
 
 		// download dependencies
-		lockedDep, err := c.Download(&d, dir)
+		lockedDep, err := c.Download(&d, pkghome, dir)
 		if err != nil {
 			return nil, err
 		}
@@ -1297,19 +1347,24 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 
 	// Recursively download the dependencies of the new dependencies.
 	for _, d := range newDepsCopy {
-		// Load kcl.mod file of the new downloaded dependencies.
-		deppkg, err := pkg.LoadKclPkg(filepath.Join(c.homePath, d.FullName))
+		var err error
+		var deppkg *pkg.KclPkg
 		if len(d.LocalFullPath) != 0 {
-			deppkg, err = pkg.LoadKclPkg(d.LocalFullPath)
-		}
+			deppkg, err = c.LoadPkgFromPath(d.LocalFullPath)
+		} else {
+			// Load kcl.mod file of the new downloaded dependencies.
+			deppkg, err = c.LoadPkgFromPath(filepath.Join(c.homePath, d.FullName))
 
+		}
 		if err != nil {
 			if os.IsNotExist(err) {
 				continue
 			}
 			return nil, err
 		}
+
 		source := module.Version{Path: d.Name, Version: d.Version}
+
 		err = depGraph.AddVertex(source)
 		if err != nil && err != graph.ErrVertexAlreadyExists {
 			return nil, err
@@ -1328,7 +1383,7 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 		}
 
 		// Download the dependencies.
-		nested, err := c.downloadDeps(deppkg.ModFile.Dependencies, lockDeps, depGraph, source)
+		nested, err := c.downloadDeps(deppkg.ModFile.Dependencies, lockDeps, depGraph, deppkg.HomePath, source)
 		if err != nil {
 			return nil, err
 		}

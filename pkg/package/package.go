@@ -53,6 +53,23 @@ func LoadKclPkg(pkgPath string) (*KclPkg, error) {
 		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod.lock' in '%s'", pkgPath))
 	}
 
+	// Align the dependencies between kcl.mod and kcl.mod.lock.
+	for name, dep := range modFile.Dependencies.Deps {
+		if dep.Local != nil {
+			if ldep, ok := deps.Deps[name]; ok {
+				abs, err := filepath.Abs(filepath.Join(pkgPath, dep.Local.Path))
+				if err != nil {
+					return nil, reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it.")
+				}
+				ldep.LocalFullPath = abs
+				dep.LocalFullPath = abs
+				ldep.Source = dep.Source
+				deps.Deps[name] = ldep
+				modFile.Dependencies.Deps[name] = dep
+			}
+		}
+	}
+
 	return &KclPkg{
 		ModFile:      *modFile,
 		HomePath:     pkgPath,
@@ -169,7 +186,7 @@ func (kclPkg *KclPkg) UpdateModAndLockFile() error {
 
 	// Generate file kcl.mod.lock.
 	if !kclPkg.NoSumCheck {
-		err = kclPkg.LockDepsVersion()
+		err := kclPkg.LockDepsVersion()
 		if err != nil {
 			return err
 		}

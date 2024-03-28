@@ -1,5 +1,5 @@
 // Copyright 2023 The KCL Authors. All rights reserved.
-// Deprecated: The entire contents of this file will be deprecated. 
+// Deprecated: The entire contents of this file will be deprecated.
 // Please use the kcl cli - https://github.com/kcl-lang/cli.
 
 package cmd
@@ -95,8 +95,6 @@ func KpmRun(c *cli.Context, kpmcli *client.KpmClient) error {
 		return err
 	}
 
-	kpmcli.SetNoSumCheck(c.Bool(FLAG_NO_SUM_CHECK))
-
 	defer func() {
 		// release the lock of the package cache after the function returns.
 		releaseErr := kpmcli.ReleasePackageCacheLock()
@@ -106,6 +104,7 @@ func KpmRun(c *cli.Context, kpmcli *client.KpmClient) error {
 	}()
 
 	kclOpts := CompileOptionFromCli(c)
+	kclOpts.SetNoSumCheck(c.Bool(FLAG_NO_SUM_CHECK))
 	runEntry, errEvent := runner.FindRunEntryFrom(c.Args().Slice())
 	if errEvent != nil {
 		return errEvent

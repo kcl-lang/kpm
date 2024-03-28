@@ -112,7 +112,7 @@ func (profile *Profile) GetEntries() []string {
 // FillDependenciesInfo will fill registry information for all dependencies in a kcl.mod.
 func (modFile *ModFile) FillDependenciesInfo() error {
 	for k, v := range modFile.Deps {
-		err := v.FillDepInfo()
+		err := v.FillDepInfo(modFile.HomePath)
 		if err != nil {
 			return err
 		}
@@ -168,6 +168,13 @@ type Dependency struct {
 	Source        `json:"-"`
 }
 
+func (d *Dependency) FromKclPkg(pkg *KclPkg) {
+	d.Name = pkg.GetPkgName()
+	d.FullName = pkg.GetPkgFullName()
+	d.Version = pkg.GetPkgVersion()
+	d.LocalFullPath = pkg.HomePath
+}
+
 // SetName will set the name and alias name of a dependency.
 func (d *Dependency) GetAliasName() string {
 	return strings.ReplaceAll(d.Name, "-", "_")
@@ -176,8 +183,12 @@ func (d *Dependency) GetAliasName() string {
 // WithTheSameVersion will check whether two dependencies have the same version.
 func (d Dependency) WithTheSameVersion(other Dependency) bool {
 
-	sameNameAndVersion := d.Name == other.Name && d.Version == other.Version
+	var sameVersion = true
+	if len(d.Version) != 0 && len(other.Version) != 0 {
+		sameVersion = d.Version == other.Version
 
+	}
+	sameNameAndVersion := d.Name == other.Name && sameVersion
 	sameGitSrc := true
 	if d.Source.Git != nil && other.Source.Git != nil {
 		sameGitSrc = d.Source.Git.Url == other.Source.Git.Url &&
@@ -191,7 +202,7 @@ func (d Dependency) WithTheSameVersion(other Dependency) bool {
 
 // GetLocalFullPath will get the local path of a dependency.
 func (dep *Dependency) GetLocalFullPath(rootpath string) string {
-	if dep.IsFromLocal() {
+	if len(dep.LocalFullPath) == 0 && dep.IsFromLocal() {
 		if filepath.IsAbs(dep.Source.Local.Path) {
 			return dep.Source.Local.Path
 		}
@@ -205,7 +216,7 @@ func (dep *Dependency) IsFromLocal() bool {
 }
 
 // FillDepInfo will fill registry information for a dependency.
-func (dep *Dependency) FillDepInfo() error {
+func (dep *Dependency) FillDepInfo(homepath string) error {
 	if dep.Source.Oci != nil {
 		settings := settings.GetSettings()
 		if settings.ErrorEvent != nil {
@@ -219,6 +230,9 @@ func (dep *Dependency) FillDepInfo() error {
 			urlpath := utils.JoinPath(settings.DefaultOciRepo(), dep.Name)
 			dep.Source.Oci.Repo = urlpath
 		}
+	}
+	if dep.Source.Local != nil {
+		dep.LocalFullPath = dep.Source.Local.Path
 	}
 	return nil
 }
@@ -234,7 +248,7 @@ func (dep *Dependency) GenDepFullName() string {
 type Source struct {
 	*Git
 	*Oci
-	*Local
+	*Local `toml:"-"`
 }
 
 type Local struct {

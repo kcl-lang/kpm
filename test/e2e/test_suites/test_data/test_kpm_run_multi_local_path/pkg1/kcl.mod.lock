@@ -1,0 +1,11 @@
+[dependencies]
+  [dependencies.pkg2]
+    name = "pkg2"
+    full_name = "pkg2_0.0.1"
+    version = "0.0.1"
+    sum = "JbfIAXPJb3L6xX7hi/A5mrXzjpB8eFoKfEmJMdHsewY="
+  [dependencies.pkg3]
+    name = "pkg3"
+    full_name = "pkg3_0.0.1"
+    version = "0.0.1"
+    sum = "T29gAv6K/tLithhP5jVHyurV5zRFui+i1ulyMt/ncnM="
