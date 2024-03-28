@@ -16,6 +16,7 @@ import (
 	"github.com/dominikbraun/graph"
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
+	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/opt"
@@ -1364,4 +1365,16 @@ func TestAddWithLocalPath(t *testing.T) {
 	assert.Equal(t, len(gotpkg.Dependencies.Deps), len(expectpkg.Dependencies.Deps))
 	assert.Equal(t, gotpkg.Dependencies.Deps["dep_pkg"].FullName, expectpkg.Dependencies.Deps["dep_pkg"].FullName)
 	assert.Equal(t, gotpkg.Dependencies.Deps["dep_pkg"].Version, expectpkg.Dependencies.Deps["dep_pkg"].Version)
+}
+
+func TestRunOciWithSettingsFile(t *testing.T) {
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	kpmcli.SetLogWriter(nil)
+	opts := opt.DefaultCompileOptions()
+	opts.SetEntries([]string{})
+	opts.Merge(kcl.WithSettings(filepath.Join(".", "test_data", "test_run_oci_with_settings", "kcl.yaml")))
+	opts.SetHasSettingsYaml(true)
+	_, err = kpmcli.CompileOciPkg("oci://ghcr.io/kcl-lang/helloworld", "", opts)
+	assert.Equal(t, err, nil)
 }

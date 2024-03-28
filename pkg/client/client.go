@@ -378,9 +378,15 @@ func (c *KpmClient) CompileWithOpts(opts *opt.CompileOptions) (*kcl.KCLResultLis
 				opts.Merge(kcl.WithKFilenames(filepath.Join(opts.PkgPath(), entry)))
 			}
 		}
-	} else if len(kclPkg.GetEntryKclFilesFromModFile()) == 0 && !opts.HasSettingsYaml() {
-		// no entry
-		opts.Merge(kcl.WithKFilenames(opts.PkgPath()))
+	} else if len(kclPkg.GetEntryKclFilesFromModFile()) == 0 {
+		// No entries profile in kcl.mod and no file settings in the settings file
+		if !opts.HasSettingsYaml() {
+			// No settings file.
+			opts.Merge(kcl.WithKFilenames(opts.PkgPath()))
+		} else if opts.HasSettingsYaml() && len(opts.KFilenameList) == 0 {
+			// Has settings file but no file config in the settings files.
+			opts.Merge(kcl.WithKFilenames(opts.PkgPath()))
+		}
 	}
 	opts.Merge(kcl.WithWorkDir(opts.PkgPath()))
 
