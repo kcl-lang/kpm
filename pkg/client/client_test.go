@@ -1364,4 +1364,6 @@ func TestAddWithLocalPath(t *testing.T) {
 	assert.Equal(t, len(gotpkg.Dependencies.Deps), len(expectpkg.Dependencies.Deps))
 	assert.Equal(t, gotpkg.Dependencies.Deps["dep_pkg"].FullName, expectpkg.Dependencies.Deps["dep_pkg"].FullName)
 	assert.Equal(t, gotpkg.Dependencies.Deps["dep_pkg"].Version, expectpkg.Dependencies.Deps["dep_pkg"].Version)
+	assert.Equal(t, gotpkg.Dependencies.Deps["dep_pkg"].LocalFullPath, filepath.Join(tmppath, "dep_pkg"))
+	assert.Equal(t, gotpkg.Dependencies.Deps["dep_pkg"].Source.Local.Path, "../dep_pkg")
 }

@@ -4,7 +4,6 @@
     full_name = "dep_pkg_0.0.1"
     version = "0.0.1"
     sum = "C3TjaZJVdt4G8TtbiCxTUO/zAlf7fWJTAvs/CDMnlxY="
-    path = "../dep_pkg"
   [dependencies.helloworld]
     name = "helloworld"
     full_name = "helloworld_0.1.1"
