@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"golang.org/x/mod/module"
+
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/constants"
 	errors "kcl-lang.io/kpm/pkg/errors"
@@ -20,6 +22,8 @@ type KclPkg struct {
 	// The dependencies in the current kcl package are the dependencies of kcl.mod.lock,
 	// not the dependencies in kcl.mod.
 	Dependencies
+	// minimal build list for the current kcl package.
+	BuildList []module.Version
 	// The flag 'NoSumCheck' is true if the checksum of the current kcl package is not checked.
 	NoSumCheck bool
 }

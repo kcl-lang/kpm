@@ -14,6 +14,7 @@ import (
 	"github.com/dominikbraun/graph"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/otiai10/copy"
+	"golang.org/x/mod/module"
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"oras.land/oras-go/v2"
 
@@ -1191,12 +1192,15 @@ func (c *KpmClient) ParseOciOptionFromString(oci string, tag string) (*opt.OciOp
 }
 
 // InitGraphAndDownloadDeps initializes a dependency graph and call downloadDeps function.
-func (c *KpmClient) InitGraphAndDownloadDeps(kclPkg *pkg.KclPkg) (*pkg.Dependencies, graph.Graph[string, string], error) {
+func (c *KpmClient) InitGraphAndDownloadDeps(kclPkg *pkg.KclPkg) (*pkg.Dependencies, graph.Graph[module.Version, module.Version], error) {
 
-	depGraph := graph.New(graph.StringHash, graph.Directed(), graph.PreventCycles())
+	moduleHash := func(m module.Version) module.Version {
+		return m
+	}
+	depGraph := graph.New(moduleHash, graph.Directed(), graph.PreventCycles())
 
 	// add the root vertex(package name) to the dependency graph.
-	root := fmt.Sprintf("%s@%s", kclPkg.GetPkgName(), kclPkg.GetPkgVersion())
+	root := module.Version{Path: kclPkg.GetPkgName(), Version: kclPkg.GetPkgVersion()}
 	err := depGraph.AddVertex(root)
 	if err != nil {
 		return nil, nil, err
@@ -1234,7 +1238,7 @@ func (c *KpmClient) dependencyExists(dep *pkg.Dependency, lockDeps *pkg.Dependen
 }
 
 // downloadDeps will download all the dependencies of the current kcl package.
-func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencies, depGraph graph.Graph[string, string], parent string) (*pkg.Dependencies, error) {
+func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencies, depGraph graph.Graph[module.Version, module.Version], parent module.Version) (*pkg.Dependencies, error) {
 	newDeps := pkg.Dependencies{
 		Deps: make(map[string]pkg.Dependency),
 	}
@@ -1305,8 +1309,7 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 			}
 			return nil, err
 		}
-		source := fmt.Sprintf("%s@%s", d.Name, d.Version)
-		source = strings.TrimRight(source, "@")
+		source := module.Version{Path: d.Name, Version: d.Version}
 		err = depGraph.AddVertex(source)
 		if err != nil && err != graph.ErrVertexAlreadyExists {
 			return nil, err
