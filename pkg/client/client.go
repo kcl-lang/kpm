@@ -153,7 +153,7 @@ func (c *KpmClient) FindKclPkgFrom(path string) (*pkg.KclPkg, error) {
 				return nil, reporter.NewErrorEvent(
 					reporter.InvalidKclPkg,
 					err,
-					fmt.Sprintf("failed to find the kcl package tar from '%s'.", path),
+					fmt.Sprintf("failed to find the kcl package from '%s'.", path),
 				)
 			}
 
@@ -173,7 +173,7 @@ func (c *KpmClient) FindKclPkgFrom(path string) (*pkg.KclPkg, error) {
 		return nil, reporter.NewErrorEvent(
 			reporter.FailedUntarKclPkg,
 			err,
-			fmt.Sprintf("failed to untar the kcl package tar from '%s' into '%s'.", tarPath, unTarPath),
+			fmt.Sprintf("failed to untar the kcl package from '%s' into '%s'.", tarPath, unTarPath),
 		)
 	}
 
@@ -184,7 +184,7 @@ func (c *KpmClient) FindKclPkgFrom(path string) (*pkg.KclPkg, error) {
 			return nil, reporter.NewErrorEvent(
 				reporter.FailedUntarKclPkg,
 				err,
-				fmt.Sprintf("failed to untar the kcl package tar from '%s' into '%s'.", tarPath, unTarPath),
+				fmt.Sprintf("failed to untar the kcl package from '%s' into '%s'.", tarPath, unTarPath),
 			)
 		}
 	}
@@ -194,7 +194,7 @@ func (c *KpmClient) FindKclPkgFrom(path string) (*pkg.KclPkg, error) {
 		return nil, reporter.NewErrorEvent(
 			reporter.InvalidKclPkg,
 			err,
-			fmt.Sprintf("failed to find the kcl package tar from '%s'.", path),
+			fmt.Sprintf("failed to find the kcl package from '%s'.", path),
 		)
 	}
 
@@ -909,7 +909,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 	}
 
 	if dep.Source.Local != nil {
-		kpkg, err := pkg.FindFirstKclPkgFrom(dep.GetLocalFullPath(homePath))
+		kpkg, err := c.FindKclPkgFrom(dep.GetLocalFullPath(homePath))
 		if err != nil {
 			return nil, err
 		}
@@ -1007,7 +1007,7 @@ func (c *KpmClient) ParseKclModFile(kclPkg *pkg.KclPkg) (map[string]map[string]s
 	return dependencies, nil
 }
 
-// LoadPkgFromOci will download the kcl package from the oci repository and return an `KclPkg`.
+// DownloadPkgFromOci will download the kcl package from the oci repository and return an `KclPkg`.
 func (c *KpmClient) DownloadPkgFromOci(dep *pkg.Oci, localPath string) (*pkg.KclPkg, error) {
 	ociClient, err := oci.NewOciClient(dep.Reg, dep.Repo, &c.settings)
 	if err != nil {
@@ -1044,7 +1044,7 @@ func (c *KpmClient) DownloadPkgFromOci(dep *pkg.Oci, localPath string) (*pkg.Kcl
 		return nil, err
 	}
 
-	pkg, err := pkg.FindFirstKclPkgFrom(localPath)
+	pkg, err := c.FindKclPkgFrom(localPath)
 	if err != nil {
 		return nil, err
 	}
@@ -1090,43 +1090,9 @@ func (c *KpmClient) DownloadFromOci(dep *pkg.Oci, localPath string) (string, err
 		return "", err
 	}
 
-	matches, _ := filepath.Glob(filepath.Join(localPath, "*.tar"))
-	if matches == nil || len(matches) != 1 {
-		// then try to glob tgz file
-		matches, _ = filepath.Glob(filepath.Join(localPath, "*.tgz"))
-		if matches == nil || len(matches) != 1 {
-			return "", reporter.NewErrorEvent(
-				reporter.InvalidKclPkg,
-				err,
-				fmt.Sprintf("failed to find the kcl package from '%s'.", localPath),
-			)
-		}
-	}
-
-	tarPath := matches[0]
-	if utils.IsTar(tarPath) {
-		err = utils.UnTarDir(tarPath, localPath)
-	} else {
-		err = utils.ExtractTarball(tarPath, localPath)
-	}
+	_, err = c.FindKclPkgFrom(localPath)
 	if err != nil {
-		return "", reporter.NewErrorEvent(
-			reporter.FailedUntarKclPkg,
-			err,
-			fmt.Sprintf("failed to untar the kcl package from '%s' into '%s'.", tarPath, localPath),
-		)
-	}
-
-	// After untar the downloaded kcl package tar file, remove the tar file.
-	if utils.DirExists(tarPath) {
-		rmErr := os.Remove(tarPath)
-		if rmErr != nil {
-			return "", reporter.NewErrorEvent(
-				reporter.FailedUntarKclPkg,
-				err,
-				fmt.Sprintf("failed to untar the kcl package tar from '%s' into '%s'.", tarPath, localPath),
-			)
-		}
+		return "", err
 	}
 
 	return localPath, nil

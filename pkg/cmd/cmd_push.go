@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path/filepath"
 
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kpm/pkg/client"
@@ -117,7 +118,7 @@ func pushTarPackage(ociUrl, localTarPath string, vendorMode bool, kpmcli *client
 	}()
 
 	// 1. load the kcl package from the tar path.
-	kclPkg, err = kpmcli.FindKclPkgFrom(localTarPath)
+	kclPkg, err = kpmcli.FindKclPkgFrom(filepath.Dir(localTarPath))
 	if err != nil {
 		return err
 	}
