@@ -36,6 +36,7 @@ func NewKclPkg(opts *opt.InitOptions) KclPkg {
 	}
 }
 
+// Deprecated: use KpmClient.LoadPkgFromPath instead.
 func LoadKclPkg(pkgPath string) (*KclPkg, error) {
 	modFile, err := LoadModFile(pkgPath)
 	if err != nil {
@@ -73,6 +74,7 @@ func LoadKclPkg(pkgPath string) (*KclPkg, error) {
 	}, nil
 }
 
+// Deprecated: use KpmClient.FindKclPkgFrom instead.
 func FindFirstKclPkgFrom(path string) (*KclPkg, error) {
 	matches, _ := filepath.Glob(filepath.Join(path, "*.tar"))
 	if matches == nil || len(matches) != 1 {
@@ -132,6 +134,7 @@ func FindFirstKclPkgFrom(path string) (*KclPkg, error) {
 	return pkg, nil
 }
 
+// Deprecated: the function is not used.
 func LoadKclPkgFromTar(pkgTarPath string) (*KclPkg, error) {
 	destDir := strings.TrimSuffix(pkgTarPath, filepath.Ext(pkgTarPath))
 	err := utils.UnTarDir(pkgTarPath, destDir)

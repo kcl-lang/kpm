@@ -1,5 +1,5 @@
 // Copyright 2023 The KCL Authors. All rights reserved.
-// Deprecated: The entire contents of this file will be deprecated. 
+// Deprecated: The entire contents of this file will be deprecated.
 // Please use the kcl cli - https://github.com/kcl-lang/cli.
 
 package cmd
@@ -11,7 +11,6 @@ import (
 
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kpm/pkg/client"
-	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/utils"
 )
@@ -51,7 +50,7 @@ func NewPkgCmd(kpmcli *client.KpmClient) *cli.Command {
 				return reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, failed to load working directory.")
 			}
 
-			kclPkg, err := pkg.LoadKclPkg(pwd)
+			kclPkg, err := kpmcli.LoadPkgFromPath(pwd)
 
 			if err != nil {
 				reporter.ExitWithReport("failed to load package in " + pwd + ".")

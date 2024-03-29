@@ -285,7 +285,9 @@ func TestInitEmptyPkg(t *testing.T) {
 	err = kpmcli.InitEmptyPkg(&kclPkg)
 	assert.Equal(t, err, nil)
 
-	testKclPkg, err := pkg.LoadKclPkg(testDir)
+	kpmcli, err = NewKpmClient()
+	assert.Equal(t, err, nil)
+	testKclPkg, err := kpmcli.LoadPkgFromPath(testDir)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, testKclPkg.ModFile.Pkg.Name, "test_name")
 	assert.Equal(t, testKclPkg.ModFile.Pkg.Version, "0.0.1")
@@ -612,7 +614,9 @@ func checkDepsMapInSearchPath(t *testing.T, dep pkg.Dependency, searchPath strin
 func TestPackageCurrentPkgPath(t *testing.T) {
 	testDir := getTestDir("tar_kcl_pkg")
 
-	kclPkg, err := pkg.LoadKclPkg(testDir)
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	kclPkg, err := kpmcli.LoadPkgFromPath(testDir)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, kclPkg.GetPkgTag(), "0.0.1")
 	assert.Equal(t, kclPkg.GetPkgName(), "test_tar")
@@ -620,9 +624,6 @@ func TestPackageCurrentPkgPath(t *testing.T) {
 	assert.Equal(t, kclPkg.GetPkgTarName(), "test_tar_0.0.1.tar")
 
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, kclPkg.GetPkgTarName())), false)
-
-	kpmcli, err := NewKpmClient()
-	assert.Equal(t, err, nil)
 	path, err := kpmcli.PackagePkg(kclPkg, true)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, path, filepath.Join(testDir, kclPkg.GetPkgTarName()))
@@ -646,12 +647,12 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 
 	os.Setenv(env.PKG_PATH, testHomePath)
 
-	kclpkg, err := pkg.LoadKclPkg(testDir)
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	kclpkg, err := kpmcli.LoadPkgFromPath(testDir)
 	assert.Equal(t, err, nil)
 
 	globalPkgPath, _ := env.GetAbsPkgPath()
-	kpmcli, err := NewKpmClient()
-	assert.Equal(t, err, nil)
 	res, err := kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
 	assert.Equal(t, err, nil)
 
@@ -853,7 +854,7 @@ func TestUpdateWithKclMod(t *testing.T) {
 	err = copy.Copy(src_testDir, dest_testDir)
 	assert.Equal(t, err, nil)
 
-	kclPkg, err := pkg.LoadKclPkg(dest_testDir)
+	kclPkg, err := kpmcli.LoadPkgFromPath(dest_testDir)
 	assert.Equal(t, err, nil)
 	err = kpmcli.UpdateDeps(kclPkg)
 	assert.Equal(t, err, nil)
@@ -884,7 +885,7 @@ func TestUpdateWithKclModlock(t *testing.T) {
 	err = copy.Copy(src_testDir, dest_testDir)
 	assert.Equal(t, err, nil)
 
-	kclPkg, err := pkg.LoadKclPkg(dest_testDir)
+	kclPkg, err := kpmcli.LoadPkgFromPath(dest_testDir)
 	assert.Equal(t, err, nil)
 	err = kpmcli.UpdateDeps(kclPkg)
 	assert.Equal(t, err, nil)
@@ -924,7 +925,7 @@ func TestMetadataOffline(t *testing.T) {
 
 	beautifulContent, err := os.ReadFile(BeautifulKclMod)
 	assert.Equal(t, err, nil)
-	kclPkg, err := pkg.LoadKclPkg(testDir)
+	kclPkg, err := kpmcli.LoadPkgFromPath(testDir)
 	assert.Equal(t, err, nil)
 
 	res, err := kpmcli.ResolveDepsMetadataInJsonStr(kclPkg, false)

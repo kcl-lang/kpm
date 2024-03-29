@@ -15,7 +15,6 @@ import (
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/opt"
-	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 )
 
@@ -76,7 +75,7 @@ func KpmAdd(c *cli.Context, kpmcli *client.KpmClient) error {
 		return err
 	}
 
-	kclPkg, err := pkg.LoadKclPkg(pwd)
+	kclPkg, err := kpmcli.LoadPkgFromPath(pwd)
 	if err != nil {
 		return err
 	}

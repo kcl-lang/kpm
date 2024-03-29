@@ -1,5 +1,5 @@
 // Copyright 2023 The KCL Authors. All rights reserved.
-// Deprecated: The entire contents of this file will be deprecated. 
+// Deprecated: The entire contents of this file will be deprecated.
 // Please use the kcl cli - https://github.com/kcl-lang/cli.
 
 package cmd
@@ -89,7 +89,7 @@ func pushCurrentPackage(ociUrl string, vendorMode bool, kpmcli *client.KpmClient
 		return err
 	}
 	// 1. Load the current kcl packege.
-	kclPkg, err := pkg.LoadKclPkg(pwd)
+	kclPkg, err := kpmcli.LoadPkgFromPath(pwd)
 
 	if err != nil {
 		reporter.ReportEventToStderr(reporter.NewEvent(reporter.FailedLoadKclMod, fmt.Sprintf("failed to load package in '%s'", pwd)))
@@ -117,7 +117,7 @@ func pushTarPackage(ociUrl, localTarPath string, vendorMode bool, kpmcli *client
 	}()
 
 	// 1. load the kcl package from the tar path.
-	kclPkg, err = pkg.LoadKclPkgFromTar(localTarPath)
+	kclPkg, err = kpmcli.FindKclPkgFrom(localTarPath)
 	if err != nil {
 		return err
 	}

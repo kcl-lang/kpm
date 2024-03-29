@@ -10,7 +10,6 @@ import (
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/env"
-	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 )
 
@@ -52,7 +51,7 @@ func KpmGraph(c *cli.Context, kpmcli *client.KpmClient) error {
 		return err
 	}
 
-	kclPkg, err := pkg.LoadKclPkg(pwd)
+	kclPkg, err := kpmcli.LoadPkgFromPath(pwd)
 	if err != nil {
 		return err
 	}
@@ -73,7 +72,7 @@ func KpmGraph(c *cli.Context, kpmcli *client.KpmClient) error {
 	}
 
 	// print the dependency graph to stdout.
-	root := fmt.Sprintf("%s@%s", kclPkg.GetPkgName(), kclPkg.GetPkgVersion()) 
+	root := fmt.Sprintf("%s@%s", kclPkg.GetPkgName(), kclPkg.GetPkgVersion())
 	err = graph.BFS(depGraph, root, func(source string) bool {
 		for target := range adjMap[source] {
 			reporter.ReportMsgTo(

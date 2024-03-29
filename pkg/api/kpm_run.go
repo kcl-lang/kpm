@@ -12,7 +12,6 @@ import (
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/oci"
 	"kcl-lang.io/kpm/pkg/opt"
-	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/runner"
 	"kcl-lang.io/kpm/pkg/utils"
@@ -238,7 +237,7 @@ func run(kpmcli *client.KpmClient, opts *opt.CompileOptions) (*kcl.KCLResultList
 		return nil, reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it.")
 	}
 
-	kclPkg, err := pkg.LoadKclPkg(pkgPath)
+	kclPkg, err := kpmcli.LoadPkgFromPath(pkgPath)
 	if err != nil {
 		return nil, err
 	}

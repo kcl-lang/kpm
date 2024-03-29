@@ -142,6 +142,65 @@ func (c *KpmClient) LoadPkgFromPath(pkgPath string) (*pkg.KclPkg, error) {
 	}, nil
 }
 
+func (c *KpmClient) FindKclPkgFrom(path string) (*pkg.KclPkg, error) {
+	matches, _ := filepath.Glob(filepath.Join(path, "*.tar"))
+	if matches == nil || len(matches) != 1 {
+		// then try to glob tgz file
+		matches, _ = filepath.Glob(filepath.Join(path, "*.tgz"))
+		if matches == nil || len(matches) != 1 {
+			pkg, err := c.LoadPkgFromPath(path)
+			if err != nil {
+				return nil, reporter.NewErrorEvent(
+					reporter.InvalidKclPkg,
+					err,
+					fmt.Sprintf("failed to find the kcl package tar from '%s'.", path),
+				)
+			}
+
+			return pkg, nil
+		}
+	}
+
+	tarPath := matches[0]
+	unTarPath := filepath.Dir(tarPath)
+	var err error
+	if utils.IsTar(tarPath) {
+		err = utils.UnTarDir(tarPath, unTarPath)
+	} else {
+		err = utils.ExtractTarball(tarPath, unTarPath)
+	}
+	if err != nil {
+		return nil, reporter.NewErrorEvent(
+			reporter.FailedUntarKclPkg,
+			err,
+			fmt.Sprintf("failed to untar the kcl package tar from '%s' into '%s'.", tarPath, unTarPath),
+		)
+	}
+
+	// After untar the downloaded kcl package tar file, remove the tar file.
+	if utils.DirExists(tarPath) {
+		rmErr := os.Remove(tarPath)
+		if rmErr != nil {
+			return nil, reporter.NewErrorEvent(
+				reporter.FailedUntarKclPkg,
+				err,
+				fmt.Sprintf("failed to untar the kcl package tar from '%s' into '%s'.", tarPath, unTarPath),
+			)
+		}
+	}
+
+	pkg, err := c.LoadPkgFromPath(unTarPath)
+	if err != nil {
+		return nil, reporter.NewErrorEvent(
+			reporter.InvalidKclPkg,
+			err,
+			fmt.Sprintf("failed to find the kcl package tar from '%s'.", path),
+		)
+	}
+
+	return pkg, nil
+}
+
 func (c *KpmClient) LoadModFile(pkgPath string) (*pkg.ModFile, error) {
 	modFile := new(pkg.ModFile)
 	err := modFile.LoadModFile(filepath.Join(pkgPath, pkg.MOD_FILE))
