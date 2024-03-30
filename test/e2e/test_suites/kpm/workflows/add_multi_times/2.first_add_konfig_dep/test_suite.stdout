@@ -1,1 +1,3 @@
-<ignore>
+adding dependency 'konfig'
+cloning 'https://github.com/awesome-kusion/konfig.git' with tag 'v0.0.1'
+add dependency 'konfig:v0.0.1' successfully

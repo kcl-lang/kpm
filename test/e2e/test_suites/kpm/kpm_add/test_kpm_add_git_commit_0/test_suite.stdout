@@ -1,0 +1,3 @@
+adding dependency 'flask-demo-kcl-manifests'
+cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with commit '0b3f5ab'
+add dependency 'flask-demo-kcl-manifests:0b3f5ab' successfully

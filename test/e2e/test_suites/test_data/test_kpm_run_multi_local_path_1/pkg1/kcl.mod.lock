@@ -1,0 +1,6 @@
+[dependencies]
+  [dependencies.pkg2]
+    name = "pkg2"
+    full_name = "pkg2_0.0.1"
+    version = "0.0.1"
+    sum = "JbfIAXPJb3L6xX7hi/A5mrXzjpB8eFoKfEmJMdHsewY="
