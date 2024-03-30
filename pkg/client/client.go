@@ -1287,7 +1287,7 @@ func (c *KpmClient) dependencyExists(dep *pkg.Dependency, lockDeps *pkg.Dependen
 }
 
 // downloadDeps will download all the dependencies of the current kcl package.
-func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencies, depGraph graph.Graph[module.Version, module.Version], pkghome, parent module.Version) (*pkg.Dependencies, error) {
+func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencies, depGraph graph.Graph[module.Version, module.Version], pkghome string, parent module.Version) (*pkg.Dependencies, error) {
 
 	newDeps := pkg.Dependencies{
 		Deps: make(map[string]pkg.Dependency),
