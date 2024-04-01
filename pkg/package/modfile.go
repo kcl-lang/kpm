@@ -202,7 +202,7 @@ func (d Dependency) WithTheSameVersion(other Dependency) bool {
 
 // GetLocalFullPath will get the local path of a dependency.
 func (dep *Dependency) GetLocalFullPath(rootpath string) string {
-	if len(dep.LocalFullPath) == 0 && dep.IsFromLocal() {
+	if !filepath.IsAbs(dep.LocalFullPath) && dep.IsFromLocal() {
 		if filepath.IsAbs(dep.Source.Local.Path) {
 			return dep.Source.Local.Path
 		}

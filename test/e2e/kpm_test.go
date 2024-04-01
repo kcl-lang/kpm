@@ -13,6 +13,7 @@ import (
 	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/opt"
+	"kcl-lang.io/kpm/pkg/utils"
 	"oras.land/oras-go/v2"
 	"oras.land/oras-go/v2/registry/remote"
 	"oras.land/oras-go/v2/registry/remote/auth"
@@ -97,13 +98,13 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 		testSuitesRoot := filepath.Join(filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "kpm"), "workflows")
 
 		files, _ := os.ReadDir(testSuitesRoot)
-		for _, file := range files {
+		for _, f := range files {
+			file := f
 			ginkgo.It(filepath.Join(testSuitesRoot, file.Name()), func() {
 				if file.IsDir() {
 					testSuites := LoadAllTestSuites(filepath.Join(testSuitesRoot, file.Name()))
 					for _, ts := range testSuites {
 						ts := ts
-
 						workspace := GetWorkspace()
 
 						stdout, stderr, err := ExecKpmWithWorkDir(ts.Input, workspace)
@@ -133,10 +134,15 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 			ginkgo.It(ts.GetTestSuiteInfo(), func() {
 				workspace := GetWorkspace()
 
-				CopyDir(filepath.Join(testDataRoot, ts.Name), filepath.Join(workspace, ts.Name))
+				testSuitePath := filepath.Join(testDataRoot, ts.Name)
+				testWorkspace := workspace
+				if exist, _ := utils.Exists(testSuitePath); exist {
+					CopyDir(testSuitePath, filepath.Join(workspace, ts.Name))
+					testWorkspace = filepath.Join(workspace, ts.Name)
+				}
 
-				input := ReplaceAllKeyByValue(ts.Input, "<workspace>", filepath.Join(workspace, ts.Name))
-				stdout, stderr, err := ExecKpmWithWorkDir(input, filepath.Join(workspace, ts.Name))
+				input := ReplaceAllKeyByValue(ts.Input, "<workspace>", testWorkspace)
+				stdout, stderr, err := ExecKpmWithWorkDir(input, testWorkspace)
 
 				expectedStdout := ReplaceAllKeyByValue(ts.ExpectStdout, "<workspace>", workspace)
 				expectedStderr := ReplaceAllKeyByValue(ts.ExpectStderr, "<workspace>", workspace)

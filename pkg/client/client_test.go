@@ -16,6 +16,7 @@ import (
 	"github.com/dominikbraun/graph"
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v3"
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/git"
@@ -1379,4 +1380,45 @@ func TestRunOciWithSettingsFile(t *testing.T) {
 	opts.SetHasSettingsYaml(true)
 	_, err = kpmcli.CompileOciPkg("oci://ghcr.io/kcl-lang/helloworld", "", opts)
 	assert.Equal(t, err, nil)
+}
+
+func TestRunGitWithLocalDep(t *testing.T) {
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	testPath := getTestDir("test_run_git_with_local_dep")
+	defer func() {
+		_ = os.RemoveAll(filepath.Join(testPath, "catalog"))
+	}()
+
+	testCases := []struct {
+		ref        string
+		expectFile string
+	}{
+		{"8308200", "expect1.yaml"},
+		{"0b3f5ab", "expect2.yaml"},
+	}
+
+	for _, tc := range testCases {
+
+		expectPath := filepath.Join(testPath, tc.expectFile)
+		opts := opt.DefaultCompileOptions()
+		gitOpts := git.NewCloneOptions("https://github.com/kcl-lang/flask-demo-kcl-manifests.git", tc.ref, "", "", "", nil)
+
+		result, err := kpmcli.CompileGitPkg(gitOpts, opts)
+		assert.Equal(t, err, nil)
+
+		fileBytes, err := os.ReadFile(expectPath)
+		assert.Equal(t, err, nil)
+
+		var expectObj map[string]interface{}
+		err = yaml.Unmarshal(fileBytes, &expectObj)
+		assert.Equal(t, err, nil)
+
+		var gotObj map[string]interface{}
+		err = yaml.Unmarshal([]byte(result.GetRawJsonResult()), &gotObj)
+		assert.Equal(t, err, nil)
+
+		assert.Equal(t, gotObj, expectObj)
+	}
 }
