@@ -286,6 +286,7 @@ func DirExists(path string) bool {
 
 // IsSymlinkValidAndExists will check whether the symlink exists and points to a valid target
 // return three values: whether the symlink exists, whether it points to a valid target, and any error encountered
+// Note: IsSymlinkValidAndExists is only useful on unix-like systems.
 func IsSymlinkValidAndExists(symlinkPath string) (bool, bool, error) {
 	// check if the symlink exists
 	info, err := os.Lstat(symlinkPath)
