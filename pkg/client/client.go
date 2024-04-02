@@ -264,11 +264,6 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 			} else if d.IsFromLocal() && !utils.DirExists(d.GetLocalFullPath(kclPkg.HomePath)) {
 				return reporter.NewErrorEvent(reporter.DependencyNotFound, fmt.Errorf("dependency '%s' not found in '%s'", d.Name, searchFullPath))
 			} else if d.IsFromLocal() && utils.DirExists(d.GetLocalFullPath(kclPkg.HomePath)) {
-				sum, err := utils.HashDir(d.GetLocalFullPath(kclPkg.HomePath))
-				if err != nil {
-					return reporter.NewErrorEvent(reporter.CalSumFailed, err, fmt.Sprintf("failed to calculate checksum for '%s' in '%s'", d.Name, searchFullPath))
-				}
-				d.Sum = sum
 				depPkg, err := c.LoadPkgFromPath(d.GetLocalFullPath(kclPkg.HomePath))
 				if err != nil {
 					return err
@@ -718,7 +713,7 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 		}
 		vendorFullPath := filepath.Join(vendorPath, d.FullName)
 		// If the package already exists in the 'vendor', do nothing.
-		if utils.DirExists(vendorFullPath) && check(d, vendorFullPath) {
+		if depExisted(vendorFullPath, d) {
 			continue
 		} else {
 			// If not in the 'vendor', check the global cache.
@@ -729,7 +724,7 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 				if err != nil {
 					return err
 				}
-			} else if utils.DirExists(d.GetLocalFullPath(kclPkg.HomePath)) && check(d, d.GetLocalFullPath(kclPkg.HomePath)) {
+			} else if depExisted(d.GetLocalFullPath(kclPkg.HomePath), d) {
 				// If there is, copy it into the 'vendor' directory.
 				err := copy.Copy(d.GetLocalFullPath(kclPkg.HomePath), vendorFullPath)
 				if err != nil {
@@ -752,6 +747,11 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 	}
 
 	return nil
+}
+
+func depExisted(localPath string, dep pkg.Dependency) bool {
+	return (utils.DirExists(localPath) && check(dep, localPath)) ||
+		(utils.DirExists(localPath) && dep.IsFromLocal())
 }
 
 // FillDepInfo will fill registry information for a dependency.
@@ -851,14 +851,16 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		dep.FromKclPkg(kpkg)
 	}
 
-	var err error
-	dep.Sum, err = utils.HashDir(dep.LocalFullPath)
-	if err != nil {
-		return nil, reporter.NewErrorEvent(
-			reporter.FailedHashPkg,
-			err,
-			fmt.Sprintf("failed to hash the kcl package '%s' in '%s'.", dep.Name, dep.LocalFullPath),
-		)
+	if dep.Source.Local == nil {
+		var err error
+		dep.Sum, err = utils.HashDir(dep.LocalFullPath)
+		if err != nil {
+			return nil, reporter.NewErrorEvent(
+				reporter.FailedHashPkg,
+				err,
+				fmt.Sprintf("failed to hash the kcl package '%s' in '%s'.", dep.Name, dep.LocalFullPath),
+			)
+		}
 	}
 
 	return dep, nil

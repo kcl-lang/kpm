@@ -192,3 +192,45 @@ func TestAbsTarPath(t *testing.T) {
 	assert.NotEqual(t, err, nil)
 	assert.Equal(t, abs, "")
 }
+
+func TestIsSymlinkExist(t *testing.T) {
+	testPath := filepath.Join(getTestDir("test_link"), "is_link_exist")
+
+	link_target_not_exist := filepath.Join(testPath, "link_target_not_exist")
+
+	linkExist, targetExist, err := IsSymlinkValidAndExists(link_target_not_exist)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, linkExist, true)
+	assert.Equal(t, targetExist, false)
+
+	linkExist, targetExist, err = IsSymlinkValidAndExists("invalid_link")
+	assert.Equal(t, err, nil)
+	assert.Equal(t, linkExist, false)
+	assert.Equal(t, targetExist, false)
+
+	filename := filepath.Join(testPath, "test.txt")
+	validLink := filepath.Join(testPath, "valid_link")
+	err = CreateSymlink(filename, validLink)
+	assert.Equal(t, err, nil)
+
+	linkExist, targetExist, err = IsSymlinkValidAndExists(validLink)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, linkExist, true)
+	assert.Equal(t, targetExist, true)
+
+	anotherValidLink := filepath.Join(testPath, "another_valid_link")
+	err = CreateSymlink(filename, anotherValidLink)
+	assert.Equal(t, err, nil)
+
+	linkExist, targetExist, err = IsSymlinkValidAndExists(anotherValidLink)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, linkExist, true)
+	assert.Equal(t, targetExist, true)
+	// Defer the removal of the symlink
+	defer func() {
+		err := os.Remove(anotherValidLink)
+		assert.Equal(t, err, nil)
+		err = os.Remove(validLink)
+		assert.Equal(t, err, nil)
+	}()
+}

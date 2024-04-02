@@ -284,6 +284,44 @@ func DirExists(path string) bool {
 	return err == nil
 }
 
+// IsSymlinkValidAndExists will check whether the symlink exists and points to a valid target
+// return three values: whether the symlink exists, whether it points to a valid target, and any error encountered
+func IsSymlinkValidAndExists(symlinkPath string) (bool, bool, error) {
+	// check if the symlink exists
+	info, err := os.Lstat(symlinkPath)
+	if err != nil && os.IsNotExist(err) {
+		// symlink does not exist
+		return false, false, nil
+	} else if err != nil {
+		// other error
+		return false, false, err
+	}
+
+	// check if the file is a symlink
+	if info.Mode()&os.ModeSymlink == os.ModeSymlink {
+		// get the target of the symlink
+		target, err := os.Readlink(symlinkPath)
+		if err != nil {
+			// can not read the target
+			return true, false, err
+		}
+
+		// check if the target exists
+		_, err = os.Stat(target)
+		if err == nil {
+			// target exists
+			return true, true, nil
+		}
+		if os.IsNotExist(err) {
+			// target does not exist
+			return true, false, nil
+		}
+		return true, false, err
+	}
+
+	return false, false, fmt.Errorf("%s exists but is not a symlink", symlinkPath)
+}
+
 // DefaultKpmHome create the '.kpm' in the user home and return the path of ".kpm".
 func CreateSubdirInUserHome(subdir string) (string, error) {
 	homeDir, err := os.UserHomeDir()
@@ -305,14 +343,20 @@ func CreateSubdirInUserHome(subdir string) (string, error) {
 // CreateSymlink will create symbolic link named 'newName' for 'oldName',
 // and if the symbolic link already exists, it will be deleted and recreated.
 func CreateSymlink(oldName, newName string) error {
-	if DirExists(newName) {
+	symExist, _, err := IsSymlinkValidAndExists(newName)
+
+	if err != nil {
+		return err
+	}
+
+	if symExist {
 		err := os.Remove(newName)
 		if err != nil {
 			return err
 		}
 	}
 
-	err := os.Symlink(oldName, newName)
+	err = os.Symlink(oldName, newName)
 	if err != nil {
 		return err
 	}
