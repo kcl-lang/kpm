@@ -342,6 +342,7 @@ func CreateSubdirInUserHome(subdir string) (string, error) {
 
 // CreateSymlink will create symbolic link named 'newName' for 'oldName',
 // and if the symbolic link already exists, it will be deleted and recreated.
+// Note: CreateSymlink is only useful on unix-like systems.
 func CreateSymlink(oldName, newName string) error {
 	symExist, _, err := IsSymlinkValidAndExists(newName)
 

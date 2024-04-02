@@ -749,6 +749,9 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 	return nil
 }
 
+// depExisted will check whether the dependency exists in the local path.
+// If the dep is from local, do not need to check the checksum, so return true directly if it exists.
+// If the dep is from git or oci, check the checksum, so return true if the checksum is correct and it exist.
 func depExisted(localPath string, dep pkg.Dependency) bool {
 	return (utils.DirExists(localPath) && check(dep, localPath)) ||
 		(utils.DirExists(localPath) && dep.IsFromLocal())
