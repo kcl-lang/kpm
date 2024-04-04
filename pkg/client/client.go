@@ -827,12 +827,13 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			return nil, err
 		}
 		dep.FullName = dep.GenDepFullName()
-		// If the dependency is from git commit, the version is the commit id.
-		// If the dependency is from git tag, the version is the tag.
-		dep.Version, err = dep.Source.Git.GetValidGitReference()
+
+		modFile, err := c.LoadModFile(localPath)
 		if err != nil {
 			return nil, err
 		}
+		dep.Version = modFile.Pkg.Version
+		dep.Source.Git.Version = modFile.Pkg.Version
 	}
 
 	if dep.Source.Oci != nil {

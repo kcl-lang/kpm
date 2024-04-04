@@ -298,10 +298,11 @@ func (oci *Oci) FromString(ociUrl string) (*Oci, error) {
 
 // Git is the package source from git registry.
 type Git struct {
-	Url    string `toml:"url,omitempty"`
-	Branch string `toml:"branch,omitempty"`
-	Commit string `toml:"commit,omitempty"`
-	Tag    string `toml:"git_tag,omitempty"`
+	Url     string `toml:"url,omitempty"`
+	Branch  string `toml:"branch,omitempty"`
+	Commit  string `toml:"commit,omitempty"`
+	Tag     string `toml:"git_tag,omitempty"`
+	Version string `toml:"version,omitempty"`
 }
 
 // GetValidGitReference will get the valid git reference from git source.
