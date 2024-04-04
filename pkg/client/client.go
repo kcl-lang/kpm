@@ -265,11 +265,6 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 			} else if d.IsFromLocal() && !utils.DirExists(d.GetLocalFullPath(kclPkg.HomePath)) {
 				return reporter.NewErrorEvent(reporter.DependencyNotFound, fmt.Errorf("dependency '%s' not found in '%s'", d.Name, searchFullPath))
 			} else if d.IsFromLocal() && utils.DirExists(d.GetLocalFullPath(kclPkg.HomePath)) {
-				sum, err := utils.HashDir(d.GetLocalFullPath(kclPkg.HomePath))
-				if err != nil {
-					return reporter.NewErrorEvent(reporter.CalSumFailed, err, fmt.Sprintf("failed to calculate checksum for '%s' in '%s'", d.Name, searchFullPath))
-				}
-				d.Sum = sum
 				depPkg, err := c.LoadPkgFromPath(d.GetLocalFullPath(kclPkg.HomePath))
 				if err != nil {
 					return err
@@ -648,16 +643,10 @@ func (c *KpmClient) AddDepToPkg(kclPkg *pkg.KclPkg, d *pkg.Dependency) error {
 	}
 
 	// download all the dependencies.
-	changedDeps, _, err := c.InitGraphAndDownloadDeps(kclPkg)
+	_, _, err := c.InitGraphAndDownloadDeps(kclPkg)
 
 	if err != nil {
 		return err
-	}
-
-	// Update kcl.mod and kcl.mod.lock
-	for k, v := range changedDeps.Deps {
-		kclPkg.ModFile.Dependencies.Deps[k] = v
-		kclPkg.Dependencies.Deps[k] = v
 	}
 
 	return err
@@ -725,7 +714,7 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 		}
 		vendorFullPath := filepath.Join(vendorPath, d.FullName)
 		// If the package already exists in the 'vendor', do nothing.
-		if utils.DirExists(vendorFullPath) && check(d, vendorFullPath) {
+		if depExisted(vendorFullPath, d) {
 			continue
 		} else {
 			// If not in the 'vendor', check the global cache.
@@ -736,7 +725,7 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 				if err != nil {
 					return err
 				}
-			} else if utils.DirExists(d.GetLocalFullPath(kclPkg.HomePath)) && check(d, d.GetLocalFullPath(kclPkg.HomePath)) {
+			} else if depExisted(d.GetLocalFullPath(kclPkg.HomePath), d) {
 				// If there is, copy it into the 'vendor' directory.
 				err := copy.Copy(d.GetLocalFullPath(kclPkg.HomePath), vendorFullPath)
 				if err != nil {
@@ -759,6 +748,14 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 	}
 
 	return nil
+}
+
+// depExisted will check whether the dependency exists in the local path.
+// If the dep is from local, do not need to check the checksum, so return true directly if it exists.
+// If the dep is from git or oci, check the checksum, so return true if the checksum is correct and it exist.
+func depExisted(localPath string, dep pkg.Dependency) bool {
+	return (utils.DirExists(localPath) && check(dep, localPath)) ||
+		(utils.DirExists(localPath) && dep.IsFromLocal())
 }
 
 // FillDepInfo will fill registry information for a dependency.
@@ -859,14 +856,16 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		dep.FromKclPkg(kpkg)
 	}
 
-	var err error
-	dep.Sum, err = utils.HashDir(dep.LocalFullPath)
-	if err != nil {
-		return nil, reporter.NewErrorEvent(
-			reporter.FailedHashPkg,
-			err,
-			fmt.Sprintf("failed to hash the kcl package '%s' in '%s'.", dep.Name, dep.LocalFullPath),
-		)
+	if dep.Source.Local == nil {
+		var err error
+		dep.Sum, err = utils.HashDir(dep.LocalFullPath)
+		if err != nil {
+			return nil, reporter.NewErrorEvent(
+				reporter.FailedHashPkg,
+				err,
+				fmt.Sprintf("failed to hash the kcl package '%s' in '%s'.", dep.Name, dep.LocalFullPath),
+			)
+		}
 	}
 
 	return dep, nil
@@ -1256,7 +1255,7 @@ func (c *KpmClient) InitGraphAndDownloadDeps(kclPkg *pkg.KclPkg) (*pkg.Dependenc
 		return nil, nil, err
 	}
 
-	changedDeps, err := c.downloadDeps(kclPkg.ModFile.Dependencies, kclPkg.Dependencies, depGraph, kclPkg.HomePath, root)
+	changedDeps, err := c.downloadDeps(&kclPkg.ModFile.Dependencies, &kclPkg.Dependencies, depGraph, kclPkg.HomePath, root)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1300,7 +1299,7 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 			return nil, errors.InvalidDependency
 		}
 
-		existDep := c.dependencyExists(&d, &lockDeps)
+		existDep := c.dependencyExists(&d, lockDeps)
 		if existDep != nil {
 			newDeps.Deps[d.Name] = *existDep
 			continue
@@ -1333,9 +1332,10 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 			}
 		}
 
-		// Update kcl.mod and kcl.mod.lock
 		newDeps.Deps[d.Name] = *lockedDep
-		lockDeps.Deps[d.Name] = *lockedDep
+		// After downloading the dependency in kcl.mod, update the dep into to the kcl.mod
+		// Only the direct dependencies are updated to kcl.mod.
+		deps.Deps[d.Name] = *lockedDep
 	}
 
 	// necessary to make a copy as when we are updating kcl.mod in below for loop
@@ -1383,18 +1383,23 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 			return nil, err
 		}
 
-		// Download the dependencies.
-		nested, err := c.downloadDeps(deppkg.ModFile.Dependencies, lockDeps, depGraph, deppkg.HomePath, source)
+		// Download the indirect dependencies.
+		nested, err := c.downloadDeps(&deppkg.ModFile.Dependencies, lockDeps, depGraph, deppkg.HomePath, source)
 		if err != nil {
 			return nil, err
 		}
 
-		// Update kcl.mod.
 		for _, d := range nested.Deps {
 			if _, ok := newDeps.Deps[d.Name]; !ok {
 				newDeps.Deps[d.Name] = d
 			}
 		}
+	}
+
+	// After each dependency is downloaded, update all the new deps to kcl.mod.lock.
+	// No matter whether the dependency is directly or indirectly.
+	for k, v := range newDeps.Deps {
+		lockDeps.Deps[k] = v
 	}
 
 	return &newDeps, nil
