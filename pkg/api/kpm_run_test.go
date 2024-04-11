@@ -131,6 +131,16 @@ func TestRunWithSettingsOpts(t *testing.T) {
 	assert.Equal(t, err, nil)
 }
 
+func TestRunWithSettingsOptsAndFile(t *testing.T) {
+	pkgPath := getTestDir("test_settings")
+	opts := opt.DefaultCompileOptions()
+	opts.Merge(kcl.WithSettings(filepath.Join(pkgPath, "kcl.yaml")))
+	opts.SetHasSettingsYaml(true)
+	opts.SetEntries([]string{filepath.Join(pkgPath, "test.k")})
+	_, err := RunWithOpt(opts)
+	assert.Equal(t, err, nil)
+}
+
 func TestRunTarPkg(t *testing.T) {
 	pkgPath := getTestDir("test_run_tar_in_path")
 	tarPath, _ := filepath.Abs(filepath.Join(pkgPath, "test.tar"))
