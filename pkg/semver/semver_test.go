@@ -37,4 +37,8 @@ func TestTheLatestTagWithMissingVersion(t *testing.T) {
 	latest, err = LatestVersion([]string{"1.2", "1.4", "1.3", "1.0", "5.5"})
 	assert.Equal(t, err, nil)
 	assert.Equal(t, latest, "5.5")
+
+	latest, err = LatestVersion([]string{"1.2", "1.4", "1.3", "1.0", "5.5", "latest"})
+	assert.Equal(t, err, nil)
+	assert.Equal(t, latest, "latest")
 }

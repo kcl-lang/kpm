@@ -29,4 +29,6 @@ const (
 
 	// The pattern of the git url
 	GIT_PROTOCOL_URL_PATTERN = "?ref=%s"
+
+	LASTEST_TAG = "latest"
 )
