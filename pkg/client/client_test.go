@@ -1433,7 +1433,7 @@ func TestLoadOciUrlDiffSetting(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, len(pkg.ModFile.Deps), 1)
 	assert.Equal(t, pkg.ModFile.Deps["oci_pkg"].Oci.Reg, "docker.io")
-	assert.Equal(t, pkg.ModFile.Deps["oci_pkg"].Oci.Repo, "test")
+	assert.Equal(t, pkg.ModFile.Deps["oci_pkg"].Oci.Repo, "test/oci_pkg")
 	assert.Equal(t, pkg.ModFile.Deps["oci_pkg"].Oci.Tag, "0.0.1")
 	assert.Equal(t, err, nil)
 }
