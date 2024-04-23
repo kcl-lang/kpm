@@ -1422,3 +1422,18 @@ func TestRunGitWithLocalDep(t *testing.T) {
 		assert.Equal(t, gotObj, expectObj)
 	}
 }
+
+func TestLoadOciUrlDiffSetting(t *testing.T) {
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	testPath := getTestDir("diffsettings")
+
+	pkg, err := kpmcli.LoadPkgFromPath(testPath)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(pkg.ModFile.Deps), 1)
+	assert.Equal(t, pkg.ModFile.Deps["oci_pkg"].Oci.Reg, "docker.io")
+	assert.Equal(t, pkg.ModFile.Deps["oci_pkg"].Oci.Repo, "test")
+	assert.Equal(t, pkg.ModFile.Deps["oci_pkg"].Oci.Tag, "0.0.1")
+	assert.Equal(t, err, nil)
+}

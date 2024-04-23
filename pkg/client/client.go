@@ -764,31 +764,35 @@ func (c *KpmClient) FillDepInfo(dep *pkg.Dependency, homepath string) error {
 		return nil
 	}
 	if dep.Source.Oci != nil {
-		dep.Source.Oci.Reg = c.GetSettings().DefaultOciRegistry()
-		urlpath := utils.JoinPath(c.GetSettings().DefaultOciRepo(), dep.Name)
-		dep.Source.Oci.Repo = urlpath
+		if len(dep.Source.Oci.Reg) == 0 {
+			dep.Source.Oci.Reg = c.GetSettings().DefaultOciRegistry()
+		}
+
+		if len(dep.Source.Oci.Repo) == 0 {
+			urlpath := utils.JoinPath(c.GetSettings().DefaultOciRepo(), dep.Name)
+			dep.Source.Oci.Repo = urlpath
+		}
 		manifest := ocispec.Manifest{}
 		jsonDesc, err := c.FetchOciManifestIntoJsonStr(opt.OciFetchOptions{
 			FetchBytesOptions: oras.DefaultFetchBytesOptions,
 			OciOptions: opt.OciOptions{
-				Reg:  c.GetSettings().DefaultOciRegistry(),
-				Repo: fmt.Sprintf("%s/%s", c.GetSettings().DefaultOciRepo(), dep.Name),
+				Reg:  dep.Source.Oci.Reg,
+				Repo: fmt.Sprintf("%s/%s", dep.Source.Oci.Repo, dep.Name),
 				Tag:  dep.Version,
 			},
 		})
 
-		if err != nil {
-			return err
+		if err == nil {
+			err = json.Unmarshal([]byte(jsonDesc), &manifest)
+			if err != nil {
+				return err
+			}
+
+			if value, ok := manifest.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_SUM]; ok {
+				dep.Sum = value
+			}
 		}
 
-		err = json.Unmarshal([]byte(jsonDesc), &manifest)
-		if err != nil {
-			return err
-		}
-
-		if value, ok := manifest.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_SUM]; ok {
-			dep.Sum = value
-		}
 		return nil
 	}
 	return nil

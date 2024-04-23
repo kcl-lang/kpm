@@ -8,10 +8,11 @@ require (
 	github.com/BurntSushi/toml v1.2.1
 	github.com/docker/distribution v2.8.2+incompatible
 	github.com/dominikbraun/graph v0.23.0
-	github.com/opencontainers/image-spec v1.1.0-rc4
+	github.com/opencontainers/image-spec v1.1.0
 	github.com/otiai10/copy v1.9.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/urfave/cli/v2 v2.25.0
+	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools/v3 v3.4.0
 	kcl-lang.io/kcl-go v0.8.0
 )
@@ -128,7 +129,6 @@ require (
 	google.golang.org/grpc v1.62.0 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	kcl-lang.io/lib v0.8.0 // indirect
 )
 
