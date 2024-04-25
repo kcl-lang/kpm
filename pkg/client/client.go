@@ -863,11 +863,18 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			return nil, err
 		}
 		dep.FromKclPkg(dpkg)
-		dep.LocalFullPath = localPath + dep.Version
-		err = os.Rename(localPath, dep.LocalFullPath)
-		if err != nil {
-			return nil, err
+
+		if dep.LocalFullPath == "" {
+			dep.LocalFullPath = localPath
 		}
+
+		if localPath != dep.LocalFullPath {
+			err = os.Rename(localPath, dep.LocalFullPath)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		// Creating symbolic links in a global cache is not an optimal solution.
 		// This allows kclvm to locate the package by default.
 		// This feature is unstable and will be removed soon.

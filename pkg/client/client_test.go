@@ -144,7 +144,7 @@ func TestDownloadLatestOci(t *testing.T) {
 	assert.Equal(t, dep.Source.Oci.Reg, "ghcr.io")
 	assert.Equal(t, dep.Source.Oci.Repo, "kcl-lang/helloworld")
 	assert.Equal(t, dep.Source.Oci.Tag, "0.1.1")
-	assert.Equal(t, dep.LocalFullPath, testPath+"0.1.1")
+	assert.Equal(t, dep.LocalFullPath, testPath)
 	assert.Equal(t, err, nil)
 
 	// Check whether the tar downloaded by `kpm add` has been deleted.
