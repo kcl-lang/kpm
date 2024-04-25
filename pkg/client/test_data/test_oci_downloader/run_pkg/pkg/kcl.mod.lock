@@ -1,0 +1,8 @@
+[dependencies]
+  [dependencies.module-test]
+    name = "module-test"
+    full_name = "kawesome_"
+    sum = "klSr74pGXSnxzYT5ODFXloInq8qX0ukIZj/wx0rKy9M="
+    reg = "ghcr.io"
+    repo = "kusionstack/module-test-2"
+    oci_tag = "0.1.0-beta"

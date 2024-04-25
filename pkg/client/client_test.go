@@ -1445,7 +1445,7 @@ func TestAddWithOciDownloader(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	kpmCli.depDownloader = downloader.NewOciDownloader("linux/amd64")
-	kpkg, err := kpmCli.LoadPkgFromPath(filepath.Join(path, "pkg"))
+	kpkg, err := kpmCli.LoadPkgFromPath(filepath.Join(path, "add_dep", "pkg"))
 	assert.Equal(t, err, nil)
 	dep := pkg.Dependency{
 		Name:     "module-test",
@@ -1465,10 +1465,10 @@ func TestAddWithOciDownloader(t *testing.T) {
 	err = kpkg.UpdateModAndLockFile()
 	assert.Equal(t, err, nil)
 
-	expectmod := filepath.Join(path, "pkg", "except")
+	expectmod := filepath.Join(path, "add_dep", "pkg", "except")
 	expectmodContent, err := os.ReadFile(expectmod)
 	assert.Equal(t, err, nil)
-	gotContent, err := os.ReadFile(filepath.Join(path, "pkg", "kcl.mod"))
+	gotContent, err := os.ReadFile(filepath.Join(path, "add_dep", "pkg", "kcl.mod"))
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.RmNewline(string(expectmodContent)), utils.RmNewline(string(gotContent)))
 }
@@ -1481,8 +1481,8 @@ func TestRunWithOciDownloader(t *testing.T) {
 	kpmCli.depDownloader = downloader.NewOciDownloader("linux/amd64")
 
 	res, err := kpmCli.RunWithOpts(
-		opt.WithEntries([]string{filepath.Join(path, "pkg", "main.k")}),
-		opt.WithKclOption(kcl.WithWorkDir(filepath.Join(path, "pkg"))),
+		opt.WithEntries([]string{filepath.Join(path, "run_pkg", "pkg", "main.k")}),
+		opt.WithKclOption(kcl.WithWorkDir(filepath.Join(path, "run_pkg", "pkg"))),
 		opt.WithNoSumCheck(true),
 		opt.WithLogWriter(nil),
 	)
