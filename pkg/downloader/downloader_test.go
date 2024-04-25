@@ -35,8 +35,8 @@ func TestOciDownloader(t *testing.T) {
 		WithSource(pkg.Source{
 			Oci: &pkg.Oci{
 				Reg:  "ghcr.io",
-				Repo: "kusionstack/module-test-2",
-				Tag:  "latest",
+				Repo: "zong-zhe/helloworld",
+				Tag:  "0.0.3",
 			},
 		}),
 		WithLocalPath(path),
