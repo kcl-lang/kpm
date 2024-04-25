@@ -1448,17 +1448,17 @@ func TestAddWithOciDownloader(t *testing.T) {
 	kpkg, err := kpmCli.LoadPkgFromPath(filepath.Join(path, "add_dep", "pkg"))
 	assert.Equal(t, err, nil)
 	dep := pkg.Dependency{
-		Name:     "module-test",
-		FullName: "module-test_0.1.0-beta",
+		Name:     "helloworld",
+		FullName: "helloworld_0.0.3",
 		Source: pkg.Source{
 			Oci: &pkg.Oci{
 				Reg:  "ghcr.io",
-				Repo: "kusionstack/module-test-2",
-				Tag:  "0.1.0-beta",
+				Repo: "zong-zhe/helloworld",
+				Tag:  "0.0.3",
 			},
 		},
 	}
-	kpkg.HomePath = filepath.Join(path, "pkg")
+	kpkg.HomePath = filepath.Join(path, "add_dep", "pkg")
 	err = kpmCli.AddDepToPkg(kpkg, &dep)
 	assert.Equal(t, err, nil)
 	kpkg.NoSumCheck = false

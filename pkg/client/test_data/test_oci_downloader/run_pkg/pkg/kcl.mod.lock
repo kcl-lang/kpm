@@ -1,8 +1,9 @@
 [dependencies]
-  [dependencies.module-test]
-    name = "module-test"
-    full_name = "kawesome_"
-    sum = "klSr74pGXSnxzYT5ODFXloInq8qX0ukIZj/wx0rKy9M="
+  [dependencies.helloworld]
+    name = "helloworld"
+    full_name = "helloworld_0.0.3"
+    version = "0.0.3"
+    sum = "OS3OHaC8HE5Z/4KEWJbS8xyHrYVSvXqHYxwy0BGc7nM="
     reg = "ghcr.io"
-    repo = "kusionstack/module-test-2"
-    oci_tag = "0.1.0-beta"
+    repo = "zong-zhe/helloworld"
+    oci_tag = "0.0.3"
