@@ -18,6 +18,7 @@ import (
 	"oras.land/oras-go/v2"
 
 	"kcl-lang.io/kpm/pkg/constants"
+	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/git"
@@ -34,6 +35,8 @@ import (
 type KpmClient struct {
 	// The writer of the log.
 	logWriter io.Writer
+	// The downloader of the dependencies.
+	depDownloader *downloader.DepDownloader
 	// The home path of kpm for global configuration file and kcl package storage path.
 	homePath string
 	// The settings of kpm loaded from the global configuration file.
@@ -56,9 +59,10 @@ func NewKpmClient() (*KpmClient, error) {
 	}
 
 	return &KpmClient{
-		logWriter: os.Stdout,
-		settings:  *settings,
-		homePath:  homePath,
+		logWriter:     os.Stdout,
+		settings:      *settings,
+		homePath:      homePath,
+		depDownloader: &downloader.DepDownloader{},
 	}, nil
 }
 
@@ -427,6 +431,15 @@ func (c *KpmClient) CompileWithOpts(opts *opt.CompileOptions) (*kcl.KCLResultLis
 	}
 
 	return compileResult, nil
+}
+
+// RunWithOpts will compile the kcl package with the compile options.
+func (c *KpmClient) RunWithOpts(opts ...opt.Option) (*kcl.KCLResultList, error) {
+	mergedOpts := opt.DefaultCompileOptions()
+	for _, opt := range opts {
+		opt(mergedOpts)
+	}
+	return c.CompileWithOpts(mergedOpts)
 }
 
 // CompilePkgWithOpts will compile the kcl package with the compile options.
@@ -836,11 +849,20 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 	}
 
 	if dep.Source.Oci != nil {
-		kpkg, err := c.DownloadPkgFromOci(dep.Source.Oci, localPath)
+		err := c.depDownloader.Download(*downloader.NewDownloadOptions(
+			downloader.WithLocalPath(localPath),
+			downloader.WithSource(dep.Source),
+			downloader.WithLogWriter(c.logWriter),
+			downloader.WithSettings(c.settings),
+		))
 		if err != nil {
 			return nil, err
 		}
-		dep.FromKclPkg(kpkg)
+		dpkg, err := pkg.FindFirstKclPkgFrom(localPath)
+		if err != nil {
+			return nil, err
+		}
+		dep.FromKclPkg(dpkg)
 		// Creating symbolic links in a global cache is not an optimal solution.
 		// This allows kclvm to locate the package by default.
 		// This feature is unstable and will be removed soon.

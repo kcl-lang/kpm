@@ -169,7 +169,6 @@ type Dependency struct {
 }
 
 func (d *Dependency) FromKclPkg(pkg *KclPkg) {
-	d.Name = pkg.GetPkgName()
 	d.FullName = pkg.GetPkgFullName()
 	d.Version = pkg.GetPkgVersion()
 	d.LocalFullPath = pkg.HomePath

@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 	"kcl-lang.io/kcl-go/pkg/kcl"
+	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/opt"
@@ -1436,4 +1437,55 @@ func TestLoadOciUrlDiffSetting(t *testing.T) {
 	assert.Equal(t, pkg.ModFile.Deps["oci_pkg"].Oci.Repo, "test/oci_pkg")
 	assert.Equal(t, pkg.ModFile.Deps["oci_pkg"].Oci.Tag, "0.0.1")
 	assert.Equal(t, err, nil)
+}
+
+func TestAddWithOciDownloader(t *testing.T) {
+	kpmCli, err := NewKpmClient()
+	path := getTestDir("test_oci_downloader")
+	assert.Equal(t, err, nil)
+
+	kpmCli.depDownloader = downloader.NewOciDownloader("linux/amd64")
+	kpkg, err := kpmCli.LoadPkgFromPath(filepath.Join(path, "pkg"))
+	assert.Equal(t, err, nil)
+	dep := pkg.Dependency{
+		Name:     "module-test",
+		FullName: "module-test_0.1.0-beta",
+		Source: pkg.Source{
+			Oci: &pkg.Oci{
+				Reg:  "ghcr.io",
+				Repo: "kusionstack/module-test-2",
+				Tag:  "0.1.0-beta",
+			},
+		},
+	}
+	kpkg.HomePath = filepath.Join(path, "pkg")
+	err = kpmCli.AddDepToPkg(kpkg, &dep)
+	assert.Equal(t, err, nil)
+	kpkg.NoSumCheck = false
+	err = kpkg.UpdateModAndLockFile()
+	assert.Equal(t, err, nil)
+
+	expectmod := filepath.Join(path, "pkg", "except")
+	expectmodContent, err := os.ReadFile(expectmod)
+	assert.Equal(t, err, nil)
+	gotContent, err := os.ReadFile(filepath.Join(path, "pkg", "kcl.mod"))
+	assert.Equal(t, err, nil)
+	assert.Equal(t, utils.RmNewline(string(expectmodContent)), utils.RmNewline(string(gotContent)))
+}
+
+func TestRunWithOciDownloader(t *testing.T) {
+	kpmCli, err := NewKpmClient()
+	path := getTestDir("test_oci_downloader")
+	assert.Equal(t, err, nil)
+
+	kpmCli.depDownloader = downloader.NewOciDownloader("linux/amd64")
+
+	res, err := kpmCli.RunWithOpts(
+		opt.WithEntries([]string{filepath.Join(path, "pkg", "main.k")}),
+		opt.WithKclOption(kcl.WithWorkDir(filepath.Join(path, "pkg"))),
+		opt.WithNoSumCheck(true),
+		opt.WithLogWriter(nil),
+	)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
 }
