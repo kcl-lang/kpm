@@ -36,7 +36,7 @@ type KpmClient struct {
 	// The writer of the log.
 	logWriter io.Writer
 	// The downloader of the dependencies.
-	depDownloader *downloader.DepDownloader
+	DepDownloader *downloader.DepDownloader
 	// The home path of kpm for global configuration file and kcl package storage path.
 	homePath string
 	// The settings of kpm loaded from the global configuration file.
@@ -62,7 +62,7 @@ func NewKpmClient() (*KpmClient, error) {
 		logWriter:     os.Stdout,
 		settings:      *settings,
 		homePath:      homePath,
-		depDownloader: &downloader.DepDownloader{},
+		DepDownloader: &downloader.DepDownloader{},
 	}, nil
 }
 
@@ -849,7 +849,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 	}
 
 	if dep.Source.Oci != nil {
-		err := c.depDownloader.Download(*downloader.NewDownloadOptions(
+		err := c.DepDownloader.Download(*downloader.NewDownloadOptions(
 			downloader.WithLocalPath(localPath),
 			downloader.WithSource(dep.Source),
 			downloader.WithLogWriter(c.logWriter),
