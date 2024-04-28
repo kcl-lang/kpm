@@ -1444,7 +1444,7 @@ func TestAddWithOciDownloader(t *testing.T) {
 	path := getTestDir("test_oci_downloader")
 	assert.Equal(t, err, nil)
 
-	kpmCli.depDownloader = downloader.NewOciDownloader("linux/amd64")
+	kpmCli.DepDownloader = downloader.NewOciDownloader("linux/amd64")
 	kpkg, err := kpmCli.LoadPkgFromPath(filepath.Join(path, "add_dep", "pkg"))
 	assert.Equal(t, err, nil)
 	dep := pkg.Dependency{
@@ -1478,7 +1478,7 @@ func TestRunWithOciDownloader(t *testing.T) {
 	path := getTestDir("test_oci_downloader")
 	assert.Equal(t, err, nil)
 
-	kpmCli.depDownloader = downloader.NewOciDownloader("linux/amd64")
+	kpmCli.DepDownloader = downloader.NewOciDownloader("linux/amd64")
 
 	res, err := kpmCli.RunWithOpts(
 		opt.WithEntries([]string{filepath.Join(path, "run_pkg", "pkg", "main.k")}),
