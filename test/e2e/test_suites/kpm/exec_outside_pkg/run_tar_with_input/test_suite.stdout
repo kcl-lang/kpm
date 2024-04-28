@@ -1,20 +1,24 @@
-demo:
-  apiVersion: apps/v1
-  kind: Deployment
-  metadata:
-    name: nginx-deployment
-  spec:
-    replicas: 3
-    selector:
-      matchLabels:
-        app: nginx
-    template:
-      metadata:
-        labels:
-          app: nginx
-      spec:
-        containers:
-        - image: nginx:1.14.2
-          name: nginx
-          ports:
-          - containerPort: 80
+helloworld:
+  workload:
+    containers:
+      nginx:
+        image: nginx:v1
+        command:
+        - /bin/sh
+        - -c
+        - echo hi
+        args:
+        - /bin/sh
+        - -c
+        - echo hi
+        env:
+          env1: VALUE
+          env2: secret://sec-name/key
+        workingDir: /tmp
+        readinessProbe:
+          probeHandler:
+            url: http://localhost:80
+          initialDelaySeconds: 10
+    replicas: 2
+  accessories:
+    test: aaa

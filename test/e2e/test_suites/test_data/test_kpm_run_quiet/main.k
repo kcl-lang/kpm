@@ -1,10 +1,7 @@
 import catalog.models.schema.v1 as ac
-import catalog.models.schema.v1.trait as t
 import catalog.models.schema.v1.workload as wl
 import catalog.models.schema.v1.workload.container as c
 import catalog.models.schema.v1.workload.container.probe as p
-import catalog.models.schema.v1.workload.secret as sec
-import catalog.models.schema.v1.workload.network as n
 import catalog.models.schema.v1.monitoring as m
 
 # base.k declares reusable configurations for all stacks.
@@ -26,10 +23,6 @@ helloworld: ac.AppConfiguration {
                 }
                 # Run the command "/bin/sh -c echo hi", as defined above, in the directory "/tmp"
                 workingDir: "/tmp"
-                resources: {
-                    "cpu": "2"
-                    "memory": "4Gi"
-                }
                 # Configure a HTTP readiness probe
                 readinessProbe: p.Probe {
                     probeHandler: p.Http {
@@ -39,61 +32,7 @@ helloworld: ac.AppConfiguration {
                 }
             }
         }
-        secrets: {
-            "basic-auth": sec.Secret {
-                $type: "basic"
-                data: {
-                    "username": "admin"
-                    "password": "******"
-                }
-            }
-        }
+        # Set the replicas
         replicas: 2
-        ports: [
-            n.Port {
-                port: 80
-                targetPort: 8080
-                protocol: "TCP"
-                public: True
-            }
-        ]
-    }
-}
-
-helloworldcollaset: ac.AppConfiguration {
-    workload: wl.Service {
-        containers: {
-            "nginx": c.Container {
-                image: "nginx:v1"
-                # Run the following command as defined
-                command: ["/bin/sh", "-c", "echo hi"]
-                # Extra arguments append to command defined above
-                args: ["/bin/sh", "-c", "echo hi"]
-                # Run the command "/bin/sh -c echo hi", as defined above, in the directory "/tmp"
-                workingDir: "/tmp"
-            }  
-        }
-        ports: [
-            n.Port {
-                port: 80
-            }
-        ]
-    }
-    opsRule: t.OpsRule {
-        maxUnavailable: "30%"
-    }
-}
-
-helloworldjob: ac.AppConfiguration {
-    workload: wl.Job {
-        containers: {
-            "busybox": c.Container {
-                image: "busybox:1.28"
-                # Run the following command as defined
-                command: ["/bin/sh", "-c", "echo hello"]
-            }
-        }
-        # Run every hour.
-        schedule: "0 * * * *"
     }
 }
