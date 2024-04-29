@@ -380,6 +380,7 @@ func (c *KpmClient) CompileWithOpts(opts *opt.CompileOptions) (*kcl.KCLResultLis
 	}
 
 	c.noSumCheck = opts.NoSumCheck()
+	c.logWriter = opts.LogWriter()
 
 	kclPkg, err := c.LoadPkgFromPath(pkgPath)
 	if err != nil {
