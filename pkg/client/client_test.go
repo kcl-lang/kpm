@@ -1439,7 +1439,13 @@ func TestLoadOciUrlDiffSetting(t *testing.T) {
 	assert.Equal(t, err, nil)
 }
 
-func TestAddWithOciDownloader(t *testing.T) {
+func TestOciDownloader(t *testing.T) {
+	// make test case running in order to test the log output
+	testRunWithOciDownloader(t)
+	testAddWithOciDownloader(t)
+}
+
+func testAddWithOciDownloader(t *testing.T) {
 	kpmCli, err := NewKpmClient()
 	path := getTestDir("test_oci_downloader")
 	assert.Equal(t, err, nil)
@@ -1473,19 +1479,23 @@ func TestAddWithOciDownloader(t *testing.T) {
 	assert.Equal(t, utils.RmNewline(string(expectmodContent)), utils.RmNewline(string(gotContent)))
 }
 
-func TestRunWithOciDownloader(t *testing.T) {
+func testRunWithOciDownloader(t *testing.T) {
 	kpmCli, err := NewKpmClient()
 	path := getTestDir("test_oci_downloader")
 	assert.Equal(t, err, nil)
 
 	kpmCli.DepDownloader = downloader.NewOciDownloader("linux/amd64")
 
+	var buf bytes.Buffer
+	writer := io.MultiWriter(&buf, os.Stdout)
+
 	res, err := kpmCli.RunWithOpts(
 		opt.WithEntries([]string{filepath.Join(path, "run_pkg", "pkg", "main.k")}),
 		opt.WithKclOption(kcl.WithWorkDir(filepath.Join(path, "run_pkg", "pkg"))),
 		opt.WithNoSumCheck(true),
-		opt.WithLogWriter(nil),
+		opt.WithLogWriter(writer),
 	)
 	assert.Equal(t, err, nil)
+	assert.Equal(t, buf.String(), "downloading 'zong-zhe/helloworld:0.0.3' from 'ghcr.io/zong-zhe/helloworld:0.0.3'\n")
 	assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
 }
