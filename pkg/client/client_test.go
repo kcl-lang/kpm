@@ -1439,7 +1439,13 @@ func TestLoadOciUrlDiffSetting(t *testing.T) {
 	assert.Equal(t, err, nil)
 }
 
-func TestAddWithOciDownloader(t *testing.T) {
+func TestOciDownloader(t *testing.T) {
+	// make test case running in order to test the log output
+	testRunWithOciDownloader(t)
+	testAddWithOciDownloader(t)
+}
+
+func testAddWithOciDownloader(t *testing.T) {
 	kpmCli, err := NewKpmClient()
 	path := getTestDir("test_oci_downloader")
 	assert.Equal(t, err, nil)
@@ -1473,7 +1479,7 @@ func TestAddWithOciDownloader(t *testing.T) {
 	assert.Equal(t, utils.RmNewline(string(expectmodContent)), utils.RmNewline(string(gotContent)))
 }
 
-func TestRunWithOciDownloader(t *testing.T) {
+func testRunWithOciDownloader(t *testing.T) {
 	kpmCli, err := NewKpmClient()
 	path := getTestDir("test_oci_downloader")
 	assert.Equal(t, err, nil)
