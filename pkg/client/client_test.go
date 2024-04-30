@@ -90,24 +90,7 @@ func TestDownloadOci(t *testing.T) {
 	assert.Equal(t, utils.DirExists(filepath.Join(downloadPath, "k8s_1.27.tar")), false)
 
 	assert.Equal(t, utils.DirExists(filepath.Join(downloadPath, "k8s_1.27")), true)
-	assert.Equal(t, utils.DirExists(filepath.Join(downloadPath, "k8s")), true)
-
-	// Check whether the reference and the dependency have the same hash.
-	hashDep, err := utils.HashDir(filepath.Join(downloadPath, "k8s_1.27"))
-	assert.Equal(t, err, nil)
-
-	depRefPath := filepath.Join(downloadPath, "k8s")
-	info, err := os.Lstat(depRefPath)
-	assert.Equal(t, err, nil)
-
-	if info.Mode()&os.ModeSymlink != 0 {
-		depRefPath, err = os.Readlink(depRefPath)
-		assert.Equal(t, err, nil)
-	}
-
-	hashRef, err := utils.HashDir(depRefPath)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, hashDep, hashRef)
+	assert.Equal(t, utils.DirExists(filepath.Join(downloadPath, "k8s")), false)
 }
 
 // TestDownloadLatestOci tests the case that the version is empty.
@@ -150,24 +133,7 @@ func TestDownloadLatestOci(t *testing.T) {
 	// Check whether the tar downloaded by `kpm add` has been deleted.
 	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "helloworld_0.1.1.tar")), false)
 
-	assert.Equal(t, utils.DirExists(filepath.Join(getTestDir("download"), "helloworld")), true)
-
-	// Check whether the reference and the dependency have the same hash.
-	hashDep, err := utils.HashDir(dep.LocalFullPath)
-	assert.Equal(t, err, nil)
-
-	depRefPath := filepath.Join(getTestDir("download"), "helloworld")
-	info, err := os.Lstat(depRefPath)
-	assert.Equal(t, err, nil)
-
-	if info.Mode()&os.ModeSymlink != 0 {
-		depRefPath, err = os.Readlink(depRefPath)
-		assert.Equal(t, err, nil)
-	}
-
-	hashRef, err := utils.HashDir(depRefPath)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, hashDep, hashRef)
+	assert.Equal(t, utils.DirExists(filepath.Join(getTestDir("download"), "helloworld")), false)
 }
 
 func TestDependencyGraph(t *testing.T) {
