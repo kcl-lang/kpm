@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -836,10 +835,10 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		// Creating symbolic links in a global cache is not an optimal solution.
 		// This allows kclvm to locate the package by default.
 		// This feature is unstable and will be removed soon.
-		err = createDepRef(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
-		if err != nil {
-			return nil, err
-		}
+		// err = createDepRef(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
+		// if err != nil {
+		//     return nil, err
+		// }
 		dep.FullName = dep.GenDepFullName()
 		// If the dependency is from git commit, the version is the commit id.
 		// If the dependency is from git tag, the version is the tag.
@@ -879,10 +878,10 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		// Creating symbolic links in a global cache is not an optimal solution.
 		// This allows kclvm to locate the package by default.
 		// This feature is unstable and will be removed soon.
-		err = createDepRef(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
-		if err != nil {
-			return nil, err
-		}
+		// err = createDepRef(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
+		// if err != nil {
+		//     return nil, err
+		// }
 	}
 
 	if dep.Source.Local != nil {
@@ -1513,16 +1512,16 @@ func check(dep pkg.Dependency, newDepPath string) bool {
 // createDepRef will create a dependency reference for the dependency saved on the local filesystem.
 // On the unix-like system, it will create a symbolic link.
 // On the windows system, it will create a junction.
-func createDepRef(depName, refName string) error {
-	if runtime.GOOS == "windows" {
-		// 'go-getter' continuously occupies files in '.git', causing the copy operation to fail
-		opt := copy.Options{
-			Skip: func(srcinfo os.FileInfo, src, dest string) (bool, error) {
-				return filepath.Base(src) == constants.GitPathSuffix, nil
-			},
-		}
-		return copy.Copy(depName, refName, opt)
-	} else {
-		return utils.CreateSymlink(depName, refName)
-	}
-}
+// func createDepRef(depName, refName string) error {
+// 	if runtime.GOOS == "windows" {
+// 		// 'go-getter' continuously occupies files in '.git', causing the copy operation to fail
+// 		opt := copy.Options{
+// 			Skip: func(srcinfo os.FileInfo, src, dest string) (bool, error) {
+// 				return filepath.Base(src) == constants.GitPathSuffix, nil
+// 			},
+// 		}
+// 		return copy.Copy(depName, refName, opt)
+// 	} else {
+// 		return utils.CreateSymlink(depName, refName)
+// 	}
+// }
