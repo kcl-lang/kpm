@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -167,12 +166,67 @@ func (c *KpmClient) LoadModFile(pkgPath string) (*pkg.ModFile, error) {
 }
 
 func (c *KpmClient) LoadLockDeps(pkgPath string) (*pkg.Dependencies, error) {
-	return pkg.LoadLockDeps(pkgPath)
+	deps, err := pkg.LoadLockDeps(pkgPath)
+	if err != nil {
+		return nil, err
+	}
+
+	for name, dep := range deps.Deps {
+		sum, err := c.AcquireDepSum(dep)
+		if err != nil {
+			return nil, nil
+		}
+		dep.Sum = sum
+		deps.Deps[name] = dep
+	}
+
+	return deps, nil
+}
+
+// Check whether the dependencies in kcl.mod.lock are the same as the dependencies from the source.
+func (c *KpmClient) AcquireDepSum(dep pkg.Dependency) (string, error) {
+	// Only the dependencies from the OCI need can be checked.
+	if dep.Source.Oci != nil {
+		if len(dep.Source.Oci.Reg) == 0 {
+			dep.Source.Oci.Reg = c.GetSettings().DefaultOciRegistry()
+		}
+
+		if len(dep.Source.Oci.Repo) == 0 {
+			urlpath := utils.JoinPath(c.GetSettings().DefaultOciRepo(), dep.Name)
+			dep.Source.Oci.Repo = urlpath
+		}
+		// Fetch the metadata of the OCI manifest.
+		manifest := ocispec.Manifest{}
+		jsonDesc, err := c.FetchOciManifestIntoJsonStr(opt.OciFetchOptions{
+			FetchBytesOptions: oras.DefaultFetchBytesOptions,
+			OciOptions: opt.OciOptions{
+				Reg:  dep.Source.Oci.Reg,
+				Repo: dep.Source.Oci.Repo,
+				Tag:  dep.Version,
+			},
+		})
+
+		if err != nil {
+			return "", reporter.NewErrorEvent(reporter.FailedFetchOciManifest, err, fmt.Sprintf("failed to fetch the manifest of '%s'", dep.Name))
+		}
+
+		err = json.Unmarshal([]byte(jsonDesc), &manifest)
+		if err != nil {
+			return "", err
+		}
+
+		// Check the dependency checksum.
+		if value, ok := manifest.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_SUM]; ok {
+			return value, nil
+		}
+	}
+
+	return "", nil
 }
 
 // ResolveDepsIntoMap will calculate the map of kcl package name and local storage path of the external packages.
 func (c *KpmClient) ResolveDepsIntoMap(kclPkg *pkg.KclPkg) (map[string]string, error) {
-	err := c.ResolvePkgDepsMetadata(kclPkg, true)
+	err := c.ResolvePkgDepsMetadata(kclPkg, &kclPkg.Dependencies, true)
 	if err != nil {
 		return nil, err
 	}
@@ -183,16 +237,49 @@ func (c *KpmClient) ResolveDepsIntoMap(kclPkg *pkg.KclPkg) (map[string]string, e
 	}
 	var pkgMap map[string]string = make(map[string]string)
 	for _, d := range depMetadatas.Deps {
-		pkgMap[d.GetAliasName()] = d.GetLocalFullPath(kclPkg.HomePath)
+		pkgMap[d.GetAliasName()] = d.GetLocalFullPath()
 	}
 
 	return pkgMap, nil
 }
 
+// Get the search for the dependency.
+// 1. in the KCL_PKG_PATH: default is $HOME/.kcl/kpm
+// 2. in the vendor subdirectory of the current package.
+// 3. the dependency is from the local path.
+func (c *KpmClient) getDepStorePath(dep pkg.Dependency, isVendor bool) string {
+	if dep.IsFromLocal() {
+		return dep.GetLocalFullPath()
+	} else {
+		if isVendor {
+			return filepath.Join(dep.HomePath, "vendor", dep.GenDepFullName())
+		} else {
+			return filepath.Join(c.homePath, dep.GenDepFullName())
+		}
+	}
+}
+
 // ResolveDepsMetadata will calculate the local storage path of the external package,
 // and check whether the package exists locally.
 // If the package does not exist, it will re-download to the local.
-func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) error {
+// Since redownloads are not triggered if local dependencies exists,
+// indirect dependencies are also synchronized to the lock file by `lockDeps`.
+func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencies, update bool) error {
+	// In the face of dependencies that do not exist locally, a re-download will be triggered, so a lock is required
+	// acquire the lock of the package cache.
+	err := c.AcquirePackageCacheLock()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		// release the lock of the package cache after the function returns.
+		releaseErr := c.ReleasePackageCacheLock()
+		if releaseErr != nil && err == nil {
+			err = releaseErr
+		}
+	}()
+
 	var searchPath string
 	kclPkg.NoSumCheck = c.noSumCheck
 
@@ -202,10 +289,6 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 		if err != nil {
 			return err
 		}
-		searchPath = kclPkg.LocalVendorPath()
-	} else {
-		// Otherwise, the search path is the $KCL_PKG_PATH.
-		searchPath = c.homePath
 	}
 
 	// If under the mode of '--no_sum_check', the checksum of the package will not be checked.
@@ -248,68 +331,62 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 	}
 
 	for name, d := range kclPkg.Dependencies.Deps {
-		searchFullPath := filepath.Join(searchPath, d.FullName)
-		if !update {
+		searchPath = c.getDepStorePath(d, kclPkg.IsVendorMode())
+		depPath := searchPath
+		// if the dependency is not exist
+		if !utils.DirExists(searchPath) {
 			if d.IsFromLocal() {
-				depPkg, err := c.LoadPkgFromPath(d.GetLocalFullPath(kclPkg.HomePath))
-				if err != nil {
-					return err
-				}
-				d.FromKclPkg(depPkg)
+				// If the dependency is from the local path, and it does not exist locally, raise an error
+				return reporter.NewErrorEvent(reporter.DependencyNotFound, fmt.Errorf("dependency '%s' not found in '%s'", d.Name, searchPath))
 			} else {
-				d.LocalFullPath = searchFullPath
-			}
-			kclPkg.Dependencies.Deps[name] = d
-		} else {
-			if utils.DirExists(searchFullPath) && (c.GetNoSumCheck() || utils.CheckPackageSum(d.Sum, searchFullPath)) {
-				// Find it and update the local path of the dependency.
-				d.LocalFullPath = searchFullPath
-				kclPkg.Dependencies.Deps[name] = d
-			} else if d.IsFromLocal() && !utils.DirExists(d.GetLocalFullPath(kclPkg.HomePath)) {
-				return reporter.NewErrorEvent(reporter.DependencyNotFound, fmt.Errorf("dependency '%s' not found in '%s'", d.Name, searchFullPath))
-			} else if d.IsFromLocal() && utils.DirExists(d.GetLocalFullPath(kclPkg.HomePath)) {
-				depPkg, err := c.LoadPkgFromPath(d.GetLocalFullPath(kclPkg.HomePath))
-				if err != nil {
-					return err
-				}
-				d.FromKclPkg(depPkg)
-				err = c.AddDepToPkg(kclPkg, &d)
-				if err != nil {
-					return err
-				}
-			} else {
-				// Otherwise, re-vendor it.
-				if kclPkg.IsVendorMode() {
-					err := c.VendorDeps(kclPkg)
-					if err != nil {
-						return err
+				// redownload the dependency to the local path.
+				if update {
+					// re-vendor it.
+					if kclPkg.IsVendorMode() {
+						err := c.VendorDeps(kclPkg)
+						if err != nil {
+							return err
+						}
+					} else {
+						// re-download it.
+						err := c.AddDepToPkg(kclPkg, &d)
+						if err != nil {
+							return err
+						}
+						depPath = filepath.Join(c.homePath, d.GetPkgPathName())
 					}
 				} else {
-					// Or, re-download it.
-					err := c.AddDepToPkg(kclPkg, &d)
-					if err != nil {
-						return err
-					}
+					continue
 				}
-				// After re-downloading or re-vendoring,
-				// re-resolving is required to update the dependent paths.
-				err := c.ResolvePkgDepsMetadata(kclPkg, update)
-				if err != nil {
-					return err
-				}
-				return nil
 			}
 		}
+
+		// If the dependency exists locally, load the dependency package.
+		depPkg, err := c.LoadPkgFromPath(depPath)
+		if err != nil {
+			return reporter.NewErrorEvent(
+				reporter.DependencyNotFound,
+				fmt.Errorf("dependency '%s' not found in '%s'", d.Name, searchPath),
+				// todo: add command to clean the package cache
+			)
+		}
+		d.FromKclPkg(depPkg)
+		err = c.ResolvePkgDepsMetadata(depPkg, lockDeps, update)
+		if err != nil {
+			return err
+		}
+		kclPkg.Dependencies.Deps[name] = d
+		lockDeps.Deps[name] = d
 	}
-	if update {
-		// Generate file kcl.mod.lock.
-		if !kclPkg.NoSumCheck {
-			err := kclPkg.LockDepsVersion()
-			if err != nil {
-				return err
-			}
+
+	// Generate file kcl.mod.lock.
+	if !kclPkg.NoSumCheck {
+		err := kclPkg.LockDepsVersion()
+		if err != nil {
+			return err
 		}
 	}
+
 	return nil
 }
 
@@ -359,7 +436,7 @@ func (c *KpmClient) UpdateDeps(kclPkg *pkg.KclPkg) error {
 func (c *KpmClient) ResolveDepsMetadataInJsonStr(kclPkg *pkg.KclPkg, update bool) (string, error) {
 	// 1. Calculate the dependency path, check whether the dependency exists
 	// and re-download the dependency that does not exist.
-	err := c.ResolvePkgDepsMetadata(kclPkg, update)
+	err := c.ResolvePkgDepsMetadata(kclPkg, &kclPkg.Dependencies, update)
 	if err != nil {
 		return "", err
 	}
@@ -691,7 +768,7 @@ func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pk
 // AddDepToPkg will add a dependency to the kcl package.
 func (c *KpmClient) AddDepToPkg(kclPkg *pkg.KclPkg, d *pkg.Dependency) error {
 
-	if !reflect.DeepEqual(kclPkg.ModFile.Dependencies.Deps[d.Name], *d) {
+	if !kclPkg.ModFile.Dependencies.Deps[d.Name].Equals(*d) {
 		// the dep passed on the cli is different from the kcl.mod.
 		kclPkg.ModFile.Dependencies.Deps[d.Name] = *d
 	}
@@ -766,22 +843,22 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 		if len(d.Name) == 0 {
 			return errors.InvalidDependency
 		}
-		vendorFullPath := filepath.Join(vendorPath, d.FullName)
+		vendorFullPath := filepath.Join(vendorPath, d.GetPkgPathName())
 		// If the package already exists in the 'vendor', do nothing.
-		if depExisted(vendorFullPath, d) {
+		if utils.DirExists(vendorFullPath) {
 			continue
 		} else {
 			// If not in the 'vendor', check the global cache.
-			cacheFullPath := filepath.Join(c.homePath, d.FullName)
-			if utils.DirExists(cacheFullPath) && check(d, cacheFullPath) {
+			cacheFullPath := filepath.Join(c.homePath, d.GetPkgPathName())
+			if utils.DirExists(cacheFullPath) {
 				// If there is, copy it into the 'vendor' directory.
 				err := copy.Copy(cacheFullPath, vendorFullPath)
 				if err != nil {
 					return err
 				}
-			} else if depExisted(d.GetLocalFullPath(kclPkg.HomePath), d) {
+			} else if utils.DirExists(d.GetLocalFullPath()) {
 				// If there is, copy it into the 'vendor' directory.
-				err := copy.Copy(d.GetLocalFullPath(kclPkg.HomePath), vendorFullPath)
+				err := copy.Copy(d.GetLocalFullPath(), vendorFullPath)
 				if err != nil {
 					return err
 				}
@@ -804,16 +881,10 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 	return nil
 }
 
-// depExisted will check whether the dependency exists in the local path.
-// If the dep is from local, do not need to check the checksum, so return true directly if it exists.
-// If the dep is from git or oci, check the checksum, so return true if the checksum is correct and it exist.
-func depExisted(localPath string, dep pkg.Dependency) bool {
-	return (utils.DirExists(localPath) && check(dep, localPath)) ||
-		(utils.DirExists(localPath) && dep.IsFromLocal())
-}
-
 // FillDepInfo will fill registry information for a dependency.
 func (c *KpmClient) FillDepInfo(dep *pkg.Dependency, homepath string) error {
+	// Homepath for a dependency is the homepath of the kcl package.
+	dep.HomePath = homepath
 	if dep.Source.Local != nil {
 		dep.LocalFullPath = dep.Source.Local.Path
 		return nil
@@ -832,7 +903,7 @@ func (c *KpmClient) FillDepInfo(dep *pkg.Dependency, homepath string) error {
 			FetchBytesOptions: oras.DefaultFetchBytesOptions,
 			OciOptions: opt.OciOptions{
 				Reg:  dep.Source.Oci.Reg,
-				Repo: fmt.Sprintf("%s/%s", dep.Source.Oci.Repo, dep.Name),
+				Repo: dep.Source.Oci.Repo,
 				Tag:  dep.Version,
 			},
 		})
@@ -847,7 +918,6 @@ func (c *KpmClient) FillDepInfo(dep *pkg.Dependency, homepath string) error {
 				dep.Sum = value
 			}
 		}
-
 		return nil
 	}
 	return nil
@@ -863,6 +933,16 @@ func (c *KpmClient) FillDependenciesInfo(modFile *pkg.ModFile) error {
 		modFile.Deps[k] = v
 	}
 	return nil
+}
+
+// AcquireTheLatestOciVersion will acquire the latest version of the OCI reference.
+func (c *KpmClient) AcquireTheLatestOciVersion(ociSource pkg.Oci) (string, error) {
+	ociClient, err := oci.NewOciClient(ociSource.Reg, ociSource.Repo, &c.settings)
+	if err != nil {
+		return "", err
+	}
+
+	return ociClient.TheLatestTag()
 }
 
 // Download will download the dependency to the local path.
@@ -891,6 +971,39 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 	}
 
 	if dep.Source.Oci != nil {
+		// Select the latest tag, if the tag, the user inputed, is empty.
+		if dep.Source.Oci.Tag == "" || dep.Source.Oci.Tag == constants.LATEST {
+			latestTag, err := c.AcquireTheLatestOciVersion(*dep.Source.Oci)
+			if err != nil {
+				return nil, err
+			}
+			// Complete some information that the local three dependencies depend on.
+			// The invalid path such as '$HOME/.kcl/kpm/k8s_' is placed because the version field is missing.
+			dep.Source.Oci.Tag = latestTag
+			dep.Version = latestTag
+			dep.FullName = dep.GenDepFullName()
+			dep.LocalFullPath = filepath.Join(filepath.Dir(localPath), dep.FullName)
+			dep.HomePath = homePath
+			localPath = dep.LocalFullPath
+			if utils.DirExists(dep.LocalFullPath) {
+				dpkg, err := c.LoadPkgFromPath(localPath)
+				if err != nil {
+					// If the package is invalid, delete it and re-download it.
+					err := os.RemoveAll(dep.LocalFullPath)
+					if err != nil {
+						return nil, err
+					}
+				} else {
+					dep.FromKclPkg(dpkg)
+					dep.Sum, err = c.AcquireDepSum(*dep)
+					if err != nil {
+						return nil, err
+					}
+					return dep, nil
+				}
+			}
+		}
+
 		err := c.DepDownloader.Download(*downloader.NewDownloadOptions(
 			downloader.WithLocalPath(localPath),
 			downloader.WithSource(dep.Source),
@@ -905,6 +1018,11 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			return nil, err
 		}
 		dep.FromKclPkg(dpkg)
+		// The downloaded checksum is requested, not calculated
+		dep.Sum, err = c.AcquireDepSum(*dep)
+		if err != nil {
+			return nil, err
+		}
 
 		if dep.LocalFullPath == "" {
 			dep.LocalFullPath = localPath
@@ -927,23 +1045,11 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 	}
 
 	if dep.Source.Local != nil {
-		kpkg, err := pkg.FindFirstKclPkgFrom(dep.GetLocalFullPath(homePath))
+		kpkg, err := pkg.FindFirstKclPkgFrom(dep.GetLocalFullPath())
 		if err != nil {
 			return nil, err
 		}
 		dep.FromKclPkg(kpkg)
-	}
-
-	if dep.Source.Local == nil {
-		var err error
-		dep.Sum, err = utils.HashDir(dep.LocalFullPath)
-		if err != nil {
-			return nil, reporter.NewErrorEvent(
-				reporter.FailedHashPkg,
-				err,
-				fmt.Sprintf("failed to hash the kcl package '%s' in '%s'.", dep.Name, dep.LocalFullPath),
-			)
-		}
 	}
 
 	return dep, nil
@@ -1342,26 +1448,18 @@ func (c *KpmClient) InitGraphAndDownloadDeps(kclPkg *pkg.KclPkg) (*pkg.Dependenc
 }
 
 // dependencyExists will check whether the dependency exists in the local filesystem.
-func (c *KpmClient) dependencyExists(dep *pkg.Dependency, lockDeps *pkg.Dependencies) *pkg.Dependency {
-
+func (c *KpmClient) dependencyExistsLocal(dep *pkg.Dependency) (*pkg.Dependency, error) {
 	// If the flag '--no_sum_check' is set, skip the checksum check.
-	if c.noSumCheck {
-		// If the dependent package does exist locally
-		if utils.DirExists(filepath.Join(c.homePath, dep.FullName)) {
-			return dep
+	deppath := c.getDepStorePath(*dep, false)
+	if utils.DirExists(deppath) {
+		depPkg, err := c.LoadPkgFromPath(deppath)
+		if err != nil {
+			return nil, err
 		}
+		dep.FromKclPkg(depPkg)
+		return dep, nil
 	}
-
-	lockDep, present := lockDeps.Deps[dep.Name]
-	// Check if the sum of this dependency in kcl.mod.lock has been changed.
-	if !c.noSumCheck && present {
-		// If the dependent package does not exist locally, then method 'check' will return false.
-		if c.noSumCheck || check(lockDep, filepath.Join(c.homePath, dep.FullName)) {
-			return &lockDep
-		}
-	}
-
-	return nil
+	return nil, nil
 }
 
 // downloadDeps will download all the dependencies of the current kcl package.
@@ -1377,8 +1475,8 @@ func (c *KpmClient) DownloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependenc
 			return nil, errors.InvalidDependency
 		}
 
-		existDep := c.dependencyExists(&d, lockDeps)
-		if existDep != nil {
+		existDep, err := c.dependencyExistsLocal(&d)
+		if existDep != nil && err == nil {
 			newDeps.Deps[d.Name] = *existDep
 			continue
 		}
@@ -1389,7 +1487,10 @@ func (c *KpmClient) DownloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependenc
 			return nil, errors.InternalBug
 		}
 		dir := filepath.Join(c.homePath, d.FullName)
-		os.RemoveAll(dir)
+		err = os.RemoveAll(dir)
+		if err != nil {
+			return nil, err
+		}
 
 		// download dependencies
 		lockedDep, err := c.Download(&d, pkghome, dir)
@@ -1397,11 +1498,10 @@ func (c *KpmClient) DownloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependenc
 			return nil, err
 		}
 
-		if !lockedDep.IsFromLocal() {
+		if lockedDep.Oci != nil {
 			if !c.noSumCheck && expectedSum != "" &&
-				lockedDep.Sum != expectedSum &&
-				existDep != nil &&
-				existDep.FullName == d.FullName {
+				lockedDep.Sum != "" &&
+				lockedDep.Sum != expectedSum {
 				return nil, reporter.NewErrorEvent(
 					reporter.CheckSumMismatch,
 					errors.CheckSumMismatchError,
@@ -1539,21 +1639,6 @@ func (c *KpmClient) FetchOciManifestIntoJsonStr(opts opt.OciFetchOptions) (strin
 		return "", err
 	}
 	return manifestJson, nil
-}
-
-// check sum for a Dependency.
-func check(dep pkg.Dependency, newDepPath string) bool {
-	if dep.Sum == "" {
-		return false
-	}
-
-	sum, err := utils.HashDir(newDepPath)
-
-	if err != nil {
-		return false
-	}
-
-	return dep.Sum == sum
 }
 
 // createDepRef will create a dependency reference for the dependency saved on the local filesystem.

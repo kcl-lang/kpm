@@ -1,8 +1,7 @@
 [dependencies]
   [dependencies.kcl4]
     name = "kcl4"
-    full_name = "kcl4_v0.1.0"
-    version = "v0.1.0"
-    sum = "ecdMCD96+8by5Ml0l/V0b7W24CS250rvD5VdlqqR6OU="
+    full_name = "kcl4_0.0.1"
+    version = "0.0.1"
     url = "https://github.com/zong-zhe/kcl4.git"
     git_tag = "v0.1.0"

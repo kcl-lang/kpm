@@ -51,7 +51,7 @@ func TestPull(t *testing.T) {
 
 	testCases := []TestCase{
 		{"ghcr.io", "kusionstack/opsrule", "0.0.9"},
-		{"ghcr.io", "kcl-lang/helloworld", "0.1.1"},
+		{"ghcr.io", "kcl-lang/helloworld", "0.1.2"},
 	}
 
 	defer func() {

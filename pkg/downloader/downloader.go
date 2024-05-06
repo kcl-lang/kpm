@@ -129,31 +129,15 @@ func (d *OciDownloader) Download(opts DownloadOptions) error {
 
 	ociCli.PullOciOptions.Platform = d.Platform
 
-	// Select the latest tag, if the tag, the user inputed, is empty.
-	tagSelected := ociSource.Tag
-	if len(tagSelected) == 0 {
-		tagSelected, err = ociCli.TheLatestTag()
-		if err != nil {
-			return err
-		}
-
-		reporter.ReportMsgTo(
-			fmt.Sprintf("the lastest version '%s' will be added", tagSelected),
-			opts.LogWriter,
-		)
-
-		ociSource.Tag = tagSelected
-	}
-
 	reporter.ReportMsgTo(
 		fmt.Sprintf(
 			"downloading '%s:%s' from '%s/%s:%s'",
-			ociSource.Repo, tagSelected, ociSource.Reg, ociSource.Repo, tagSelected,
+			ociSource.Repo, ociSource.Tag, ociSource.Reg, ociSource.Repo, ociSource.Tag,
 		),
 		opts.LogWriter,
 	)
 
-	err = ociCli.Pull(localPath, tagSelected)
+	err = ociCli.Pull(localPath, ociSource.Tag)
 	if err != nil {
 		return err
 	}

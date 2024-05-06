@@ -182,8 +182,8 @@ func TestLoadModFile(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	assert.Equal(t, modFile.Dependencies.Deps["helloworld"].Name, "helloworld")
-	assert.Equal(t, modFile.Dependencies.Deps["helloworld"].Version, "0.1.1")
-	assert.Equal(t, modFile.Dependencies.Deps["helloworld"].Source.Oci.Tag, "0.1.1")
+	assert.Equal(t, modFile.Dependencies.Deps["helloworld"].Version, "0.1.2")
+	assert.Equal(t, modFile.Dependencies.Deps["helloworld"].Source.Oci.Tag, "0.1.2")
 	assert.Equal(t, err, nil)
 }
 

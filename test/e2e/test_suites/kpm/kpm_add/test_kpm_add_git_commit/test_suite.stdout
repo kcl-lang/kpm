@@ -1,2 +1,1 @@
-adding dependency 'catalog'
-cloning 'https://github.com/KusionStack/catalog.git' with commit '3891e96'
+add dependency 'catalog:3891e96' successfully

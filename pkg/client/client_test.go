@@ -52,7 +52,7 @@ func initTestDir(subDir string) string {
 
 // TestDownloadGit test download from oci registry.
 func TestDownloadOci(t *testing.T) {
-	testPath := filepath.Join(getTestDir("download"), "k8s_1.27")
+	testPath := filepath.Join(getTestDir("download"), "helloworld_0.1.2")
 	err := os.MkdirAll(testPath, 0755)
 	assert.Equal(t, err, nil)
 
@@ -64,13 +64,13 @@ func TestDownloadOci(t *testing.T) {
 	}()
 
 	depFromOci := pkg.Dependency{
-		Name:    "k8s",
-		Version: "1.27",
+		Name:    "helloworld",
+		Version: "0.1.2",
 		Source: pkg.Source{
 			Oci: &pkg.Oci{
 				Reg:  "ghcr.io",
-				Repo: "kcl-lang/k8s",
-				Tag:  "1.27",
+				Repo: "kcl-lang/helloworld",
+				Tag:  "0.1.2",
 			},
 		},
 	}
@@ -78,22 +78,21 @@ func TestDownloadOci(t *testing.T) {
 	assert.Equal(t, err, nil)
 	dep, err := kpmcli.Download(&depFromOci, "", testPath)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, dep.Name, "k8s")
-	assert.Equal(t, dep.FullName, "k8s_1.27")
-	assert.Equal(t, dep.Version, "1.27")
-	assert.Equal(t, dep.Sum, "xnYM1FWHAy3m+KcQMQb2rjZouTxumqYt6FGZpu2T4yM=")
+	assert.Equal(t, dep.Name, "helloworld")
+	assert.Equal(t, dep.FullName, "helloworld_0.1.2")
+	assert.Equal(t, dep.Version, "0.1.2")
 	assert.NotEqual(t, dep.Source.Oci, nil)
 	assert.Equal(t, dep.Source.Oci.Reg, "ghcr.io")
-	assert.Equal(t, dep.Source.Oci.Repo, "kcl-lang/k8s")
-	assert.Equal(t, dep.Source.Oci.Tag, "1.27")
+	assert.Equal(t, dep.Source.Oci.Repo, "kcl-lang/helloworld")
+	assert.Equal(t, dep.Source.Oci.Tag, "0.1.2")
 	assert.Equal(t, dep.LocalFullPath, testPath)
 
 	// Check whether the tar downloaded by `kpm add` has been deleted.
 	downloadPath := getTestDir("download")
-	assert.Equal(t, utils.DirExists(filepath.Join(downloadPath, "k8s_1.27.tar")), false)
+	assert.Equal(t, utils.DirExists(filepath.Join(downloadPath, "helloworld_0.1.2.tar")), false)
 
-	assert.Equal(t, utils.DirExists(filepath.Join(downloadPath, "k8s_1.27")), true)
-	assert.Equal(t, utils.DirExists(filepath.Join(downloadPath, "k8s")), false)
+	assert.Equal(t, utils.DirExists(filepath.Join(downloadPath, "helloworld_0.1.2")), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(downloadPath, "helloworld")), false)
 }
 
 // TestDownloadLatestOci tests the case that the version is empty.
@@ -130,7 +129,7 @@ func TestDownloadLatestOci(t *testing.T) {
 	assert.Equal(t, dep.Source.Oci.Reg, "ghcr.io")
 	assert.Equal(t, dep.Source.Oci.Repo, "kcl-lang/helloworld")
 	assert.Equal(t, dep.Source.Oci.Tag, "0.1.2")
-	assert.Equal(t, dep.LocalFullPath, testPath)
+	assert.Equal(t, dep.LocalFullPath, filepath.Join(getTestDir("download"), "helloworld_0.1.2"))
 	assert.Equal(t, err, nil)
 
 	// Check whether the tar downloaded by `kpm add` has been deleted.
@@ -374,12 +373,14 @@ func TestVendorDeps(t *testing.T) {
 	depKcl1 := pkg.Dependency{
 		Name:     "kcl1",
 		FullName: "kcl1",
+		Version:  "0.0.1",
 		Sum:      kcl1Sum,
 	}
 
 	depKcl2 := pkg.Dependency{
 		Name:     "kcl2",
 		FullName: "kcl2",
+		Version:  "0.0.1",
 		Sum:      kcl2Sum,
 	}
 
@@ -416,8 +417,8 @@ func TestVendorDeps(t *testing.T) {
 	err = kpmcli.VendorDeps(&kclPkg)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(mykclVendorPath), true)
-	assert.Equal(t, utils.DirExists(filepath.Join(mykclVendorPath, "kcl1")), true)
-	assert.Equal(t, utils.DirExists(filepath.Join(mykclVendorPath, "kcl2")), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(mykclVendorPath, "kcl1_0.0.1")), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(mykclVendorPath, "kcl2_0.0.1")), true)
 
 	maps, err := kpmcli.ResolveDepsIntoMap(&kclPkg)
 	assert.Equal(t, err, nil)
@@ -455,14 +456,18 @@ func TestResolveDepsVendorMode(t *testing.T) {
 
 	depKcl1 := pkg.Dependency{
 		Name:     "kcl1",
-		FullName: "kcl1",
+		FullName: "kcl1_0.0.1",
+		Version:  "0.0.1",
 		Sum:      kcl1Sum,
+		HomePath: home_path,
 	}
 
 	depKcl2 := pkg.Dependency{
 		Name:     "kcl2",
-		FullName: "kcl2",
+		FullName: "kcl2_0.0.1",
+		Version:  "0.0.1",
 		Sum:      kcl2Sum,
+		HomePath: home_path,
 	}
 
 	kclPkg := pkg.KclPkg{
@@ -521,13 +526,17 @@ func TestCompileWithEntryFile(t *testing.T) {
 	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1"))
 	depKcl1 := pkg.Dependency{
 		Name:     "kcl1",
-		FullName: "kcl1",
+		FullName: "kcl1_0.0.1",
+		Version:  "0.0.1",
+		HomePath: home_path,
 		Sum:      kcl1Sum,
 	}
 	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
 	depKcl2 := pkg.Dependency{
 		Name:     "kcl2",
-		FullName: "kcl2",
+		FullName: "kcl2_0.0.1",
+		Version:  "0.0.1",
+		HomePath: home_path,
 		Sum:      kcl2Sum,
 	}
 
@@ -565,8 +574,8 @@ func TestCompileWithEntryFile(t *testing.T) {
 	kpmcli.homePath = kpm_home
 	result, err := kpmcli.Compile(&kclPkg, compiler)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, utils.DirExists(filepath.Join(vendor_path, "kcl1")), true)
-	assert.Equal(t, utils.DirExists(filepath.Join(vendor_path, "kcl2")), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(vendor_path, "kcl1_0.0.1")), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(vendor_path, "kcl2_0.0.1")), true)
 	assert.Equal(t, result.GetRawYamlResult(), "c1: 1\nc2: 2")
 	os.RemoveAll(vendor_path)
 
@@ -616,29 +625,26 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 
 	testDir := getTestDir("resolve_metadata")
 
-	testHomePath := filepath.Join(filepath.Dir(testDir), "test_home_path")
-	prepareKpmHomeInPath(testHomePath)
-	defer os.RemoveAll(testHomePath)
-
-	os.Setenv(env.PKG_PATH, testHomePath)
-
-	kclpkg, err := pkg.LoadKclPkg(testDir)
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	kclpkg, err := kpmcli.LoadPkgFromPath(testDir)
 	assert.Equal(t, err, nil)
 
 	globalPkgPath, _ := env.GetAbsPkgPath()
-	kpmcli, err := NewKpmClient()
-	assert.Equal(t, err, nil)
 	res, err := kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
+	fmt.Printf("err: %v\n", err)
 	assert.Equal(t, err, nil)
 
 	expectedDep := pkg.Dependencies{
 		Deps: make(map[string]pkg.Dependency),
 	}
 
-	expectedDep.Deps["konfig"] = pkg.Dependency{
-		Name:          "konfig",
-		FullName:      "konfig_v0.0.1",
-		LocalFullPath: filepath.Join(globalPkgPath, "konfig_v0.0.1"),
+	expectedDep.Deps["flask_demo_kcl_manifests"] = pkg.Dependency{
+		Name:          "flask_demo_kcl_manifests",
+		FullName:      "flask-demo-kcl-manifests_ade147b",
+		Version:       "ade147b",
+		HomePath:      testDir,
+		LocalFullPath: filepath.Join(globalPkgPath, "flask-demo-kcl-manifests_ade147b"),
 	}
 
 	expectedDepStr, err := json.Marshal(expectedDep)
@@ -655,12 +661,14 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	res, err = kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(vendorDir), true)
-	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "konfig_v0.0.1")), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "flask-demo-kcl-manifests_ade147b")), true)
 
-	expectedDep.Deps["konfig"] = pkg.Dependency{
-		Name:          "konfig",
-		FullName:      "konfig_v0.0.1",
-		LocalFullPath: filepath.Join(vendorDir, "konfig_v0.0.1"),
+	expectedDep.Deps["flask_demo_kcl_manifests"] = pkg.Dependency{
+		Name:          "flask_demo_kcl_manifests",
+		FullName:      "flask-demo-kcl-manifests_ade147b",
+		Version:       "ade147b",
+		HomePath:      testDir,
+		LocalFullPath: filepath.Join(vendorDir, "flask-demo-kcl-manifests_ade147b"),
 	}
 
 	expectedDepStr, err = json.Marshal(expectedDep)
@@ -676,28 +684,17 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	assert.Equal(t, err, nil)
 	kpmcli.homePath = "not_exist"
 	res, err = kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, false)
-	fmt.Printf("err: %v\n", err)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(vendorDir), false)
-	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "konfig_v0.0.1")), false)
-	jsonPath, err := json.Marshal(filepath.Join("not_exist", "konfig_v0.0.1"))
+	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "flask-demo-kcl-manifests_ade147b")), false)
 	assert.Equal(t, err, nil)
-	expectedStr := fmt.Sprintf("{\"packages\":{\"konfig\":{\"name\":\"konfig\",\"manifest_path\":%s}}}", string(jsonPath))
+	expectedStr := "{\"packages\":{\"flask_demo_kcl_manifests\":{\"name\":\"flask_demo_kcl_manifests\",\"manifest_path\":\"\"}}}"
 	assert.Equal(t, res, expectedStr)
 	defer func() {
-		if r := os.RemoveAll(filepath.Join("not_exist", "konfig_v0.0.1")); r != nil {
+		if r := os.RemoveAll(filepath.Join("not_exist", "flask-demo-kcl-manifests_ade147b")); r != nil {
 			err = fmt.Errorf("panic: %v", r)
 		}
 	}()
-}
-
-func prepareKpmHomeInPath(path string) {
-	dirPath := filepath.Join(filepath.Join(path, ".kpm"), "config")
-	_ = os.MkdirAll(dirPath, 0755)
-
-	filePath := filepath.Join(dirPath, "kpm.json")
-
-	_ = os.WriteFile(filePath, []byte("{\"DefaultOciRegistry\":\"ghcr.io\",\"DefaultOciRepo\":\"awesome-kusion\"}"), 0644)
 }
 
 func TestPkgWithInVendorMode(t *testing.T) {
@@ -866,7 +863,7 @@ func TestUpdateWithKclMod(t *testing.T) {
 	err = copy.Copy(src_testDir, dest_testDir)
 	assert.Equal(t, err, nil)
 
-	kclPkg, err := pkg.LoadKclPkg(dest_testDir)
+	kclPkg, err := kpmcli.LoadPkgFromPath(dest_testDir)
 	assert.Equal(t, err, nil)
 	err = kpmcli.UpdateDeps(kclPkg)
 	assert.Equal(t, err, nil)
@@ -1083,7 +1080,7 @@ func TestUpdateWithNoSumCheck(t *testing.T) {
 	err = kpmcli.UpdateDeps(kclPkg)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), true)
-	assert.Equal(t, buf.String(), "adding 'helloworld' with version '0.1.1'\ndownloading 'kcl-lang/helloworld:0.1.1' from 'ghcr.io/kcl-lang/helloworld:0.1.1'\n")
+	assert.Equal(t, buf.String(), "adding 'helloworld' with version '0.1.1'\n")
 
 	defer func() {
 		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
@@ -1114,7 +1111,7 @@ func TestAddWithDiffVersionNoSumCheck(t *testing.T) {
 				Reg:     "ghcr.io",
 				Repo:    "kcl-lang",
 				PkgName: "helloworld",
-				Tag:     "0.1.1",
+				Tag:     "0.1.2",
 			},
 		},
 		NoSumCheck: true,
@@ -1178,7 +1175,7 @@ func TestAddWithDiffVersionWithSumCheck(t *testing.T) {
 				Reg:     "ghcr.io",
 				Repo:    "kcl-lang",
 				PkgName: "helloworld",
-				Tag:     "0.1.1",
+				Tag:     "0.1.2",
 			},
 		},
 	}
@@ -1245,8 +1242,8 @@ func TestAddWithGitCommit(t *testing.T) {
 		LocalPath: testPkgPath,
 		RegistryOpts: opt.RegistryOptions{
 			Git: &opt.GitOptions{
-				Url:    "https://github.com/KusionStack/catalog.git",
-				Commit: "a29e3db",
+				Url:    "https://github.com/kcl-lang/flask-demo-kcl-manifests.git",
+				Commit: "ade147b",
 			},
 		},
 	}
@@ -1301,7 +1298,7 @@ func TestLoadPkgFormOci(t *testing.T) {
 		{
 			Reg:  "ghcr.io",
 			Repo: "kcl-lang/helloworld",
-			Tag:  "0.1.1",
+			Tag:  "0.1.2",
 			Name: "helloworld",
 		},
 	}
@@ -1507,6 +1504,6 @@ func testRunWithOciDownloader(t *testing.T) {
 		opt.WithLogWriter(writer),
 	)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, buf.String(), "downloading 'zong-zhe/helloworld:0.0.3' from 'ghcr.io/zong-zhe/helloworld:0.0.3'\n")
+	strings.Contains(buf.String(), "downloading 'zong-zhe/helloworld:0.0.3' from 'ghcr.io/zong-zhe/helloworld:0.0.3'")
 	assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
 }

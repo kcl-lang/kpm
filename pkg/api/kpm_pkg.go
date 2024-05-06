@@ -64,7 +64,7 @@ func (pkg *KclPackage) UpdateDependencyInPath(pkg_path string) error {
 	if err != nil {
 		return err
 	}
-	return kpmcli.ResolvePkgDepsMetadata(pkg.pkg, true)
+	return kpmcli.ResolvePkgDepsMetadata(pkg.pkg, &pkg.pkg.Dependencies, true)
 }
 
 // GetPkgName returns the name of the package.
