@@ -696,7 +696,6 @@ func (c *KpmClient) Package(kclPkg *pkg.KclPkg, tarPath string, vendorMode bool)
 	}
 
 	// Tar the current kcl package into a "*.tar" file.
-	fmt.Println(kclPkg.GetPkgName())
 	err := utils.TarDir(kclPkg.HomePath, kclPkg.GetPkgInclude(), kclPkg.GetPkgExclude(), tarPath)
 	if err != nil {
 		return reporter.NewErrorEvent(reporter.FailedPackage, err, "failed to package the kcl module")
