@@ -74,8 +74,8 @@ func TestTarDir(t *testing.T) {
 	if !os.IsNotExist(err) {
 		os.Remove(tarPath)
 	}
-
-	err = TarDir(filepath.Join(testDir, "test_src"), tarPath)
+	emptyArrayOfStrings := []string{}
+	err = TarDir(filepath.Join(testDir, "test_src"), emptyArrayOfStrings, emptyArrayOfStrings, tarPath)
 	assert.Equal(t, err, nil)
 
 	_, err = os.Stat(tarPath)
