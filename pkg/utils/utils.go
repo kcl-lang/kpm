@@ -150,8 +150,6 @@ func TarDir(srcDir string, include []string, exclude []string, tarPath string) e
 			}
 		}
 
-		fmt.Println(path)
-
 		for _, ex := range exclude {
 			if strings.Contains(path, ex) {
 				return nil
