@@ -256,12 +256,20 @@ func (pkg *Package) UnmarshalTOML(data interface{}) error {
 		pkg.Description = v
 	}
 
-	if v, ok := meta[INCLUDE_FLAG].([]string); ok {
-		pkg.Include = v
+	convertToStringArray := func(v interface{}) []string {
+		var arr []string
+		for _, item := range v.([]interface{}) {
+			arr = append(arr, item.(string))
+		}
+		return arr
 	}
 
-	if v, ok := meta[EXCLUDE_FLAG].([]string); ok {
-		pkg.Exclude = v
+	if v, ok := meta[INCLUDE_FLAG].([]interface{}); ok {
+		pkg.Include = convertToStringArray(v)
+	}
+
+	if v, ok := meta[EXCLUDE_FLAG].([]interface{}); ok {
+		pkg.Exclude = convertToStringArray(v)
 	}
 	
 	return nil
