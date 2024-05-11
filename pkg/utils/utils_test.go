@@ -1,8 +1,12 @@
 package utils
 
 import (
+	"archive/tar"
+	"io"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -74,10 +78,68 @@ func TestTarDir(t *testing.T) {
 	if !os.IsNotExist(err) {
 		os.Remove(tarPath)
 	}
-	emptyArrayOfStrings := []string{}
-	err = TarDir(filepath.Join(testDir, "test_src"), tarPath, emptyArrayOfStrings, emptyArrayOfStrings)
-	assert.Equal(t, err, nil)
 
+	testSrcDir := filepath.Join(testDir, "test_src")
+
+	getTarFileNames := func(filePath string) ([]string, error) {
+		file, err := os.Open(filePath)
+		if err != nil {
+			return nil, err
+		}
+		defer file.Close()
+
+		reader := tar.NewReader(file)
+		filePaths := []string{}
+
+		for {
+			header, err := reader.Next()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return nil, err
+			}
+
+			if header.Typeflag != tar.TypeReg {
+				continue
+			}
+
+			fullPath := path.Join(header.Name)
+			fullPath = path.Join(filePath, fullPath)
+			fullPath = strings.Replace(fullPath, "test.tar", "test_src", 1)
+
+			filePaths = append(filePaths, fullPath)
+		}
+
+		return filePaths, nil
+	}
+
+	getNewPattern := func(ex string) string {
+		return testSrcDir + "/" + ex
+	}
+
+	err = TarDir(testSrcDir, tarPath, []string{}, []string{})
+	assert.Equal(t, err, nil)
+	_, err = os.Stat(tarPath)
+	assert.Equal(t, err, nil)
+	os.Remove(tarPath)
+
+	_ = TarDir(testSrcDir, tarPath, []string{}, []string{"*.mod"})
+	fileNames, _ := getTarFileNames(tarPath)
+	for _, fileName := range fileNames {
+		flag, _ := filepath.Match(getNewPattern("*.mod"), fileName)
+		assert.Equal(t, flag, false)
+	}
+	_, err = os.Stat(tarPath)
+	assert.Equal(t, err, nil)
+	os.Remove(tarPath)
+
+	_ = TarDir(testSrcDir, tarPath, []string{"*/*.lock", "*.mod"}, []string{})
+	fileNames, _ = getTarFileNames(tarPath)
+	for _, fileName := range fileNames {
+		flag, _ := filepath.Match(getNewPattern("*/*.lock"), fileName)
+		assert.Equal(t, flag, true)
+	}
 	_, err = os.Stat(tarPath)
 	assert.Equal(t, err, nil)
 	os.Remove(tarPath)
