@@ -26,3 +26,22 @@ func LatestVersion(versions []string) (string, error) {
 
 	return latest.Original(), nil
 }
+
+func OldestVersion(versions []string) (string, error) {
+	var oldest *version.Version
+	for _, v := range versions {
+		ver, err := version.NewVersion(v)
+		if err != nil {
+			return "", reporter.NewErrorEvent(reporter.FailedParseVersion, err, fmt.Sprintf("failed to parse version %s", v))
+		}
+		if oldest == nil || ver.LessThan(oldest) {
+			oldest = ver
+		}
+	}
+
+	if oldest == nil {
+		return "", errors.InvalidVersionFormat
+	}
+
+	return oldest.Original(), nil
+}

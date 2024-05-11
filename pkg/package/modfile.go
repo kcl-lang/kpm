@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"oras.land/oras-go/v2/registry"
 
@@ -24,6 +25,9 @@ import (
 const (
 	MOD_FILE      = "kcl.mod"
 	MOD_LOCK_FILE = "kcl.mod.lock"
+	GIT           = "git"
+	OCI           = "oci"
+	LOCAL         = "local"
 )
 
 // 'Package' is the kcl package section of 'kcl.mod'.
@@ -242,6 +246,31 @@ func (dep *Dependency) FillDepInfo(homepath string) error {
 func (dep *Dependency) GenDepFullName() string {
 	dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, dep.Name, dep.Version)
 	return dep.FullName
+}
+
+// GetDownloadPath will get the download path of a dependency.
+func (dep *Dependency) GetDownloadPath() string {
+	if dep.Source.Git != nil {
+		return dep.Source.Git.Url
+	}
+	if dep.Source.Oci != nil {
+		return dep.Source.Oci.IntoOciUrl()
+	}
+	return ""
+}
+
+// GetSourceType will get the source type of a dependency.
+func (dep *Dependency) GetSourceType() string {
+	if dep.Source.Git != nil {
+		return GIT
+	}
+	if dep.Source.Oci != nil {
+		return OCI
+	}
+	if dep.Source.Local != nil {
+		return LOCAL
+	}
+	return ""
 }
 
 // Source is the package source from registry.

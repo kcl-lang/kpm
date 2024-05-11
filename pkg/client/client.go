@@ -1255,7 +1255,7 @@ func (c *KpmClient) InitGraphAndDownloadDeps(kclPkg *pkg.KclPkg) (*pkg.Dependenc
 		return nil, nil, err
 	}
 
-	changedDeps, err := c.downloadDeps(&kclPkg.ModFile.Dependencies, &kclPkg.Dependencies, depGraph, kclPkg.HomePath, root)
+	changedDeps, err := c.downloadDeps(kclPkg.ModFile.Dependencies, kclPkg.Dependencies, depGraph, kclPkg.HomePath, root)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1299,7 +1299,7 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 			return nil, errors.InvalidDependency
 		}
 
-		existDep := c.dependencyExists(&d, lockDeps)
+		existDep := c.dependencyExists(&d, &lockDeps)
 		if existDep != nil {
 			newDeps.Deps[d.Name] = *existDep
 			continue
@@ -1366,7 +1366,7 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 
 		source := module.Version{Path: d.Name, Version: d.Version}
 
-		err = depGraph.AddVertex(source)
+		err = depGraph.AddVertex(source, graph.VertexAttribute(d.GetSourceType(), d.GetDownloadPath()))
 		if err != nil && err != graph.ErrVertexAlreadyExists {
 			return nil, err
 		}
@@ -1384,7 +1384,7 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 		}
 
 		// Download the indirect dependencies.
-		nested, err := c.downloadDeps(&deppkg.ModFile.Dependencies, lockDeps, depGraph, deppkg.HomePath, source)
+		nested, err := c.downloadDeps(deppkg.ModFile.Dependencies, lockDeps, depGraph, deppkg.HomePath, source)
 		if err != nil {
 			return nil, err
 		}

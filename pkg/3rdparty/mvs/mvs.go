@@ -12,9 +12,8 @@ import (
 	"sort"
 	"sync"
 
-	"kcl-lang.io/kpm/pkg/3rdparty/par"
-
 	"golang.org/x/mod/module"
+	"kcl-lang.io/kpm/pkg/3rdparty/par"
 )
 
 // A Reqs is the requirement graph on which Minimal Version Selection (MVS) operates.

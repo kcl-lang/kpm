@@ -4,9 +4,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/containers/image/docker"
+	"github.com/containers/image/types"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/thoas/go-funk"
 	"oras.land/oras-go/pkg/auth"
@@ -384,4 +388,18 @@ func GenOciManifestFromPkg(kclPkg *pkg.KclPkg) (map[string]string, error) {
 	}
 	res[constants.DEFAULT_KCL_OCI_MANIFEST_SUM] = sum
 	return res, nil
+}
+
+func GetAllImageTags(imageName string) ([]string, error) {
+	sysCtx := &types.SystemContext{}
+	ref, err := docker.ParseReference("//" + strings.TrimPrefix(imageName, "oci://"))
+	if err != nil {
+		log.Fatalf("Error parsing reference: %v", err)
+	}
+
+	tags, err := docker.GetRepositoryTags(context.Background(), sysCtx, ref)
+	if err != nil {
+		log.Fatalf("Error getting tags: %v", err)
+	}
+	return tags, nil
 }

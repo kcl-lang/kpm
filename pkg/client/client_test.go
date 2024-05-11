@@ -184,7 +184,7 @@ func TestDependencyGraph(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	m := func(Path, Version string) module.Version {
-		return module.Version{Path, Version}
+		return module.Version{Path: Path, Version: Version}
 	}
 
 	edgeProp := graph.EdgeProperties{
