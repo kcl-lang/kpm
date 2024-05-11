@@ -77,6 +77,8 @@ func TestUnMarshalTOML(t *testing.T) {
 	assert.Equal(t, modfile.Pkg.Name, "MyKcl")
 	assert.Equal(t, modfile.Pkg.Edition, "v0.0.1")
 	assert.Equal(t, modfile.Pkg.Version, "v0.0.1")
+	assert.Equal(t, modfile.Pkg.Include, []string{"src/", "README.md", "LICENSE"})
+	assert.Equal(t, modfile.Pkg.Exclude, []string{"target/", ".git/", "*.log"})
 	assert.Equal(t, len(modfile.Dependencies.Deps), 2)
 	assert.NotEqual(t, modfile.Dependencies.Deps["MyKcl1"], nil)
 	assert.Equal(t, modfile.Dependencies.Deps["MyKcl1"].Name, "MyKcl1")
