@@ -149,12 +149,12 @@ func TarDir(srcDir string, tarPath string, include []string, exclude []string) e
 
 		getNewPattern := func(ex string) string {
 			newPath := ex
-			if !strings.HasPrefix(ex, srcDir + "/") {
-				newPath = srcDir + "/" +  ex
+			if !strings.HasPrefix(ex, srcDir+string(filepath.Separator)) {
+				newPath = filepath.Join(srcDir, ex)
 			}
 			return newPath
 		}
-		
+
 		for _, ex := range exclude {
 			if matched, _ := filepath.Match(getNewPattern(ex), path); matched {
 				return nil

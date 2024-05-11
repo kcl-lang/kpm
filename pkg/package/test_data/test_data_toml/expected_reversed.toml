@@ -2,6 +2,8 @@
 name = "MyKcl"
 edition = "v0.0.1"
 version = "v0.0.1"
+include = ["src/", "README.md", "LICENSE"]
+exclude = ["target/", ".git/", "*.log"]
 
 [dependencies]
 MyKcl1 = { git = "https://github.com/test/MyKcl1.git", tag = "v0.0.2" }

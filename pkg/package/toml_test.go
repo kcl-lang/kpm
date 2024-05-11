@@ -20,6 +20,8 @@ func TestMarshalTOML(t *testing.T) {
 			Name:    "MyKcl",
 			Edition: "v0.0.1",
 			Version: "v0.0.1",
+			Include: []string{"src/", "README.md", "LICENSE"},
+			Exclude: []string{"target/", ".git/", "*.log"},
 		},
 		Dependencies: Dependencies{
 			make(map[string]Dependency),
@@ -64,7 +66,7 @@ func TestMarshalTOML(t *testing.T) {
 	fmt.Printf("expected_toml == got_data: '%t'\n", expected_toml == got_data)
 	fmt.Printf("reversed_expected_toml == got_data: '%t'\n", reversed_expected_toml == got_data)
 	assert.Equal(t, (utils.RmNewline(expected_toml) == utils.RmNewline(got_data)) ||
-		(utils.RmNewline(reversed_expected_toml) == utils.RmNewline(got_data)), true)
+		(utils.RmNewline(reversed_expected_toml) == utils.RmNewline(got_data)), true, "got data is ", expected_toml, reversed_expected_toml, got_data)
 }
 
 func TestUnMarshalTOML(t *testing.T) {
