@@ -137,6 +137,8 @@ func TarDir(srcDir string, include []string, exclude []string, tarPath string) e
 	tw := tar.NewWriter(fw)
 	defer tw.Close()
 
+	fmt.Println(exclude)
+
 	err = filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -148,6 +150,8 @@ func TarDir(srcDir string, include []string, exclude []string, tarPath string) e
 			}
 		}
 
+		fmt.Println(path)
+
 		for _, ex := range exclude {
 			if strings.Contains(path, ex) {
 				return nil
@@ -155,8 +159,8 @@ func TarDir(srcDir string, include []string, exclude []string, tarPath string) e
 		}
 
 		for _, inc := range include {
-			if strings.Contains(path, inc) {
-				return nil 
+			if !strings.Contains(path, inc) {
+				return nil
 			}
 		}
 
