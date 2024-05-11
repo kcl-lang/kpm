@@ -1,0 +1,9 @@
+[dependencies]
+  [dependencies.kcl1]
+    name = "kcl1"
+    full_name = "kcl1"
+    sum = "c5bjxiHbwJqWCdBwXLOr9MydCTis3nJotrOzozkPsKo="
+  [dependencies.kcl2]
+    name = "kcl2"
+    full_name = "kcl2"
+    sum = "OiA7IJfhi9bLp3d+Phc6ncgWE8XwpXqkGvhF5BOpf34="

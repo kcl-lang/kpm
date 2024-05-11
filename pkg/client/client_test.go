@@ -120,18 +120,18 @@ func TestDownloadLatestOci(t *testing.T) {
 	dep, err := kpmcli.Download(&depFromOci, "", testPath)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, dep.Name, "helloworld")
-	assert.Equal(t, dep.FullName, "helloworld_0.1.1")
-	assert.Equal(t, dep.Version, "0.1.1")
-	assert.Equal(t, dep.Sum, "7OO4YK2QuRWPq9C7KTzcWcti5yUnueCjptT3OXiPVeQ=")
+	assert.Equal(t, dep.FullName, "helloworld_0.1.2")
+	assert.Equal(t, dep.Version, "0.1.2")
+	assert.Equal(t, dep.Sum, "PN0OMEV9M8VGFn1CtA/T3bcgZmMJmOo+RkBrLKIWYeQ=")
 	assert.NotEqual(t, dep.Source.Oci, nil)
 	assert.Equal(t, dep.Source.Oci.Reg, "ghcr.io")
 	assert.Equal(t, dep.Source.Oci.Repo, "kcl-lang/helloworld")
-	assert.Equal(t, dep.Source.Oci.Tag, "0.1.1")
+	assert.Equal(t, dep.Source.Oci.Tag, "0.1.2")
 	assert.Equal(t, dep.LocalFullPath, testPath)
 	assert.Equal(t, err, nil)
 
 	// Check whether the tar downloaded by `kpm add` has been deleted.
-	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "helloworld_0.1.1.tar")), false)
+	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "helloworld_0.1.2.tar")), false)
 
 	assert.Equal(t, utils.DirExists(filepath.Join(getTestDir("download"), "helloworld")), false)
 }
@@ -216,13 +216,12 @@ func TestParseKclModFile(t *testing.T) {
 	modFilePath := filepath.Join(testDir, "kcl.mod")
 
 	// Write modFileContent to modFilePath
-	modFileContent := `
-        [dependencies]
-        teleport = "0.1.0"
-        rabbitmq = "0.0.1"
-        gitdep = { git = "git://example.com/repo.git", tag = "v1.0.0" }
-        localdep = { path = "/path/to/local/dependency" }
-    `
+	modFileContent := `[dependencies]
+teleport = "0.1.0"
+rabbitmq = "0.0.1"
+gitdep = { git = "git://example.com/repo.git", tag = "v1.0.0" }
+localdep = { path = "/path/to/local/dependency" }
+`
 
 	err = os.WriteFile(modFilePath, []byte(modFileContent), 0644)
 	assert.Nil(t, err, "error writing mod file")

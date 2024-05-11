@@ -271,7 +271,7 @@ func (pkg *Package) UnmarshalTOML(data interface{}) error {
 	if v, ok := meta[EXCLUDE_FLAG].([]interface{}); ok {
 		pkg.Exclude = convertToStringArray(v)
 	}
-	
+
 	return nil
 }
 

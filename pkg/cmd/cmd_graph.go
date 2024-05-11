@@ -73,7 +73,7 @@ func KpmGraph(c *cli.Context, kpmcli *client.KpmClient) error {
 	}
 
 	// print the dependency graph to stdout.
-	root := fmt.Sprintf("%s@%s", kclPkg.GetPkgName(), kclPkg.GetPkgVersion()) 
+	root := fmt.Sprintf("%s@%s", kclPkg.GetPkgName(), kclPkg.GetPkgVersion())
 	err = graph.BFS(depGraph, root, func(source string) bool {
 		for target := range adjMap[source] {
 			reporter.ReportMsgTo(
