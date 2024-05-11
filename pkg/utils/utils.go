@@ -126,8 +126,7 @@ func Exists(path string) (bool, error) {
 // todo: Consider using the OCI tarball as the standard tar format.
 var ignores = []string{".git", ".tar"}
 
-func TarDir(srcDir string, include []string, exclude []string, tarPath string) error {
-
+func TarDir(srcDir string, tarPath string, include []string, exclude []string) error {
 	fw, err := os.Create(tarPath)
 	if err != nil {
 		log.Fatal(err)
@@ -136,8 +135,6 @@ func TarDir(srcDir string, include []string, exclude []string, tarPath string) e
 
 	tw := tar.NewWriter(fw)
 	defer tw.Close()
-
-	fmt.Println(exclude)
 
 	err = filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -150,14 +147,22 @@ func TarDir(srcDir string, include []string, exclude []string, tarPath string) e
 			}
 		}
 
+		getNewPattern := func(ex string) string {
+			newPath := ex
+			if !strings.HasPrefix(ex, srcDir + "/") {
+				newPath = srcDir + "/" +  ex
+			}
+			return newPath
+		}
+		
 		for _, ex := range exclude {
-			if strings.Contains(path, ex) {
+			if matched, _ := filepath.Match(getNewPattern(ex), path); matched {
 				return nil
 			}
 		}
 
 		for _, inc := range include {
-			if !strings.Contains(path, inc) {
+			if matched, _ := filepath.Match(getNewPattern(inc), path); !matched {
 				return nil
 			}
 		}

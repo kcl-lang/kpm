@@ -75,7 +75,7 @@ func TestTarDir(t *testing.T) {
 		os.Remove(tarPath)
 	}
 	emptyArrayOfStrings := []string{}
-	err = TarDir(filepath.Join(testDir, "test_src"), emptyArrayOfStrings, emptyArrayOfStrings, tarPath)
+	err = TarDir(filepath.Join(testDir, "test_src"), tarPath, emptyArrayOfStrings, emptyArrayOfStrings)
 	assert.Equal(t, err, nil)
 
 	_, err = os.Stat(tarPath)
