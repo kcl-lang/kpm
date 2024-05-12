@@ -212,7 +212,7 @@ upgrade* A: A B5.hidden C3
 
 name: down1
 A: B2
-B1: C1
+B1: C2
 B2: C2
 build A:        A B2 C2
 downgrade A C1: A B1 C1

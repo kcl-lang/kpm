@@ -39,34 +39,28 @@ func TestTheLatestTagWithMissingVersion(t *testing.T) {
 	assert.Equal(t, latest, "5.5")
 }
 
-func TestOldestVersion(t *testing.T) {
-	oldest, err := OldestVersion([]string{"1.2.3", "1.4.0", "1.3.5", "1.0.0"})
+func TestLeastOldVersion(t *testing.T) {
+	leastOld, err := LeastOldVersion([]string{"1.2.3", "1.4.0", "2.0.0", "1.3.5", "1.0.0"}, "1.2.0")
 	assert.Equal(t, err, nil)
-	assert.Equal(t, oldest, "1.0.0")
+	assert.Equal(t, leastOld, "1.0.0")
 
-	oldest, err = OldestVersion([]string{})
-	assert.Equal(t, err, errors.InvalidVersionFormat)
-	assert.Equal(t, oldest, "")
-
-	oldest, err = OldestVersion([]string{"invalid_version"})
-	assert.Equal(t, err.Error(), "failed to parse version invalid_version\nMalformed version: invalid_version\n")
-	assert.Equal(t, oldest, "")
-
-	oldest, err = OldestVersion([]string{"1.2.3", "1.4.0", "1.3.5", "invalid_version"})
-	assert.Equal(t, err.Error(), "failed to parse version invalid_version\nMalformed version: invalid_version\n")
-	assert.Equal(t, oldest, "")
+	leastOld, err = LeastOldVersion([]string{"2.2.0", "2.4.0", "3.0.0", "2.3.5"}, "2.5.0")
+	assert.Equal(t, err, nil)
+	assert.Equal(t, leastOld, "2.4.0")
 }
 
-func TestOldestVersionWithVariousFormats(t *testing.T) {
-	oldest, err := OldestVersion([]string{"2.2", "2.4.5", "2.3.9", "2.1.0", "2.0"})
+func TestFilterCompatibleVersions(t *testing.T) {
+	compatible, err := filterCompatibleVersions([]string{"1.2.3", "1.4.0", "2.0.0", "1.3.5", "1.0.0"}, "1.2.0")
 	assert.Equal(t, err, nil)
-	assert.Equal(t, oldest, "2.0")
+	expCompatible := []string{"1.2.3", "1.4.0", "1.3.5", "1.0.0"}
+	for i, v := range compatible {
+		assert.Equal(t, v, expCompatible[i])
+	}
 
-	oldest, err = OldestVersion([]string{"0.1", "0.1.1", "0.1.2-beta", "0.0.9"})
+	compatible, err = filterCompatibleVersions([]string{"2.2.0", "2.4.0", "3.0.0", "2.3.5"}, "2.0.0")
 	assert.Equal(t, err, nil)
-	assert.Equal(t, oldest, "0.0.9")
-
-	oldest, err = OldestVersion([]string{"3.3.3", "3.2", "3.1", "3.0.0"})
-	assert.Equal(t, err, nil)
-	assert.Equal(t, oldest, "3.0.0")
+	expCompatible = []string{"2.2.0", "2.4.0", "2.3.5"}
+	for i, v := range compatible {
+		assert.Equal(t, v, expCompatible[i])
+	}
 }

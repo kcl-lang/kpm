@@ -1255,7 +1255,7 @@ func (c *KpmClient) InitGraphAndDownloadDeps(kclPkg *pkg.KclPkg) (*pkg.Dependenc
 		return nil, nil, err
 	}
 
-	changedDeps, err := c.downloadDeps(kclPkg.ModFile.Dependencies, kclPkg.Dependencies, depGraph, kclPkg.HomePath, root)
+	changedDeps, err := c.DownloadDeps(kclPkg.ModFile.Dependencies, kclPkg.Dependencies, depGraph, kclPkg.HomePath, root)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1287,7 +1287,7 @@ func (c *KpmClient) dependencyExists(dep *pkg.Dependency, lockDeps *pkg.Dependen
 }
 
 // downloadDeps will download all the dependencies of the current kcl package.
-func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencies, depGraph graph.Graph[module.Version, module.Version], pkghome string, parent module.Version) (*pkg.Dependencies, error) {
+func (c *KpmClient) DownloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencies, depGraph graph.Graph[module.Version, module.Version], pkghome string, parent module.Version) (*pkg.Dependencies, error) {
 
 	newDeps := pkg.Dependencies{
 		Deps: make(map[string]pkg.Dependency),
@@ -1371,20 +1371,22 @@ func (c *KpmClient) downloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 			return nil, err
 		}
 
-		err = depGraph.AddEdge(parent, source)
-		if err != nil {
-			if err == graph.ErrEdgeCreatesCycle {
-				return nil, reporter.NewErrorEvent(
-					reporter.CircularDependencyExist,
-					nil,
-					fmt.Sprintf("adding %s as a dependency results in a cycle", source),
-				)
+		if parent != (module.Version{}) {
+			err = depGraph.AddEdge(parent, source)
+			if err != nil {
+				if err == graph.ErrEdgeCreatesCycle {
+					return nil, reporter.NewErrorEvent(
+						reporter.CircularDependencyExist,
+						nil,
+						fmt.Sprintf("adding %s as a dependency results in a cycle", source),
+					)
+				}
+				return nil, err
 			}
-			return nil, err
 		}
 
 		// Download the indirect dependencies.
-		nested, err := c.downloadDeps(deppkg.ModFile.Dependencies, lockDeps, depGraph, deppkg.HomePath, source)
+		nested, err := c.DownloadDeps(deppkg.ModFile.Dependencies, lockDeps, depGraph, deppkg.HomePath, source)
 		if err != nil {
 			return nil, err
 		}

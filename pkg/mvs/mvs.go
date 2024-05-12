@@ -6,6 +6,7 @@ import (
 	"github.com/dominikbraun/graph"
 	"github.com/hashicorp/go-version"
 	"golang.org/x/mod/module"
+	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/oci"
@@ -16,6 +17,8 @@ import (
 
 type ReqsGraph struct {
 	graph.Graph[module.Version, module.Version]
+	kpmClient *client.KpmClient
+	kpmPkg    *pkg.KclPkg
 }
 
 func (r ReqsGraph) Max(_, v1, v2 string) string {
@@ -50,9 +53,32 @@ func (r ReqsGraph) Upgrade(m module.Version) (module.Version, error) {
 		return m, nil
 	}
 
-	m.Version, err = semver.LatestVersion(releases)
+	m.Version, err = semver.LatestCompatibleVersion(releases, m.Version)
 	if err != nil {
 		return module.Version{}, err
+	}
+	_, err = r.Vertex(m)
+	if err == graph.ErrVertexNotFound {
+		d := pkg.Dependency{
+			Name:    m.Path,
+			Version: m.Version,
+		}
+		d.FullName = d.GenDepFullName()
+		for sourceType, uri := range properties.Attributes {
+			d.Source, err = pkg.GenSource(sourceType, uri, m.Version)
+			if err != nil {
+				return module.Version{}, err
+			}
+		}
+		deps := pkg.Dependencies{
+			Deps: map[string]pkg.Dependency{
+				m.Path: d,
+			},
+		}
+		lockDeps := pkg.Dependencies{
+			Deps: make(map[string]pkg.Dependency),
+		}
+		r.kpmClient.DownloadDeps(deps, lockDeps, r.Graph, r.kpmPkg.HomePath, module.Version{})
 	}
 	return m, nil
 }
@@ -72,9 +98,33 @@ func (r ReqsGraph) Previous(m module.Version) (module.Version, error) {
 		return m, nil
 	}
 
-	m.Version, err = semver.OldestVersion(releases)
+	m.Version, err = semver.LeastOldCompatibleVersion(releases, m.Version)
 	if err != nil {
 		return module.Version{}, err
+	}
+
+	_, err = r.Vertex(m)
+	if err == graph.ErrVertexNotFound {
+		d := pkg.Dependency{
+			Name:    m.Path,
+			Version: m.Version,
+		}
+		d.FullName = d.GenDepFullName()
+		for sourceType, uri := range properties.Attributes {
+			d.Source, err = pkg.GenSource(sourceType, uri, m.Version)
+			if err != nil {
+				return module.Version{}, err
+			}
+		}
+		deps := pkg.Dependencies{
+			Deps: map[string]pkg.Dependency{
+				m.Path: d,
+			},
+		}
+		lockDeps := pkg.Dependencies{
+			Deps: make(map[string]pkg.Dependency),
+		}
+		r.kpmClient.DownloadDeps(deps, lockDeps, r.Graph, r.kpmPkg.HomePath, module.Version{})
 	}
 	return m, nil
 }

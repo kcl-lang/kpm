@@ -1,7 +1,6 @@
 package mvs
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -44,6 +43,8 @@ func TestRequired(t *testing.T) {
 
 	reqs := ReqsGraph{
 		depGraph,
+		kpmcli,
+		kclPkg,
 	}
 
 	req, err := reqs.Required(module.Version{Path: "aaa", Version: "0.0.1"})
@@ -57,7 +58,7 @@ func TestRequired(t *testing.T) {
 	assert.Equal(t, req, expectedReqs)
 }
 
-func TestMinBuildList(t *testing.T) {
+func TestUpgrade(t *testing.T) {
 	pkg_path := getTestDir("test_with_external_deps")
 	assert.Equal(t, utils.DirExists(filepath.Join(pkg_path, "kcl.mod")), true)
 	kpmcli, err := client.NewKpmClient()
@@ -70,39 +71,27 @@ func TestMinBuildList(t *testing.T) {
 
 	reqs := ReqsGraph{
 		depGraph,
+		kpmcli,
+		kclPkg,
 	}
 
 	target := module.Version{Path: kclPkg.GetPkgName(), Version: kclPkg.GetPkgVersion()}
-
-	req, err := mvs.BuildList([]module.Version{target}, reqs)
+	upgradeList := []module.Version{
+		{Path: "argo-cd-order", Version: "0.2.0"},
+		{Path: "helloworld", Version: "0.1.1"},
+	}
+	upgrade, err := mvs.Upgrade(target, reqs, upgradeList...)
 	assert.Equal(t, err, nil)
 
 	expectedReqs := []module.Version{
 		{Path: "test_with_external_deps", Version: "0.0.1"},
-		{Path: "argo-cd-order", Version: "0.1.2"},
-		{Path: "helloworld", Version: "0.1.0"},
+		{Path: "argo-cd-order", Version: "0.2.0"},
+		{Path: "helloworld", Version: "0.1.1"},
 		{Path: "json_merge_patch", Version: "0.1.0"},
 		{Path: "k8s", Version: "1.29"},
 		{Path: "podinfo", Version: "0.1.1"},
 	}
-	assert.Equal(t, req, expectedReqs)
-
-	base := []string{target.Path}
-	for depName := range kclPkg.Dependencies.Deps {
-		base = append(base, depName)
-	}
-	req, err = mvs.Req(target, base, reqs)
-	assert.Equal(t, err, nil)
-
-	expectedReqs = []module.Version{
-		{Path: "argo-cd-order", Version: "0.1.2"},
-		{Path: "helloworld", Version: "0.1.0"},
-		{Path: "json_merge_patch", Version: "0.1.0"},
-		{Path: "k8s", Version: "1.29"},
-		{Path: "podinfo", Version: "0.1.1"},
-		{Path: "test_with_external_deps", Version: "0.0.1"},
-	}
-	assert.Equal(t, req, expectedReqs)
+	assert.Equal(t, upgrade, expectedReqs)
 }
 
 func TestUpgradeToLatest(t *testing.T) {
@@ -118,6 +107,8 @@ func TestUpgradeToLatest(t *testing.T) {
 
 	reqs := ReqsGraph{
 		depGraph,
+		kpmcli,
+		kclPkg,
 	}
 
 	upgrade, err := reqs.Upgrade(module.Version{Path: "k8s", Version: "1.27"})
@@ -138,13 +129,24 @@ func TestUpgradeAllToLatest(t *testing.T) {
 
 	reqs := ReqsGraph{
 		depGraph,
+		kpmcli,
+		kclPkg,
 	}
 
 	target := module.Version{Path: kclPkg.GetPkgName(), Version: kclPkg.GetPkgVersion()}
-	fmt.Println(target)
+
 	upgrade, err := mvs.UpgradeAll(target, reqs)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, upgrade, module.Version{Path: "k8s", Version: "1.29"})
+
+	expectedReqs := []module.Version{
+		{Path: "test_with_external_deps", Version: "0.0.1"},
+		{Path: "argo-cd-order", Version: "0.2.0"},
+		{Path: "helloworld", Version: "0.1.2"},
+		{Path: "json_merge_patch", Version: "0.1.1"},
+		{Path: "k8s", Version: "1.29"},
+		{Path: "podinfo", Version: "0.1.1"},
+	}
+	assert.Equal(t, upgrade, expectedReqs)
 }
 
 func TestPrevious(t *testing.T) {
@@ -160,6 +162,8 @@ func TestPrevious(t *testing.T) {
 
 	reqs := ReqsGraph{
 		depGraph,
+		kpmcli,
+		kclPkg,
 	}
 
 	downgrade, err := reqs.Previous(module.Version{Path: "k8s", Version: "1.27"})
@@ -180,6 +184,8 @@ func TestUpgradePreviousOfLocalDependency(t *testing.T) {
 
 	reqs := ReqsGraph{
 		depGraph,
+		kpmcli,
+		kclPkg,
 	}
 
 	upgrade, err := reqs.Upgrade(module.Version{Path: "bbb", Version: "0.0.1"})
@@ -189,4 +195,39 @@ func TestUpgradePreviousOfLocalDependency(t *testing.T) {
 	downgrade, err := reqs.Previous(module.Version{Path: "bbb", Version: "0.0.1"})
 	assert.Equal(t, err, nil)
 	assert.Equal(t, downgrade, module.Version{Path: "bbb", Version: "0.0.1"})
+}
+
+func TestDowngrade(t *testing.T) {
+	pkg_path := getTestDir("test_with_external_deps")
+	assert.Equal(t, utils.DirExists(filepath.Join(pkg_path, "kcl.mod")), true)
+	kpmcli, err := client.NewKpmClient()
+	assert.Equal(t, err, nil)
+	kclPkg, err := kpmcli.LoadPkgFromPath(pkg_path)
+	assert.Equal(t, err, nil)
+
+	_, depGraph, err := kpmcli.InitGraphAndDownloadDeps(kclPkg)
+	assert.Equal(t, err, nil)
+
+	reqs := ReqsGraph{
+		depGraph,
+		kpmcli,
+		kclPkg,
+	}
+
+	target := module.Version{Path: kclPkg.GetPkgName(), Version: kclPkg.GetPkgVersion()}
+	downgradeList := []module.Version{
+		{Path: "k8s", Version: "1.17"},
+	}
+	downgrade, err := mvs.Downgrade(target, reqs, downgradeList...)
+	assert.Equal(t, err, nil)
+
+	expectedReqs := []module.Version{
+		{Path: "test_with_external_deps", Version: "0.0.1"},
+		{Path: "argo-cd-order", Version: "0.2.0"},
+		{Path: "helloworld", Version: "0.1.1"},
+		{Path: "json_merge_patch", Version: "0.1.0"},
+		{Path: "k8s", Version: "1.27"},
+		{Path: "podinfo", Version: "0.1.1"},
+	}
+	assert.Equal(t, downgrade, expectedReqs)
 }

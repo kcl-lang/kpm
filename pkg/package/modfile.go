@@ -259,6 +259,26 @@ func (dep *Dependency) GetDownloadPath() string {
 	return ""
 }
 
+func GenSource(sourceType string, uri string, tagName string) (Source, error) {
+	source := Source{}
+	if sourceType == GIT {
+		source.Git = &Git{
+			Url: uri,
+			Tag: tagName,
+		}
+		return source, nil
+	}
+	if sourceType == OCI {
+		oci := Oci{}
+		_, err := oci.FromString(uri + ":" + tagName)
+		if err != nil {
+			return Source{}, err
+		}
+		source.Oci = &oci
+	}
+	return source, nil
+}
+
 // GetSourceType will get the source type of a dependency.
 func (dep *Dependency) GetSourceType() string {
 	if dep.Source.Git != nil {
