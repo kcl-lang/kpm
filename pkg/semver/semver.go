@@ -27,33 +27,23 @@ func LatestVersion(versions []string) (string, error) {
 	return latest.Original(), nil
 }
 
-// LeastOldVersion returns the version that is most recent and less than the base version.
-func LeastOldVersion(versions []string, baseVersion string) (string, error) {
-	base, err := version.NewVersion(baseVersion)
-	if err != nil {
-		return "", fmt.Errorf("invalid base version: %v", err)
-	}
-
-	var leastOld *version.Version
+func OldestVersion(versions []string) (string, error) {
+	var oldest *version.Version
 	for _, v := range versions {
 		ver, err := version.NewVersion(v)
 		if err != nil {
 			return "", reporter.NewErrorEvent(reporter.FailedParseVersion, err, fmt.Sprintf("failed to parse version %s", v))
 		}
-
-		// Only consider versions less than the base version
-		if ver.LessThan(base) {
-			if leastOld == nil || ver.GreaterThan(leastOld) {
-				leastOld = ver
-			}
+		if oldest == nil || ver.LessThan(oldest) {
+			oldest = ver
 		}
 	}
 
-	if leastOld == nil {
+	if oldest == nil {
 		return "", errors.InvalidVersionFormat
 	}
 
-	return leastOld.Original(), nil
+	return oldest.Original(), nil
 }
 
 func filterCompatibleVersions(versions []string, baseVersion string) ([]string, error) {
@@ -87,5 +77,5 @@ func LeastOldCompatibleVersion(versions []string, baseVersion string) (string, e
 	if err != nil {
 		return "", err
 	}
-	return LeastOldVersion(compatibleVersions, baseVersion)
+	return OldestVersion(compatibleVersions)
 }

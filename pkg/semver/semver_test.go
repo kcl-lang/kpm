@@ -39,14 +39,14 @@ func TestTheLatestTagWithMissingVersion(t *testing.T) {
 	assert.Equal(t, latest, "5.5")
 }
 
-func TestLeastOldVersion(t *testing.T) {
-	leastOld, err := LeastOldVersion([]string{"1.2.3", "1.4.0", "2.0.0", "1.3.5", "1.0.0"}, "1.2.0")
+func TestOldestVersion(t *testing.T) {
+	oldest, err := OldestVersion([]string{"1.2.3", "1.4.0", "2.0.0", "1.3.5", "1.0.0"})
 	assert.Equal(t, err, nil)
-	assert.Equal(t, leastOld, "1.0.0")
+	assert.Equal(t, oldest, "1.0.0")
 
-	leastOld, err = LeastOldVersion([]string{"2.2.0", "2.4.0", "3.0.0", "2.3.5"}, "2.5.0")
+	oldest, err = OldestVersion([]string{"2.2.0", "2.4.0", "3.0.0", "2.3.5"})
 	assert.Equal(t, err, nil)
-	assert.Equal(t, leastOld, "2.4.0")
+	assert.Equal(t, oldest, "2.2.0")
 }
 
 func TestFilterCompatibleVersions(t *testing.T) {

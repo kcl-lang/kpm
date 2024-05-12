@@ -222,12 +222,11 @@ func TestDowngrade(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	expectedReqs := []module.Version{
-		{Path: "test_with_external_deps", Version: "0.0.1"},
-		{Path: "argo-cd-order", Version: "0.2.0"},
-		{Path: "helloworld", Version: "0.1.1"},
-		{Path: "json_merge_patch", Version: "0.1.0"},
-		{Path: "k8s", Version: "1.27"},
-		{Path: "podinfo", Version: "0.1.1"},
+		{Path:"test_with_external_deps", Version:"0.0.1"},
+		{Path:"argo-cd-order", Version:"0.1.2"},
+		{Path:"helloworld", Version:"0.1.0"},
+		{Path:"json_merge_patch", Version:"0.1.0"},
+		{Path:"k8s", Version:"1.17"},
 	}
 	assert.Equal(t, downgrade, expectedReqs)
 }

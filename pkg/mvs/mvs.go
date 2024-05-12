@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"golang.org/x/mod/module"
 	"kcl-lang.io/kpm/pkg/client"
-	"kcl-lang.io/kpm/pkg/errors"
+	errInt "kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/oci"
 	pkg "kcl-lang.io/kpm/pkg/package"
@@ -98,9 +98,16 @@ func (r ReqsGraph) Previous(m module.Version) (module.Version, error) {
 		return m, nil
 	}
 
+	// copy the version to compare it later
+	v := m.Version
+
 	m.Version, err = semver.LeastOldCompatibleVersion(releases, m.Version)
-	if err != nil {
+	if err != nil && err != errInt.InvalidVersionFormat {
 		return module.Version{}, err
+	}
+
+	if v == m.Version {
+		return module.Version{Path: m.Path, Version: "none"}, nil
 	}
 
 	_, err = r.Vertex(m)
@@ -147,7 +154,7 @@ func getReleasesFromSource(properties graph.VertexProperties) ([]string, error) 
 
 	// there must be only one property depending on the download source type
 	if len(properties.Attributes) != 1 {
-		return nil, errors.MultipleSources
+		return nil, errInt.MultipleSources
 	}
 
 	for k, v := range properties.Attributes {
