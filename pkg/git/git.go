@@ -146,6 +146,7 @@ func CloneWithOpts(opts ...CloneOption) (*git.Repository, error) {
 		return nil, err
 	}
 
+
 	return cloneOpts.Clone()
 }
 

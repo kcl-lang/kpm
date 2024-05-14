@@ -1469,3 +1469,4 @@ func testRunWithOciDownloader(t *testing.T) {
 	assert.Equal(t, buf.String(), "downloading 'zong-zhe/helloworld:0.0.3' from 'ghcr.io/zong-zhe/helloworld:0.0.3'\n")
 	assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
 }
+
