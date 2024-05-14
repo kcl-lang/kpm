@@ -184,6 +184,10 @@ func GetAllGithubReleases(url string) ([]string, error) {
 		return nil, err
 	}
 
+	if gitURL.GetHostName() != "github.com" {
+		return nil, errors.New("only GitHub repositories are currently supported")
+	}
+
 	// Construct initial API URL for the first page
 	apiBase := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", gitURL.GetOwnerName(), gitURL.GetRepoName())
 	apiURL := fmt.Sprintf("%s?per_page=100&page=1", apiBase)
