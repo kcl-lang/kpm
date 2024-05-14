@@ -21,15 +21,15 @@ type ReqsGraph struct {
 	kpmPkg    *pkg.KclPkg
 }
 
-func (r ReqsGraph) Max(_, v1, v2 string) string {
+func (r ReqsGraph) Max(path, v1, v2 string) string {
 	version1, err := version.NewVersion(v1)
 	if err != nil {
-		reporter.NewErrorEvent(reporter.FailedParseVersion, err, fmt.Sprintf("failed to parse version %s", v1))
+		reporter.Fatal(reporter.FailedParseVersion, err, fmt.Sprintf("failed to parse version %s for module %s", v1, path))
 		return ""
 	}
 	version2, err := version.NewVersion(v2)
 	if err != nil {
-		reporter.NewErrorEvent(reporter.FailedParseVersion, err, fmt.Sprintf("failed to parse version %s", v2))
+		reporter.Fatal(reporter.FailedParseVersion, err, fmt.Sprintf("failed to parse version %s for module %s", v2, path))
 		return ""
 	}
 	if version1.GreaterThan(version2) {
@@ -78,7 +78,10 @@ func (r ReqsGraph) Upgrade(m module.Version) (module.Version, error) {
 		lockDeps := pkg.Dependencies{
 			Deps: make(map[string]pkg.Dependency),
 		}
-		r.kpmClient.DownloadDeps(deps, lockDeps, r.Graph, r.kpmPkg.HomePath, module.Version{})
+		_, err = r.kpmClient.DownloadDeps(deps, lockDeps, r.Graph, r.kpmPkg.HomePath, module.Version{})
+		if err != nil {
+			return module.Version{}, err
+		}
 	}
 	return m, nil
 }
@@ -131,7 +134,10 @@ func (r ReqsGraph) Previous(m module.Version) (module.Version, error) {
 		lockDeps := pkg.Dependencies{
 			Deps: make(map[string]pkg.Dependency),
 		}
-		r.kpmClient.DownloadDeps(deps, lockDeps, r.Graph, r.kpmPkg.HomePath, module.Version{})
+		_, err = r.kpmClient.DownloadDeps(deps, lockDeps, r.Graph, r.kpmPkg.HomePath, module.Version{})
+		if err != nil {
+			return module.Version{}, err
+		}
 	}
 	return m, nil
 }
