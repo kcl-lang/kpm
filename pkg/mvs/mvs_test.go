@@ -52,8 +52,8 @@ func TestRequired(t *testing.T) {
 	assert.Equal(t, len(req), 2)
 
 	expectedReqs := []module.Version{
-		{Path: "bbb", Version: "0.0.1"},
-		{Path: "ccc", Version: "0.0.1"},
+		{Path:"ccc", Version:"0.0.1"},
+		{Path:"bbb", Version:"0.0.1"},
 	}
 	assert.Equal(t, req, expectedReqs)
 }
