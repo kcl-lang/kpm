@@ -22,6 +22,12 @@ type ReqsGraph struct {
 }
 
 func (r ReqsGraph) Max(path, v1, v2 string) string {
+	if v1 == "none" || v2 == "" {
+		return v2
+	}
+	if v2 == "none" || v1 == "" {
+		return v1
+	}
 	version1, err := version.NewVersion(v1)
 	if err != nil {
 		reporter.Fatal(reporter.FailedParseVersion, err, fmt.Sprintf("failed to parse version %s for module %s", v1, path))

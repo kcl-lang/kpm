@@ -3,6 +3,7 @@ package mvs
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -52,9 +53,12 @@ func TestRequired(t *testing.T) {
 	assert.Equal(t, len(req), 2)
 
 	expectedReqs := []module.Version{
-		{Path:"ccc", Version:"0.0.1"},
 		{Path:"bbb", Version:"0.0.1"},
+		{Path:"ccc", Version:"0.0.1"},
 	}
+	sort.Slice(req, func(i, j int) bool {
+		return req[i].Path < req[j].Path
+	})
 	assert.Equal(t, req, expectedReqs)
 }
 
