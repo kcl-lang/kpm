@@ -84,7 +84,7 @@ func (r ReqsGraph) Upgrade(m module.Version) (module.Version, error) {
 		lockDeps := pkg.Dependencies{
 			Deps: make(map[string]pkg.Dependency),
 		}
-		_, err = r.kpmClient.DownloadDeps(deps, lockDeps, r.Graph, r.kpmPkg.HomePath, module.Version{})
+		_, err = r.kpmClient.DownloadDeps(&deps, &lockDeps, r.Graph, r.kpmPkg.HomePath, module.Version{})
 		if err != nil {
 			return module.Version{}, err
 		}
@@ -140,7 +140,7 @@ func (r ReqsGraph) Previous(m module.Version) (module.Version, error) {
 		lockDeps := pkg.Dependencies{
 			Deps: make(map[string]pkg.Dependency),
 		}
-		_, err = r.kpmClient.DownloadDeps(deps, lockDeps, r.Graph, r.kpmPkg.HomePath, module.Version{})
+		_, err = r.kpmClient.DownloadDeps(&deps, &lockDeps, r.Graph, r.kpmPkg.HomePath, module.Version{})
 		if err != nil {
 			return module.Version{}, err
 		}

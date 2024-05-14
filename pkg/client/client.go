@@ -1293,7 +1293,7 @@ func (c *KpmClient) InitGraphAndDownloadDeps(kclPkg *pkg.KclPkg) (*pkg.Dependenc
 		return nil, nil, err
 	}
 
-	changedDeps, err := c.DownloadDeps(kclPkg.ModFile.Dependencies, kclPkg.Dependencies, depGraph, kclPkg.HomePath, root)
+	changedDeps, err := c.DownloadDeps(&kclPkg.ModFile.Dependencies, &kclPkg.Dependencies, depGraph, kclPkg.HomePath, root)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1325,7 +1325,7 @@ func (c *KpmClient) dependencyExists(dep *pkg.Dependency, lockDeps *pkg.Dependen
 }
 
 // downloadDeps will download all the dependencies of the current kcl package.
-func (c *KpmClient) DownloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencies, depGraph graph.Graph[module.Version, module.Version], pkghome string, parent module.Version) (*pkg.Dependencies, error) {
+func (c *KpmClient) DownloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependencies, depGraph graph.Graph[module.Version, module.Version], pkghome string, parent module.Version) (*pkg.Dependencies, error) {
 
 	newDeps := pkg.Dependencies{
 		Deps: make(map[string]pkg.Dependency),
@@ -1337,7 +1337,7 @@ func (c *KpmClient) DownloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 			return nil, errors.InvalidDependency
 		}
 
-		existDep := c.dependencyExists(&d, &lockDeps)
+		existDep := c.dependencyExists(&d, lockDeps)
 		if existDep != nil {
 			newDeps.Deps[d.Name] = *existDep
 			continue
@@ -1424,7 +1424,7 @@ func (c *KpmClient) DownloadDeps(deps pkg.Dependencies, lockDeps pkg.Dependencie
 		}
 
 		// Download the indirect dependencies.
-		nested, err := c.DownloadDeps(deppkg.ModFile.Dependencies, lockDeps, depGraph, deppkg.HomePath, source)
+		nested, err := c.DownloadDeps(&deppkg.ModFile.Dependencies, lockDeps, depGraph, deppkg.HomePath, source)
 		if err != nil {
 			return nil, err
 		}
