@@ -847,7 +847,6 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			return nil, err
 		}
 		dep.Version = modFile.Pkg.Version
-		dep.Source.Git.Version = modFile.Pkg.Version
 	}
 
 	if dep.Source.Oci != nil {

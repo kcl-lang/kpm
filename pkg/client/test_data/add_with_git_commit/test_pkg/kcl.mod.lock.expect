@@ -2,7 +2,7 @@
   [dependencies.catalog]
     name = "catalog"
     full_name = "catalog_a29e3db"
+    version = "0.1.0"
     sum = "kFmlrYJbJUFFTEXjC9cquc80WB+UpZ/6oMPKrfgyeks="
     url = "https://github.com/KusionStack/catalog.git"
     commit = "a29e3db"
-    version = "0.1.0"
