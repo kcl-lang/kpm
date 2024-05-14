@@ -23,6 +23,7 @@ const (
 	DEFAULT_KCL_OCI_MANIFEST_SUM         = "org.kcllang.package.sum"
 	DEFAULT_CREATE_OCI_MANIFEST_TIME     = "org.opencontainers.image.created"
 	URL_PATH_SEPARATOR                   = "/"
+	LATEST                               = "latest"
 
 	// The pattern of the external package argument.
 	EXTERNAL_PKGS_ARG_PATTERN = "%s=%s"

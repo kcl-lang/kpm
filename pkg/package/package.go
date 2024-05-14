@@ -288,6 +288,16 @@ func (KclPkg *KclPkg) GetPkgDescription() string {
 	return KclPkg.ModFile.Pkg.Description
 }
 
+// GetPkgInclude returns the include of package.
+func (KclPkg *KclPkg) GetPkgInclude() []string {
+	return KclPkg.ModFile.Pkg.Include
+}
+
+// GetPkgExclude returns the exclude of package.
+func (KclPkg *KclPkg) GetPkgExclude() []string {
+	return KclPkg.ModFile.Pkg.Exclude
+}
+
 // GenCheckSum generates the checksum of the current kcl package.
 func (KclPkg *KclPkg) GenCheckSum() (string, error) {
 	return utils.HashDir(KclPkg.HomePath)

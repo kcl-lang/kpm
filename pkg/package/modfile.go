@@ -32,10 +32,18 @@ const (
 
 // 'Package' is the kcl package section of 'kcl.mod'.
 type Package struct {
-	Name        string `toml:"name,omitempty"`        // kcl package name
-	Edition     string `toml:"edition,omitempty"`     // kcl compiler version
-	Version     string `toml:"version,omitempty"`     // kcl package version
+	// The name of the package.
+	Name string `toml:"name,omitempty"`
+	// The kcl compiler version
+	Edition string `toml:"edition,omitempty"`
+	// The version of the package.
+	Version string `toml:"version,omitempty"`
+	// Description denotes the description of the package.
 	Description string `toml:"description,omitempty"` // kcl package description
+	// Exclude denote the files to include when publishing.
+	Include []string `toml:"include,omitempty"`
+	// Exclude denote the files to exclude when publishing.
+	Exclude []string `toml:"exclude,omitempty"`
 }
 
 // 'ModFile' is kcl package file 'kcl.mod'.
@@ -173,7 +181,6 @@ type Dependency struct {
 }
 
 func (d *Dependency) FromKclPkg(pkg *KclPkg) {
-	d.Name = pkg.GetPkgName()
 	d.FullName = pkg.GetPkgFullName()
 	d.Version = pkg.GetPkgVersion()
 	d.LocalFullPath = pkg.HomePath

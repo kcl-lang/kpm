@@ -2,11 +2,14 @@ package oci
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"reflect"
+	"runtime"
 	"strings"
 
 	"github.com/containers/image/docker"
@@ -26,6 +29,7 @@ import (
 	"kcl-lang.io/kpm/pkg/utils"
 
 	"oras.land/oras-go/v2"
+	"oras.land/oras-go/v2/content"
 	"oras.land/oras-go/v2/content/file"
 	"oras.land/oras-go/v2/registry/remote"
 	"oras.land/oras-go/v2/registry/remote/errcode"
@@ -91,9 +95,15 @@ func Logout(hostname string, setting *settings.Settings) error {
 
 // OciClient is mainly responsible for interacting with OCI registry
 type OciClient struct {
-	repo      *remote.Repository
-	ctx       *context.Context
-	logWriter io.Writer
+	repo           *remote.Repository
+	ctx            *context.Context
+	logWriter      io.Writer
+	PullOciOptions *PullOciOptions
+}
+
+type PullOciOptions struct {
+	Platform string
+	CopyOpts *oras.CopyOptions
 }
 
 func (ociClient *OciClient) SetLogWriter(writer io.Writer) {
@@ -139,6 +149,13 @@ func NewOciClient(regName, repoName string, settings *settings.Settings) (*OciCl
 	return &OciClient{
 		repo: repo,
 		ctx:  &ctx,
+		PullOciOptions: &PullOciOptions{
+			CopyOpts: &oras.CopyOptions{
+				CopyGraphOptions: oras.CopyGraphOptions{
+					MaxMetadataBytes: DEFAULT_LIMIT_STORE_SIZE, // default is 64 MiB
+				},
+			},
+		},
 	}, nil
 }
 
@@ -153,14 +170,9 @@ func (ociClient *OciClient) Pull(localPath, tag string) error {
 		return reporter.NewErrorEvent(reporter.FailedCreateStorePath, err, "Failed to create store path ", localPath)
 	}
 	defer fs.Close()
-
-	// Copy from the remote repository to the file store
-	customCopyOptions := oras.CopyOptions{
-		CopyGraphOptions: oras.CopyGraphOptions{
-			MaxMetadataBytes: DEFAULT_LIMIT_STORE_SIZE, // default is 64 MiB
-		},
-	}
-	_, err = oras.Copy(*ociClient.ctx, ociClient.repo, tag, fs, tag, customCopyOptions)
+	copyOpts := ociClient.PullOciOptions.CopyOpts
+	copyOpts.FindSuccessors = ociClient.PullOciOptions.Successors
+	_, err = oras.Copy(*ociClient.ctx, ociClient.repo, tag, fs, tag, *copyOpts)
 	if err != nil {
 		return reporter.NewErrorEvent(
 			reporter.FailedGetPkg,
@@ -402,4 +414,95 @@ func GetAllImageTags(imageName string) ([]string, error) {
 		log.Fatalf("Error getting tags: %v", err)
 	}
 	return tags, nil
+}
+
+const (
+	MediaTypeConfig           = "application/vnd.docker.container.image.v1+json"
+	MediaTypeManifestList     = "application/vnd.docker.distribution.manifest.list.v2+json"
+	MediaTypeManifest         = "application/vnd.docker.distribution.manifest.v2+json"
+	MediaTypeForeignLayer     = "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip"
+	MediaTypeArtifactManifest = "application/vnd.oci.artifact.manifest.v1+json"
+)
+
+// Successors returns the nodes directly pointed by the current node.
+// In other words, returns the "children" of the current descriptor.
+func (popts *PullOciOptions) Successors(ctx context.Context, fetcher content.Fetcher, node v1.Descriptor) ([]v1.Descriptor, error) {
+	switch node.MediaType {
+	case v1.MediaTypeImageManifest:
+		content, err := content.FetchAll(ctx, fetcher, node)
+		if err != nil {
+			return nil, err
+		}
+		var manifest v1.Manifest
+		if err := json.Unmarshal(content, &manifest); err != nil {
+			return nil, err
+		}
+		var nodes []v1.Descriptor
+		if manifest.Subject != nil {
+			nodes = append(nodes, *manifest.Subject)
+		}
+		nodes = append(nodes, manifest.Config)
+		return append(nodes, manifest.Layers...), nil
+	case v1.MediaTypeImageIndex:
+		content, err := content.FetchAll(ctx, fetcher, node)
+		if err != nil {
+			return nil, err
+		}
+
+		var index v1.Index
+		if err := json.Unmarshal(content, &index); err != nil {
+			return nil, err
+		}
+		var nodes []v1.Descriptor
+		if index.Subject != nil {
+			nodes = append(nodes, *index.Subject)
+		}
+
+		for _, manifest := range index.Manifests {
+			if manifest.Platform != nil && len(popts.Platform) != 0 {
+				pullPlatform, err := ParsePlatform(popts.Platform)
+				if err != nil {
+					return nil, err
+				}
+				if !reflect.DeepEqual(manifest.Platform, pullPlatform) {
+					continue
+				} else {
+					nodes = append(nodes, manifest)
+				}
+			} else {
+				nodes = append(nodes, manifest)
+			}
+		}
+		return nodes, nil
+	}
+	return nil, nil
+}
+
+func ParsePlatform(platform string) (*v1.Platform, error) {
+	// OS[/Arch[/Variant]][:OSVersion]
+	// If Arch is not provided, will use GOARCH instead
+	var platformStr string
+	var p v1.Platform
+	platformStr, p.OSVersion, _ = strings.Cut(platform, ":")
+	parts := strings.Split(platformStr, "/")
+	switch len(parts) {
+	case 3:
+		p.Variant = parts[2]
+		fallthrough
+	case 2:
+		p.Architecture = parts[1]
+	case 1:
+		p.Architecture = runtime.GOARCH
+	default:
+		return nil, fmt.Errorf("failed to parse platform %q: expected format os[/arch[/variant]]", platform)
+	}
+	p.OS = parts[0]
+	if p.OS == "" {
+		return nil, fmt.Errorf("invalid platform: OS cannot be empty")
+	}
+	if p.Architecture == "" {
+		return nil, fmt.Errorf("invalid platform: Architecture cannot be empty")
+	}
+
+	return &p, nil
 }

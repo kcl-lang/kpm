@@ -20,6 +20,8 @@ func TestMarshalTOML(t *testing.T) {
 			Name:    "MyKcl",
 			Edition: "v0.0.1",
 			Version: "v0.0.1",
+			Include: []string{"src/", "README.md", "LICENSE"},
+			Exclude: []string{"target/", ".git/", "*.log"},
 		},
 		Dependencies: Dependencies{
 			make(map[string]Dependency),
@@ -64,7 +66,7 @@ func TestMarshalTOML(t *testing.T) {
 	fmt.Printf("expected_toml == got_data: '%t'\n", expected_toml == got_data)
 	fmt.Printf("reversed_expected_toml == got_data: '%t'\n", reversed_expected_toml == got_data)
 	assert.Equal(t, (utils.RmNewline(expected_toml) == utils.RmNewline(got_data)) ||
-		(utils.RmNewline(reversed_expected_toml) == utils.RmNewline(got_data)), true)
+		(utils.RmNewline(reversed_expected_toml) == utils.RmNewline(got_data)), true, "got data is ", expected_toml, reversed_expected_toml, got_data)
 }
 
 func TestUnMarshalTOML(t *testing.T) {
@@ -77,6 +79,8 @@ func TestUnMarshalTOML(t *testing.T) {
 	assert.Equal(t, modfile.Pkg.Name, "MyKcl")
 	assert.Equal(t, modfile.Pkg.Edition, "v0.0.1")
 	assert.Equal(t, modfile.Pkg.Version, "v0.0.1")
+	assert.Equal(t, modfile.Pkg.Include, []string{"src/", "README.md", "LICENSE"})
+	assert.Equal(t, modfile.Pkg.Exclude, []string{"target/", ".git/", "*.log"})
 	assert.Equal(t, len(modfile.Dependencies.Deps), 2)
 	assert.NotEqual(t, modfile.Dependencies.Deps["MyKcl1"], nil)
 	assert.Equal(t, modfile.Dependencies.Deps["MyKcl1"].Name, "MyKcl1")

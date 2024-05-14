@@ -1,5 +1,5 @@
 // Copyright 2022 The KCL Authors. All rights reserved.
-// Deprecated: The entire contents of this file will be deprecated. 
+// Deprecated: The entire contents of this file will be deprecated.
 // Please use the kcl cli - https://github.com/kcl-lang/cli.
 
 package version

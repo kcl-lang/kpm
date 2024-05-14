@@ -1,7 +1,7 @@
 // Copyright 2023 The KCL Authors. All rights reserved.
 // This file provides all the flags in the kpm cli.
 //
-// Deprecated: The entire contents of this file will be deprecated. 
+// Deprecated: The entire contents of this file will be deprecated.
 // Please use the kcl cli - https://github.com/kcl-lang/cli.
 
 package cmd

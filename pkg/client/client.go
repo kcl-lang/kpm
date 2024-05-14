@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -19,6 +18,7 @@ import (
 	"oras.land/oras-go/v2"
 
 	"kcl-lang.io/kpm/pkg/constants"
+	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/git"
@@ -35,6 +35,8 @@ import (
 type KpmClient struct {
 	// The writer of the log.
 	logWriter io.Writer
+	// The downloader of the dependencies.
+	DepDownloader *downloader.DepDownloader
 	// The home path of kpm for global configuration file and kcl package storage path.
 	homePath string
 	// The settings of kpm loaded from the global configuration file.
@@ -57,9 +59,10 @@ func NewKpmClient() (*KpmClient, error) {
 	}
 
 	return &KpmClient{
-		logWriter: os.Stdout,
-		settings:  *settings,
-		homePath:  homePath,
+		logWriter:     os.Stdout,
+		settings:      *settings,
+		homePath:      homePath,
+		DepDownloader: &downloader.DepDownloader{},
 	}, nil
 }
 
@@ -377,6 +380,7 @@ func (c *KpmClient) CompileWithOpts(opts *opt.CompileOptions) (*kcl.KCLResultLis
 	}
 
 	c.noSumCheck = opts.NoSumCheck()
+	c.logWriter = opts.LogWriter()
 
 	kclPkg, err := c.LoadPkgFromPath(pkgPath)
 	if err != nil {
@@ -428,6 +432,15 @@ func (c *KpmClient) CompileWithOpts(opts *opt.CompileOptions) (*kcl.KCLResultLis
 	}
 
 	return compileResult, nil
+}
+
+// RunWithOpts will compile the kcl package with the compile options.
+func (c *KpmClient) RunWithOpts(opts ...opt.Option) (*kcl.KCLResultList, error) {
+	mergedOpts := opt.DefaultCompileOptions()
+	for _, opt := range opts {
+		opt(mergedOpts)
+	}
+	return c.CompileWithOpts(mergedOpts)
 }
 
 // CompilePkgWithOpts will compile the kcl package with the compile options.
@@ -684,7 +697,7 @@ func (c *KpmClient) Package(kclPkg *pkg.KclPkg, tarPath string, vendorMode bool)
 	}
 
 	// Tar the current kcl package into a "*.tar" file.
-	err := utils.TarDir(kclPkg.HomePath, tarPath)
+	err := utils.TarDir(kclPkg.HomePath, tarPath, kclPkg.GetPkgInclude(), kclPkg.GetPkgExclude())
 	if err != nil {
 		return reporter.NewErrorEvent(reporter.FailedPackage, err, "failed to package the kcl module")
 	}
@@ -765,31 +778,35 @@ func (c *KpmClient) FillDepInfo(dep *pkg.Dependency, homepath string) error {
 		return nil
 	}
 	if dep.Source.Oci != nil {
-		dep.Source.Oci.Reg = c.GetSettings().DefaultOciRegistry()
-		urlpath := utils.JoinPath(c.GetSettings().DefaultOciRepo(), dep.Name)
-		dep.Source.Oci.Repo = urlpath
+		if len(dep.Source.Oci.Reg) == 0 {
+			dep.Source.Oci.Reg = c.GetSettings().DefaultOciRegistry()
+		}
+
+		if len(dep.Source.Oci.Repo) == 0 {
+			urlpath := utils.JoinPath(c.GetSettings().DefaultOciRepo(), dep.Name)
+			dep.Source.Oci.Repo = urlpath
+		}
 		manifest := ocispec.Manifest{}
 		jsonDesc, err := c.FetchOciManifestIntoJsonStr(opt.OciFetchOptions{
 			FetchBytesOptions: oras.DefaultFetchBytesOptions,
 			OciOptions: opt.OciOptions{
-				Reg:  c.GetSettings().DefaultOciRegistry(),
-				Repo: fmt.Sprintf("%s/%s", c.GetSettings().DefaultOciRepo(), dep.Name),
+				Reg:  dep.Source.Oci.Reg,
+				Repo: fmt.Sprintf("%s/%s", dep.Source.Oci.Repo, dep.Name),
 				Tag:  dep.Version,
 			},
 		})
 
-		if err != nil {
-			return err
+		if err == nil {
+			err = json.Unmarshal([]byte(jsonDesc), &manifest)
+			if err != nil {
+				return err
+			}
+
+			if value, ok := manifest.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_SUM]; ok {
+				dep.Sum = value
+			}
 		}
 
-		err = json.Unmarshal([]byte(jsonDesc), &manifest)
-		if err != nil {
-			return err
-		}
-
-		if value, ok := manifest.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_SUM]; ok {
-			dep.Sum = value
-		}
 		return nil
 	}
 	return nil
@@ -819,10 +836,10 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		// Creating symbolic links in a global cache is not an optimal solution.
 		// This allows kclvm to locate the package by default.
 		// This feature is unstable and will be removed soon.
-		err = createDepRef(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
-		if err != nil {
-			return nil, err
-		}
+		// err = createDepRef(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
+		// if err != nil {
+		//     return nil, err
+		// }
 		dep.FullName = dep.GenDepFullName()
 
 		modFile, err := c.LoadModFile(localPath)
@@ -834,18 +851,39 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 	}
 
 	if dep.Source.Oci != nil {
-		kpkg, err := c.DownloadPkgFromOci(dep.Source.Oci, localPath)
+		err := c.DepDownloader.Download(*downloader.NewDownloadOptions(
+			downloader.WithLocalPath(localPath),
+			downloader.WithSource(dep.Source),
+			downloader.WithLogWriter(c.logWriter),
+			downloader.WithSettings(c.settings),
+		))
 		if err != nil {
 			return nil, err
 		}
-		dep.FromKclPkg(kpkg)
+		dpkg, err := pkg.FindFirstKclPkgFrom(localPath)
+		if err != nil {
+			return nil, err
+		}
+		dep.FromKclPkg(dpkg)
+
+		if dep.LocalFullPath == "" {
+			dep.LocalFullPath = localPath
+		}
+
+		if localPath != dep.LocalFullPath {
+			err = os.Rename(localPath, dep.LocalFullPath)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		// Creating symbolic links in a global cache is not an optimal solution.
 		// This allows kclvm to locate the package by default.
 		// This feature is unstable and will be removed soon.
-		err = createDepRef(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
-		if err != nil {
-			return nil, err
-		}
+		// err = createDepRef(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
+		// if err != nil {
+		//     return nil, err
+		// }
 	}
 
 	if dep.Source.Local != nil {
@@ -1481,16 +1519,16 @@ func check(dep pkg.Dependency, newDepPath string) bool {
 // createDepRef will create a dependency reference for the dependency saved on the local filesystem.
 // On the unix-like system, it will create a symbolic link.
 // On the windows system, it will create a junction.
-func createDepRef(depName, refName string) error {
-	if runtime.GOOS == "windows" {
-		// 'go-getter' continuously occupies files in '.git', causing the copy operation to fail
-		opt := copy.Options{
-			Skip: func(srcinfo os.FileInfo, src, dest string) (bool, error) {
-				return filepath.Base(src) == constants.GitPathSuffix, nil
-			},
-		}
-		return copy.Copy(depName, refName, opt)
-	} else {
-		return utils.CreateSymlink(depName, refName)
-	}
-}
+// func createDepRef(depName, refName string) error {
+// 	if runtime.GOOS == "windows" {
+// 		// 'go-getter' continuously occupies files in '.git', causing the copy operation to fail
+// 		opt := copy.Options{
+// 			Skip: func(srcinfo os.FileInfo, src, dest string) (bool, error) {
+// 				return filepath.Base(src) == constants.GitPathSuffix, nil
+// 			},
+// 		}
+// 		return copy.Copy(depName, refName, opt)
+// 	} else {
+// 		return utils.CreateSymlink(depName, refName)
+// 	}
+// }

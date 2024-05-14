@@ -19,6 +19,7 @@ import (
 	"golang.org/x/mod/module"
 	"gopkg.in/yaml.v3"
 	"kcl-lang.io/kcl-go/pkg/kcl"
+	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/opt"
@@ -90,24 +91,7 @@ func TestDownloadOci(t *testing.T) {
 	assert.Equal(t, utils.DirExists(filepath.Join(downloadPath, "k8s_1.27.tar")), false)
 
 	assert.Equal(t, utils.DirExists(filepath.Join(downloadPath, "k8s_1.27")), true)
-	assert.Equal(t, utils.DirExists(filepath.Join(downloadPath, "k8s")), true)
-
-	// Check whether the reference and the dependency have the same hash.
-	hashDep, err := utils.HashDir(filepath.Join(downloadPath, "k8s_1.27"))
-	assert.Equal(t, err, nil)
-
-	depRefPath := filepath.Join(downloadPath, "k8s")
-	info, err := os.Lstat(depRefPath)
-	assert.Equal(t, err, nil)
-
-	if info.Mode()&os.ModeSymlink != 0 {
-		depRefPath, err = os.Readlink(depRefPath)
-		assert.Equal(t, err, nil)
-	}
-
-	hashRef, err := utils.HashDir(depRefPath)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, hashDep, hashRef)
+	assert.Equal(t, utils.DirExists(filepath.Join(downloadPath, "k8s")), false)
 }
 
 // TestDownloadLatestOci tests the case that the version is empty.
@@ -137,37 +121,20 @@ func TestDownloadLatestOci(t *testing.T) {
 	dep, err := kpmcli.Download(&depFromOci, "", testPath)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, dep.Name, "helloworld")
-	assert.Equal(t, dep.FullName, "helloworld_0.1.1")
-	assert.Equal(t, dep.Version, "0.1.1")
-	assert.Equal(t, dep.Sum, "7OO4YK2QuRWPq9C7KTzcWcti5yUnueCjptT3OXiPVeQ=")
+	assert.Equal(t, dep.FullName, "helloworld_0.1.2")
+	assert.Equal(t, dep.Version, "0.1.2")
+	assert.Equal(t, dep.Sum, "PN0OMEV9M8VGFn1CtA/T3bcgZmMJmOo+RkBrLKIWYeQ=")
 	assert.NotEqual(t, dep.Source.Oci, nil)
 	assert.Equal(t, dep.Source.Oci.Reg, "ghcr.io")
 	assert.Equal(t, dep.Source.Oci.Repo, "kcl-lang/helloworld")
-	assert.Equal(t, dep.Source.Oci.Tag, "0.1.1")
-	assert.Equal(t, dep.LocalFullPath, testPath+"0.1.1")
+	assert.Equal(t, dep.Source.Oci.Tag, "0.1.2")
+	assert.Equal(t, dep.LocalFullPath, testPath)
 	assert.Equal(t, err, nil)
 
 	// Check whether the tar downloaded by `kpm add` has been deleted.
-	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "helloworld_0.1.1.tar")), false)
+	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "helloworld_0.1.2.tar")), false)
 
-	assert.Equal(t, utils.DirExists(filepath.Join(getTestDir("download"), "helloworld")), true)
-
-	// Check whether the reference and the dependency have the same hash.
-	hashDep, err := utils.HashDir(dep.LocalFullPath)
-	assert.Equal(t, err, nil)
-
-	depRefPath := filepath.Join(getTestDir("download"), "helloworld")
-	info, err := os.Lstat(depRefPath)
-	assert.Equal(t, err, nil)
-
-	if info.Mode()&os.ModeSymlink != 0 {
-		depRefPath, err = os.Readlink(depRefPath)
-		assert.Equal(t, err, nil)
-	}
-
-	hashRef, err := utils.HashDir(depRefPath)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, hashDep, hashRef)
+	assert.Equal(t, utils.DirExists(filepath.Join(getTestDir("download"), "helloworld")), false)
 }
 
 func TestDependencyGraph(t *testing.T) {
@@ -254,13 +221,12 @@ func TestParseKclModFile(t *testing.T) {
 	modFilePath := filepath.Join(testDir, "kcl.mod")
 
 	// Write modFileContent to modFilePath
-	modFileContent := `
-        [dependencies]
-        teleport = "0.1.0"
-        rabbitmq = "0.0.1"
-        gitdep = { git = "git://example.com/repo.git", tag = "v1.0.0" }
-        localdep = { path = "/path/to/local/dependency" }
-    `
+	modFileContent := `[dependencies]
+teleport = "0.1.0"
+rabbitmq = "0.0.1"
+gitdep = { git = "git://example.com/repo.git", tag = "v1.0.0" }
+localdep = { path = "/path/to/local/dependency" }
+`
 
 	err = os.WriteFile(modFilePath, []byte(modFileContent), 0644)
 	assert.Nil(t, err, "error writing mod file")
@@ -1426,4 +1392,80 @@ func TestRunGitWithLocalDep(t *testing.T) {
 
 		assert.Equal(t, gotObj, expectObj)
 	}
+}
+
+func TestLoadOciUrlDiffSetting(t *testing.T) {
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	testPath := getTestDir("diffsettings")
+
+	pkg, err := kpmcli.LoadPkgFromPath(testPath)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(pkg.ModFile.Deps), 1)
+	assert.Equal(t, pkg.ModFile.Deps["oci_pkg"].Oci.Reg, "docker.io")
+	assert.Equal(t, pkg.ModFile.Deps["oci_pkg"].Oci.Repo, "test/oci_pkg")
+	assert.Equal(t, pkg.ModFile.Deps["oci_pkg"].Oci.Tag, "0.0.1")
+	assert.Equal(t, err, nil)
+}
+
+func TestOciDownloader(t *testing.T) {
+	// make test case running in order to test the log output
+	testRunWithOciDownloader(t)
+	testAddWithOciDownloader(t)
+}
+
+func testAddWithOciDownloader(t *testing.T) {
+	kpmCli, err := NewKpmClient()
+	path := getTestDir("test_oci_downloader")
+	assert.Equal(t, err, nil)
+
+	kpmCli.DepDownloader = downloader.NewOciDownloader("linux/amd64")
+	kpkg, err := kpmCli.LoadPkgFromPath(filepath.Join(path, "add_dep", "pkg"))
+	assert.Equal(t, err, nil)
+	dep := pkg.Dependency{
+		Name:     "helloworld",
+		FullName: "helloworld_0.0.3",
+		Source: pkg.Source{
+			Oci: &pkg.Oci{
+				Reg:  "ghcr.io",
+				Repo: "zong-zhe/helloworld",
+				Tag:  "0.0.3",
+			},
+		},
+	}
+	kpkg.HomePath = filepath.Join(path, "add_dep", "pkg")
+	err = kpmCli.AddDepToPkg(kpkg, &dep)
+	assert.Equal(t, err, nil)
+	kpkg.NoSumCheck = false
+	err = kpkg.UpdateModAndLockFile()
+	assert.Equal(t, err, nil)
+
+	expectmod := filepath.Join(path, "add_dep", "pkg", "except")
+	expectmodContent, err := os.ReadFile(expectmod)
+	assert.Equal(t, err, nil)
+	gotContent, err := os.ReadFile(filepath.Join(path, "add_dep", "pkg", "kcl.mod"))
+	assert.Equal(t, err, nil)
+	assert.Equal(t, utils.RmNewline(string(expectmodContent)), utils.RmNewline(string(gotContent)))
+}
+
+func testRunWithOciDownloader(t *testing.T) {
+	kpmCli, err := NewKpmClient()
+	path := getTestDir("test_oci_downloader")
+	assert.Equal(t, err, nil)
+
+	kpmCli.DepDownloader = downloader.NewOciDownloader("linux/amd64")
+
+	var buf bytes.Buffer
+	writer := io.MultiWriter(&buf, os.Stdout)
+
+	res, err := kpmCli.RunWithOpts(
+		opt.WithEntries([]string{filepath.Join(path, "run_pkg", "pkg", "main.k")}),
+		opt.WithKclOption(kcl.WithWorkDir(filepath.Join(path, "run_pkg", "pkg"))),
+		opt.WithNoSumCheck(true),
+		opt.WithLogWriter(writer),
+	)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, buf.String(), "downloading 'zong-zhe/helloworld:0.0.3' from 'ghcr.io/zong-zhe/helloworld:0.0.3'\n")
+	assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
 }

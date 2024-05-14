@@ -236,6 +236,8 @@ const NAME_FLAG = "name"
 const EDITION_FLAG = "edition"
 const VERSION_FLAG = "version"
 const DESCRIPTION_FLAG = "description"
+const INCLUDE_FLAG = "include"
+const EXCLUDE_FLAG = "exclude"
 
 func (pkg *Package) UnmarshalTOML(data interface{}) error {
 	meta, ok := data.(map[string]interface{})
@@ -258,6 +260,23 @@ func (pkg *Package) UnmarshalTOML(data interface{}) error {
 	if v, ok := meta[DESCRIPTION_FLAG].(string); ok {
 		pkg.Description = v
 	}
+
+	convertToStringArray := func(v interface{}) []string {
+		var arr []string
+		for _, item := range v.([]interface{}) {
+			arr = append(arr, item.(string))
+		}
+		return arr
+	}
+
+	if v, ok := meta[INCLUDE_FLAG].([]interface{}); ok {
+		pkg.Include = convertToStringArray(v)
+	}
+
+	if v, ok := meta[EXCLUDE_FLAG].([]interface{}); ok {
+		pkg.Exclude = convertToStringArray(v)
+	}
+
 	return nil
 }
 
