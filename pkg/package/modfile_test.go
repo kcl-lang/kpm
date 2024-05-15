@@ -235,3 +235,16 @@ func TestGetFilePath(t *testing.T) {
 	assert.Equal(t, mfile.GetModFilePath(), filepath.Join(testPath, MOD_FILE))
 	assert.Equal(t, mfile.GetModLockFilePath(), filepath.Join(testPath, MOD_LOCK_FILE))
 }
+
+func TestGenSource(t *testing.T) {
+	src, err := GenSource("git", "https://github.com/kcl-lang/kcl", "0.8.7")
+	assert.Equal(t, err, nil)
+	assert.Equal(t, src.Git.Url, "https://github.com/kcl-lang/kcl")	
+	assert.Equal(t, src.Git.Tag, "0.8.7")
+
+	src, err = GenSource("oci", "oci://ghcr.io/kcl-lang/k8s", "1.24")
+	assert.Equal(t, err, nil)
+	assert.Equal(t, src.Oci.Reg, "ghcr.io")
+	assert.Equal(t, src.Oci.Repo, "kcl-lang/k8s")
+	assert.Equal(t, src.Oci.Tag, "1.24")
+}

@@ -1,12 +1,18 @@
 package git
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"net/http"
+	"regexp"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/hashicorp/go-getter"
+	giturl "github.com/kubescape/go-git-url"
 )
 
 // CloneOptions is a struct for specifying options for cloning a git repository
@@ -140,6 +146,7 @@ func CloneWithOpts(opts ...CloneOption) (*git.Repository, error) {
 		return nil, err
 	}
 
+
 	return cloneOpts.Clone()
 }
 
@@ -152,4 +159,87 @@ func Clone(repoURL string, tagName string, localPath string, writer io.Writer) (
 		ReferenceName: plumbing.ReferenceName(plumbing.NewTagReferenceName(tagName)),
 	})
 	return repo, err
+}
+
+type GitHubRelease struct {
+	TagName string `json:"tag_name"`
+}
+
+// parseNextPageURL extracts the 'next' page URL from the 'Link' header
+func parseNextPageURL(linkHeader string) (string, error) {
+	// Regex to extract 'next' page URL from the link header
+	r := regexp.MustCompile(`<([^>]+)>;\s*rel="next"`)
+	matches := r.FindStringSubmatch(linkHeader)
+
+	if len(matches) < 2 {
+		return "", errors.New("next page URL not found")
+	}
+	return matches[1], nil
+}
+
+// GetAllGithubReleases fetches all releases from a GitHub repository
+func GetAllGithubReleases(url string) ([]string, error) {
+	// Initialize and parse the URL to extract owner and repo names
+	gitURL, err := giturl.NewGitURL(url)
+	if err != nil {
+		return nil, err
+	}
+
+	if gitURL.GetHostName() != "github.com" {
+		return nil, errors.New("only GitHub repositories are currently supported")
+	}
+
+	// Construct initial API URL for the first page
+	apiBase := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", gitURL.GetOwnerName(), gitURL.GetRepoName())
+	apiURL := fmt.Sprintf("%s?per_page=100&page=1", apiBase)
+
+	client := http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	var releaseTags []string
+
+	for apiURL != "" {
+		req, err := http.NewRequest("GET", apiURL, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("failed to fetch tags, status code: %d", resp.StatusCode)
+		}
+
+		// Decode the JSON response into a slice of releases
+		var releases []GitHubRelease
+		if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
+			return nil, err
+		}
+
+		// Extract tag names from the releases
+		for _, release := range releases {
+			releaseTags = append(releaseTags, release.TagName)
+		}
+
+		// Read the `Link` header to get the next page URL, if available
+		linkHeader := resp.Header.Get("Link")
+		if linkHeader != "" {
+			nextURL, err := parseNextPageURL(linkHeader)
+			if err != nil {
+				apiURL = ""
+			} else {
+				apiURL = nextURL
+			}
+		} else {
+			apiURL = ""
+		}
+		fmt.Println(apiURL)
+	}
+
+	return releaseTags, nil
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/dominikbraun/graph"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/otiai10/copy"
+	"golang.org/x/mod/module"
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"oras.land/oras-go/v2"
 
@@ -840,12 +841,12 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		//     return nil, err
 		// }
 		dep.FullName = dep.GenDepFullName()
-		// If the dependency is from git commit, the version is the commit id.
-		// If the dependency is from git tag, the version is the tag.
-		dep.Version, err = dep.Source.Git.GetValidGitReference()
+
+		modFile, err := c.LoadModFile(localPath)
 		if err != nil {
 			return nil, err
 		}
+		dep.Version = modFile.Pkg.Version
 	}
 
 	if dep.Source.Oci != nil {
@@ -1277,18 +1278,21 @@ func (c *KpmClient) ParseOciOptionFromString(oci string, tag string) (*opt.OciOp
 }
 
 // InitGraphAndDownloadDeps initializes a dependency graph and call downloadDeps function.
-func (c *KpmClient) InitGraphAndDownloadDeps(kclPkg *pkg.KclPkg) (*pkg.Dependencies, graph.Graph[string, string], error) {
+func (c *KpmClient) InitGraphAndDownloadDeps(kclPkg *pkg.KclPkg) (*pkg.Dependencies, graph.Graph[module.Version, module.Version], error) {
 
-	depGraph := graph.New(graph.StringHash, graph.Directed(), graph.PreventCycles())
+	moduleHash := func(m module.Version) module.Version {
+		return m
+	}
+	depGraph := graph.New(moduleHash, graph.Directed(), graph.PreventCycles())
 
 	// add the root vertex(package name) to the dependency graph.
-	root := fmt.Sprintf("%s@%s", kclPkg.GetPkgName(), kclPkg.GetPkgVersion())
+	root := module.Version{Path: kclPkg.GetPkgName(), Version: kclPkg.GetPkgVersion()}
 	err := depGraph.AddVertex(root)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	changedDeps, err := c.downloadDeps(&kclPkg.ModFile.Dependencies, &kclPkg.Dependencies, depGraph, kclPkg.HomePath, root)
+	changedDeps, err := c.DownloadDeps(&kclPkg.ModFile.Dependencies, &kclPkg.Dependencies, depGraph, kclPkg.HomePath, root)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -1320,7 +1324,7 @@ func (c *KpmClient) dependencyExists(dep *pkg.Dependency, lockDeps *pkg.Dependen
 }
 
 // downloadDeps will download all the dependencies of the current kcl package.
-func (c *KpmClient) downloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependencies, depGraph graph.Graph[string, string], pkghome, parent string) (*pkg.Dependencies, error) {
+func (c *KpmClient) DownloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependencies, depGraph graph.Graph[module.Version, module.Version], pkghome string, parent module.Version) (*pkg.Dependencies, error) {
 
 	newDeps := pkg.Dependencies{
 		Deps: make(map[string]pkg.Dependency),
@@ -1397,27 +1401,29 @@ func (c *KpmClient) downloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependenc
 			return nil, err
 		}
 
-		source := fmt.Sprintf("%s@%s", d.Name, d.Version)
-		source = strings.TrimRight(source, "@")
-		err = depGraph.AddVertex(source)
+		source := module.Version{Path: d.Name, Version: d.Version}
+
+		err = depGraph.AddVertex(source, graph.VertexAttribute(d.GetSourceType(), d.GetDownloadPath()))
 		if err != nil && err != graph.ErrVertexAlreadyExists {
 			return nil, err
 		}
 
-		err = depGraph.AddEdge(parent, source)
-		if err != nil {
-			if err == graph.ErrEdgeCreatesCycle {
-				return nil, reporter.NewErrorEvent(
-					reporter.CircularDependencyExist,
-					nil,
-					fmt.Sprintf("adding %s as a dependency results in a cycle", source),
-				)
+		if parent != (module.Version{}) {
+			err = depGraph.AddEdge(parent, source)
+			if err != nil {
+				if err == graph.ErrEdgeCreatesCycle {
+					return nil, reporter.NewErrorEvent(
+						reporter.CircularDependencyExist,
+						nil,
+						fmt.Sprintf("adding %s as a dependency results in a cycle", source),
+					)
+				}
+				return nil, err
 			}
-			return nil, err
 		}
 
 		// Download the indirect dependencies.
-		nested, err := c.downloadDeps(&deppkg.ModFile.Dependencies, lockDeps, depGraph, deppkg.HomePath, source)
+		nested, err := c.DownloadDeps(&deppkg.ModFile.Dependencies, lockDeps, depGraph, deppkg.HomePath, source)
 		if err != nil {
 			return nil, err
 		}

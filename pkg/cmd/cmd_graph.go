@@ -8,6 +8,7 @@ import (
 
 	"github.com/dominikbraun/graph"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/mod/module"
 	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/env"
 	pkg "kcl-lang.io/kpm/pkg/package"
@@ -72,12 +73,20 @@ func KpmGraph(c *cli.Context, kpmcli *client.KpmClient) error {
 		return err
 	}
 
+	format := func(m module.Version) string {
+		formattedMsg := m.Path
+		if m.Version != "" {
+			formattedMsg +=  "@" + m.Version
+		}
+		return formattedMsg
+	}
+
 	// print the dependency graph to stdout.
-	root := fmt.Sprintf("%s@%s", kclPkg.GetPkgName(), kclPkg.GetPkgVersion())
-	err = graph.BFS(depGraph, root, func(source string) bool {
+	root := module.Version{Path: kclPkg.GetPkgName(), Version: kclPkg.GetPkgVersion()} 
+	err = graph.BFS(depGraph, root, func(source module.Version) bool {
 		for target := range adjMap[source] {
 			reporter.ReportMsgTo(
-				fmt.Sprint(source, " ", target),
+				fmt.Sprint(format(source), " ", format(target)),
 				kpmcli.GetLogWriter(),
 			)
 		}

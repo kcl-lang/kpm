@@ -118,6 +118,7 @@ func (source *Source) MarshalTOML() string {
 const GIT_URL_PATTERN = "git = \"%s\""
 const TAG_PATTERN = "tag = \"%s\""
 const GIT_COMMIT_PATTERN = "commit = \"%s\""
+const VERSION_PATTERN = "version = \"%s\""
 const SEPARATOR = ", "
 
 func (git *Git) MarshalTOML() string {
@@ -132,6 +133,10 @@ func (git *Git) MarshalTOML() string {
 	if len(git.Commit) != 0 {
 		sb.WriteString(SEPARATOR)
 		sb.WriteString(fmt.Sprintf(GIT_COMMIT_PATTERN, git.Commit))
+	}
+	if len(git.Version) != 0 {
+		sb.WriteString(SEPARATOR)
+		sb.WriteString(fmt.Sprintf(VERSION_PATTERN, git.Version))
 	}
 	return sb.String()
 }

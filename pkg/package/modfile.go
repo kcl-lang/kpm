@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"oras.land/oras-go/v2/registry"
 
@@ -24,6 +25,9 @@ import (
 const (
 	MOD_FILE      = "kcl.mod"
 	MOD_LOCK_FILE = "kcl.mod.lock"
+	GIT           = "git"
+	OCI           = "oci"
+	LOCAL         = "local"
 )
 
 // 'Package' is the kcl package section of 'kcl.mod'.
@@ -251,6 +255,51 @@ func (dep *Dependency) GenDepFullName() string {
 	return dep.FullName
 }
 
+// GetDownloadPath will get the download path of a dependency.
+func (dep *Dependency) GetDownloadPath() string {
+	if dep.Source.Git != nil {
+		return dep.Source.Git.Url
+	}
+	if dep.Source.Oci != nil {
+		return dep.Source.Oci.IntoOciUrl()
+	}
+	return ""
+}
+
+func GenSource(sourceType string, uri string, tagName string) (Source, error) {
+	source := Source{}
+	if sourceType == GIT {
+		source.Git = &Git{
+			Url: uri,
+			Tag: tagName,
+		}
+		return source, nil
+	}
+	if sourceType == OCI {
+		oci := Oci{}
+		_, err := oci.FromString(uri + ":" + tagName)
+		if err != nil {
+			return Source{}, err
+		}
+		source.Oci = &oci
+	}
+	return source, nil
+}
+
+// GetSourceType will get the source type of a dependency.
+func (dep *Dependency) GetSourceType() string {
+	if dep.Source.Git != nil {
+		return GIT
+	}
+	if dep.Source.Oci != nil {
+		return OCI
+	}
+	if dep.Source.Local != nil {
+		return LOCAL
+	}
+	return ""
+}
+
 // Source is the package source from registry.
 type Source struct {
 	*Git
@@ -305,10 +354,11 @@ func (oci *Oci) FromString(ociUrl string) (*Oci, error) {
 
 // Git is the package source from git registry.
 type Git struct {
-	Url    string `toml:"url,omitempty"`
-	Branch string `toml:"branch,omitempty"`
-	Commit string `toml:"commit,omitempty"`
-	Tag    string `toml:"git_tag,omitempty"`
+	Url     string `toml:"url,omitempty"`
+	Branch  string `toml:"branch,omitempty"`
+	Commit  string `toml:"commit,omitempty"`
+	Tag     string `toml:"git_tag,omitempty"`
+	Version string `toml:"version,omitempty"`
 }
 
 // GetValidGitReference will get the valid git reference from git source.

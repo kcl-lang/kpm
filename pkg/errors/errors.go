@@ -24,6 +24,9 @@ var InvalidAddOptionsInvalidOciRef = errors.New("invalid 'kpm add' argument, you
 var InvalidAddOptionsInvalidOciReg = errors.New("invalid 'kpm add' argument, you must provide a Reg for the package.")
 var InvalidAddOptionsInvalidOciRepo = errors.New("invalid 'kpm add' argument, you must provide a Repo for the package.")
 
+// Invalid 'kpm update'
+var MultipleSources = errors.New("multiple sources found, there must be a single source.")
+
 // Invalid 'kpm run'
 var InvalidRunOptionsWithoutEntryFiles = errors.New("invalid 'kpm run' argument, you must provide an entry file.")
 var EntryFileNotFound = errors.New("entry file cannot be found, please make sure the '--input' entry file can be found")
