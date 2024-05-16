@@ -17,8 +17,8 @@ import (
 
 type ReqsGraph struct {
 	graph.Graph[module.Version, module.Version]
-	kpmClient *client.KpmClient
-	kpmPkg    *pkg.KclPkg
+	KpmClient *client.KpmClient
+	KpmPkg    *pkg.KclPkg
 }
 
 func (r ReqsGraph) Max(path, v1, v2 string) string {
@@ -50,9 +50,17 @@ func (r ReqsGraph) Upgrade(m module.Version) (module.Version, error) {
 		return module.Version{}, err
 	}
 
-	releases, err := getReleasesFromSource(properties)
-	if err != nil {
-		return module.Version{}, err
+	// there must be only one property depending on the download source type
+	if len(properties.Attributes) != 1 {
+		return module.Version{}, errInt.MultipleSources
+	}
+
+	var releases []string 
+	for sourceType, uri := range properties.Attributes {
+		releases, err = GetReleasesFromSource(sourceType, uri)
+		if err != nil {
+			return module.Version{}, err
+		}
 	}
 
 	if releases == nil {
@@ -84,7 +92,7 @@ func (r ReqsGraph) Upgrade(m module.Version) (module.Version, error) {
 		lockDeps := pkg.Dependencies{
 			Deps: make(map[string]pkg.Dependency),
 		}
-		_, err = r.kpmClient.DownloadDeps(&deps, &lockDeps, r.Graph, r.kpmPkg.HomePath, module.Version{})
+		_, err = r.KpmClient.DownloadDeps(&deps, &lockDeps, r.Graph, r.KpmPkg.HomePath, module.Version{})
 		if err != nil {
 			return module.Version{}, err
 		}
@@ -98,9 +106,17 @@ func (r ReqsGraph) Previous(m module.Version) (module.Version, error) {
 		return module.Version{}, err
 	}
 
-	releases, err := getReleasesFromSource(properties)
-	if err != nil {
-		return module.Version{}, err
+	// there must be only one property depending on the download source type
+	if len(properties.Attributes) != 1 {
+		return module.Version{}, errInt.MultipleSources
+	}
+
+	var releases []string
+	for sourceType, uri := range properties.Attributes {
+		releases, err = GetReleasesFromSource(sourceType, uri)
+		if err != nil {
+			return module.Version{}, err
+		}
 	}
 
 	if releases == nil {
@@ -140,7 +156,7 @@ func (r ReqsGraph) Previous(m module.Version) (module.Version, error) {
 		lockDeps := pkg.Dependencies{
 			Deps: make(map[string]pkg.Dependency),
 		}
-		_, err = r.kpmClient.DownloadDeps(&deps, &lockDeps, r.Graph, r.kpmPkg.HomePath, module.Version{})
+		_, err = r.KpmClient.DownloadDeps(&deps, &lockDeps, r.Graph, r.KpmPkg.HomePath, module.Version{})
 		if err != nil {
 			return module.Version{}, err
 		}
@@ -160,25 +176,18 @@ func (r ReqsGraph) Required(m module.Version) ([]module.Version, error) {
 	return reqs, nil
 }
 
-func getReleasesFromSource(properties graph.VertexProperties) ([]string, error) {
+func GetReleasesFromSource(sourceType, uri string) ([]string, error) {
 	var releases []string
 	var err error
 
-	// there must be only one property depending on the download source type
-	if len(properties.Attributes) != 1 {
-		return nil, errInt.MultipleSources
+	switch sourceType {
+	case pkg.GIT:
+		releases, err = git.GetAllGithubReleases(uri)
+	case pkg.OCI:
+		releases, err = oci.GetAllImageTags(uri)
 	}
-
-	for k, v := range properties.Attributes {
-		switch k {
-		case pkg.GIT:
-			releases, err = git.GetAllGithubReleases(v)
-		case pkg.OCI:
-			releases, err = oci.GetAllImageTags(v)
-		}
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
 	}
 
 	return releases, nil

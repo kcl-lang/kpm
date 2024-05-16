@@ -320,6 +320,12 @@ func (c *KpmClient) UpdateDeps(kclPkg *pkg.KclPkg) error {
 		return err
 	}
 
+	// update kcl.mod
+	err = kclPkg.ModFile.StoreModFile()
+	if err != nil {
+		return err
+	}
+
 	// Generate file kcl.mod.lock.
 	if !kclPkg.NoSumCheck {
 		err := kclPkg.LockDepsVersion()
