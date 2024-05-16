@@ -623,6 +623,7 @@ func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pk
 		fmt.Sprintf("adding dependency '%s'", d.Name),
 		c.logWriter,
 	)
+
 	// 2. download the dependency to the local path.
 	err = c.AddDepToPkg(kclPkg, d)
 	if err != nil {
@@ -630,6 +631,9 @@ func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pk
 	}
 
 	// 3. update the kcl.mod and kcl.mod.lock.
+	if opt.NewPkgName != "" {
+		d.ChangePkgName(opt.NewPkgName)
+	}
 	err = kclPkg.UpdateModAndLockFile()
 	if err != nil {
 		return nil, err

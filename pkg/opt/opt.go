@@ -166,6 +166,7 @@ func (opts *InitOptions) Validate() error {
 
 type AddOptions struct {
 	LocalPath    string
+	NewPkgName   string
 	RegistryOpts RegistryOptions
 	NoSumCheck   bool
 }
