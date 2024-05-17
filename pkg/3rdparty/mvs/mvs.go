@@ -114,7 +114,7 @@ func buildList(targets []module.Version, reqs Reqs, upgrade func(module.Version)
 	for _, target := range targets {
 		work.Add(target)
 	}
-	work.Do(10, func(m module.Version) {
+	work.Do(1, func(m module.Version) {
 
 		var required []module.Version
 		var err error
