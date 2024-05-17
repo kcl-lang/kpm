@@ -6,10 +6,9 @@ import (
 	"github.com/dominikbraun/graph"
 	"github.com/hashicorp/go-version"
 	"golang.org/x/mod/module"
+	"kcl-lang.io/kpm/pkg/3rdparty/mvs"
 	"kcl-lang.io/kpm/pkg/client"
 	errInt "kcl-lang.io/kpm/pkg/errors"
-	"kcl-lang.io/kpm/pkg/git"
-	"kcl-lang.io/kpm/pkg/oci"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/semver"
@@ -55,9 +54,9 @@ func (r ReqsGraph) Upgrade(m module.Version) (module.Version, error) {
 		return module.Version{}, errInt.MultipleSources
 	}
 
-	var releases []string 
+	var releases []string
 	for sourceType, uri := range properties.Attributes {
-		releases, err = GetReleasesFromSource(sourceType, uri)
+		releases, err = client.GetReleasesFromSource(sourceType, uri)
 		if err != nil {
 			return module.Version{}, err
 		}
@@ -113,7 +112,7 @@ func (r ReqsGraph) Previous(m module.Version) (module.Version, error) {
 
 	var releases []string
 	for sourceType, uri := range properties.Attributes {
-		releases, err = GetReleasesFromSource(sourceType, uri)
+		releases, err = client.GetReleasesFromSource(sourceType, uri)
 		if err != nil {
 			return module.Version{}, err
 		}
@@ -176,19 +175,32 @@ func (r ReqsGraph) Required(m module.Version) ([]module.Version, error) {
 	return reqs, nil
 }
 
-func GetReleasesFromSource(sourceType, uri string) ([]string, error) {
-	var releases []string
-	var err error
+// UpdateBuildList decides whether to upgrade or downgrade based on modulesToUpgrade and modulesToDowngrade.
+// if modulesToUpgrade is empty, upgrade all dependencies. if modulesToUpgrade is not empty, upgrade the dependencies.
+// if modulesToDowngrade is not empty, downgrade the dependencies.
+// if modulesToUpgrade and modulesToDowngrade are both empty, first apply upgrade operation and
+// then downgrade the build list returned from previous operation.
+func UpdateBuildList(target module.Version, modulesToUpgrade []module.Version, modulesToDowngrade []module.Version, reqs *ReqsGraph) ([]module.Version, error) {
+	var (
+		UpdBuildLists []module.Version
+		err           error
+	)
 
-	switch sourceType {
-	case pkg.GIT:
-		releases, err = git.GetAllGithubReleases(uri)
-	case pkg.OCI:
-		releases, err = oci.GetAllImageTags(uri)
+	if len(modulesToUpgrade) == 0 {
+		UpdBuildLists, err = mvs.UpgradeAll(target, reqs)
+	} else {
+		UpdBuildLists, err = mvs.Upgrade(target, reqs, modulesToUpgrade...)
 	}
 	if err != nil {
-		return nil, err
+		return []module.Version{}, err
 	}
 
-	return releases, nil
+	if len(modulesToDowngrade) != 0 {
+		UpdBuildLists, err = mvs.Downgrade(target, reqs, modulesToDowngrade...)
+	}
+	if err != nil {
+		return []module.Version{}, err
+	}
+
+	return UpdBuildLists, nil
 }

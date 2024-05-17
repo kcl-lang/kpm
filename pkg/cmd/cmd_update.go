@@ -13,7 +13,6 @@ import (
 	"github.com/dominikbraun/graph"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/mod/module"
-	mvsExt "kcl-lang.io/kpm/pkg/3rdparty/mvs"
 	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/mvs"
@@ -64,14 +63,6 @@ func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
 		return reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it.")
 	}
 
-	fetchNameAndVersion := func(pkgInfo string) (string, string) {
-		// the version is specified after :
-		if strings.Contains(pkgInfo, ":") {
-			return strings.Split(pkgInfo, ":")[0], strings.Split(pkgInfo, ":")[1]
-		}
-		return pkgInfo, ""
-	}
-
 	kclPkg, err := kpmcli.LoadPkgFromPath(pwd)
 	if err != nil {
 		return err
@@ -92,47 +83,10 @@ func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
 		modulesToDowngrade []module.Version
 	)
 
-	// validate if the packages is present in kcl.mod file and
-	// find the latest version if version is not specified
 	for _, pkgInfo := range pkgInfos {
-		pkgInfo = strings.TrimSpace(pkgInfo)
-		pkgName, pkgVersion := fetchNameAndVersion(pkgInfo)
-
-		var dep pkg.Dependency
-		var ok bool
-		if dep, ok = kclPkg.Deps[pkgName]; !ok {
-			reporter.Report(fmt.Sprintf("package %s not found in kcl.mod file", pkgName))
-			continue
-		}
-
-		if pkgVersion == "" {
-			var releases []string
-			if dep.Git != nil {
-				releases, err = mvs.GetReleasesFromSource(dep.GetSourceType(), dep.Git.Url)
-			} else if dep.Oci != nil {
-				releases, err = mvs.GetReleasesFromSource(dep.GetSourceType(), "fjdkasd")
-			}
-			if err != nil {
-				reporter.ReportEventToStdout(reporter.NewEvent(
-					reporter.FailedGetReleases,
-					fmt.Sprintf("failed to get releases for %s", pkgName),
-				))
-				continue
-			}
-			pkgVersion, err = semver.LatestCompatibleVersion(releases, dep.Version)
-			if err != nil {
-				reporter.NewErrorEvent(
-					reporter.FailedSelectLatestCompatibleVersion,
-					err,
-					fmt.Sprintf("failed to find the latest version for %s", pkgName),
-				)
-				continue
-			}
-		}
-		if pkgVersion < dep.Version {
-			modulesToDowngrade = append(modulesToDowngrade, module.Version{Path: pkgName, Version: pkgVersion})
-		} else if pkgVersion > dep.Version {
-			modulesToUpgrade = append(modulesToUpgrade, module.Version{Path: pkgName, Version: pkgVersion})
+		err = GetModulesToUpdate(kclPkg, modulesToUpgrade, modulesToDowngrade, pkgInfo)
+		if err != nil {
+			reporter.Report(err)
 		}
 	}
 
@@ -148,11 +102,12 @@ func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
 	}
 
 	target := module.Version{Path: kclPkg.GetPkgName(), Version: kclPkg.GetPkgVersion()}
-	buildList, err := UpdateBuildList(target, modulesToUpgrade, modulesToDowngrade, &reqs)
+	buildList, err := mvs.UpdateBuildList(target, modulesToUpgrade, modulesToDowngrade, &reqs)
 	if err != nil {
 		return reporter.NewErrorEvent(reporter.FailedUpdatingBuildList, err, "failed to update build list")
 	}
 
+	// get all the vertices in the graph 
 	modules, err := graph.TopologicalSort(depGraph)
 	if err != nil {
 		return reporter.NewErrorEvent(reporter.FailedTopologicalSort, err, "failed to sort the dependencies")
@@ -161,29 +116,10 @@ func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
 	kclPkg.ModFile.Dependencies.Deps = make(map[string]pkg.Dependency)
 
 	for _, module := range modules {
-		if module.Path == target.Path || !slices.Contains(buildList, module) {
-			continue
-		}
-		d := pkg.Dependency{
-			Name:    module.Path,
-			Version: module.Version,
-		}
-		d.FullName = d.GenDepFullName()
-		_, properties, err := depGraph.VertexWithProperties(module)
+		err = InsertModuleToDeps(kclPkg, module, target, buildList, reqs)
 		if err != nil {
-			return reporter.NewErrorEvent(reporter.FailedGetVertexProperties, err, "failed to get vertex with properties")
+			return err
 		}
-		// there must be one property depending on the download source type
-		for sourceType, uri := range properties.Attributes {
-			d.Source, err = pkg.GenSource(sourceType, uri, module.Version)
-			if err != nil {
-				return reporter.NewErrorEvent(reporter.FailedGenerateSource, err, "failed to generate source")
-			}
-			// if d.Oci != nil && d.Oci.Reg == "ghcr.io" {
-			// 	d.Oci = nil
-			// }
-		}
-		kclPkg.ModFile.Dependencies.Deps[module.Path] = d
 	}
 
 	err = kpmcli.UpdateDeps(kclPkg)
@@ -193,27 +129,71 @@ func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
 	return nil
 }
 
-func UpdateBuildList(target module.Version, modulesToUpgrade []module.Version, modulesToDowngrade []module.Version, reqs *mvs.ReqsGraph) ([]module.Version, error) {
-	var (
-		UpdBuildLists []module.Version
-		err           error
-	)
-
-	if len(modulesToUpgrade) == 0 {
-		UpdBuildLists, err = mvsExt.UpgradeAll(target, reqs)
-	} else {
-		UpdBuildLists, err = mvsExt.Upgrade(target, reqs, modulesToUpgrade...)
-	}
+// GetModulesToUpdate validates if the packages is present in kcl.mod file and
+// find the latest version if version is not specified. Depending on the value of pkgVersion,
+// modulesToUpgrade or modulesToDowngrade will be updated. 
+func GetModulesToUpdate(kclPkg *pkg.KclPkg, modulesToUpgrade []module.Version,  modulesToDowngrade []module.Version, pkgInfo string) error {
+	pkgInfo = strings.TrimSpace(pkgInfo)
+	pkgName, pkgVersion, err := ParseOciPkgNameAndVersion(pkgInfo)
 	if err != nil {
-		return []module.Version{}, err
+		return err
 	}
 
-	if len(modulesToDowngrade) != 0 {
-		UpdBuildLists, err = mvsExt.Downgrade(target, reqs, modulesToDowngrade...)
+	var dep pkg.Dependency
+	var ok bool
+	if dep, ok = kclPkg.Deps[pkgName]; !ok {
+		return err
 	}
+
+	if pkgVersion == "" {
+		var releases []string
+		releases, err = client.GetReleasesFromSource(dep.GetSourceType(), dep.GetDownloadPath())
+		if err != nil {
+			return reporter.NewErrorEvent(
+				reporter.FailedGetReleases,
+				err,
+				fmt.Sprintf("failed to get releases for %s", pkgName),
+			)
+		}
+		pkgVersion, err = semver.LatestCompatibleVersion(releases, dep.Version)
+		if err != nil {
+			return reporter.NewErrorEvent(
+				reporter.FailedSelectLatestCompatibleVersion,
+				err,
+				fmt.Sprintf("failed to find the latest version for %s", pkgName),
+			)
+		}
+	}
+	if pkgVersion < dep.Version {
+		modulesToDowngrade = append(modulesToDowngrade, module.Version{Path: pkgName, Version: pkgVersion})
+	} else if pkgVersion > dep.Version {
+		modulesToUpgrade = append(modulesToUpgrade, module.Version{Path: pkgName, Version: pkgVersion})
+	}
+	return nil
+}
+
+// InsertModuleToDeps checks whether module is present in the buildList and it is not the same as the target module, 
+// and inserts it to the dependencies of kclPkg
+func InsertModuleToDeps(kclPkg *pkg.KclPkg, module module.Version, target module.Version, buildList []module.Version, reqs mvs.ReqsGraph) (error) {
+	if module.Path == target.Path || !slices.Contains(buildList, module) {
+		return nil
+	}
+	d := pkg.Dependency{
+		Name:    module.Path,
+		Version: module.Version,
+	}
+	d.FullName = d.GenDepFullName()
+	_, properties, err := reqs.VertexWithProperties(module)
 	if err != nil {
-		return []module.Version{}, err
+		return reporter.NewErrorEvent(reporter.FailedGetVertexProperties, err, "failed to get vertex with properties")
 	}
-
-	return UpdBuildLists, nil
+	// there must be one property depending on the download source type
+	for sourceType, uri := range properties.Attributes {
+		d.Source, err = pkg.GenSource(sourceType, uri, module.Version)
+		if err != nil {
+			return reporter.NewErrorEvent(reporter.FailedGenerateSource, err, "failed to generate source")
+		}
+	}
+	kclPkg.ModFile.Dependencies.Deps[module.Path] = d
+	return nil
 }
