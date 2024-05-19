@@ -266,10 +266,6 @@ func (dep *Dependency) GetDownloadPath() string {
 	return ""
 }
 
-func (dep *Dependency) ChangePkgName(NewPkgName string) {
-	dep.Name = NewPkgName
-}
-
 func GenSource(sourceType string, uri string, tagName string) (Source, error) {
 	source := Source{}
 	if sourceType == GIT {
