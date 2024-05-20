@@ -632,9 +632,20 @@ func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pk
 
 	// 3. update the kcl.mod and kcl.mod.lock.
 	if opt.NewPkgName != "" {
+		// update the kcl.mod with NewPkgName
 		tempDeps := kclPkg.ModFile.Dependencies.Deps[d.Name]
 		tempDeps.Name = opt.NewPkgName
 		kclPkg.ModFile.Dependencies.Deps[d.Name] = tempDeps
+
+		// update the kcl.mod.lock with NewPkgName
+		tempDeps = kclPkg.Dependencies.Deps[d.Name]
+		tempDeps.Name = opt.NewPkgName
+		tempDeps.FullName = opt.NewPkgName + "_" + tempDeps.Version
+		kclPkg.Dependencies.Deps[d.Name] = tempDeps
+
+		// update the key of kclPkg.Dependencies.Deps from d.Name to opt.NewPkgName
+		kclPkg.Dependencies.Deps[opt.NewPkgName] = kclPkg.Dependencies.Deps[d.Name]
+		delete(kclPkg.Dependencies.Deps, d.Name)
 	}
 
 	err = kclPkg.UpdateModAndLockFile()
