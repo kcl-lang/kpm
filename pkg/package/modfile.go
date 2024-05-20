@@ -287,6 +287,11 @@ func GenSource(sourceType string, uri string, tagName string) (Source, error) {
 		}
 		source.Oci = &oci
 	}
+	if sourceType == LOCAL {
+		source.Local = &Local{
+			Path: uri,
+		}
+	}
 	return source, nil
 }
 

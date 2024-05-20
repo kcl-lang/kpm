@@ -313,9 +313,32 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 	return nil
 }
 
+func GetReleasesFromSource(sourceType, uri string) ([]string, error) {
+	var releases []string
+	var err error
+
+	switch sourceType {
+	case pkg.GIT:
+		releases, err = git.GetAllGithubReleases(uri)
+	case pkg.OCI:
+		releases, err = oci.GetAllImageTags(uri)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return releases, nil
+}
+
 // UpdateDeps will update the dependencies.
 func (c *KpmClient) UpdateDeps(kclPkg *pkg.KclPkg) error {
 	_, err := c.ResolveDepsMetadataInJsonStr(kclPkg, true)
+	if err != nil {
+		return err
+	}
+
+	// update kcl.mod
+	err = kclPkg.ModFile.StoreModFile()
 	if err != nil {
 		return err
 	}

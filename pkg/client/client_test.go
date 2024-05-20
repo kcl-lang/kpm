@@ -10,10 +10,12 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"testing"
 
 	"github.com/dominikbraun/graph"
+	"github.com/hashicorp/go-version"
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/mod/module"
@@ -815,6 +817,43 @@ func TestParseOciOptionFromString(t *testing.T) {
 	assert.Equal(t, ociOption.Tag, "test_tag")
 }
 
+func TestGetReleasesFromSource(t *testing.T) {
+	sortVersions := func(versions []string) ([]string, error) {
+		var vers []*version.Version
+		for _, raw := range versions {
+			v, err := version.NewVersion(raw)
+			if err != nil {
+				return nil, err
+			}
+			vers = append(vers, v)
+		}
+		sort.Slice(vers, func(i, j int) bool {
+			return vers[i].LessThan(vers[j])
+		})
+		var res []string
+		for _, v := range vers {
+			res = append(res, v.Original())
+		}
+		return res, nil
+	}
+
+	releases, err := GetReleasesFromSource(pkg.GIT, "https://github.com/kcl-lang/kpm")
+	assert.Equal(t, err, nil)
+	length := len(releases)
+	assert.True(t, length >= 5)
+	releasesVersions, err := sortVersions(releases)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, releasesVersions[:5], []string{"v0.1.0", "v0.2.0", "v0.2.1", "v0.2.2", "v0.2.3"})
+
+	releases, err = GetReleasesFromSource(pkg.OCI, "oci://ghcr.io/kcl-lang/k8s")
+	assert.Equal(t, err, nil)
+	length = len(releases)
+	assert.True(t, length >= 5)
+	releasesVersions, err = sortVersions(releases)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, releasesVersions[:5], []string{"1.14", "1.15", "1.16", "1.17", "1.18"})
+}
+
 func TestUpdateWithKclMod(t *testing.T) {
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
@@ -1469,4 +1508,3 @@ func testRunWithOciDownloader(t *testing.T) {
 	assert.Equal(t, buf.String(), "downloading 'zong-zhe/helloworld:0.0.3' from 'ghcr.io/zong-zhe/helloworld:0.0.3'\n")
 	assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
 }
-

@@ -6,10 +6,9 @@ import (
 	"github.com/dominikbraun/graph"
 	"github.com/hashicorp/go-version"
 	"golang.org/x/mod/module"
+	"kcl-lang.io/kpm/pkg/3rdparty/mvs"
 	"kcl-lang.io/kpm/pkg/client"
 	errInt "kcl-lang.io/kpm/pkg/errors"
-	"kcl-lang.io/kpm/pkg/git"
-	"kcl-lang.io/kpm/pkg/oci"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/semver"
@@ -17,8 +16,8 @@ import (
 
 type ReqsGraph struct {
 	graph.Graph[module.Version, module.Version]
-	kpmClient *client.KpmClient
-	kpmPkg    *pkg.KclPkg
+	KpmClient *client.KpmClient
+	KpmPkg    *pkg.KclPkg
 }
 
 func (r ReqsGraph) Max(path, v1, v2 string) string {
@@ -50,9 +49,17 @@ func (r ReqsGraph) Upgrade(m module.Version) (module.Version, error) {
 		return module.Version{}, err
 	}
 
-	releases, err := getReleasesFromSource(properties)
-	if err != nil {
-		return module.Version{}, err
+	// there must be only one property depending on the download source type
+	if len(properties.Attributes) != 1 {
+		return module.Version{}, errInt.MultipleSources
+	}
+
+	var releases []string
+	for sourceType, uri := range properties.Attributes {
+		releases, err = client.GetReleasesFromSource(sourceType, uri)
+		if err != nil {
+			return module.Version{}, err
+		}
 	}
 
 	if releases == nil {
@@ -84,7 +91,7 @@ func (r ReqsGraph) Upgrade(m module.Version) (module.Version, error) {
 		lockDeps := pkg.Dependencies{
 			Deps: make(map[string]pkg.Dependency),
 		}
-		_, err = r.kpmClient.DownloadDeps(&deps, &lockDeps, r.Graph, r.kpmPkg.HomePath, module.Version{})
+		_, err = r.KpmClient.DownloadDeps(&deps, &lockDeps, r.Graph, r.KpmPkg.HomePath, module.Version{})
 		if err != nil {
 			return module.Version{}, err
 		}
@@ -98,9 +105,17 @@ func (r ReqsGraph) Previous(m module.Version) (module.Version, error) {
 		return module.Version{}, err
 	}
 
-	releases, err := getReleasesFromSource(properties)
-	if err != nil {
-		return module.Version{}, err
+	// there must be only one property depending on the download source type
+	if len(properties.Attributes) != 1 {
+		return module.Version{}, errInt.MultipleSources
+	}
+
+	var releases []string
+	for sourceType, uri := range properties.Attributes {
+		releases, err = client.GetReleasesFromSource(sourceType, uri)
+		if err != nil {
+			return module.Version{}, err
+		}
 	}
 
 	if releases == nil {
@@ -140,7 +155,7 @@ func (r ReqsGraph) Previous(m module.Version) (module.Version, error) {
 		lockDeps := pkg.Dependencies{
 			Deps: make(map[string]pkg.Dependency),
 		}
-		_, err = r.kpmClient.DownloadDeps(&deps, &lockDeps, r.Graph, r.kpmPkg.HomePath, module.Version{})
+		_, err = r.KpmClient.DownloadDeps(&deps, &lockDeps, r.Graph, r.KpmPkg.HomePath, module.Version{})
 		if err != nil {
 			return module.Version{}, err
 		}
@@ -160,26 +175,32 @@ func (r ReqsGraph) Required(m module.Version) ([]module.Version, error) {
 	return reqs, nil
 }
 
-func getReleasesFromSource(properties graph.VertexProperties) ([]string, error) {
-	var releases []string
-	var err error
+// UpdateBuildList decides whether to upgrade or downgrade based on modulesToUpgrade and modulesToDowngrade.
+// if modulesToUpgrade is empty, upgrade all dependencies. if modulesToUpgrade is not empty, upgrade the dependencies.
+// if modulesToDowngrade is not empty, downgrade the dependencies.
+// if modulesToUpgrade and modulesToDowngrade are both empty, first apply upgrade operation and
+// then downgrade the build list returned from previous operation.
+func UpdateBuildList(target module.Version, modulesToUpgrade []module.Version, modulesToDowngrade []module.Version, reqs *ReqsGraph) ([]module.Version, error) {
+	var (
+		UpdBuildLists []module.Version
+		err           error
+	)
 
-	// there must be only one property depending on the download source type
-	if len(properties.Attributes) != 1 {
-		return nil, errInt.MultipleSources
+	if len(modulesToUpgrade) == 0 {
+		UpdBuildLists, err = mvs.UpgradeAll(target, reqs)
+	} else {
+		UpdBuildLists, err = mvs.Upgrade(target, reqs, modulesToUpgrade...)
+	}
+	if err != nil {
+		return []module.Version{}, err
 	}
 
-	for k, v := range properties.Attributes {
-		switch k {
-		case pkg.GIT:
-			releases, err = git.GetAllGithubReleases(v)
-		case pkg.OCI:
-			releases, err = oci.GetAllImageTags(v)
-		}
-		if err != nil {
-			return nil, err
-		}
+	if len(modulesToDowngrade) != 0 {
+		UpdBuildLists, err = mvs.Downgrade(target, reqs, modulesToDowngrade...)
+	}
+	if err != nil {
+		return []module.Version{}, err
 	}
 
-	return releases, nil
+	return UpdBuildLists, nil
 }

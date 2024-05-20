@@ -216,7 +216,7 @@ func parseGitRegistryOptions(c *cli.Context) (*opt.RegistryOptions, *reporter.Kp
 // parseOciRegistryOptions will parse the oci registry information from user cli inputs.
 func parseOciRegistryOptions(c *cli.Context, kpmcli *client.KpmClient) (*opt.RegistryOptions, error) {
 	ociPkgRef := c.Args().First()
-	name, version, err := parseOciPkgNameAndVersion(ociPkgRef)
+	name, version, err := ParseOciPkgNameAndVersion(ociPkgRef)
 	if err != nil {
 		return nil, err
 	}
@@ -251,7 +251,7 @@ func parseLocalPathOptions(c *cli.Context) (*opt.RegistryOptions, *reporter.KpmE
 
 // parseOciPkgNameAndVersion will parse package name and version
 // from string "<pkg_name>:<pkg_version>".
-func parseOciPkgNameAndVersion(s string) (string, string, error) {
+func ParseOciPkgNameAndVersion(s string) (string, string, error) {
 	parts := strings.Split(s, ":")
 	if len(parts) == 1 {
 		return parts[0], "", nil
