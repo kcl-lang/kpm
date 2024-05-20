@@ -43,7 +43,7 @@ func NewAddCmd(kpmcli *client.KpmClient) *cli.Command {
 				Usage: "do not check the checksum of the package and update kcl.mod.lock",
 			},
 			&cli.StringFlag{
-				Name: "rename", 
+				Name:  "rename",
 				Usage: "rename the package name in kcl.mod.lock",
 			},
 		},

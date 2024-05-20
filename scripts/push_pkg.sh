@@ -31,8 +31,8 @@ $current_dir/bin/kpm push
 
 cd "$current_dir"
 
-# Push the package k8s/1.17 to the registry
-cd ./scripts/pkg_in_reg/ghcr.io/kcl-lang/helloworld
+# Push the package helloworld/1.17 to the registry
+cd ./scripts/pkg_in_reg/ghcr.io/kcl-lang/helloworld/0.1.1
 $current_dir/bin/kpm push
 
 cd "$current_dir"

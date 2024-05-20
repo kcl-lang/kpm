@@ -18,6 +18,6 @@ func TestKclRun(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, "{\"a\":\"Hello External World!\",\"a1\":\"Hello External_1 World!\"}\n", result.GetRawJsonResult())
+	assert.Equal(t, "{\"a\": \"Hello External World!\", \"a1\": \"Hello External_1 World!\"}", result.GetRawJsonResult())
 	assert.Equal(t, "a: Hello External World!\na1: Hello External_1 World!", result.GetRawYamlResult())
 }

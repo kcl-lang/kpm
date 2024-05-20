@@ -7,7 +7,7 @@ build:
 COVER_FILE			?= coverage.out
 SOURCE_PATHS		?= ./pkg/...
 
-unit_test: ## Run unit tests
+test: ## Run unit tests
 	go test -gcflags=all=-l -timeout=20m `go list $(SOURCE_PATHS)` ${TEST_FLAGS} -v
 
 cover:  ## Generates coverage report
@@ -15,3 +15,6 @@ cover:  ## Generates coverage report
 
 e2e: ## Run e2e test
 	scripts/e2e.sh
+
+fmt:
+	go fmt ./...

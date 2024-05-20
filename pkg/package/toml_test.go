@@ -56,10 +56,10 @@ func TestMarshalTOML(t *testing.T) {
 	got_data := modfile.MarshalTOML()
 
 	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected.toml"))
-	expected_toml := string(expected_data)
+	expected_toml := utils.RmNewline(string(expected_data))
 
 	reversed_expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected_reversed.toml"))
-	reversed_expected_toml := string(reversed_expected_data)
+	reversed_expected_toml := utils.RmNewline(string(reversed_expected_data))
 	fmt.Printf("expected_toml: '%q'\n", expected_toml)
 	fmt.Printf("reversed_expected_toml: '%q'\n", reversed_expected_toml)
 	fmt.Printf("modfile: '%q'\n", got_data)
@@ -227,7 +227,7 @@ func TestMarshalOciUrl(t *testing.T) {
 	modfile := ModFile{
 		Pkg: Package{
 			Name:    "marshal_0",
-			Edition: "v0.8.0",
+			Edition: "v0.9.0",
 			Version: "0.0.1",
 		},
 		Dependencies: Dependencies{
