@@ -239,7 +239,7 @@ func TestGetFilePath(t *testing.T) {
 func TestGenSource(t *testing.T) {
 	src, err := GenSource("git", "https://github.com/kcl-lang/kcl", "0.8.7")
 	assert.Equal(t, err, nil)
-	assert.Equal(t, src.Git.Url, "https://github.com/kcl-lang/kcl")	
+	assert.Equal(t, src.Git.Url, "https://github.com/kcl-lang/kcl")
 	assert.Equal(t, src.Git.Tag, "0.8.7")
 
 	src, err = GenSource("oci", "oci://ghcr.io/kcl-lang/k8s", "1.24")

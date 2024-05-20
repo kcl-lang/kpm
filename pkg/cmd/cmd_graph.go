@@ -76,13 +76,13 @@ func KpmGraph(c *cli.Context, kpmcli *client.KpmClient) error {
 	format := func(m module.Version) string {
 		formattedMsg := m.Path
 		if m.Version != "" {
-			formattedMsg +=  "@" + m.Version
+			formattedMsg += "@" + m.Version
 		}
 		return formattedMsg
 	}
 
 	// print the dependency graph to stdout.
-	root := module.Version{Path: kclPkg.GetPkgName(), Version: kclPkg.GetPkgVersion()} 
+	root := module.Version{Path: kclPkg.GetPkgName(), Version: kclPkg.GetPkgVersion()}
 	err = graph.BFS(depGraph, root, func(source module.Version) bool {
 		for target := range adjMap[source] {
 			reporter.ReportMsgTo(

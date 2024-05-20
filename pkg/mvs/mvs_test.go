@@ -53,8 +53,8 @@ func TestRequired(t *testing.T) {
 	assert.Equal(t, len(req), 2)
 
 	expectedReqs := []module.Version{
-		{Path:"bbb", Version:"0.0.1"},
-		{Path:"ccc", Version:"0.0.1"},
+		{Path: "bbb", Version: "0.0.1"},
+		{Path: "ccc", Version: "0.0.1"},
 	}
 	sort.Slice(req, func(i, j int) bool {
 		return req[i].Path < req[j].Path
@@ -226,11 +226,11 @@ func TestDowngrade(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	expectedReqs := []module.Version{
-		{Path:"test_with_external_deps", Version:"0.0.1"},
-		{Path:"argo-cd-order", Version:"0.1.2"},
-		{Path:"helloworld", Version:"0.1.0"},
-		{Path:"json_merge_patch", Version:"0.1.0"},
-		{Path:"k8s", Version:"1.17"},
+		{Path: "test_with_external_deps", Version: "0.0.1"},
+		{Path: "argo-cd-order", Version: "0.1.2"},
+		{Path: "helloworld", Version: "0.1.0"},
+		{Path: "json_merge_patch", Version: "0.1.0"},
+		{Path: "k8s", Version: "1.17"},
 	}
 	assert.Equal(t, downgrade, expectedReqs)
 }

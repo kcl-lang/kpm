@@ -12,8 +12,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/containers/image/docker"
-	"github.com/containers/image/types"
+	"github.com/containers/image/v5/docker"
+	"github.com/containers/image/v5/types"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/thoas/go-funk"
 	"oras.land/oras-go/pkg/auth"

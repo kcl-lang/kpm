@@ -328,15 +328,16 @@ func TestUpdateKclModAndLock(t *testing.T) {
 		expectKclModReverse, _ := os.ReadFile(filepath.Join(expectDir, "kcl.reverse.mod"))
 
 		gotKclModStr := utils.RmNewline(string(gotKclMod))
-		fmt.Printf("gotKclModStr: '%v'\n", gotKclModStr)
 		expectKclModStr := utils.RmNewline(string(expectKclMod))
-		fmt.Printf("expectKclModStr: '%v'\n", expectKclModStr)
 		expectKclModReverseStr := utils.RmNewline(string(expectKclModReverse))
-		fmt.Printf("expectKclModReverseStr: '%v'\n", expectKclModReverseStr)
 
 		assert.Equal(t,
-			(gotKclModStr == expectKclModStr || gotKclModStr == expectKclModReverseStr),
 			true,
+			(gotKclModStr == expectKclModStr || gotKclModStr == expectKclModReverseStr),
+			"'%v'\n'%v'\n'%v'\n",
+			gotKclModStr,
+			expectKclModStr,
+			expectKclModReverseStr,
 		)
 	}
 
@@ -349,15 +350,16 @@ func TestUpdateKclModAndLock(t *testing.T) {
 		expectKclModLockReverse, _ := os.ReadFile(filepath.Join(expectDir, "kcl.mod.reverse.lock"))
 
 		gotKclModLockStr := utils.RmNewline(string(gotKclModLock))
-		fmt.Printf("gotKclModLockStr: '%v'\n", gotKclModLockStr)
 		expectKclModLockStr := utils.RmNewline(string(expectKclModLock))
-		fmt.Printf("expectKclModLockStr: '%v'\n", expectKclModLockStr)
 		expectKclModLockReverseStr := utils.RmNewline(string(expectKclModLockReverse))
-		fmt.Printf("expectKclModLockReverseStr: '%v'\n", expectKclModLockReverseStr)
 
 		assert.Equal(t,
-			(gotKclModLockStr == expectKclModLockStr) || (gotKclModLockStr == expectKclModLockReverseStr),
 			true,
+			(gotKclModLockStr == expectKclModLockStr) || (gotKclModLockStr == expectKclModLockReverseStr),
+			"'%v'\n'%v'\n'%v'\n",
+			gotKclModLockStr,
+			expectKclModLockStr,
+			expectKclModLockReverseStr,
 		)
 	}
 }
