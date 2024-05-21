@@ -96,6 +96,11 @@ func pushCurrentPackage(ociUrl string, vendorMode bool, kpmcli *client.KpmClient
 		return err
 	}
 
+	if kclPkg.ModFile.Dependencies.CheckForLocalDeps() {
+		reporter.ReportEventToStdout(reporter.NewEvent(reporter.FailedPush, "local dependencies exist, cannot be packaged into tar and pushed."))
+		return nil
+	}
+
 	// 2. push the package
 	return pushPackage(ociUrl, kclPkg, vendorMode, kpmcli)
 }
@@ -120,6 +125,11 @@ func pushTarPackage(ociUrl, localTarPath string, vendorMode bool, kpmcli *client
 	kclPkg, err = pkg.LoadKclPkgFromTar(localTarPath)
 	if err != nil {
 		return err
+	}
+
+	if kclPkg.ModFile.Dependencies.CheckForLocalDeps() {
+		reporter.ReportEventToStdout(reporter.NewEvent(reporter.FailedPush, "local dependencies exist, cannot be pushed."))
+		return nil
 	}
 
 	// 2. push the package

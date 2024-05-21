@@ -168,6 +168,15 @@ func (deps *Dependencies) ToDepMetadata() (*Dependencies, error) {
 	return &depMetadata, nil
 }
 
+func (deps *Dependencies) CheckForLocalDeps() bool {
+	for _, dep := range deps.Deps {
+		if dep.IsFromLocal() {
+			return true
+		}
+	}
+	return false
+}
+
 type Dependency struct {
 	Name     string `json:"name" toml:"name,omitempty"`
 	FullName string `json:"-" toml:"full_name,omitempty"`
