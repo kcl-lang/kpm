@@ -175,7 +175,7 @@ func (c *KpmClient) LoadLockDeps(pkgPath string) (*pkg.Dependencies, error) {
 	for name, dep := range deps.Deps {
 		sum, err := c.AcquireDepSum(dep)
 		if err != nil {
-			return nil, nil
+			return nil, err
 		}
 		dep.Sum = sum
 		deps.Deps[name] = dep
