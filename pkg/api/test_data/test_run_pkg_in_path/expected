@@ -1,20 +1,17 @@
-demo:
-  apiVersion: apps/v1
-  kind: Deployment
-  metadata:
-    name: nginx-deployment
-  spec:
-    replicas: 3
-    selector:
-      matchLabels:
-        app: nginx
-    template:
-      metadata:
-        labels:
-          app: nginx
-      spec:
-        containers:
-        - image: nginx:1.14.2
-          name: nginx
-          ports:
-          - containerPort: 80
+a:
+  name: flask-demo
+  replicas: 1
+  labels:
+    app: flask-demo
+  service:
+    type: NodePort
+    ports:
+    - port: 5000
+      protocol: TCP
+      targetPort: 5000
+  containers:
+    flaskdemo:
+      image: kcllang/flask_demo:8d31498e765ff67a2fa9933d4adffe067544b2fe
+      ports:
+      - protocol: TCP
+        containerPort: 5000

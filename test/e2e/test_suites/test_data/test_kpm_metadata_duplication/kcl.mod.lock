@@ -1,9 +1,9 @@
 [dependencies]
   [dependencies.dep-with-line]
     name = "dep-with-line"
-    full_name = "dep-with-line_"
-    sum = "0lzH5VUC9/wM60EnksK/9Oc3/alBezWkElgGM1l0938="
+    full_name = "dep-with-line_0.0.1"
+    version = "0.0.1"
   [dependencies.dep_with-line]
     name = "dep_with-line"
-    full_name = "dep_with-line_"
-    sum = "hiIX1252Xn0QvmGlLhuM5ZsuuV8EpY/fuCgcRKLk3iE="
+    full_name = "dep_with-line_0.0.1"
+    version = "0.0.1"

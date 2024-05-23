@@ -115,6 +115,7 @@ const (
 	KclModNotFound
 	CompileFailed
 	FailedParseVersion
+	FailedFetchOciManifest
 )
 
 // KpmEvent is the event used to show kpm logs to users.

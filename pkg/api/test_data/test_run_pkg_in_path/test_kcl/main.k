@@ -1,3 +1,3 @@
-import konfig.base.examples.native.nginx_deployment as nd
+import flask_demo_kcl_manifests as flask
 
-demo = nd.demo
+a = flask.config

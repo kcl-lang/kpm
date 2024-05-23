@@ -37,6 +37,12 @@ $current_dir/bin/kpm push
 
 cd "$current_dir"
 
+# Push the package helloworld/1.17 to the registry
+cd ./scripts/pkg_in_reg/ghcr.io/kcl-lang/helloworld/0.1.2
+$current_dir/bin/kpm push
+
+cd "$current_dir"
+
 # Push the package 'kcl1' depends on 'k8s' to the registry
 cd ./scripts/pkg_in_reg/kcl1
 $current_dir/bin/kpm push

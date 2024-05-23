@@ -1,8 +1,7 @@
 [dependencies]
-  [dependencies.catalog]
-    name = "catalog"
-    full_name = "catalog_a29e3db"
-    version = "0.1.0"
-    sum = "kFmlrYJbJUFFTEXjC9cquc80WB+UpZ/6oMPKrfgyeks="
-    url = "https://github.com/KusionStack/catalog.git"
-    commit = "a29e3db"
+  [dependencies.flask-demo-kcl-manifests]
+    name = "flask-demo-kcl-manifests"
+    full_name = "flask_manifests_0.0.1"
+    version = "0.0.1"
+    url = "https://github.com/kcl-lang/flask-demo-kcl-manifests.git"
+    commit = "ade147b"

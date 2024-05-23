@@ -26,7 +26,7 @@ func TestModFileWithDesc(t *testing.T) {
 	assert.Equal(t, err, nil)
 }
 
-func TestWithTheSameVersion(t *testing.T) {
+func TestDepEquals(t *testing.T) {
 	d := Dependency{
 		Name:    "test",
 		Version: "0.0.1",
@@ -37,13 +37,13 @@ func TestWithTheSameVersion(t *testing.T) {
 		Version: "0.0.2",
 	}
 
-	assert.Equal(t, d.WithTheSameVersion(d2), false)
+	assert.Equal(t, d.Equals(d2), false)
 
 	d2.Version = "0.0.1"
-	assert.Equal(t, d.WithTheSameVersion(d2), true)
+	assert.Equal(t, d.Equals(d2), true)
 
 	d2.Name = "test2"
-	assert.Equal(t, d.WithTheSameVersion(d2), false)
+	assert.Equal(t, d.Equals(d2), false)
 }
 
 func TestModFileExists(t *testing.T) {
@@ -182,8 +182,8 @@ func TestLoadModFile(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	assert.Equal(t, modFile.Dependencies.Deps["helloworld"].Name, "helloworld")
-	assert.Equal(t, modFile.Dependencies.Deps["helloworld"].Version, "0.1.1")
-	assert.Equal(t, modFile.Dependencies.Deps["helloworld"].Source.Oci.Tag, "0.1.1")
+	assert.Equal(t, modFile.Dependencies.Deps["helloworld"].Version, "0.1.2")
+	assert.Equal(t, modFile.Dependencies.Deps["helloworld"].Source.Oci.Tag, "0.1.2")
 	assert.Equal(t, err, nil)
 }
 
