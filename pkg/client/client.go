@@ -250,7 +250,7 @@ const PKG_NAME_PATTERN = "%s_%s"
 // 1. in the KCL_PKG_PATH: default is $HOME/.kcl/kpm
 // 2. in the vendor subdirectory of the current package.
 // 3. the dependency is from the local path.
-func (c *KpmClient) getDepStorePath(search_path string, d pkg.Dependency, isVendor bool) string {
+func (c *KpmClient) getDepStorePath(search_path string, d *pkg.Dependency, isVendor bool) string {
 
 	var storePkgName string
 
@@ -340,7 +340,7 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 	}
 
 	for name, d := range kclPkg.Dependencies.Deps {
-		searchPath = c.getDepStorePath(kclPkg.HomePath, d, kclPkg.IsVendorMode())
+		searchPath = c.getDepStorePath(kclPkg.HomePath, &d, kclPkg.IsVendorMode())
 		depPath := searchPath
 		// if the dependency is not exist
 		if !utils.DirExists(searchPath) {
@@ -362,7 +362,7 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 						if err != nil {
 							return err
 						}
-						depPath = c.getDepStorePath(kclPkg.HomePath, d, kclPkg.IsVendorMode())
+						depPath = c.getDepStorePath(kclPkg.HomePath, &d, kclPkg.IsVendorMode())
 					}
 				} else {
 					continue
@@ -863,13 +863,13 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 		if len(d.Name) == 0 {
 			return errors.InvalidDependency
 		}
-		vendorFullPath := c.getDepStorePath(kclPkg.HomePath, d, true)
+		vendorFullPath := c.getDepStorePath(kclPkg.HomePath, &d, true)
 		// If the package already exists in the 'vendor', do nothing.
 		if utils.DirExists(vendorFullPath) {
 			continue
 		} else {
 			// If not in the 'vendor', check the global cache.
-			cacheFullPath := c.getDepStorePath(c.homePath, d, false)
+			cacheFullPath := c.getDepStorePath(c.homePath, &d, false)
 			if utils.DirExists(cacheFullPath) {
 				// If there is, copy it into the 'vendor' directory.
 				err := copy.Copy(cacheFullPath, vendorFullPath)
@@ -1058,7 +1058,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 	}
 
 	if dep.Source.Local != nil {
-		kpkg, err := pkg.FindFirstKclPkgFrom(c.getDepStorePath(homePath, *dep, false))
+		kpkg, err := pkg.FindFirstKclPkgFrom(c.getDepStorePath(homePath, dep, false))
 		if err != nil {
 			return nil, err
 		}
@@ -1463,7 +1463,7 @@ func (c *KpmClient) InitGraphAndDownloadDeps(kclPkg *pkg.KclPkg) (*pkg.Dependenc
 // dependencyExists will check whether the dependency exists in the local filesystem.
 func (c *KpmClient) dependencyExistsLocal(searchPath string, dep *pkg.Dependency) (*pkg.Dependency, error) {
 	// If the flag '--no_sum_check' is set, skip the checksum check.
-	deppath := c.getDepStorePath(searchPath, *dep, false)
+	deppath := c.getDepStorePath(searchPath, dep, false)
 	if utils.DirExists(deppath) {
 		depPkg, err := c.LoadPkgFromPath(deppath)
 		if err != nil {
@@ -1504,7 +1504,7 @@ func (c *KpmClient) DownloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependenc
 			return nil, errors.InternalBug
 		}
 
-		dir := c.getDepStorePath(c.homePath, d, false)
+		dir := c.getDepStorePath(c.homePath, &d, false)
 		err = os.RemoveAll(dir)
 		if err != nil {
 			return nil, err
