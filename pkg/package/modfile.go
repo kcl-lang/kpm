@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -187,7 +186,6 @@ type Dependency struct {
 	// In vendor mode is "current_kcl_package/vendor"
 	// In non-vendor mode is "$KCL_PKG_PATH"
 	LocalFullPath string `json:"manifest_path" toml:"-"`
-	HomePath      string `json:"-" toml:"-"`
 	Source        `json:"-"`
 }
 
@@ -197,39 +195,12 @@ func (d *Dependency) FromKclPkg(pkg *KclPkg) {
 	d.LocalFullPath = pkg.HomePath
 }
 
-// The name of the local storage path is generated depending on the source of the package
-func (d *Dependency) GetPkgPathName() string {
-	if d.Source.Oci != nil {
-		return fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Oci.Tag)
-	} else if d.Source.Git != nil {
-		if len(d.Source.Git.Tag) != 0 {
-			return fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Git.Tag)
-		} else if len(d.Source.Git.Commit) != 0 {
-			return fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Git.Commit)
-		} else {
-			return fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Git.Branch)
-		}
-	} else {
-		return fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Version)
-	}
-}
-
 // SetName will set the name and alias name of a dependency.
 func (d *Dependency) GetAliasName() string {
 	return strings.ReplaceAll(d.Name, "-", "_")
 }
 
 func (d Dependency) Equals(other Dependency) bool {
-	if d.Name != other.Name {
-		return false
-	}
-
-	return !reflect.DeepEqual(d, other)
-}
-
-// WithTheSameVersion will check whether two dependencies have the same version.
-func (d Dependency) WithTheSameVersion(other Dependency) bool {
-
 	var sameVersion = true
 	if len(d.Version) != 0 && len(other.Version) != 0 {
 		sameVersion = d.Version == other.Version
@@ -244,16 +215,23 @@ func (d Dependency) WithTheSameVersion(other Dependency) bool {
 				d.Source.Git.Tag == other.Source.Git.Tag)
 	}
 
-	return sameNameAndVersion && sameGitSrc
+	sameOciSrc := true
+	if d.Source.Oci != nil && other.Source.Oci != nil {
+		sameOciSrc = d.Source.Oci.Reg == other.Source.Oci.Reg &&
+			d.Source.Oci.Repo == other.Source.Oci.Repo &&
+			d.Source.Oci.Tag == other.Source.Oci.Tag
+	}
+
+	return sameNameAndVersion && sameGitSrc && sameOciSrc
 }
 
 // GetLocalFullPath will get the local path of a dependency.
-func (dep *Dependency) GetLocalFullPath() string {
+func (dep *Dependency) GetLocalFullPath(rootpath string) string {
 	if !filepath.IsAbs(dep.LocalFullPath) && dep.IsFromLocal() {
 		if filepath.IsAbs(dep.Source.Local.Path) {
 			return dep.Source.Local.Path
 		}
-		return filepath.Join(dep.HomePath, dep.Source.Local.Path)
+		return filepath.Join(rootpath, dep.Source.Local.Path)
 	}
 	return dep.LocalFullPath
 }

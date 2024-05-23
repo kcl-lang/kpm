@@ -236,7 +236,7 @@ func Req(mainModule module.Version, base []string, reqs Reqs) ([]module.Version,
 		}
 		have[m] = true
 		for _, m1 := range reqCache[m] {
-			walk(m1)
+			_ = walk(m1)
 		}
 		return nil
 	}
@@ -249,7 +249,7 @@ func Req(mainModule module.Version, base []string, reqs Reqs) ([]module.Version,
 		}
 		m := module.Version{Path: path, Version: max[path]}
 		min = append(min, m)
-		walk(m)
+		_ = walk(m)
 		haveBase[path] = true
 	}
 	// Now the reverse postorder to bring in anything else.
@@ -261,7 +261,7 @@ func Req(mainModule module.Version, base []string, reqs Reqs) ([]module.Version,
 		}
 		if !have[m] {
 			min = append(min, m)
-			walk(m)
+			_ = walk(m)
 		}
 	}
 	sort.Slice(min, func(i, j int) bool {

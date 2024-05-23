@@ -459,7 +459,6 @@ func TestResolveDepsVendorMode(t *testing.T) {
 		FullName: "kcl1_0.0.1",
 		Version:  "0.0.1",
 		Sum:      kcl1Sum,
-		HomePath: home_path,
 	}
 
 	depKcl2 := pkg.Dependency{
@@ -467,7 +466,6 @@ func TestResolveDepsVendorMode(t *testing.T) {
 		FullName: "kcl2_0.0.1",
 		Version:  "0.0.1",
 		Sum:      kcl2Sum,
-		HomePath: home_path,
 	}
 
 	kclPkg := pkg.KclPkg{
@@ -528,7 +526,6 @@ func TestCompileWithEntryFile(t *testing.T) {
 		Name:     "kcl1",
 		FullName: "kcl1_0.0.1",
 		Version:  "0.0.1",
-		HomePath: home_path,
 		Sum:      kcl1Sum,
 	}
 	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
@@ -536,7 +533,6 @@ func TestCompileWithEntryFile(t *testing.T) {
 		Name:     "kcl2",
 		FullName: "kcl2_0.0.1",
 		Version:  "0.0.1",
-		HomePath: home_path,
 		Sum:      kcl2Sum,
 	}
 
@@ -632,7 +628,6 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 
 	globalPkgPath, _ := env.GetAbsPkgPath()
 	res, err := kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
-	fmt.Printf("err: %v\n", err)
 	assert.Equal(t, err, nil)
 
 	expectedDep := pkg.Dependencies{
@@ -643,7 +638,6 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 		Name:          "flask_demo_kcl_manifests",
 		FullName:      "flask-demo-kcl-manifests_ade147b",
 		Version:       "ade147b",
-		HomePath:      testDir,
 		LocalFullPath: filepath.Join(globalPkgPath, "flask-demo-kcl-manifests_ade147b"),
 	}
 
@@ -667,7 +661,6 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 		Name:          "flask_demo_kcl_manifests",
 		FullName:      "flask-demo-kcl-manifests_ade147b",
 		Version:       "ade147b",
-		HomePath:      testDir,
 		LocalFullPath: filepath.Join(vendorDir, "flask-demo-kcl-manifests_ade147b"),
 	}
 

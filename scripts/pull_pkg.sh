@@ -32,4 +32,8 @@ if [ ! -d "./ghcr.io/kcl-lang/helloworld/0.1.1" ]; then
   $current_dir/bin/kpm pull helloworld:0.1.1
 fi
 
+if [ ! -d "./ghcr.io/kcl-lang/helloworld/0.1.2" ]; then
+  $current_dir/bin/kpm pull helloworld:0.1.2
+fi
+
 cd "$current_dir"

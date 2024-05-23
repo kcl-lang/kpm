@@ -18,7 +18,7 @@ func TestPackageApi(t *testing.T) {
 	assert.Equal(t, err, nil)
 	pkg, err := GetKclPackage(pkg_path)
 	assert.Equal(t, err, nil)
-	err = kpmcli.ResolvePkgDepsMetadata(pkg.pkg, &pkg.pkg.Dependencies, true)
+	err = kpmcli.ResolvePkgDepsMetadata(pkg.pkg, true)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, pkg.GetPkgName(), "kcl_pkg")
 	assert.Equal(t, pkg.GetVersion(), "0.0.1")
@@ -33,7 +33,7 @@ func TestPackageApi(t *testing.T) {
 	assert.Equal(t, dep.Source.Oci.Repo, "kcl-lang/k8s")
 	assert.Equal(t, dep.Source.Oci.Tag, "1.27")
 
-	assert.Equal(t, dep.GetLocalFullPath(), filepath.Join(kcl_pkg_path, "k8s_1.27"))
+	assert.Equal(t, dep.GetLocalFullPath(""), filepath.Join(kcl_pkg_path, "k8s_1.27"))
 
 	schemas, err := pkg.GetAllSchemaTypeMapping()
 	assert.Equal(t, err, nil)
@@ -79,7 +79,7 @@ func TestGetAllSchemaTypesMappingNamed(t *testing.T) {
 	kpmcli, err := client.NewKpmClient()
 	assert.Equal(t, err, nil)
 
-	err = kpmcli.ResolvePkgDepsMetadata(pkg.pkg, &pkg.pkg.Dependencies, true)
+	err = kpmcli.ResolvePkgDepsMetadata(pkg.pkg, true)
 	assert.Equal(t, err, nil)
 
 	schemas, err := pkg.GetSchemaTypeMappingNamed("SchemaWithSameName")
@@ -103,7 +103,7 @@ func TestGetSchemaTypeMappingWithFilters(t *testing.T) {
 	assert.Equal(t, err, nil)
 	kpmcli, err := client.NewKpmClient()
 	assert.Equal(t, err, nil)
-	err = kpmcli.ResolvePkgDepsMetadata(pkg.pkg, &pkg.pkg.Dependencies, true)
+	err = kpmcli.ResolvePkgDepsMetadata(pkg.pkg, true)
 	assert.Equal(t, err, nil)
 
 	filterFunc := func(kt *KclType) bool {
@@ -154,7 +154,7 @@ func TestGetFullSchemaTypeMappingWithFilters(t *testing.T) {
 	assert.Equal(t, err, nil)
 	kpmcli, err := client.NewKpmClient()
 	assert.Equal(t, err, nil)
-	err = kpmcli.ResolvePkgDepsMetadata(pkg.pkg, &pkg.pkg.Dependencies, true)
+	err = kpmcli.ResolvePkgDepsMetadata(pkg.pkg, true)
 	assert.Equal(t, err, nil)
 
 	filterFunc := func(kt *KclType) bool {
@@ -175,7 +175,7 @@ func TestGetSchemaTypeUnderEmptyDir(t *testing.T) {
 	assert.Equal(t, err, nil)
 	kpmcli, err := client.NewKpmClient()
 	assert.Equal(t, err, nil)
-	err = kpmcli.ResolvePkgDepsMetadata(pkg.pkg, &pkg.pkg.Dependencies, true)
+	err = kpmcli.ResolvePkgDepsMetadata(pkg.pkg, true)
 	assert.Equal(t, err, nil)
 	schemas, err := pkg.GetSchemaTypeMappingNamed("SchemaInMain")
 	assert.Equal(t, err, nil)
