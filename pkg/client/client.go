@@ -172,15 +172,6 @@ func (c *KpmClient) LoadLockDeps(pkgPath string) (*pkg.Dependencies, error) {
 		return nil, err
 	}
 
-	for name, dep := range deps.Deps {
-		sum, err := c.AcquireDepSum(dep)
-		if err != nil {
-			return nil, err
-		}
-		dep.Sum = sum
-		deps.Deps[name] = dep
-	}
-
 	return deps, nil
 }
 
@@ -362,6 +353,7 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 						if err != nil {
 							return err
 						}
+
 						depPath = c.getDepStorePath(kclPkg.HomePath, &d, kclPkg.IsVendorMode())
 					}
 				} else {
@@ -380,10 +372,6 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 			)
 		}
 		d.FromKclPkg(depPkg)
-		d.Sum, err = c.AcquireDepSum(d)
-		if err != nil {
-			return err
-		}
 		err = c.resolvePkgDeps(depPkg, lockDeps, update)
 		if err != nil {
 			return err
@@ -1008,10 +996,6 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 					}
 				} else {
 					dep.FromKclPkg(dpkg)
-					dep.Sum, err = c.AcquireDepSum(*dep)
-					if err != nil {
-						return nil, err
-					}
 					return dep, nil
 				}
 			}
@@ -1031,10 +1015,15 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			return nil, err
 		}
 		dep.FromKclPkg(dpkg)
-		// The downloaded checksum is requested, not calculated
 		dep.Sum, err = c.AcquireDepSum(*dep)
 		if err != nil {
 			return nil, err
+		}
+		if dep.Sum == "" {
+			dep.Sum, err = utils.HashDir(localPath)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		if dep.LocalFullPath == "" {
@@ -1470,10 +1459,6 @@ func (c *KpmClient) dependencyExistsLocal(searchPath string, dep *pkg.Dependency
 			return nil, err
 		}
 		dep.FromKclPkg(depPkg)
-		dep.Sum, err = c.AcquireDepSum(*dep)
-		if err != nil {
-			return nil, err
-		}
 		return dep, nil
 	}
 	return nil, nil
