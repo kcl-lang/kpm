@@ -381,7 +381,7 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 	}
 
 	// Generate file kcl.mod.lock.
-	if !kclPkg.NoSumCheck {
+	if !kclPkg.NoSumCheck || !update {
 		err := kclPkg.LockDepsVersion()
 		if err != nil {
 			return err
