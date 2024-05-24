@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -144,6 +145,21 @@ func (modFile *ModFile) GetEntries() []string {
 // 'Dependencies' is dependencies section of 'kcl.mod'.
 type Dependencies struct {
 	Deps map[string]Dependency `json:"packages" toml:"dependencies,omitempty"`
+}
+
+// SortMapByKey will sort the dependencies by key.
+func (deps *Dependencies) SortMapByKey() {
+	keys := make([]string, 0, len(deps.Deps))
+	for k := range deps.Deps {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	sortedDeps := make(map[string]Dependency)
+	for _, k := range keys {
+		sortedDeps[k] = deps.Deps[k]
+	}
+	deps.Deps = sortedDeps
 }
 
 // ToDepMetadata will transform the dependencies into metadata.

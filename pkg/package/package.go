@@ -175,6 +175,7 @@ func (kclPkg *KclPkg) LocalVendorPath() string {
 // updateModAndLockFile will update kcl.mod and kcl.mod.lock
 func (kclPkg *KclPkg) UpdateModAndLockFile() error {
 	// Generate file kcl.mod.
+	kclPkg.ModFile.Dependencies.SortMapByKey()
 	err := kclPkg.ModFile.StoreModFile()
 	if err != nil {
 		return err
