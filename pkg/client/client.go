@@ -381,7 +381,7 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 	}
 
 	// Generate file kcl.mod.lock.
-	if !kclPkg.NoSumCheck {
+	if !kclPkg.NoSumCheck || !update {
 		err := kclPkg.LockDepsVersion()
 		if err != nil {
 			return err
@@ -899,27 +899,6 @@ func (c *KpmClient) FillDepInfo(dep *pkg.Dependency, homepath string) error {
 			urlpath := utils.JoinPath(c.GetSettings().DefaultOciRepo(), dep.Name)
 			dep.Source.Oci.Repo = urlpath
 		}
-		manifest := ocispec.Manifest{}
-		jsonDesc, err := c.FetchOciManifestIntoJsonStr(opt.OciFetchOptions{
-			FetchBytesOptions: oras.DefaultFetchBytesOptions,
-			OciOptions: opt.OciOptions{
-				Reg:  dep.Source.Oci.Reg,
-				Repo: dep.Source.Oci.Repo,
-				Tag:  dep.Version,
-			},
-		})
-
-		if err == nil {
-			err = json.Unmarshal([]byte(jsonDesc), &manifest)
-			if err != nil {
-				return err
-			}
-
-			if value, ok := manifest.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_SUM]; ok {
-				dep.Sum = value
-			}
-		}
-		return nil
 	}
 	return nil
 }
