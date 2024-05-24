@@ -996,7 +996,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			// The invalid path such as '$HOME/.kcl/kpm/k8s_' is placed because the version field is missing.
 			dep.Version = latestTag
 			dep.FullName = dep.GenDepFullName()
-			dep.LocalFullPath = c.getDepStorePath(homePath, dep, false)
+			dep.LocalFullPath = filepath.Join(filepath.Dir(localPath), dep.FullName)
 			localPath = dep.LocalFullPath
 
 			if utils.DirExists(dep.LocalFullPath) {
