@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	orderedmap "github.com/elliotchance/orderedmap/v2"
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/constants"
 	errors "kcl-lang.io/kpm/pkg/errors"
@@ -13,6 +14,13 @@ import (
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/utils"
 )
+
+var TestPkgDependency = Dependency{
+	Name:     "kcl",
+	FullName: "kcl",
+	Version:  "0.0.0",
+	Sum:      "Sum",
+}
 
 type KclPkg struct {
 	ModFile  ModFile
@@ -32,7 +40,7 @@ func NewKclPkg(opts *opt.InitOptions) KclPkg {
 	return KclPkg{
 		ModFile:      *NewModFile(opts),
 		HomePath:     opts.InitPath,
-		Dependencies: Dependencies{Deps: make(map[string]Dependency)},
+		Dependencies: Dependencies{Deps: orderedmap.NewOrderedMap[string, Dependency]()},
 	}
 }
 
@@ -50,9 +58,10 @@ func LoadKclPkg(pkgPath string) (*KclPkg, error) {
 	}
 
 	// Align the dependencies between kcl.mod and kcl.mod.lock.
-	for name, dep := range modFile.Dependencies.Deps {
+	for _, name := range modFile.Dependencies.Deps.Keys() {
+		dep, _ := modFile.Dependencies.Deps.Get(name)
 		if dep.Local != nil {
-			if ldep, ok := deps.Deps[name]; ok {
+			if ldep, ok := deps.Deps.Get(name); ok {
 				abs, err := filepath.Abs(filepath.Join(pkgPath, dep.Local.Path))
 				if err != nil {
 					return nil, reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it.")
@@ -60,8 +69,8 @@ func LoadKclPkg(pkgPath string) (*KclPkg, error) {
 				ldep.LocalFullPath = abs
 				dep.LocalFullPath = abs
 				ldep.Source = dep.Source
-				deps.Deps[name] = ldep
-				modFile.Dependencies.Deps[name] = dep
+				deps.Deps.Set(name, ldep)
+				modFile.Dependencies.Deps.Set(name, dep)
 			}
 		}
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/dominikbraun/graph"
+	"github.com/elliotchance/orderedmap"
 	"github.com/hashicorp/go-version"
 	"golang.org/x/mod/module"
 	"kcl-lang.io/kpm/pkg/3rdparty/mvs"
@@ -83,13 +84,13 @@ func (r ReqsGraph) Upgrade(m module.Version) (module.Version, error) {
 				return module.Version{}, err
 			}
 		}
+		mpp := orderedmap.NewOrderedMap[string, pkg.Dependency]()
+		mpp.Set(m.Path, d)
 		deps := pkg.Dependencies{
-			Deps: map[string]pkg.Dependency{
-				m.Path: d,
-			},
+			Deps: mpp,
 		}
 		lockDeps := pkg.Dependencies{
-			Deps: make(map[string]pkg.Dependency),
+			Deps: orderedmap.NewOrderedMap[string, pkg.Dependency](),
 		}
 		_, err = r.KpmClient.DownloadDeps(&deps, &lockDeps, r.Graph, r.KpmPkg.HomePath, module.Version{})
 		if err != nil {
@@ -147,13 +148,13 @@ func (r ReqsGraph) Previous(m module.Version) (module.Version, error) {
 				return module.Version{}, err
 			}
 		}
+		mppDeps := orderedmap.NewOrderedMap[string, pkg.Dependency]()
+		mppDeps.Set(m.Path, d)
 		deps := pkg.Dependencies{
-			Deps: map[string]pkg.Dependency{
-				m.Path: d,
-			},
+			Deps: mppDeps,
 		}
 		lockDeps := pkg.Dependencies{
-			Deps: make(map[string]pkg.Dependency),
+			Deps: orderedmap.NewOrderedMap[string, pkg.Dependency](),
 		}
 		_, err = r.KpmClient.DownloadDeps(&deps, &lockDeps, r.Graph, r.KpmPkg.HomePath, module.Version{})
 		if err != nil {

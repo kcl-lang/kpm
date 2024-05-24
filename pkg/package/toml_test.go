@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/BurntSushi/toml"
+	orderedmap "github.com/elliotchance/orderedmap/v2"
 	"github.com/stretchr/testify/assert"
-
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -24,7 +24,7 @@ func TestMarshalTOML(t *testing.T) {
 			Exclude: []string{"target/", ".git/", "*.log"},
 		},
 		Dependencies: Dependencies{
-			make(map[string]Dependency),
+			orderedmap.NewOrderedMap[string, Dependency](),
 		},
 	}
 
@@ -50,8 +50,8 @@ func TestMarshalTOML(t *testing.T) {
 		},
 	}
 
-	modfile.Dependencies.Deps["MyOciKcl1_0.0.1"] = ociDep
-	modfile.Dependencies.Deps["MyKcl1_v0.0.2"] = dep
+	modfile.Dependencies.Deps.Set("MyOciKcl1_0.0.1", ociDep)
+	modfile.Dependencies.Deps.Set("MyKcl1_v0.0.2", dep)
 
 	got_data := modfile.MarshalTOML()
 
@@ -81,18 +81,19 @@ func TestUnMarshalTOML(t *testing.T) {
 	assert.Equal(t, modfile.Pkg.Version, "v0.0.1")
 	assert.Equal(t, modfile.Pkg.Include, []string{"src/", "README.md", "LICENSE"})
 	assert.Equal(t, modfile.Pkg.Exclude, []string{"target/", ".git/", "*.log"})
-	assert.Equal(t, len(modfile.Dependencies.Deps), 2)
-	assert.NotEqual(t, modfile.Dependencies.Deps["MyKcl1"], nil)
-	assert.Equal(t, modfile.Dependencies.Deps["MyKcl1"].Name, "MyKcl1")
-	assert.Equal(t, modfile.Dependencies.Deps["MyKcl1"].FullName, "MyKcl1_v0.0.2")
-	assert.NotEqual(t, modfile.Dependencies.Deps["MyKcl1"].Source.Git, nil)
-	assert.Equal(t, modfile.Dependencies.Deps["MyKcl1"].Source.Git.Url, "https://github.com/test/MyKcl1.git")
-	assert.Equal(t, modfile.Dependencies.Deps["MyKcl1"].Source.Git.Tag, "v0.0.2")
+	assert.Equal(t, modfile.Dependencies.Deps.Len(), 2)
+	assert.NotEqual(t, modfile.Dependencies.Deps.GetOrDefault("MyKcl1", TestPkgDependency), nil)
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyKcl1", TestPkgDependency).Name, "MyKcl1")
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyKcl1", TestPkgDependency).FullName, "MyKcl1_v0.0.2")
+	assert.NotEqual(t, modfile.Dependencies.Deps.GetOrDefault("MyKcl1", TestPkgDependency).Source.Git, nil)
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyKcl1", TestPkgDependency).Source.Git.Url, "https://github.com/test/MyKcl1.git")
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyKcl1", TestPkgDependency).Source.Git.Tag, "v0.0.2")
 
-	assert.NotEqual(t, modfile.Dependencies.Deps["MyOciKcl1"], nil)
-	assert.Equal(t, modfile.Dependencies.Deps["MyOciKcl1"].Name, "MyOciKcl1")
-	assert.Equal(t, modfile.Dependencies.Deps["MyOciKcl1"].FullName, "MyOciKcl1_0.0.1")
-	assert.Equal(t, modfile.Dependencies.Deps["MyOciKcl1"].Source.Registry.Version, "0.0.1")
+	assert.NotEqual(t, modfile.Dependencies.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency), nil)
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).Name, "MyOciKcl1")
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).FullName, "MyOciKcl1_0.0.1")
+	assert.NotEqual(t, modfile.Dependencies.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).Source.Oci, nil)
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).Source.Oci.Tag, "0.0.1")
 }
 
 func TestMarshalLockToml(t *testing.T) {
@@ -124,11 +125,11 @@ func TestMarshalLockToml(t *testing.T) {
 	}
 
 	deps := Dependencies{
-		make(map[string]Dependency),
+		orderedmap.NewOrderedMap[string, Dependency](),
 	}
 
-	deps.Deps[dep.Name] = dep
-	deps.Deps[ociDep.Name] = ociDep
+	deps.Deps.Set(dep.Name, dep)
+	deps.Deps.Set(ociDep.Name, ociDep)
 	tomlStr, _ := deps.MarshalLockTOML()
 	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected_lock.toml"))
 	expected_toml := string(expected_data)
@@ -137,32 +138,32 @@ func TestMarshalLockToml(t *testing.T) {
 
 func TestUnmarshalLockToml(t *testing.T) {
 	deps := Dependencies{
-		make(map[string]Dependency),
+		orderedmap.NewOrderedMap[string, Dependency](),
 	}
 
 	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected_lock.toml"))
 	expected_toml := string(expected_data)
 	_ = deps.UnmarshalLockTOML(expected_toml)
 
-	assert.Equal(t, len(deps.Deps), 2)
-	assert.NotEqual(t, deps.Deps["MyKcl1"], nil)
-	assert.Equal(t, deps.Deps["MyKcl1"].Name, "MyKcl1")
-	assert.Equal(t, deps.Deps["MyKcl1"].FullName, "MyKcl1_v0.0.2")
-	assert.Equal(t, deps.Deps["MyKcl1"].Version, "v0.0.2")
-	assert.Equal(t, deps.Deps["MyKcl1"].Sum, "hjkasdahjksdasdhjk")
-	assert.NotEqual(t, deps.Deps["MyKcl1"].Source.Git, nil)
-	assert.Equal(t, deps.Deps["MyKcl1"].Source.Git.Url, "https://github.com/test/MyKcl1.git")
-	assert.Equal(t, deps.Deps["MyKcl1"].Source.Git.Tag, "v0.0.2")
+	assert.Equal(t, deps.Deps.Len(), 2)
+	assert.NotEqual(t, deps.Deps.GetOrDefault("MyKcl1", TestPkgDependency), nil)
+	assert.Equal(t, deps.Deps.GetOrDefault("MyKcl1", TestPkgDependency).Name, "MyKcl1")
+	assert.Equal(t, deps.Deps.GetOrDefault("MyKcl1", TestPkgDependency).FullName, "MyKcl1_v0.0.2")
+	assert.Equal(t, deps.Deps.GetOrDefault("MyKcl1", TestPkgDependency).Version, "v0.0.2")
+	assert.Equal(t, deps.Deps.GetOrDefault("MyKcl1", TestPkgDependency).Sum, "hjkasdahjksdasdhjk")
+	assert.NotEqual(t, deps.Deps.GetOrDefault("MyKcl1", TestPkgDependency).Source.Git, nil)
+	assert.Equal(t, deps.Deps.GetOrDefault("MyKcl1", TestPkgDependency).Source.Git.Url, "https://github.com/test/MyKcl1.git")
+	assert.Equal(t, deps.Deps.GetOrDefault("MyKcl1", TestPkgDependency).Source.Git.Tag, "v0.0.2")
 
-	assert.NotEqual(t, deps.Deps["MyOciKcl1"], nil)
-	assert.Equal(t, deps.Deps["MyOciKcl1"].Name, "MyOciKcl1")
-	assert.Equal(t, deps.Deps["MyOciKcl1"].FullName, "MyOciKcl1_0.0.1")
-	assert.Equal(t, deps.Deps["MyOciKcl1"].Version, "0.0.1")
-	assert.Equal(t, deps.Deps["MyOciKcl1"].Sum, "hjkasdahjksdasdhjk")
-	assert.NotEqual(t, deps.Deps["MyOciKcl1"].Source.Oci, nil)
-	assert.Equal(t, deps.Deps["MyOciKcl1"].Source.Oci.Reg, "test_reg")
-	assert.Equal(t, deps.Deps["MyOciKcl1"].Source.Oci.Repo, "test_repo")
-	assert.Equal(t, deps.Deps["MyOciKcl1"].Source.Oci.Tag, "0.0.1")
+	assert.NotEqual(t, deps.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency), nil)
+	assert.Equal(t, deps.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).Name, "MyOciKcl1")
+	assert.Equal(t, deps.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).FullName, "MyOciKcl1_0.0.1")
+	assert.Equal(t, deps.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).Version, "0.0.1")
+	assert.Equal(t, deps.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).Sum, "hjkasdahjksdasdhjk")
+	assert.NotEqual(t, deps.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).Source.Oci, nil)
+	assert.Equal(t, deps.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).Source.Oci.Reg, "test_reg")
+	assert.Equal(t, deps.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).Source.Oci.Repo, "test_repo")
+	assert.Equal(t, deps.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).Source.Oci.Tag, "0.0.1")
 }
 
 func TestUnMarshalTOMLWithProfile(t *testing.T) {
@@ -193,13 +194,13 @@ func TestUnMarshalOciUrl(t *testing.T) {
 	for _, tc := range testCases {
 		modfile, err := LoadModFile(filepath.Join(testDataDir, tc.Name))
 		assert.Equal(t, err, nil)
-		assert.Equal(t, len(modfile.Dependencies.Deps), 1)
-		assert.Equal(t, modfile.Dependencies.Deps["oci_pkg_name"].Name, tc.DepName)
-		assert.Equal(t, modfile.Dependencies.Deps["oci_pkg_name"].FullName, tc.DepFullName)
-		assert.Equal(t, modfile.Dependencies.Deps["oci_pkg_name"].Version, tc.DepVersion)
-		assert.Equal(t, modfile.Dependencies.Deps["oci_pkg_name"].Source.Oci.Reg, tc.DepSourceReg)
-		assert.Equal(t, modfile.Dependencies.Deps["oci_pkg_name"].Source.Oci.Repo, tc.DepSourceRepo)
-		assert.Equal(t, modfile.Dependencies.Deps["oci_pkg_name"].Source.Oci.Tag, tc.DepVersion)
+		assert.Equal(t, modfile.Dependencies.Deps.Len(), 1)
+		assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("oci_pkg_name", TestPkgDependency).Name, tc.DepName)
+		assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("oci_pkg_name", TestPkgDependency).FullName, tc.DepFullName)
+		assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("oci_pkg_name", TestPkgDependency).Version, tc.DepVersion)
+		assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("oci_pkg_name", TestPkgDependency).Source.Oci.Reg, tc.DepSourceReg)
+		assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("oci_pkg_name", TestPkgDependency).Source.Oci.Repo, tc.DepSourceRepo)
+		assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("oci_pkg_name", TestPkgDependency).Source.Oci.Tag, tc.DepVersion)
 	}
 }
 
@@ -230,7 +231,7 @@ func TestMarshalOciUrl(t *testing.T) {
 			Version: "0.0.1",
 		},
 		Dependencies: Dependencies{
-			make(map[string]Dependency),
+			orderedmap.NewOrderedMap[string, Dependency](),
 		},
 	}
 
@@ -247,7 +248,7 @@ func TestMarshalOciUrl(t *testing.T) {
 		},
 	}
 
-	modfile.Dependencies.Deps["oci_pkg_0.0.1"] = ociDep
+	modfile.Dependencies.Deps.Set("oci_pkg_0.0.1", ociDep)
 
 	got_data := modfile.MarshalTOML()
 	_, err = gotFile.WriteString(got_data)
@@ -260,13 +261,13 @@ func TestMarshalOciUrl(t *testing.T) {
 	assert.Equal(t, expect.Pkg.Name, got.Pkg.Name)
 	assert.Equal(t, expect.Pkg.Edition, got.Pkg.Edition)
 	assert.Equal(t, expect.Pkg.Version, got.Pkg.Version)
-	assert.Equal(t, len(expect.Dependencies.Deps), len(got.Dependencies.Deps))
-	assert.Equal(t, expect.Dependencies.Deps["oci_pkg"].Name, got.Dependencies.Deps["oci_pkg"].Name)
-	assert.Equal(t, expect.Dependencies.Deps["oci_pkg"].FullName, got.Dependencies.Deps["oci_pkg"].FullName)
-	assert.Equal(t, expect.Dependencies.Deps["oci_pkg"].Source.Oci.Reg, got.Dependencies.Deps["oci_pkg"].Source.Oci.Reg)
-	assert.Equal(t, expect.Dependencies.Deps["oci_pkg"].Source.Oci.Repo, got.Dependencies.Deps["oci_pkg"].Source.Oci.Repo)
-	assert.Equal(t, expect.Dependencies.Deps["oci_pkg"].Source.Oci.Tag, got.Dependencies.Deps["oci_pkg"].Source.Oci.Tag)
-	assert.Equal(t, expect.Dependencies.Deps["oci_pkg"].Source.IntoOciUrl(), got.Dependencies.Deps["oci_pkg"].Source.IntoOciUrl())
+	assert.Equal(t, expect.Dependencies.Deps.Len(), got.Dependencies.Deps.Len())
+	assert.Equal(t, expect.Dependencies.Deps.GetOrDefault("oci_pkg", TestPkgDependency).Name, got.Dependencies.Deps.GetOrDefault("oci_pkg", TestPkgDependency).Name)
+	assert.Equal(t, expect.Dependencies.Deps.GetOrDefault("oci_pkg", TestPkgDependency).FullName, got.Dependencies.Deps.GetOrDefault("oci_pkg", TestPkgDependency).FullName)
+	assert.Equal(t, expect.Dependencies.Deps.GetOrDefault("oci_pkg", TestPkgDependency).Source.Oci.Reg, got.Dependencies.Deps.GetOrDefault("oci_pkg", TestPkgDependency).Source.Oci.Reg)
+	assert.Equal(t, expect.Dependencies.Deps.GetOrDefault("oci_pkg", TestPkgDependency).Source.Oci.Repo, got.Dependencies.Deps.GetOrDefault("oci_pkg", TestPkgDependency).Source.Oci.Repo)
+	assert.Equal(t, expect.Dependencies.Deps.GetOrDefault("oci_pkg", TestPkgDependency).Source.Oci.Tag, got.Dependencies.Deps.GetOrDefault("oci_pkg", TestPkgDependency).Source.Oci.Tag)
+	assert.Equal(t, expect.Dependencies.Deps.GetOrDefault("oci_pkg", TestPkgDependency).Source.IntoOciUrl(), got.Dependencies.Deps.GetOrDefault("oci_pkg", TestPkgDependency).Source.IntoOciUrl())
 }
 
 func TestMarshalOciUrlIntoFile(t *testing.T) {
