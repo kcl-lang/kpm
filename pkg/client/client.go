@@ -986,6 +986,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			dep.FullName = dep.GenDepFullName()
 			dep.LocalFullPath = filepath.Join(filepath.Dir(localPath), dep.FullName)
 			localPath = dep.LocalFullPath
+
 			if utils.DirExists(dep.LocalFullPath) {
 				dpkg, err := c.LoadPkgFromPath(localPath)
 				if err != nil {
@@ -1510,6 +1511,8 @@ func (c *KpmClient) DownloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependenc
 					errors.CheckSumMismatchError,
 					fmt.Sprintf("checksum for '%s' changed in lock file '%s' and '%s'", lockedDep.Name, expectedSum, lockedDep.Sum),
 				)
+			} else {
+				lockedDep.Sum = lockDeps.Deps[d.Name].Sum
 			}
 		}
 
