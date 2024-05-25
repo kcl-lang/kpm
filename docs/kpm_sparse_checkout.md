@@ -36,3 +36,5 @@ The experience for the user will be completely different than any other package 
 ## 5. Integration and the use of go-getter to download the specific subdirectories
 
 The repoUrl field in the struct `CloneOptions` in kpm/pkg/git/git.go will be given the subdir url accordingly, which then downloads each selected subdirectory one by one.
+
+Also, the kcl.mod file will contain the list of all the subdirectories kept child to the main directory(if so).
