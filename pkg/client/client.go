@@ -1036,6 +1036,10 @@ func (c *KpmClient) DownloadFromGit(dep *pkg.Git, localPath string) (string, err
 		msg = fmt.Sprintf("with commit '%s'", dep.Commit)
 	}
 
+	if len(dep.Branch) != 0 {
+		msg = fmt.Sprintf("with branch '%s'", dep.Branch)
+	}
+
 	reporter.ReportMsgTo(
 		fmt.Sprintf("cloning '%s' %s", dep.Url, msg),
 		c.logWriter,
