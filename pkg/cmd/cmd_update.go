@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/dominikbraun/graph"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/mod/module"
 	"kcl-lang.io/kpm/pkg/client"
@@ -106,7 +107,7 @@ func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
 		return reporter.NewErrorEvent(reporter.FailedUpdatingBuildList, err, "failed to update build list")
 	}
 
-	// get all the vertices in the graph 
+	// get all the vertices in the graph
 	modules, err := graph.TopologicalSort(depGraph)
 	if err != nil {
 		return reporter.NewErrorEvent(reporter.FailedTopologicalSort, err, "failed to sort the dependencies")
