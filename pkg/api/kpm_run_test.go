@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/opt"
+	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -253,4 +254,53 @@ func TestRunWithOptsWithNoLog(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	assert.Equal(t, buf.String(), "")
+}
+
+func TestStoreModAndModLockFile(t *testing.T) {
+	testPath := getTestDir("store_mod_and_lock")
+
+	testDep := pkg.Dependency{
+		Name:          "dep1",
+		FullName:      "dep1_0.0.1",
+		Version:       "0.0.1",
+		Sum:           "sLr3e6W4RPrXYyswdOSiKqkHes1QHX2tk6SwxAPDqqo=",
+		LocalFullPath: filepath.Join(testPath, "dep1_0.0.1"),
+		Source: pkg.Source{
+			Oci: &pkg.Oci{
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/dep1",
+				Tag:  "0.0.1",
+			},
+		},
+	}
+
+	testModFile := pkg.ModFile{
+		Pkg: pkg.Package{
+			Name:    "test",
+			Version: "0.0.1",
+			Edition: "0.0.1",
+		},
+		HomePath: filepath.Join(testPath, "dep1_0.0.1"),
+		Dependencies: pkg.Dependencies{
+			Deps: map[string]pkg.Dependency{
+				"dep1": testDep,
+			},
+		},
+	}
+
+	testPkg := pkg.KclPkg{
+		ModFile:      testModFile,
+		HomePath:     filepath.Join(testPath, "dep1_0.0.1"),
+		Dependencies: testModFile.Dependencies,
+	}
+
+	testPackage := KclPackage{
+		pkg: &testPkg,
+	}
+
+	err := testPackage.StoreModFile()
+	assert.Equal(t, err, nil)
+
+	err = testPackage.StoreModLockFile()
+	assert.Equal(t, err, nil)
 }
