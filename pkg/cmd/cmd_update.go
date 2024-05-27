@@ -107,7 +107,7 @@ func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
 		return reporter.NewErrorEvent(reporter.FailedUpdatingBuildList, err, "failed to update build list")
 	}
 
-	// get all the vertices in the graph 
+	// get all the vertices in the graph
 	modules, err := graph.TopologicalSort(depGraph)
 	if err != nil {
 		return reporter.NewErrorEvent(reporter.FailedTopologicalSort, err, "failed to sort the dependencies")
@@ -131,8 +131,8 @@ func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
 
 // GetModulesToUpdate validates if the packages is present in kcl.mod file and
 // find the latest version if version is not specified. Depending on the value of pkgVersion,
-// modulesToUpgrade or modulesToDowngrade will be updated. 
-func GetModulesToUpdate(kclPkg *pkg.KclPkg, modulesToUpgrade []module.Version,  modulesToDowngrade []module.Version, pkgInfo string) error {
+// modulesToUpgrade or modulesToDowngrade will be updated.
+func GetModulesToUpdate(kclPkg *pkg.KclPkg, modulesToUpgrade []module.Version, modulesToDowngrade []module.Version, pkgInfo string) error {
 	pkgInfo = strings.TrimSpace(pkgInfo)
 	pkgName, pkgVersion, err := ParseOciPkgNameAndVersion(pkgInfo)
 	if err != nil {
@@ -172,9 +172,9 @@ func GetModulesToUpdate(kclPkg *pkg.KclPkg, modulesToUpgrade []module.Version,  
 	return nil
 }
 
-// InsertModuleToDeps checks whether module is present in the buildList and it is not the same as the target module, 
+// InsertModuleToDeps checks whether module is present in the buildList and it is not the same as the target module,
 // and inserts it to the dependencies of kclPkg
-func InsertModuleToDeps(kclPkg *pkg.KclPkg, module module.Version, target module.Version, buildList []module.Version, reqs mvs.ReqsGraph) (error) {
+func InsertModuleToDeps(kclPkg *pkg.KclPkg, module module.Version, target module.Version, buildList []module.Version, reqs mvs.ReqsGraph) error {
 	if module.Path == target.Path || !slices.Contains(buildList, module) {
 		return nil
 	}
