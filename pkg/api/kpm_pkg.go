@@ -67,6 +67,16 @@ func (pkg *KclPackage) UpdateDependencyInPath(pkg_path string) error {
 	return kpmcli.ResolvePkgDepsMetadata(pkg.pkg, true)
 }
 
+// StoreModFile stores the kcl.mod file of the package to local file system.
+func (pkg *KclPackage) StoreModFile() error {
+	return pkg.pkg.ModFile.StoreModFile()
+}
+
+// StoreModLockFile stores the kcl.mod.lock file of the package to local file system.
+func (pkg *KclPackage) StoreModLockFile() error {
+	return pkg.pkg.LockDepsVersion()
+}
+
 // GetPkgName returns the name of the package.
 func (pkg *KclPackage) GetPkgName() string {
 	return pkg.pkg.GetPkgName()
