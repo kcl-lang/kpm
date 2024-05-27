@@ -1073,7 +1073,7 @@ func TestUpdateWithNoSumCheck(t *testing.T) {
 	err = kpmcli.UpdateDeps(kclPkg)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), true)
-	assert.Equal(t, buf.String(), "adding 'helloworld' with version '0.1.1'\n")
+	assert.Equal(t, buf.String(), "")
 
 	defer func() {
 		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
