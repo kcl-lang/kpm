@@ -1,3 +1,3 @@
 kcl_cli_configs:
   files:
-    - ./test.k
+    - ./test_data/test_settings/test.k
