@@ -55,9 +55,11 @@ This process will involve using the `sparse-checkout` feature of git.
 
 Whenever we want to access the subdirectory using any command, we can refer to `kcl.mod` file of the project and iterate over the `subdir` array to get the path to the subdirectory. The `kcl.mod` file will automatically get updated whenever `kpm add` command is run.
 
-### Additional modifications
+### Additional information
 
-To avoid creating a new root for each subdirectory download, I can add some check functions.
+1. To avoid creating a new root for each subdirectory download, I can add some check functions.
+
+2. The subdir flag is only for git options. If we pass it as a flag after oci, for example: `kpm add k8s --subdir 1.21/*`, it will not work. We can add a check [here](https://github.com/kcl-lang/kpm/blob/92158183556d39545bc0734a1e24284344ff3d9e/pkg/cmd/cmd_add.go#L154) that will give a warning if the subdir flag is passed. Furthermore, the subdir flag will only work for git repositories since it will insert the flag value into the field variable of the [Git](https://github.com/kcl-lang/kpm/blob/92158183556d39545bc0734a1e24284344ff3d9e/pkg/package/modfile.go#L375) struct.
 
 ## References 
 
