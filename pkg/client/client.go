@@ -759,6 +759,8 @@ func (c *KpmClient) AddDepToPkg(kclPkg *pkg.KclPkg, d *pkg.Dependency) error {
 
 	// If the dependency is from the local path, do nothing.
 	if d.IsFromLocal() {
+		kclPkg.ModFile.Dependencies.Deps[d.Name] = *d
+		kclPkg.Dependencies.Deps[d.Name] = *d
 		return nil
 	}
 
