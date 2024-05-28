@@ -441,10 +441,7 @@ func LoadLockDeps(homePath string) (*Dependencies, error) {
 // It uses an ordered dictionary for serialization/deserialization to preserve the order of dependencies.
 func (mfile *ModFile) StoreModFile() error {
 	fullPath := filepath.Join(mfile.HomePath, MOD_FILE)
-	tomlContent, err := mfile.MarshalTOML()
-	if err != nil {
-		return err
-	}
+	tomlContent := mfile.MarshalTOML()
 	return utils.StoreToFile(fullPath, tomlContent)
 }
 
@@ -667,14 +664,13 @@ func (ote *OrderedTomlEncoder) Encode(v interface{}) error {
 }
 
 // MarshalTOML marshals the ModFile to TOML format using an ordered dictionary.
-func (mfile *ModFile) MarshalTOML() (string, error) {
+func (mfile *ModFile) MarshalTOML() (string) {
 	buf := new(bytes.Buffer)
 	enc := NewOrderedTomlEncoder(buf)
 	err := enc.Encode(mfile)
 	if err != nil {
-		return "", err
+		return ""
 	}
-	return buf.String(), nil
+	return buf.String()
 }
-
 
