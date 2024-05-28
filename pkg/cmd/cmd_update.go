@@ -16,6 +16,7 @@ import (
 	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/mvs"
+	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/semver"
@@ -134,7 +135,7 @@ func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
 // modulesToUpgrade or modulesToDowngrade will be updated.
 func GetModulesToUpdate(kclPkg *pkg.KclPkg, modulesToUpgrade []module.Version, modulesToDowngrade []module.Version, pkgInfo string) error {
 	pkgInfo = strings.TrimSpace(pkgInfo)
-	pkgName, pkgVersion, err := ParseOciPkgNameAndVersion(pkgInfo)
+	pkgName, pkgVersion, err := opt.ParseOciPkgNameAndVersion(pkgInfo)
 	if err != nil {
 		return err
 	}

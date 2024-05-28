@@ -558,10 +558,9 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 		}, nil
 	}
 	if opt.Oci != nil {
-		repoPath := utils.JoinPath(opt.Oci.Repo, opt.Oci.PkgName)
 		ociSource := Oci{
 			Reg:  opt.Oci.Reg,
-			Repo: repoPath,
+			Repo: opt.Oci.Repo,
 			Tag:  opt.Oci.Tag,
 		}
 

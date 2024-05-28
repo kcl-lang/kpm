@@ -5,12 +5,21 @@ const (
 	TarPathSuffix       = ".tar"
 	GitPathSuffix       = ".git"
 	OciScheme           = "oci"
+	GitScheme           = "git"
+	HttpScheme          = "http"
+	HttpsScheme         = "https"
+	SshScheme           = "ssh"
 	FileEntry           = "file"
 	FileWithKclModEntry = "file_with_kcl_mod"
 	UrlEntry            = "url"
 	RefEntry            = "ref"
 	TarEntry            = "tar"
 	GitEntry            = "git"
+
+	GitBranch = "branch"
+	GitCommit = "commit"
+
+	Tag = "tag"
 
 	KCL_MOD                              = "kcl.mod"
 	OCI_SEPARATOR                        = ":"
