@@ -2,11 +2,14 @@
 package pkg
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"net/url"
 	"os"
+	"io"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -434,10 +437,17 @@ func LoadLockDeps(homePath string) (*Dependencies, error) {
 }
 
 // Write the contents of 'ModFile' to 'kcl.mod' file
+// StoreModFile writes the contents of 'ModFile' to 'kcl.mod' file.
+// It uses an ordered dictionary for serialization/deserialization to preserve the order of dependencies.
 func (mfile *ModFile) StoreModFile() error {
 	fullPath := filepath.Join(mfile.HomePath, MOD_FILE)
-	return utils.StoreToFile(fullPath, mfile.MarshalTOML())
+	tomlContent, err := mfile.MarshalTOML()
+	if err != nil {
+		return err
+	}
+	return utils.StoreToFile(fullPath, tomlContent)
 }
+
 
 // Returns the path to the kcl.mod file
 func (mfile *ModFile) GetModFilePath() string {
@@ -614,3 +624,57 @@ func ParseRepoFullNameFromGitSource(gitSrc Git) (string, error) {
 func ParseRepoNameFromGitSource(gitSrc Git) string {
 	return utils.ParseRepoNameFromGitUrl(gitSrc.Url)
 }
+
+// SortMapByKey will sort the dependencies by key.
+func (deps *Dependencies) SortMapByKey() {
+	keys := make([]string, 0, len(deps.Deps))
+	for k := range deps.Deps {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	sortedDeps := make(map[string]Dependency)
+	for _, k := range keys {
+		sortedDeps[k] = deps.Deps[k]
+	}
+	deps.Deps = sortedDeps
+}
+
+// StoreModFile writes the contents of 'ModFile' to 'kcl.mod' file.
+// It uses an ordered dictionary for serialization/deserialization to preserve the order of dependencies.
+type OrderedTomlEncoder struct {
+	Encoder *toml.Encoder
+	Writer io.Writer 
+}
+
+// NewOrderedTomlEncoder creates a new instance of OrderedTomlEncoder.
+func NewOrderedTomlEncoder(buf *bytes.Buffer) *OrderedTomlEncoder {
+	return &OrderedTomlEncoder{
+		Encoder: toml.NewEncoder(buf),
+	}
+}
+
+// Encode encodes the given value into TOML format while maintaining the field order.
+func (ote *OrderedTomlEncoder) Encode(v interface{}) error {
+	buf := new(bytes.Buffer)
+	ote.Encoder.Indent = ""
+	err := ote.Encoder.Encode(v)
+	if err != nil {
+		return err
+	}
+	_, err = buf.WriteTo(ote.Writer)
+	return err
+}
+
+// MarshalTOML marshals the ModFile to TOML format using an ordered dictionary.
+func (mfile *ModFile) MarshalTOML() (string, error) {
+	buf := new(bytes.Buffer)
+	enc := NewOrderedTomlEncoder(buf)
+	err := enc.Encode(mfile)
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+
