@@ -1500,3 +1500,43 @@ func testRunWithOciDownloader(t *testing.T) {
 	strings.Contains(buf.String(), "downloading 'zong-zhe/helloworld:0.0.3' from 'ghcr.io/zong-zhe/helloworld:0.0.3'")
 	assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
 }
+
+func TestAddLocalPath(t *testing.T) {
+
+	kpmCli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	path := getTestDir("test_add_local_path")
+	err = copy.Copy(filepath.Join(path, "kcl.mod.bak"), filepath.Join(path, "kcl.mod"))
+	assert.Equal(t, err, nil)
+
+	kclPkg, err := kpmCli.LoadPkgFromPath(path)
+	assert.Equal(t, err, nil)
+
+	opts := opt.AddOptions{
+		LocalPath: path,
+		RegistryOpts: opt.RegistryOptions{
+			Local: &opt.LocalOptions{
+				Path: filepath.Join(path, "dep"),
+			},
+		},
+	}
+	_, err = kpmCli.AddDepWithOpts(kclPkg, &opts)
+	assert.Equal(t, err, nil)
+
+	modFile, err := kpmCli.LoadModFile(path)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(modFile.Deps), 1)
+	assert.Equal(t, modFile.Deps["dep"].Name, "dep")
+	assert.Equal(t, modFile.Deps["dep"].LocalFullPath, filepath.Join(path, "dep"))
+
+	kclPkg1, err := kpmCli.LoadPkgFromPath(path)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, kclPkg1.Dependencies.Deps["dep"].Name, "dep")
+	assert.Equal(t, kclPkg1.Dependencies.Deps["dep"].FullName, "dep_0.0.1")
+	assert.Equal(t, kclPkg1.Dependencies.Deps["dep"].Version, "0.0.1")
+	defer func() {
+		_ = os.Remove(filepath.Join(path, "kcl.mod.lock"))
+		_ = os.Remove(filepath.Join(path, "kcl.mod"))
+	}()
+}
