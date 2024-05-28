@@ -24,7 +24,6 @@ kpm add --subdir 1.21/* k8s
 
 This command will download the `1.21` directory and all its contents from the `k8s` repository hosted in https://github.com/kcl-lang/modules
 
-
 The `kcl.mod` file of the users project will also contain an array of path to the subdirectories. 
 
 ```
@@ -55,7 +54,6 @@ This process will involve using the `sparse-checkout` feature of git.
 5. Pull the repository using [Pull](https://pkg.go.dev/github.com/go-git/go-git/v5#Worktree.Pull)
 
 Whenever we want to access the subdirectory using any command, we can refer to `kcl.mod` file of the project and iterate over the `subdir` array to get the path to the subdirectory. The `kcl.mod` file will automatically get updated whenever `kpm add` command is run.
-
 
 ### Additional modifications
 
