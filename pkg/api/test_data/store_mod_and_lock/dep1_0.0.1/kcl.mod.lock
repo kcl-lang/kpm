@@ -1,0 +1,9 @@
+[dependencies]
+  [dependencies.dep1]
+    name = "dep1"
+    full_name = "dep1_0.0.1"
+    version = "0.0.1"
+    sum = "sLr3e6W4RPrXYyswdOSiKqkHes1QHX2tk6SwxAPDqqo="
+    reg = "ghcr.io"
+    repo = "kcl-lang/dep1"
+    oci_tag = "0.0.1"

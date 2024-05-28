@@ -309,18 +309,6 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 		// add the dependencies in kcl.mod which not in kcl.mod.lock
 		for name, d := range kclPkg.ModFile.Dependencies.Deps {
 			if _, ok := kclPkg.Dependencies.Deps[name]; !ok {
-				if len(d.Version) == 0 {
-					reporter.ReportMsgTo(
-						fmt.Sprintf("adding '%s'", name),
-						c.logWriter,
-					)
-				} else {
-					reporter.ReportMsgTo(
-						fmt.Sprintf("adding '%s' with version '%s'", name, d.Version),
-						c.logWriter,
-					)
-				}
-
 				kclPkg.Dependencies.Deps[name] = d
 			}
 		}
@@ -1046,6 +1034,10 @@ func (c *KpmClient) DownloadFromGit(dep *pkg.Git, localPath string) (string, err
 
 	if len(dep.Commit) != 0 {
 		msg = fmt.Sprintf("with commit '%s'", dep.Commit)
+	}
+
+	if len(dep.Branch) != 0 {
+		msg = fmt.Sprintf("with branch '%s'", dep.Branch)
 	}
 
 	reporter.ReportMsgTo(
