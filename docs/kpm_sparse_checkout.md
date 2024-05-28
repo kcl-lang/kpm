@@ -3,38 +3,56 @@
 ## 1. Introduction
 kpm which is the package management tool for KCL, does not support sparse-checkout, which means an issue arises when dealing with monorepos, which may contain many KCL packages. We need to get a solution to download specific packages instead of all in a monorepo.
 
-## 2. Design research 
-A solution to this problem lies onto using GithubAPIs for kpm. The API can be used to fetch repository contents and then processing the response data to list the sub-directories of a specific monorepo. 
+## 2. User Worklow
+- Adding a Subdirectory Dependency via Command Line
+- Specifying a Subdirectory in `kcl.mod`
 
-## 3. User Interface 
-The user will have to enter the command 
-```
-kpm add <github_repo_url>
-```
-to get the list of all the subdirectories(recursively all the directories which had a kcl.mod file in it). The user now has to toggle between the output subdirectories and press 'space' to select the ones which they want to keep. 
+## 3. Command Line Inteface 
+We will try to keep the command line interface as simple and straightforward as possible for adding a Git repository subdirectory as a dependency. The below steps show how a user can use the feature:
 
+- Adding a Dependency :
+The following command will lead to the addition of a dependency:
+`kpm add <repository_url> <subdirectory_path>`
+
+This command will add the specified subdirectory as a dependency in the current KCL project.
+
+## 4. Example Use-case
 Considering the nginx-ingres module, on typing the command 
 
 ```
-kpm add <url of nginx-ingres>
+kpm add https://github.com/kcl-lang/modules/tree/main/nginx-ingress /restrict-ingress-anotations
 ``` 
-kpm will list the two subdirectories as 
-- restrict-ingress-annotations
-- restrict-ingress-paths
 
-The user now has to select which package they want according to their project.
+The following command will lead to the addition of restrict-ingress-anotations package to the current KCL project and will update the kcl.mod accordingly.
 
-The experience for the user will be completely different than any other package manager installing packages or package subdirectories.
+## 5. Specifying how kcl.mod will specify the added subdirectories
+To support the specification of a subdirectory for dependencies that are sourced from Git repositories, we need to extend the kcl.mod file structure. This involves adding an optional `subdirectory` field under each dependency.
+A sample kcl mod for the same would look like this.
 
-## 4. Implementation steps for the functionality
-- setting up the Github API Access
-- make a request to the endpoint `GET /repos/{owner}/{repo}/contents/{path}`
-- parsing the JSON response to identify directories and subdirectories
-- recursively fetch and process the contents of each directory to get a full list of subdirectories
-- integrate it with the kpm code and update the kcl.mod accordingly
+```
+[package]
+name = "test"
+edition = "v0.9.0"
+version = "0.0.1"
 
-## 5. Integration and the use of go-getter to download the specific subdirectories
+[dependencies]
+my_dependency = { git = "https://github.com/example/repo", subdirectory = "path/to/package" }
+```
 
-The repoUrl field in the struct `CloneOptions` in kpm/pkg/git/git.go will be given the subdir url accordingly, which then downloads each selected subdirectory one by one.
+## 6. Integration and the use of go-getter to download the specific subdirectories
 
-Also, the kcl.mod file will contain the list of all the subdirectories kept child to the main directory(if so).
+The repoUrl field in the struct `CloneOptions` in kpm/pkg/git/git.go will be given the subdir url accordingly, which then downloads each selected subdirectory one by one. KCL currently uses go-getter to download using URL's with ease.
+
+We can also provide a fallback mechanism to download the entire repo if the subdirectory download fails repeatedly by something like - 
+
+```Go
+err := downloadSubdir(repoUrl, subdir)
+if err != nil {
+    log.Printf("Failed to download subdirectory, falling back to full repository: %v", err)
+    return downloadRepo(repoUrl)
+}
+
+```
+
+## 7. Conclusion
+By extending the kcl.mod file to include a subdirectory field for Git-based dependencies, users can now specify and manage dependencies that reside in specific subdirectories of a Git repository. This enhancement will enable kpm to download only the necessary parts of large repositories, significantly improving performance when dealing with monorepos. The user interface remains intuitive, and the implementation leverages Git's sparse-checkout feature to achieve the desired functionality.
