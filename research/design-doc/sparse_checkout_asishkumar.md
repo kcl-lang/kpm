@@ -66,14 +66,3 @@ To avoid creating a new root for each subdirectory download, I can add some chec
 1. https://medium.com/@marcoscannabrava/git-download-a-repositorys-specific-subfolder-ceeabc6023e2
 2. https://pkg.go.dev/github.com/go-git/go-git/v5
 3. https://pkg.go.dev/github.com/hashicorp/go-getter
-
-
-
-
-
-
-
-
-
-
-
