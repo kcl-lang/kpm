@@ -28,7 +28,7 @@ The `kcl.mod` file will look like this:
 
 ```
 [dependencies]
-bbb = { git = "https://github.com/kcl-lang/modules", subdir = ["add-certificates-volume"]}
+bbb = { git = "https://github.com/kcl-lang/flask-demo-kcl-manifests.git", commit = "ade147b", subdir = ["something"]}
 ```
 
 ## Design 
