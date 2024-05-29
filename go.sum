@@ -1304,10 +1304,10 @@ honnef.co/go/tools v0.0.1-2020.1.3/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9
 honnef.co/go/tools v0.0.1-2020.1.4/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9vFzvIQ3k=
 k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5 h1:kmDqav+P+/5e1i9tFfHq1qcF3sOrDp+YEkVDAHu7Jwk=
 k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
-kcl-lang.io/kcl-go v0.9.0-alpha.2 h1:eJqkNxxfuEXfzqO0k1IHd+UyYry2eV///8avr3T8AuY=
-kcl-lang.io/kcl-go v0.9.0-alpha.2/go.mod h1:nwqta0C8lYxx7iJYGsCJzEqRFpi+XGndtFFLC+AVBhk=
-kcl-lang.io/lib v0.9.0-alpha.2 h1:44w4YkIh45wKLYa/wqiRiqXp+JddHZnPndnJsu5sx70=
-kcl-lang.io/lib v0.9.0-alpha.2/go.mod h1:ubsalGXxJaa5II/EsHmsI/tL2EluYHIcW+BwzQPt+uY=
+kcl-lang.io/kcl-go v0.9.0-beta.1 h1:NfOiktimPlSx/pafqRTvPvPTh8nHtncZCFz0UQfbWiE=
+kcl-lang.io/kcl-go v0.9.0-beta.1/go.mod h1:mkAN+NjbmyaVljshuneKtT4PKOZzu2Z+ayX3yWS+j0E=
+kcl-lang.io/lib v0.9.0-beta.1 h1:oO/3h5Ubk61LKVnE7A9xlV4FfSfKa6Jv+KNsoHMcnNc=
+kcl-lang.io/lib v0.9.0-beta.1/go.mod h1:ubsalGXxJaa5II/EsHmsI/tL2EluYHIcW+BwzQPt+uY=
 oras.land/oras-go v1.2.5 h1:XpYuAwAb0DfQsunIyMfeET92emK8km3W4yEzZvUbsTo=
 oras.land/oras-go v1.2.5/go.mod h1:PuAwRShRZCsZb7g8Ar3jKKQR/2A/qN+pkYxIOd/FAoo=
 oras.land/oras-go/v2 v2.5.0 h1:o8Me9kLY74Vp5uw07QXPiitjsw7qNXi8Twd+19Zf02c=
