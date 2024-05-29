@@ -136,7 +136,7 @@ func (pkg *KclPackage) GetSchemaTypeMappingNamed(schemaName string) (map[string]
 }
 
 // GetFullSchemaTypeMappingWithFilters returns the full schema type filtered by the filter functions.
-func (pkg *KclPackage) GetFullSchemaTypeMappingWithFilters(kpmcli *client.KpmClient, fileterFuncs []KclTypeFilterFunc) (map[string]map[string]*KclType, error) {
+func (pkg *KclPackage) GetFullSchemaTypeMappingWithFilters(kpmcli *client.KpmClient, filterFuncs []KclTypeFilterFunc) (map[string]map[string]*KclType, error) {
 	schemaTypes := make(map[string]map[string]*KclType)
 	err := filepath.Walk(pkg.GetPkgHomePath(), func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -144,7 +144,7 @@ func (pkg *KclPackage) GetFullSchemaTypeMappingWithFilters(kpmcli *client.KpmCli
 		}
 
 		if info.IsDir() {
-			fileteredKtypeMap := make(map[string]*KclType)
+			filteredTypeMap := make(map[string]*KclType)
 
 			depsMap, err := kpmcli.ResolveDepsIntoMap(pkg.pkg)
 			if err != nil {
@@ -156,14 +156,9 @@ func (pkg *KclPackage) GetFullSchemaTypeMappingWithFilters(kpmcli *client.KpmCli
 				opts.Merge(kcl.WithExternalPkgs(fmt.Sprintf(constants.EXTERNAL_PKGS_ARG_PATTERN, depName, depPath)))
 			}
 
-			schemaTypeList, err := kcl.GetFullSchemaType([]string{path}, "", *opts)
+			schemaTypeMap, err := kcl.GetFullSchemaTypeMapping([]string{path}, "", *opts)
 			if err != nil && err.Error() != errors.NoKclFiles.Error() {
 				return err
-			}
-
-			schemaTypeMap := make(map[string]*gpyrpc.KclType)
-			for _, schemaType := range schemaTypeList {
-				schemaTypeMap[schemaType.SchemaName] = schemaType
 			}
 
 			relPath, err := filepath.Rel(pkg.GetPkgHomePath(), path)
@@ -174,18 +169,18 @@ func (pkg *KclPackage) GetFullSchemaTypeMappingWithFilters(kpmcli *client.KpmCli
 				for kName, kType := range schemaTypeMap {
 					kTy := NewKclTypes(kName, relPath, kType)
 					filterPassed := true
-					for _, filterFunc := range fileterFuncs {
+					for _, filterFunc := range filterFuncs {
 						if !filterFunc(kTy) {
 							filterPassed = false
 							break
 						}
 					}
 					if filterPassed {
-						fileteredKtypeMap[kName] = kTy
+						filteredTypeMap[kName] = kTy
 					}
 				}
-				if len(fileteredKtypeMap) > 0 {
-					schemaTypes[relPath] = fileteredKtypeMap
+				if len(filteredTypeMap) > 0 {
+					schemaTypes[relPath] = filteredTypeMap
 				}
 			}
 		}
@@ -201,7 +196,7 @@ func (pkg *KclPackage) GetFullSchemaTypeMappingWithFilters(kpmcli *client.KpmCli
 }
 
 // GetSchemaTypeMappingWithFilters returns the schema type filtered by the filter functions.
-func (pkg *KclPackage) GetSchemaTypeMappingWithFilters(fileterFuncs []KclTypeFilterFunc) (map[string]map[string]*KclType, error) {
+func (pkg *KclPackage) GetSchemaTypeMappingWithFilters(filterFuncs []KclTypeFilterFunc) (map[string]map[string]*KclType, error) {
 	schemaTypes := make(map[string]map[string]*KclType)
 	err := filepath.Walk(pkg.GetPkgHomePath(), func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -209,8 +204,8 @@ func (pkg *KclPackage) GetSchemaTypeMappingWithFilters(fileterFuncs []KclTypeFil
 		}
 
 		if info.IsDir() {
-			fileteredKtypeMap := make(map[string]*KclType)
-			schemaTypeMap, err := kcl.GetSchemaTypeMapping(path, "", "")
+			filteredTypeMap := make(map[string]*KclType)
+			schemaTypeMap, err := kcl.GetFullSchemaTypeMapping([]string{path}, "")
 			if err != nil && err.Error() != errors.NoKclFiles.Error() {
 				return err
 			}
@@ -223,18 +218,18 @@ func (pkg *KclPackage) GetSchemaTypeMappingWithFilters(fileterFuncs []KclTypeFil
 				for kName, kType := range schemaTypeMap {
 					kTy := NewKclTypes(kName, relPath, kType)
 					filterPassed := true
-					for _, filterFunc := range fileterFuncs {
+					for _, filterFunc := range filterFuncs {
 						if !filterFunc(kTy) {
 							filterPassed = false
 							break
 						}
 					}
 					if filterPassed {
-						fileteredKtypeMap[kName] = kTy
+						filteredTypeMap[kName] = kTy
 					}
 				}
-				if len(fileteredKtypeMap) > 0 {
-					schemaTypes[relPath] = fileteredKtypeMap
+				if len(filteredTypeMap) > 0 {
+					schemaTypes[relPath] = filteredTypeMap
 				}
 			}
 		}
