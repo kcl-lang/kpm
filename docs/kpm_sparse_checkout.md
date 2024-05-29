@@ -13,7 +13,7 @@ We will try to keep the command line interface as simple and straightforward as 
 
 - Adding a Dependency :
 The following command will lead to the addition of a dependency:
-`kpm add <repository_url> <subdirectory_path>`
+`kcl mod add <repository_url> <subdirectory_path>`
 
 This command will add the specified subdirectory as a dependency in the current KCL project.
 
@@ -24,7 +24,7 @@ In addition to the command line interface, users can specify subdirectory depend
 Considering the nginx-ingres module, on typing the command 
 
 ```
-kpm add https://github.com/kcl-lang/modules/tree/main/nginx-ingress /restrict-ingress-anotations
+kcl mod add https://github.com/kcl-lang/modules/tree/main/nginx-ingress /restrict-ingress-anotations
 ``` 
 
 The following command will lead to the addition of restrict-ingress-anotations package to the current KCL project and will update the kcl.mod accordingly.
@@ -42,7 +42,7 @@ my_dependency = { git = "https://github.com/example/repo", subdirectory = "path/
 ```
 
 ## 5. Specifying how kcl.mod will specify the added subdirectories
-To support the specification of a subdirectory for dependencies that are sourced from Git repositories, we need to extend the kcl.mod file structure. This involves adding an optional `subdirectory` field under each dependency. This can be manually edited or automatically updated by the kpm add command.
+To support the specification of a subdirectory for dependencies that are sourced from Git repositories, we need to extend the kcl.mod file structure. This involves adding an optional `subdirectory` field under each dependency. This can be manually edited or automatically updated by the kcl mod add command.
 
 A sample kcl mod for the same would look like this.
 
