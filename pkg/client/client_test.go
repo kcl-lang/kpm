@@ -50,7 +50,7 @@ func initTestDir(subDir string) string {
 	return testDir
 }
 
-// TestDownloadGit test download from oci registry.
+// TestDownloadOci test download from oci registry.
 func TestDownloadOci(t *testing.T) {
 	testPath := filepath.Join(getTestDir("download"), "helloworld_0.1.2")
 	err := os.MkdirAll(testPath, 0755)
