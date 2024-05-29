@@ -8,27 +8,27 @@
 
 ## User Interface
 
-I will add a new flag called `--subdir` in `kpm add` command.  This flag will specify the path to the desired subdirectory within the Git repository. Below is the syntax for the enhanced kpm add command:
+I will add a new flag called `--subdir` in `kcl mod add` command.  This flag will specify the path to the desired subdirectory within the Git repository. Below is the syntax for the enhanced kpm add command:
 
 ```
-kpm add --subdir <subdir> <git-repo-url>
+kcl mod add --git <git-repo-url> --subdir <subdir> 
 ```
 
-The `--subdir` flag will be optional. If the flag is not provided, `kpm` will download the entire repository as it does now. If the flag is provided, `kpm` will download only the specified subdirectory. The `kcl.mod` file will be generated with the path to the subdirectory.
+The `--subdir` flag will be optional. If the flag is not provided, `kpm` will download the entire repository as it does now. If the flag is provided, `kpm` will download only the specified subdirectory of the git repo.
 
 Example usage: 
 
 ```
-kpm add --subdir 1.21/* k8s
+kcl mod add --git https://github.com/kcl-lang/modules --subdir add-certificates-volume 
 ```
 
-This command will download the `1.21` directory and all its contents from the `k8s` repository hosted in https://github.com/kcl-lang/modules
+This command will download the `add-certificates-volume` subdirectory from the `modules` repository and append it in the subdir array of the `kcl.mod` file.
 
-The `kcl.mod` file of the users project will also contain an array of path to the subdirectories. 
+The `kcl.mod` file will look like this:
 
 ```
 [dependencies]
-bbb = { path = "../bbb", subdir = ["test-*", "test-*"]}
+bbb = { git = "https://github.com/kcl-lang/modules", subdir = ["add-certificates-volume"]}
 ```
 
 ## Design 
@@ -53,7 +53,7 @@ This process will involve using the `sparse-checkout` feature of git.
 
 5. Pull the repository using [Pull](https://pkg.go.dev/github.com/go-git/go-git/v5#Worktree.Pull)
 
-Whenever we want to access the subdirectory using any command, we can refer to `kcl.mod` file of the project and iterate over the `subdir` array to get the path to the subdirectory. The `kcl.mod` file will automatically get updated whenever `kpm add` command is run.
+Whenever we want to access the subdirectory using any command, we can refer to `kcl.mod` file of the project and iterate over the `subdir` array to get the path to the subdirectory. The `kcl.mod` file will automatically get updated whenever `kcl mod add` command is run.
 
 ### Additional information
 
