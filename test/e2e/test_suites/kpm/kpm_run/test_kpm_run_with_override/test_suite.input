@@ -1,1 +1,1 @@
-kpm run -O __main__:a2.image="new-a2-image:v123"
+kpm run -O a2.image="new-a2-image:v123"

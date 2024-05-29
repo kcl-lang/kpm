@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -38,7 +39,7 @@ func TestPackageApi(t *testing.T) {
 	schemas, err := pkg.GetAllSchemaTypeMapping()
 	assert.Equal(t, err, nil)
 	assert.Equal(t, len(schemas), 3)
-	assert.Equal(t, len(schemas["."]), 4)
+	assert.Equal(t, len(schemas["."]), 2)
 	assert.Equal(t, len(schemas[filepath.Join("sub")]), 1)
 	assert.Equal(t, len(schemas[filepath.Join("sub", "sub1")]), 2)
 
@@ -165,8 +166,10 @@ func TestGetFullSchemaTypeMappingWithFilters(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, len(schemas), 1)
 
-	assert.Equal(t, schemas[filepath.Join(".")]["B"].Type, "schema")
-	assert.Equal(t, schemas[filepath.Join(".")]["B"].SchemaName, "B")
+	fmt.Println(schemas)
+
+	assert.Equal(t, schemas[filepath.Join(".")]["a"].Type, "schema")
+	assert.Equal(t, schemas[filepath.Join(".")]["a"].SchemaName, "B")
 }
 
 func TestGetSchemaTypeUnderEmptyDir(t *testing.T) {

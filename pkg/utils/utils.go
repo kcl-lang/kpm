@@ -16,7 +16,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/docker/distribution/reference"
+	"github.com/distribution/reference"
 	"github.com/moby/term"
 
 	"kcl-lang.io/kpm/pkg/constants"

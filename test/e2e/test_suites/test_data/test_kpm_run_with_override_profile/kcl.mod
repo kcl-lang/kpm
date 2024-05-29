@@ -4,4 +4,4 @@ edition = "0.0.1"
 version = "0.0.1"
 
 [profile]
-overrides = [ "__main__:a2.image=\"new-a2-image:v123\"" ]
+overrides = [ "a2.image=\"new-a2-image:v123\"" ]
