@@ -7,7 +7,7 @@ toolchain go1.21.5
 require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/containers/image/v5 v5.31.0
-	github.com/docker/distribution v2.8.3+incompatible
+	github.com/distribution/reference v0.6.0
 	github.com/dominikbraun/graph v0.23.0
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/otiai10/copy v1.14.0
@@ -47,8 +47,8 @@ require (
 	github.com/containers/storage v1.54.0 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.5 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/cli v26.1.3+incompatible // indirect
+	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker v26.1.3+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.8.1 // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
