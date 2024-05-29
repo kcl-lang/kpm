@@ -33,6 +33,14 @@ import (
 
 const NEWLINE = "\n"
 
+func (mod *ModFile) MarshalTOML() string {
+	var sb strings.Builder
+	sb.WriteString(mod.Pkg.MarshalTOML())
+	sb.WriteString(mod.Dependencies.MarshalTOML())
+	sb.WriteString(mod.Profiles.MarshalTOML())
+	return sb.String()
+}
+
 const PACKAGE_PATTERN = "[package]"
 
 func (pkg *Package) MarshalTOML() string {
