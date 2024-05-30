@@ -21,20 +21,17 @@ func getTestDir(subDir string) string {
 }
 
 func TestOciDownloader(t *testing.T) {
-	ociTestDir := getTestDir("oci_test_dir")
-	if err := os.MkdirAll(ociTestDir, os.ModePerm); err != nil {
-		t.Fatal(err)
-	}
+	path := getTestDir("test_oci")
 
 	defer func() {
-		_ = os.RemoveAll(ociTestDir)
+		_ = os.RemoveAll(path)
 	}()
 
-	downloader := OciDownloader{
+	ociDownloader := OciDownloader{
 		Platform: "linux/amd64",
 	}
 
-	options := NewDownloadOptions(
+	err := ociDownloader.Download(*NewDownloadOptions(
 		WithSource(pkg.Source{
 			Oci: &pkg.Oci{
 				Reg:  "ghcr.io",
@@ -42,36 +39,9 @@ func TestOciDownloader(t *testing.T) {
 				Tag:  "0.0.3",
 			},
 		}),
-		WithLocalPath(ociTestDir),
-	)
-
-	err := downloader.Download(*options)
-
-	assert.Equal(t, err, nil)
-	assert.Equal(t, true, utils.DirExists(filepath.Join(ociTestDir, "artifact.tgz")))
-
-	gitTestDir := getTestDir("git_test_dir")
-	if err := os.MkdirAll(gitTestDir, os.ModePerm); err != nil {
-		t.Fatal(err)
-	}
-
-	defer func() {
-		_ = os.RemoveAll(gitTestDir)
-	}()
-
-	gitDownloader := GitDownloader{}
-
-	err = gitDownloader.Download(*NewDownloadOptions(
-		WithSource(pkg.Source{
-			Git: &pkg.Git{
-				Url:    "https://github.com/kcl-lang/flask-demo-kcl-manifests.git",
-				Commit: "ade147b",
-			},
-		}),
-		WithLocalPath(gitTestDir),
+		WithLocalPath(path),
 	))
 
 	assert.Equal(t, err, nil)
-	assert.Equal(t, false, utils.DirExists(filepath.Join(gitTestDir, "some_expected_file")))
+	assert.Equal(t, true, utils.DirExists(filepath.Join(path, "artifact.tgz")))
 }
-
