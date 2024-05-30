@@ -918,12 +918,7 @@ func (c *KpmClient) AcquireTheLatestOciVersion(ociSource pkg.Oci) (string, error
 // Download will download the dependency to the local path.
 func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*pkg.Dependency, error) {
 	if dep.Source.Git != nil {
-	     err := c.DepDownloader.Download(*downloader.NewDownloadOptions(
-			downloader.WithLocalPath(localPath),
-			downloader.WithSource(dep.Source),
-			downloader.WithLogWriter(c.logWriter),
-			downloader.WithSettings(c.settings),
-		))
+		_, err := c.DownloadFromGit(dep.Source.Git, localPath)
 		if err != nil {
 			return nil, err
 		}
