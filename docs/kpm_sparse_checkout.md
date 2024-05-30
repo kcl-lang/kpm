@@ -37,7 +37,7 @@ edition = "v0.9.0"
 version = "0.0.1"
 
 [dependencies]
-my_dependency = { git = "https://github.com/example/repo", subdirectory = "path/to/package" }
+my_dependency = { git = "https://github.com/example/repo/path/to/package" }
 
 ```
 
@@ -53,7 +53,7 @@ edition = "v0.9.0"
 version = "0.0.1"
 
 [dependencies]
-my_dependency = { git = "https://github.com/example/repo", subdirectory = "path/to/package" }
+my_dependency = { git = "https://github.com/example/repo/path/to/package" }
 ```
 
 ## 6. Integration and the use of go-getter to download the specific subdirectories
