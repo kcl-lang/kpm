@@ -28,8 +28,10 @@ The `kcl.mod` file will look like this:
 
 ```
 [dependencies]
-bbb = { git = "https://github.com/kcl-lang/flask-demo-kcl-manifests.git", commit = "ade147b", subdir = ["something"]}
+bbb = { git = "https://github.com/kcl-lang/modules", commit = "ade147b", subdir = ["add-ndots"]}
 ```
+
+The subdir is a list because in the future if user wants to add another subdir from the same git repo then it can be added without overwritting the current subdir.
 
 ## Design 
 
