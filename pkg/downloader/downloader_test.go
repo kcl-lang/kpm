@@ -40,7 +40,7 @@ func TestOciDownloader(t *testing.T) {
 				Repo: "zong-zhe/helloworld",
 				Tag:  "0.0.3",
 			},
-		})
+		}),
 		WithLocalPath(ociTestDir),
 	)
 
