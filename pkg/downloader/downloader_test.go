@@ -40,7 +40,7 @@ func TestOciDownloader(t *testing.T) {
 				Repo: "zong-zhe/helloworld",
 				Tag:  "0.0.3",
 			},
-		}),
+		})
 		WithLocalPath(ociTestDir),
 	)
 
@@ -73,3 +73,4 @@ func TestOciDownloader(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, false, utils.DirExists(filepath.Join(gitTestDir, "some_expected_file")))
 }
+
