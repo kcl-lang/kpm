@@ -170,7 +170,7 @@ func (d *GitDownloader) Download(opts DownloadOptions) error {
 		git.WithBranch(gitSource.Branch),
 		git.WithTag(gitSource.Tag),
 		git.WithRepoURL(gitSource.Url),
-		git.WithLocalPath(filepath.Join(opts.LocalPath, constants.GitEntry)),
+		git.WithLocalPath(opts.LocalPath),
 	)
 
 	if err != nil {
