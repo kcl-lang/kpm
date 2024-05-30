@@ -4,10 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"path/filepath"
 
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
-	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/oci"
 	pkg "kcl-lang.io/kpm/pkg/package"
