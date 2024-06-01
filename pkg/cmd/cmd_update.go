@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/dominikbraun/graph"
+	"github.com/elliotchance/orderedmap"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/mod/module"
 	"kcl-lang.io/kpm/pkg/client"
@@ -107,13 +108,13 @@ func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
 		return reporter.NewErrorEvent(reporter.FailedUpdatingBuildList, err, "failed to update build list")
 	}
 
-	// get all the vertices in the graph 
+	// get all the vertices in the graph
 	modules, err := graph.TopologicalSort(depGraph)
 	if err != nil {
 		return reporter.NewErrorEvent(reporter.FailedTopologicalSort, err, "failed to sort the dependencies")
 	}
 
-	kclPkg.ModFile.Dependencies.Deps = make(map[string]pkg.Dependency)
+	kclPkg.ModFile.Dependencies.Deps = orderedmap.NewOrderedMap[string, pkg.Dependency]()
 
 	for _, module := range modules {
 		err = InsertModuleToDeps(kclPkg, module, target, buildList, reqs)
@@ -131,8 +132,8 @@ func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
 
 // GetModulesToUpdate validates if the packages is present in kcl.mod file and
 // find the latest version if version is not specified. Depending on the value of pkgVersion,
-// modulesToUpgrade or modulesToDowngrade will be updated. 
-func GetModulesToUpdate(kclPkg *pkg.KclPkg, modulesToUpgrade []module.Version,  modulesToDowngrade []module.Version, pkgInfo string) error {
+// modulesToUpgrade or modulesToDowngrade will be updated.
+func GetModulesToUpdate(kclPkg *pkg.KclPkg, modulesToUpgrade []module.Version, modulesToDowngrade []module.Version, pkgInfo string) error {
 	pkgInfo = strings.TrimSpace(pkgInfo)
 	pkgName, pkgVersion, err := ParseOciPkgNameAndVersion(pkgInfo)
 	if err != nil {
@@ -141,7 +142,7 @@ func GetModulesToUpdate(kclPkg *pkg.KclPkg, modulesToUpgrade []module.Version,  
 
 	var dep pkg.Dependency
 	var ok bool
-	if dep, ok = kclPkg.Deps[pkgName]; !ok {
+	if dep, ok = kclPkg.Deps.Get(pkgName); !ok {
 		return err
 	}
 
@@ -172,9 +173,9 @@ func GetModulesToUpdate(kclPkg *pkg.KclPkg, modulesToUpgrade []module.Version,  
 	return nil
 }
 
-// InsertModuleToDeps checks whether module is present in the buildList and it is not the same as the target module, 
+// InsertModuleToDeps checks whether module is present in the buildList and it is not the same as the target module,
 // and inserts it to the dependencies of kclPkg
-func InsertModuleToDeps(kclPkg *pkg.KclPkg, module module.Version, target module.Version, buildList []module.Version, reqs mvs.ReqsGraph) (error) {
+func InsertModuleToDeps(kclPkg *pkg.KclPkg, module module.Version, target module.Version, buildList []module.Version, reqs mvs.ReqsGraph) error {
 	if module.Path == target.Path || !slices.Contains(buildList, module) {
 		return nil
 	}
@@ -194,6 +195,6 @@ func InsertModuleToDeps(kclPkg *pkg.KclPkg, module module.Version, target module
 			return reporter.NewErrorEvent(reporter.FailedGenerateSource, err, "failed to generate source")
 		}
 	}
-	kclPkg.ModFile.Dependencies.Deps[module.Path] = d
+	kclPkg.ModFile.Dependencies.Deps.Set(module.Path, d)
 	return nil
 }

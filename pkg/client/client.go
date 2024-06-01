@@ -10,6 +10,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/dominikbraun/graph"
+	"github.com/elliotchance/orderedmap"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/otiai10/copy"
 	"golang.org/x/mod/module"
@@ -117,9 +118,10 @@ func (c *KpmClient) LoadPkgFromPath(pkgPath string) (*pkg.KclPkg, error) {
 	}
 
 	// Align the dependencies between kcl.mod and kcl.mod.lock.
-	for name, dep := range modFile.Dependencies.Deps {
+	for _, name := range modFile.Dependencies.Deps.Keys() {
+		dep, _ := modFile.Dependencies.Deps.Get(name)
 		if dep.Local != nil {
-			if ldep, ok := deps.Deps[name]; ok {
+			if ldep, ok := deps.Deps.Get(name); ok {
 				var localFullPath string
 				if filepath.IsAbs(dep.Local.Path) {
 					localFullPath = dep.Local.Path
@@ -132,8 +134,8 @@ func (c *KpmClient) LoadPkgFromPath(pkgPath string) (*pkg.KclPkg, error) {
 				ldep.LocalFullPath = localFullPath
 				dep.LocalFullPath = localFullPath
 				ldep.Source = dep.Source
-				deps.Deps[name] = ldep
-				modFile.Dependencies.Deps[name] = dep
+				deps.Deps.Set(name, ldep)
+				modFile.Dependencies.Deps.Set(name, dep)
 			}
 		}
 	}
@@ -155,7 +157,7 @@ func (c *KpmClient) LoadModFile(pkgPath string) (*pkg.ModFile, error) {
 	modFile.HomePath = pkgPath
 
 	if modFile.Dependencies.Deps == nil {
-		modFile.Dependencies.Deps = make(map[string]pkg.Dependency)
+		modFile.Dependencies.Deps = orderedmap.NewOrderedMap[string, pkg.Dependency]()
 	}
 	err = c.FillDependenciesInfo(modFile)
 	if err != nil {
@@ -172,13 +174,14 @@ func (c *KpmClient) LoadLockDeps(pkgPath string) (*pkg.Dependencies, error) {
 		return nil, err
 	}
 
-	for name, dep := range deps.Deps {
+	for _, name := range deps.Deps.Keys() {
+		dep, _ := deps.Deps.Get(name)
 		sum, err := c.AcquireDepSum(dep)
 		if err != nil {
 			return nil, err
 		}
 		dep.Sum = sum
-		deps.Deps[name] = dep
+		deps.Deps.Set(name, dep)
 	}
 
 	return deps, nil
@@ -237,7 +240,8 @@ func (c *KpmClient) ResolveDepsIntoMap(kclPkg *pkg.KclPkg) (map[string]string, e
 		return nil, err
 	}
 	var pkgMap map[string]string = make(map[string]string)
-	for _, d := range depMetadatas.Deps {
+	for _, k := range depMetadatas.Deps.Keys() {
+		d, _ := depMetadatas.Deps.Get(k)
 		pkgMap[d.GetAliasName()] = d.GetLocalFullPath(kclPkg.HomePath)
 	}
 
@@ -309,15 +313,17 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 		// alian the dependencies between kcl.mod and kcl.mod.lock
 		// clean the dependencies in kcl.mod.lock which not in kcl.mod
 		// clean the dependencies in kcl.mod.lock and kcl.mod which have different version
-		for name, dep := range kclPkg.Dependencies.Deps {
-			modDep, ok := kclPkg.ModFile.Dependencies.Deps[name]
+		for _, name := range kclPkg.Dependencies.Deps.Keys() {
+			dep, _ := kclPkg.Dependencies.Deps.Get(name)
+			modDep, ok := kclPkg.ModFile.Dependencies.Deps.Get(name)
 			if !ok || !dep.Equals(modDep) {
-				delete(kclPkg.Dependencies.Deps, name)
+				kclPkg.Dependencies.Deps.Delete(name)
 			}
 		}
 		// add the dependencies in kcl.mod which not in kcl.mod.lock
-		for name, d := range kclPkg.ModFile.Dependencies.Deps {
-			if _, ok := kclPkg.Dependencies.Deps[name]; !ok {
+		for _, name := range kclPkg.ModFile.Dependencies.Deps.Keys() {
+			d, _ := kclPkg.ModFile.Dependencies.Deps.Get(name)
+			if _, ok := kclPkg.Dependencies.Deps.Get(name); !ok {
 				if len(d.Version) == 0 {
 					reporter.ReportMsgTo(
 						fmt.Sprintf("adding '%s'", name),
@@ -330,7 +336,7 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 					)
 				}
 
-				kclPkg.Dependencies.Deps[name] = d
+				kclPkg.Dependencies.Deps.Set(name, d)
 			}
 		}
 	} else {
@@ -339,7 +345,8 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 		kclPkg.Dependencies.Deps = kclPkg.ModFile.Dependencies.Deps
 	}
 
-	for name, d := range kclPkg.Dependencies.Deps {
+	for _, name := range kclPkg.Dependencies.Deps.Keys() {
+		d, _ := kclPkg.Dependencies.Deps.Get(name)
 		searchPath = c.getDepStorePath(kclPkg.HomePath, &d, kclPkg.IsVendorMode())
 		depPath := searchPath
 		// if the dependency is not exist
@@ -388,8 +395,8 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 		if err != nil {
 			return err
 		}
-		kclPkg.Dependencies.Deps[name] = d
-		lockDeps.Deps[name] = d
+		kclPkg.Dependencies.Deps.Set(name, d)
+		lockDeps.Deps.Set(name, d)
 	}
 
 	// Generate file kcl.mod.lock.
@@ -746,19 +753,19 @@ func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pk
 	// 3. update the kcl.mod and kcl.mod.lock.
 	if opt.NewPkgName != "" {
 		// update the kcl.mod with NewPkgName
-		tempDeps := kclPkg.ModFile.Dependencies.Deps[d.Name]
+		tempDeps, _ := kclPkg.ModFile.Dependencies.Deps.Get(d.Name)
 		tempDeps.Name = opt.NewPkgName
-		kclPkg.ModFile.Dependencies.Deps[d.Name] = tempDeps
+		kclPkg.ModFile.Dependencies.Deps.Set(d.Name, tempDeps)
 
 		// update the kcl.mod.lock with NewPkgName
-		tempDeps = kclPkg.Dependencies.Deps[d.Name]
+		tempDeps, _ = kclPkg.Dependencies.Deps.Get(d.Name)
 		tempDeps.Name = opt.NewPkgName
 		tempDeps.FullName = opt.NewPkgName + "_" + tempDeps.Version
-		kclPkg.Dependencies.Deps[d.Name] = tempDeps
+		kclPkg.Dependencies.Deps.Set(d.Name, tempDeps)
 
 		// update the key of kclPkg.Dependencies.Deps from d.Name to opt.NewPkgName
-		kclPkg.Dependencies.Deps[opt.NewPkgName] = kclPkg.Dependencies.Deps[d.Name]
-		delete(kclPkg.Dependencies.Deps, d.Name)
+		kclPkg.Dependencies.Deps.Set(opt.NewPkgName, kclPkg.Dependencies.Deps.GetOrDefault(d.Name, pkg.TestPkgDependency))
+		kclPkg.Dependencies.Deps.Delete(d.Name)
 	}
 
 	err = kclPkg.UpdateModAndLockFile()
@@ -788,9 +795,9 @@ func (c *KpmClient) AddDepToPkg(kclPkg *pkg.KclPkg, d *pkg.Dependency) error {
 
 	// Some field will be empty when the dependency is add from CLI.
 	// For avoiding re-download the dependency, just complete part of the fields not all of them.
-	if !kclPkg.ModFile.Dependencies.Deps[d.Name].Equals(*d) {
+	if !kclPkg.ModFile.Dependencies.Deps.GetOrDefault(d.Name, pkg.TestPkgDependency).Equals(*d) {
 		// the dep passed on the cli is different from the kcl.mod.
-		kclPkg.ModFile.Dependencies.Deps[d.Name] = *d
+		kclPkg.ModFile.Dependencies.Deps.Set(d.Name, *d)
 	}
 
 	// download all the dependencies.
@@ -851,9 +858,10 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 		return err
 	}
 
-	lockDeps := make([]pkg.Dependency, 0, len(kclPkg.Dependencies.Deps))
+	lockDeps := make([]pkg.Dependency, 0, kclPkg.Dependencies.Deps.Len())
 
-	for _, d := range kclPkg.Dependencies.Deps {
+	for _, k := range kclPkg.Dependencies.Deps.Keys() {
+		d, _ := kclPkg.Dependencies.Deps.Get(k)
 		lockDeps = append(lockDeps, d)
 	}
 
@@ -938,12 +946,13 @@ func (c *KpmClient) FillDepInfo(dep *pkg.Dependency, homepath string) error {
 
 // FillDependenciesInfo will fill registry information for all dependencies in a kcl.mod.
 func (c *KpmClient) FillDependenciesInfo(modFile *pkg.ModFile) error {
-	for k, v := range modFile.Deps {
+	for _, k := range modFile.Deps.Keys() {
+		v, _ := modFile.Deps.Get(k)
 		err := c.FillDepInfo(&v, modFile.HomePath)
 		if err != nil {
 			return err
 		}
-		modFile.Deps[k] = v
+		modFile.Deps.Set(k, v)
 	}
 	return nil
 }
@@ -1483,22 +1492,23 @@ func (c *KpmClient) dependencyExistsLocal(searchPath string, dep *pkg.Dependency
 func (c *KpmClient) DownloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependencies, depGraph graph.Graph[module.Version, module.Version], pkghome string, parent module.Version) (*pkg.Dependencies, error) {
 
 	newDeps := pkg.Dependencies{
-		Deps: make(map[string]pkg.Dependency),
+		Deps: orderedmap.NewOrderedMap[string, pkg.Dependency](),
 	}
 
 	// Traverse all dependencies in kcl.mod
-	for _, d := range deps.Deps {
+	for _, k := range deps.Deps.Keys() {
+		d, _ := deps.Deps.Get(k)
 		if len(d.Name) == 0 {
 			return nil, errors.InvalidDependency
 		}
 
 		existDep, err := c.dependencyExistsLocal(pkghome, &d)
 		if existDep != nil && err == nil {
-			newDeps.Deps[d.Name] = *existDep
+			newDeps.Deps.Set(d.Name, *existDep)
 			continue
 		}
 
-		expectedSum := lockDeps.Deps[d.Name].Sum
+		expectedSum := lockDeps.Deps.GetOrDefault(d.Name, pkg.TestPkgDependency).Sum
 		// Clean the cache
 		if len(c.homePath) == 0 || len(d.FullName) == 0 {
 			return nil, errors.InternalBug
@@ -1516,7 +1526,7 @@ func (c *KpmClient) DownloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependenc
 			return nil, err
 		}
 
-		if lockedDep.Oci != nil && lockedDep.Equals(lockDeps.Deps[d.Name]) {
+		if lockedDep.Oci != nil && lockedDep.Equals(lockDeps.Deps.GetOrDefault(d.Name, pkg.TestPkgDependency)) {
 			if !c.noSumCheck && expectedSum != "" &&
 				lockedDep.Sum != "" &&
 				lockedDep.Sum != expectedSum {
@@ -1528,17 +1538,18 @@ func (c *KpmClient) DownloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependenc
 			}
 		}
 
-		newDeps.Deps[d.Name] = *lockedDep
+		newDeps.Deps.Set(d.Name, *lockedDep)
 		// After downloading the dependency in kcl.mod, update the dep into to the kcl.mod
 		// Only the direct dependencies are updated to kcl.mod.
-		deps.Deps[d.Name] = *lockedDep
+		deps.Deps.Set(d.Name, *lockedDep)
 	}
 
 	// necessary to make a copy as when we are updating kcl.mod in below for loop
 	// then newDeps.Deps gets updated and range gets an extra value to iterate through
 	// this messes up the dependency graph
-	newDepsCopy := make(map[string]pkg.Dependency)
-	for k, v := range newDeps.Deps {
+	newDepsCopy := orderedmap.NewOrderedMap[string, pkg.Dependency]()
+	for _, k := range newDeps.Deps.Keys() {
+		v, _ := newDeps.Deps.Get(k)
 		newDepsCopy[k] = v
 	}
 
@@ -1587,17 +1598,19 @@ func (c *KpmClient) DownloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependenc
 			return nil, err
 		}
 
-		for _, d := range nested.Deps {
-			if _, ok := newDeps.Deps[d.Name]; !ok {
-				newDeps.Deps[d.Name] = d
+		for _, k := range nested.Deps.Keys() {
+			d, _ := nested.Deps.Get(k)
+			if _, ok := newDeps.Deps.Get(d.Name); !ok {
+				newDeps.Deps.Set(d.Name, d)
 			}
 		}
 	}
 
 	// After each dependency is downloaded, update all the new deps to kcl.mod.lock.
 	// No matter whether the dependency is directly or indirectly.
-	for k, v := range newDeps.Deps {
-		lockDeps.Deps[k] = v
+	for _, k := range newDeps.Deps.Keys() {
+		v, _ := newDeps.Deps.Get(k)
+		lockDeps.Deps.Set(k, v)
 	}
 
 	return &newDeps, nil

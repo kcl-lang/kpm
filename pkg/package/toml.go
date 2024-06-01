@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	orderedmap "github.com/elliotchance/orderedmap/v2"
 
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -61,9 +62,10 @@ const DEPS_PATTERN = "[dependencies]"
 
 func (dep *Dependencies) MarshalTOML() string {
 	var sb strings.Builder
-	if len(dep.Deps) != 0 {
+	if dep.Deps.Len() != 0 {
 		sb.WriteString(DEPS_PATTERN)
-		for _, dep := range dep.Deps {
+		for _, depKeys := range dep.Deps.Keys() {
+			dep, _ := dep.Deps.Get(depKeys)
 			sb.WriteString(NEWLINE)
 			sb.WriteString(dep.MarshalTOML())
 		}
@@ -207,7 +209,7 @@ func (mod *ModFile) UnmarshalTOML(data interface{}) error {
 
 	if v, ok := meta[DEPS_FLAG]; ok {
 		deps := Dependencies{
-			Deps: make(map[string]Dependency),
+			Deps: orderedmap.NewOrderedMap[string, Dependency](),
 		}
 		err := deps.UnmarshalModTOML(v)
 		if err != nil {
@@ -294,7 +296,7 @@ func (deps *Dependencies) UnmarshalModTOML(data interface{}) error {
 		if err != nil {
 			return err
 		}
-		deps.Deps[k] = dep
+		deps.Deps.Set(k, dep)
 	}
 
 	return nil

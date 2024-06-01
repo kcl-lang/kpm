@@ -105,6 +105,8 @@ const (
 	DownloadingFromGit
 	LocalPathNotExist
 	PathIsEmpty
+	DependencyNotFoundInOrderedMap
+	DependencyNotSetInOrderedMap
 	ConflictPkgName
 	AddItselfAsDep
 	PkgTagExists

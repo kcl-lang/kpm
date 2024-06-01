@@ -55,6 +55,7 @@ require (
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
+	github.com/elliotchance/orderedmap/v2 v2.2.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -153,6 +154,7 @@ require (
 
 require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
+	github.com/elliotchance/orderedmap v1.6.0
 	github.com/go-git/go-git/v5 v5.11.0
 	github.com/gofrs/flock v0.8.1
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
