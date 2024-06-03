@@ -19,58 +19,58 @@ func getTestDir(subDir string) string {
 
 	return testDir
 }
+
 func TestOciDownloader(t *testing.T) {
-	ociTestDir := getTestDir("oci_test_dir")
-	if err := os.MkdirAll(ociTestDir, os.ModePerm); err != nil {
-		t.Fatal(err)
-	}
+    path_oci := getTestDir("test_oci")
+    if err := os.MkdirAll(path_oci, os.ModePerm); err != nil {
+        t.Fatal(err)
+    }
 
-	defer func() {
-		_ = os.RemoveAll(ociTestDir)
-	}()
+    defer func() {
+        _ = os.RemoveAll(path_oci)
+    }()
 
-	downloader := OciDownloader{
-		Platform: "linux/amd64",
-	}
+    ociDownloader := OciDownloader{
+        Platform: "linux/amd64",
+    }
 
-	options := NewDownloadOptions(
-		WithSource(pkg.Source{
-			Oci: &pkg.Oci{
-				Reg:  "ghcr.io",
-				Repo: "zong-zhe/helloworld",
-				Tag:  "0.0.3",
-			},
-		}),
-		WithLocalPath(ociTestDir),
-	)
+    err := ociDownloader.Download(*NewDownloadOptions(
+        WithSource(pkg.Source{
+            Oci: &pkg.Oci{
+                Reg:  "ghcr.io",
+                Repo: "zong-zhe/helloworld",
+                Tag:  "0.0.3",
+            },
+        }),
+        WithLocalPath(path_oci),
+    ))
 
-	err := downloader.Download(*options)
-
-	assert.Equal(t, err, nil)
-	assert.Equal(t, true, utils.DirExists(filepath.Join(ociTestDir, "artifact.tgz")))
-
-	gitTestDir := getTestDir("git_test_dir")
-	if err := os.MkdirAll(gitTestDir, os.ModePerm); err != nil {
-		t.Fatal(err)
-	}
-
-	defer func() {
-		_ = os.RemoveAll(gitTestDir)
-	}()
-
-	gitDownloader := GitDownloader{}
-
-	err = gitDownloader.Download(*NewDownloadOptions(
-		WithSource(pkg.Source{
-			Git: &pkg.Git{
-				Url:    "https://github.com/kcl-lang/flask-demo-kcl-manifests.git",
-				Commit: "ade147b",
-			},
-		}),
-		WithLocalPath(gitTestDir),
-	))
-
-	assert.Equal(t, err, nil)
-	assert.Equal(t, false, utils.DirExists(filepath.Join(gitTestDir, "some_expected_file")))
+    assert.Equal(t, err, nil)
+    assert.Equal(t, true, utils.DirExists(filepath.Join(path_oci, "artifact.tgz")))
 }
 
+func TestGitDownloader(t *testing.T) {
+    path_git := getTestDir("test_git")
+    if err := os.MkdirAll(path_git, os.ModePerm); err != nil {
+        t.Fatal(err)
+    }
+
+    defer func() {
+        _ = os.RemoveAll(path_git)
+    }()
+
+    gitDownloader := GitDownloader{}
+
+    err := gitDownloader.Download(*NewDownloadOptions(
+        WithSource(pkg.Source{
+            Git: &pkg.Git{
+                Url:    "https://github.com/kcl-lang/flask-demo-kcl-manifests.git",
+                Commit: "ade147b",
+            },
+        }),
+        WithLocalPath(path_git),
+    ))
+
+    assert.Equal(t, err, nil)
+    assert.Equal(t, true, utils.DirExists(filepath.Join(path_git, "flask-demo-kcl-manifests")))
+}
