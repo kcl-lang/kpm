@@ -21,53 +21,56 @@ func getTestDir(subDir string) string {
 }
 
 func TestOciDownloader(t *testing.T) {
-	path_oci := getTestDir("test_oci")
-	if err := os.MkdirAll(path_oci, os.ModePerm); err != nil {
-		t.Fatal(err)
-	}
+    path_oci := getTestDir("test_oci")
+    if err := os.MkdirAll(path_oci, os.ModePerm); err != nil {
+        t.Fatal(err)
+    }
 
-	defer func() {
-		_ = os.RemoveAll(path_oci)
-	}()
+    defer func() {
+        _ = os.RemoveAll(path_oci)
+    }()
 
-	ociDownloader := OciDownloader{
-		Platform: "linux/amd64",
-	}
+    ociDownloader := OciDownloader{
+        Platform: "linux/amd64",
+    }
 
-	err := ociDownloader.Download(*NewDownloadOptions(
-		WithSource(pkg.Source{
-			Oci: &pkg.Oci{
-				Reg:  "ghcr.io",
-				Repo: "zong-zhe/helloworld",
-				Tag:  "0.0.3",
-			},
-		}),
-		WithLocalPath(path_oci),
-	))
+    err := ociDownloader.Download(*NewDownloadOptions(
+        WithSource(pkg.Source{
+            Oci: &pkg.Oci{
+                Reg:  "ghcr.io",
+                Repo: "zong-zhe/helloworld",
+                Tag:  "0.0.3",
+            },
+        }),
+        WithLocalPath(path_oci),
+    ))
 
-	assert.Equal(t, err, nil)
-	assert.Equal(t, true, utils.DirExists(filepath.Join(path_oci, "artifact.tgz")))
+    assert.Equal(t, err, nil)
+    assert.Equal(t, true, utils.DirExists(filepath.Join(path_oci, "artifact.tgz")))
+}
 
-	path_git := getTestDir("test_git")
-	if err := os.MkdirAll(path_oci, os.ModePerm); err != nil {
-		t.Fatal(err)
-	}
+func TestGitDownloader(t *testing.T) {
+    path_git := getTestDir("test_git")
+    if err := os.MkdirAll(path_git, os.ModePerm); err != nil {
+        t.Fatal(err)
+    }
 
-	defer func() {
-		_ = os.RemoveAll(path_git)
-	}()
+    defer func() {
+        _ = os.RemoveAll(path_git)
+    }()
 
-	gitDownloader := GitDownloader{}
+    gitDownloader := GitDownloader{}
 
-	err = gitDownloader.Download(*NewDownloadOptions(
-		WithSource(pkg.Source{
-			Git: &pkg.Git{
-				Url:    "https://github.com/kcl-lang/flask-demo-kcl-manifests.git",
-				Commit: "ade147b",
-			},
-		}),
-		WithLocalPath(path_git),
-	))
+    err := gitDownloader.Download(*NewDownloadOptions(
+        WithSource(pkg.Source{
+            Git: &pkg.Git{
+                Url:    "https://github.com/kcl-lang/flask-demo-kcl-manifests.git",
+                Commit: "ade147b",
+            },
+        }),
+        WithLocalPath(path_git),
+    ))
 
-	assert.Equal(t, err, nil)
+    assert.Equal(t, err, nil)
+    assert.Equal(t, true, utils.DirExists(filepath.Join(path_git, "flask-demo-kcl-manifests")))
 }
