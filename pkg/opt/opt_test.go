@@ -3,6 +3,7 @@
 package opt
 
 import (
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,7 +33,7 @@ func TestInitOptions(t *testing.T) {
 	assert.Equal(t, o3.Validate(), errors.InvalidVersionFormat)
 }
 
-func TestNewOciOptionsFromRef(t *testing.T) {
+func TestNewRegistryOptionsFromRef(t *testing.T) {
 	ref := "test:latest"
 	settings := settings.GetSettings()
 	opts, err := NewRegistryOptionsFrom(ref, settings)
@@ -61,4 +62,27 @@ func TestNewOciOptionsFromRef(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, opts.Git.Branch, "main")
 	assert.Equal(t, opts.Git.Url, "github.com/kcl-lang/test1")
+}
+
+func TestNewOciOptions(t *testing.T) {
+	parsedUrl, err := url.Parse("oci://docker.io/kcllang/test1?tag=0.0.1")
+	assert.Equal(t, err, nil)
+	ociOptions := NewOciOptionsFromUrl(parsedUrl)
+	assert.Equal(t, ociOptions.Tag, "0.0.1")
+	assert.Equal(t, ociOptions.Repo, "/kcllang/test1")
+	assert.Equal(t, ociOptions.Reg, "docker.io")
+
+	parsedUrl, err = url.Parse("http://docker.io/kcllang/test1?tag=0.0.1")
+	assert.Equal(t, err, nil)
+	ociOptions = NewOciOptionsFromUrl(parsedUrl)
+	assert.Equal(t, ociOptions.Tag, "0.0.1")
+	assert.Equal(t, ociOptions.Repo, "/kcllang/test1")
+	assert.Equal(t, ociOptions.Reg, "docker.io")
+
+	parsedUrl, err = url.Parse("https://docker.io/kcllang/test1?tag=0.0.1")
+	assert.Equal(t, err, nil)
+	ociOptions = NewOciOptionsFromUrl(parsedUrl)
+	assert.Equal(t, ociOptions.Tag, "0.0.1")
+	assert.Equal(t, ociOptions.Repo, "/kcllang/test1")
+	assert.Equal(t, ociOptions.Reg, "docker.io")
 }
