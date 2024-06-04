@@ -960,7 +960,7 @@ func TestAddWithNoSumCheck(t *testing.T) {
 		RegistryOpts: opt.RegistryOptions{
 			Oci: &opt.OciOptions{
 				Reg:     "ghcr.io",
-				Repo:    "kcl-lang",
+				Repo:    "kcl-lang/helloworld",
 				PkgName: "helloworld",
 				Tag:     "0.1.0",
 			},
@@ -1102,7 +1102,7 @@ func TestAddWithDiffVersionNoSumCheck(t *testing.T) {
 		RegistryOpts: opt.RegistryOptions{
 			Oci: &opt.OciOptions{
 				Reg:     "ghcr.io",
-				Repo:    "kcl-lang",
+				Repo:    "kcl-lang/helloworld",
 				PkgName: "helloworld",
 				Tag:     "0.1.2",
 			},
@@ -1166,7 +1166,7 @@ func TestAddWithDiffVersionWithSumCheck(t *testing.T) {
 		RegistryOpts: opt.RegistryOptions{
 			Oci: &opt.OciOptions{
 				Reg:     "ghcr.io",
-				Repo:    "kcl-lang",
+				Repo:    "kcl-lang/helloworld",
 				PkgName: "helloworld",
 				Tag:     "0.1.2",
 			},
@@ -1346,7 +1346,7 @@ func TestAddWithLocalPath(t *testing.T) {
 		RegistryOpts: opt.RegistryOptions{
 			Oci: &opt.OciOptions{
 				Reg:     "ghcr.io",
-				Repo:    "kcl-lang",
+				Repo:    "kcl-lang/helloworld",
 				PkgName: "helloworld",
 				Tag:     "0.1.1",
 			},
