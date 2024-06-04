@@ -196,6 +196,15 @@ type RegistryOptions struct {
 }
 
 // NewRegistryOptionsFrom will parse the registry options from oci url, oci ref and git url.
+// If you do not know the url of the package is git or url, you can use this function to parse the options.
+// By default:
+// 'git://', "https://", "http://" will be parsed as git options.
+// 'oci://', will be parsed as oci options.
+// 'file://' or a file path will be parsed as local options.
+//
+// If you know the url is git or oci, you can use 'NewGitOptionsFromUrl' or 'NewOciOptionsFromUrl' to parse the options.
+// 'oci' and 'http', 'https' are supported for 'NewOciOptionsFromUrl'.
+// 'git', 'http', 'https', 'ssh' are supported for 'NewGitOptionsFromUrl'.
 func NewRegistryOptionsFrom(rawUrlorOciRef string, settings *settings.Settings) (*RegistryOptions, error) {
 	parsedUrl, err := url.Parse(rawUrlorOciRef)
 	if err != nil {
@@ -203,37 +212,48 @@ func NewRegistryOptionsFrom(rawUrlorOciRef string, settings *settings.Settings) 
 	}
 
 	// parse the options from the local file path
-	localOptions, err := NewLocalOptionsFromUrl(parsedUrl)
-	if localOptions != nil && err == (*reporter.KpmEvent)(nil) {
-		return &RegistryOptions{
-			Local: localOptions,
-		}, nil
+	if parsedUrl.Scheme == "" || parsedUrl.Scheme == constants.FileEntry {
+		localOptions, err := NewLocalOptionsFromUrl(parsedUrl)
+		if localOptions != nil && err == (*reporter.KpmEvent)(nil) {
+			return &RegistryOptions{
+				Local: localOptions,
+			}, nil
+		}
 	}
 
 	// parse the options from the git url
 	// https, http, git and ssh are supported
-	gitOptions := NewGitOptionsFromUrl(parsedUrl)
+	if parsedUrl.Scheme == constants.GitScheme ||
+		parsedUrl.Scheme == constants.HttpScheme ||
+		parsedUrl.Scheme == constants.HttpsScheme ||
+		parsedUrl.Scheme == constants.SshScheme {
+		gitOptions := NewGitOptionsFromUrl(parsedUrl)
 
-	if gitOptions != nil {
-		return &RegistryOptions{
-			Git: gitOptions,
-		}, nil
+		if gitOptions != nil {
+			return &RegistryOptions{
+				Git: gitOptions,
+			}, nil
+		}
 	}
 
 	// parse the options from the oci url
 	// oci is supported
-	ociOptions := NewOciOptionsFromUrl(parsedUrl)
-	if ociOptions == nil {
-		ociOptions, err = NewOciOptionsFromRef(rawUrlorOciRef, settings)
-		if err != nil {
-			return nil, err
+	if parsedUrl.Scheme == constants.OciScheme ||
+		parsedUrl.Scheme == constants.HttpScheme ||
+		parsedUrl.Scheme == constants.HttpsScheme {
+		ociOptions := NewOciOptionsFromUrl(parsedUrl)
+		if ociOptions == nil {
+			ociOptions, err = NewOciOptionsFromRef(rawUrlorOciRef, settings)
+			if err != nil {
+				return nil, err
+			}
 		}
-	}
 
-	if ociOptions != nil {
-		return &RegistryOptions{
-			Oci: ociOptions,
-		}, nil
+		if ociOptions != nil {
+			return &RegistryOptions{
+				Oci: ociOptions,
+			}, nil
+		}
 	}
 
 	return nil, fmt.Errorf("invalid dependencies source: %s", rawUrlorOciRef)
@@ -242,13 +262,9 @@ func NewRegistryOptionsFrom(rawUrlorOciRef string, settings *settings.Settings) 
 // NewGitOptionsFromUrl will parse the git options from the git url.
 // https, http, git and ssh are supported.
 func NewGitOptionsFromUrl(parsedUrl *url.URL) *GitOptions {
-	if parsedUrl.Scheme != constants.GitScheme &&
-		parsedUrl.Scheme != constants.HttpScheme &&
-		parsedUrl.Scheme != constants.HttpsScheme &&
-		parsedUrl.Scheme != constants.SshScheme {
+	if parsedUrl.Scheme == "" {
 		return nil
 	}
-
 	return &GitOptions{
 		Url:    parsedUrl.Host + parsedUrl.Path,
 		Branch: parsedUrl.Query().Get(constants.GitBranch),
@@ -258,12 +274,11 @@ func NewGitOptionsFromUrl(parsedUrl *url.URL) *GitOptions {
 }
 
 // NewOciOptionsFromUrl will parse the oci options from the oci url.
-// oci is supported.
+// https, http, oci is supported.
 func NewOciOptionsFromUrl(parsedUrl *url.URL) *OciOptions {
-	if parsedUrl.Scheme != constants.OciScheme {
+	if parsedUrl.Scheme == "" {
 		return nil
 	}
-
 	return &OciOptions{
 		Reg:     parsedUrl.Host,
 		Repo:    parsedUrl.Path,
@@ -308,10 +323,7 @@ func NewOciOptionsFromRef(refStr string, settings *settings.Settings) (*OciOptio
 // NewLocalOptionsFromUrl will parse the local options from the local path.
 // scheme 'file' and only path is supported.
 func NewLocalOptionsFromUrl(parsedUrl *url.URL) (*LocalOptions, error) {
-	if parsedUrl.Scheme == "" || parsedUrl.Scheme == constants.FileEntry {
-		return ParseLocalPathOptions(parsedUrl.Path)
-	}
-	return nil, nil
+	return ParseLocalPathOptions(parsedUrl.Path)
 }
 
 // parseOciPkgNameAndVersion will parse package name and version
