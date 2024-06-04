@@ -242,18 +242,24 @@ func NewRegistryOptionsFrom(rawUrlorOciRef string, settings *settings.Settings) 
 		parsedUrl.Scheme == constants.HttpScheme ||
 		parsedUrl.Scheme == constants.HttpsScheme {
 		ociOptions := NewOciOptionsFromUrl(parsedUrl)
-		if ociOptions == nil {
-			ociOptions, err = NewOciOptionsFromRef(rawUrlorOciRef, settings)
-			if err != nil {
-				return nil, err
-			}
-		}
 
 		if ociOptions != nil {
 			return &RegistryOptions{
 				Oci: ociOptions,
 			}, nil
 		}
+	}
+
+	// If all the url are invalid, try to parse the options from the oci ref.
+	ociOptions, err := NewOciOptionsFromRef(rawUrlorOciRef, settings)
+	if err != nil {
+		return nil, err
+	}
+
+	if ociOptions != nil {
+		return &RegistryOptions{
+			Oci: ociOptions,
+		}, nil
 	}
 
 	return nil, fmt.Errorf("invalid dependencies source: %s", rawUrlorOciRef)
