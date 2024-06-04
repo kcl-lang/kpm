@@ -196,7 +196,7 @@ type RegistryOptions struct {
 }
 
 // NewRegistryOptionsFrom will parse the registry options from oci url, oci ref and git url.
-// If you do not know the url of the package is git or url, you can use this function to parse the options.
+// If you do not know the url of the package is git or oci, you can use this function to parse the options.
 // By default:
 // 'git://', "https://", "http://" will be parsed as git options.
 // 'oci://', will be parsed as oci options.
