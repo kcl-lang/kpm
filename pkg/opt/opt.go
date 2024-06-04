@@ -286,7 +286,7 @@ func NewOciOptionsFromRef(refStr string, settings *settings.Settings) (*OciOptio
 		if err != nil {
 			return nil, err
 		}
-		repo = filepath.Join(repo, pkgName)
+		repo = fmt.Sprintf("%s/%s", repo, pkgName)
 	} else {
 		reg = ref.Registry
 		repo = ref.Repository
