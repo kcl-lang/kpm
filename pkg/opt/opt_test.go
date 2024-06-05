@@ -51,17 +51,22 @@ func TestNewRegistryOptionsFromRef(t *testing.T) {
 	opts, err = NewRegistryOptionsFrom("ssh://github.com/kcl-lang/test1?tag=0.0.1", settings)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, opts.Git.Tag, "0.0.1")
-	assert.Equal(t, opts.Git.Url, "github.com/kcl-lang/test1")
+	assert.Equal(t, opts.Git.Url, "ssh://github.com/kcl-lang/test1")
 
 	opts, err = NewRegistryOptionsFrom("http://github.com/kcl-lang/test1?commit=123456", settings)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, opts.Git.Commit, "123456")
-	assert.Equal(t, opts.Git.Url, "github.com/kcl-lang/test1")
+	assert.Equal(t, opts.Git.Url, "http://github.com/kcl-lang/test1")
 
 	opts, err = NewRegistryOptionsFrom("https://github.com/kcl-lang/test1?branch=main", settings)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, opts.Git.Branch, "main")
-	assert.Equal(t, opts.Git.Url, "github.com/kcl-lang/test1")
+	assert.Equal(t, opts.Git.Url, "https://github.com/kcl-lang/test1")
+
+	opts, err = NewRegistryOptionsFrom("git://github.com/kcl-lang/test1?branch=main", settings)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, opts.Git.Branch, "main")
+	assert.Equal(t, opts.Git.Url, "https://github.com/kcl-lang/test1")
 }
 
 func TestNewOciOptions(t *testing.T) {
