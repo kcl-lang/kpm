@@ -268,11 +268,7 @@ func NewRegistryOptionsFrom(rawUrlorOciRef string, settings *settings.Settings) 
 // NewGitOptionsFromUrl will parse the git options from the git url.
 // https, http, git and ssh are supported.
 func NewGitOptionsFromUrl(parsedUrl *url.URL) *GitOptions {
-	if parsedUrl.Scheme == "" {
-		return nil
-	}
-
-	if parsedUrl.Scheme == constants.GitScheme {
+	if parsedUrl.Scheme == "" || parsedUrl.Scheme == constants.GitScheme {
 		// go-getter do not supports git scheme, so we need to convert it to https scheme.
 		parsedUrl.Scheme = constants.HttpsScheme
 	}
@@ -297,7 +293,7 @@ func NewGitOptionsFromUrl(parsedUrl *url.URL) *GitOptions {
 // https, http, oci is supported.
 func NewOciOptionsFromUrl(parsedUrl *url.URL) *OciOptions {
 	if parsedUrl.Scheme == "" {
-		return nil
+		parsedUrl.Scheme = constants.HttpsScheme
 	}
 	return &OciOptions{
 		Reg:     parsedUrl.Host,
