@@ -271,11 +271,25 @@ func NewGitOptionsFromUrl(parsedUrl *url.URL) *GitOptions {
 	if parsedUrl.Scheme == "" {
 		return nil
 	}
+
+	if parsedUrl.Scheme == constants.GitScheme {
+		// go-getter do not supports git scheme, so we need to convert it to https scheme.
+		parsedUrl.Scheme = constants.HttpsScheme
+	}
+
+	commit := parsedUrl.Query().Get(constants.GitCommit)
+	branch := parsedUrl.Query().Get(constants.GitBranch)
+	tag := parsedUrl.Query().Get(constants.Tag)
+
+	// clean the query in git url
+	parsedUrl.RawQuery = ""
+	url := parsedUrl.String()
+
 	return &GitOptions{
-		Url:    parsedUrl.Host + parsedUrl.Path,
-		Branch: parsedUrl.Query().Get(constants.GitBranch),
-		Tag:    parsedUrl.Query().Get(constants.Tag),
-		Commit: parsedUrl.Query().Get(constants.GitCommit),
+		Url:    url,
+		Branch: branch,
+		Commit: commit,
+		Tag:    tag,
 	}
 }
 
