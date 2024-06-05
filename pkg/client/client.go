@@ -1001,6 +1001,12 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		}
 
 		// rename the tmp dir to the local path.
+		if utils.DirExists(localPath) {
+			err := os.RemoveAll(localPath)
+			if err != nil {
+				return nil, err
+			}
+		}
 		err = os.Rename(tmpDir, localPath)
 		if err != nil {
 			return nil, err
