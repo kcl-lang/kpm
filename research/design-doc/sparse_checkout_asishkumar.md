@@ -29,7 +29,7 @@ The subdir is a list because in the future if user wants to add another subdir f
 
 The path to the directory will be passed to `CloneOptions` in [pkg/git/git.go](https://github.com/kcl-lang/kpm/blob/d20b1acdc988f600c8f8465ecd9fe04225e19149/pkg/git/git.go#L19) as subdir.  
 
-As mentioned in the [go-getter](https://pkg.go.dev/github.com/hashicorp/go-getter#readme-subdirectories) docs, we can append our subdir from `CloneOptions` (only if subdir is not empty) in `WithRepoURL` function. 
+As mentioned in the [go-getter](https://pkg.go.dev/github.com/hashicorp/go-getter#readme-subdirectories) docs, we can append our subdir from `CloneOptions` (only if subdir is not empty) in `WithRepoURL` function.  
 
 ## References 
 
