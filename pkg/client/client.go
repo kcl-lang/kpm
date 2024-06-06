@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -1007,9 +1008,17 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 				return nil, err
 			}
 		}
-		err = os.Rename(tmpDir, localPath)
-		if err != nil {
-			return nil, err
+
+		if runtime.GOOS != "windows" {
+			err = os.Rename(tmpDir, localPath)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			err = copy.Copy(tmpDir, localPath)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		// load the package from the local path.
