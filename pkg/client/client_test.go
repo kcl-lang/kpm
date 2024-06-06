@@ -1444,6 +1444,9 @@ func TestOciDownloader(t *testing.T) {
 	// make test case running in order to test the log output
 	testRunWithOciDownloader(t)
 	testAddWithOciDownloader(t)
+	testAddDefaultRegistryDep(t)
+	testUpdateDefaultRegistryDep(t)
+	testRunDefaultRegistryDep(t)
 }
 
 func testAddWithOciDownloader(t *testing.T) {
@@ -1538,5 +1541,181 @@ func TestAddLocalPath(t *testing.T) {
 	defer func() {
 		_ = os.Remove(filepath.Join(path, "kcl.mod.lock"))
 		_ = os.Remove(filepath.Join(path, "kcl.mod"))
+	}()
+}
+
+func testAddDefaultRegistryDep(t *testing.T) {
+	pkgPath := getTestDir("add_with_default_dep")
+
+	pkgWithSumCheckPathModBak := filepath.Join(pkgPath, "kcl.mod.bak")
+	pkgWithSumCheckPathMod := filepath.Join(pkgPath, "kcl.mod")
+	pkgWithSumCheckPathModExpect := filepath.Join(pkgPath, "kcl.mod.expect")
+
+	pkgWithSumCheckPathModLockBak := filepath.Join(pkgPath, "kcl.mod.lock.bak")
+	pkgWithSumCheckPathModLock := filepath.Join(pkgPath, "kcl.mod.lock")
+	pkgWithSumCheckPathModLockExpect := filepath.Join(pkgPath, "kcl.mod.lock.expect")
+
+	err := copy.Copy(pkgWithSumCheckPathModBak, pkgWithSumCheckPathMod)
+	assert.Equal(t, err, nil)
+	err = copy.Copy(pkgWithSumCheckPathModLockBak, pkgWithSumCheckPathModLock)
+	assert.Equal(t, err, nil)
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	kclPkg, err := kpmcli.LoadPkgFromPath(pkgPath)
+	assert.Equal(t, err, nil)
+
+	opts := opt.AddOptions{
+		LocalPath: pkgPath,
+		RegistryOpts: opt.RegistryOptions{
+			Registry: &opt.OciOptions{
+				Reg:     "ghcr.io",
+				Repo:    "kcl-lang/helloworld",
+				PkgName: "helloworld",
+				Tag:     "0.1.2",
+			},
+		},
+	}
+
+	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
+	assert.Equal(t, err, nil)
+
+	modContent, err := os.ReadFile(pkgWithSumCheckPathMod)
+	modContentStr := strings.ReplaceAll(string(modContent), "\r\n", "")
+	modContentStr = strings.ReplaceAll(modContentStr, "\n", "")
+	assert.Equal(t, err, nil)
+
+	modExpectContent, err := os.ReadFile(pkgWithSumCheckPathModExpect)
+	modExpectContentStr := strings.ReplaceAll(string(modExpectContent), "\r\n", "")
+	modExpectContentStr = strings.ReplaceAll(modExpectContentStr, "\n", "")
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, modContentStr, modExpectContentStr)
+
+	modLockContent, err := os.ReadFile(pkgWithSumCheckPathModLock)
+	modLockContentStr := strings.ReplaceAll(string(modLockContent), "\r\n", "")
+	modLockContentStr = strings.ReplaceAll(modLockContentStr, "\n", "")
+	assert.Equal(t, err, nil)
+	modLockExpectContent, err := os.ReadFile(pkgWithSumCheckPathModLockExpect)
+	modLockExpectContentStr := strings.ReplaceAll(string(modLockExpectContent), "\r\n", "")
+	modLockExpectContentStr = strings.ReplaceAll(modLockExpectContentStr, "\n", "")
+	assert.Equal(t, err, nil)
+	assert.Equal(t, modLockContentStr, modLockExpectContentStr)
+
+	defer func() {
+		_ = os.Remove(pkgWithSumCheckPathMod)
+		_ = os.Remove(pkgWithSumCheckPathModLock)
+	}()
+}
+
+func testUpdateDefaultRegistryDep(t *testing.T) {
+	pkgPath := getTestDir("update_with_default_dep")
+
+	pkgWithSumCheckPathModBak := filepath.Join(pkgPath, "kcl.mod.bak")
+	pkgWithSumCheckPathMod := filepath.Join(pkgPath, "kcl.mod")
+	pkgWithSumCheckPathModExpect := filepath.Join(pkgPath, "kcl.mod.expect")
+
+	pkgWithSumCheckPathModLockBak := filepath.Join(pkgPath, "kcl.mod.lock.bak")
+	pkgWithSumCheckPathModLock := filepath.Join(pkgPath, "kcl.mod.lock")
+	pkgWithSumCheckPathModLockExpect := filepath.Join(pkgPath, "kcl.mod.lock.expect")
+
+	err := copy.Copy(pkgWithSumCheckPathModBak, pkgWithSumCheckPathMod)
+	assert.Equal(t, err, nil)
+	err = copy.Copy(pkgWithSumCheckPathModLockBak, pkgWithSumCheckPathModLock)
+	assert.Equal(t, err, nil)
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	kclPkg, err := kpmcli.LoadPkgFromPath(pkgPath)
+	assert.Equal(t, err, nil)
+
+	err = kpmcli.UpdateDeps(kclPkg)
+	assert.Equal(t, err, nil)
+
+	modContent, err := os.ReadFile(pkgWithSumCheckPathMod)
+	modContentStr := strings.ReplaceAll(string(modContent), "\r\n", "")
+	modContentStr = strings.ReplaceAll(modContentStr, "\n", "")
+	assert.Equal(t, err, nil)
+
+	modExpectContent, err := os.ReadFile(pkgWithSumCheckPathModExpect)
+	modExpectContentStr := strings.ReplaceAll(string(modExpectContent), "\r\n", "")
+	modExpectContentStr = strings.ReplaceAll(modExpectContentStr, "\n", "")
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, modContentStr, modExpectContentStr)
+
+	modLockContent, err := os.ReadFile(pkgWithSumCheckPathModLock)
+	modLockContentStr := strings.ReplaceAll(string(modLockContent), "\r\n", "")
+	modLockContentStr = strings.ReplaceAll(modLockContentStr, "\n", "")
+	assert.Equal(t, err, nil)
+	modLockExpectContent, err := os.ReadFile(pkgWithSumCheckPathModLockExpect)
+	modLockExpectContentStr := strings.ReplaceAll(string(modLockExpectContent), "\r\n", "")
+	modLockExpectContentStr = strings.ReplaceAll(modLockExpectContentStr, "\n", "")
+	assert.Equal(t, err, nil)
+	assert.Equal(t, modLockContentStr, modLockExpectContentStr)
+
+	defer func() {
+		_ = os.Remove(pkgWithSumCheckPathMod)
+		_ = os.Remove(pkgWithSumCheckPathModLock)
+	}()
+}
+
+func testRunDefaultRegistryDep(t *testing.T) {
+	pkgPath := getTestDir("run_with_default_dep")
+
+	pkgWithSumCheckPathModBak := filepath.Join(pkgPath, "kcl.mod.bak")
+	pkgWithSumCheckPathMod := filepath.Join(pkgPath, "kcl.mod")
+	pkgWithSumCheckPathModExpect := filepath.Join(pkgPath, "kcl.mod.expect")
+
+	pkgWithSumCheckPathModLockBak := filepath.Join(pkgPath, "kcl.mod.lock.bak")
+	pkgWithSumCheckPathModLock := filepath.Join(pkgPath, "kcl.mod.lock")
+	pkgWithSumCheckPathModLockExpect := filepath.Join(pkgPath, "kcl.mod.lock.expect")
+
+	err := copy.Copy(pkgWithSumCheckPathModBak, pkgWithSumCheckPathMod)
+	assert.Equal(t, err, nil)
+	err = copy.Copy(pkgWithSumCheckPathModLockBak, pkgWithSumCheckPathModLock)
+	assert.Equal(t, err, nil)
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	kclPkg, err := kpmcli.LoadPkgFromPath(pkgPath)
+	assert.Equal(t, err, nil)
+
+	opts := opt.DefaultCompileOptions()
+	opts.Merge(kcl.WithWorkDir(pkgPath)).Merge(kcl.WithKFilenames(filepath.Join(pkgPath, "main.k")))
+	compiler := runner.NewCompilerWithOpts(opts)
+
+	res, err := kpmcli.Compile(kclPkg, compiler)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, res.GetRawYamlResult(), "a: Hello World!")
+
+	modContent, err := os.ReadFile(pkgWithSumCheckPathMod)
+	modContentStr := strings.ReplaceAll(string(modContent), "\r\n", "")
+	modContentStr = strings.ReplaceAll(modContentStr, "\n", "")
+	assert.Equal(t, err, nil)
+
+	modExpectContent, err := os.ReadFile(pkgWithSumCheckPathModExpect)
+	modExpectContentStr := strings.ReplaceAll(string(modExpectContent), "\r\n", "")
+	modExpectContentStr = strings.ReplaceAll(modExpectContentStr, "\n", "")
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, modContentStr, modExpectContentStr)
+
+	modLockContent, err := os.ReadFile(pkgWithSumCheckPathModLock)
+	modLockContentStr := strings.ReplaceAll(string(modLockContent), "\r\n", "")
+	modLockContentStr = strings.ReplaceAll(modLockContentStr, "\n", "")
+	assert.Equal(t, err, nil)
+	modLockExpectContent, err := os.ReadFile(pkgWithSumCheckPathModLockExpect)
+	modLockExpectContentStr := strings.ReplaceAll(string(modLockExpectContent), "\r\n", "")
+	modLockExpectContentStr = strings.ReplaceAll(modLockExpectContentStr, "\n", "")
+	assert.Equal(t, err, nil)
+	assert.Equal(t, modLockContentStr, modLockExpectContentStr)
+
+	defer func() {
+		_ = os.Remove(pkgWithSumCheckPathMod)
+		_ = os.Remove(pkgWithSumCheckPathModLock)
 	}()
 }

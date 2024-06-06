@@ -89,7 +89,10 @@ func NewOciDownloader(platform string) *DepDownloader {
 
 func (d *DepDownloader) Download(opts DownloadOptions) error {
 	// Dispatch the download to the specific downloader by package source.
-	if opts.Source.Oci != nil {
+	if opts.Source.Oci != nil || opts.Source.Registry != nil {
+		if opts.Source.Registry != nil {
+			opts.Source.Oci = opts.Source.Registry.Oci
+		}
 		if d.OciDownloader == nil {
 			d.OciDownloader = &OciDownloader{}
 		}
