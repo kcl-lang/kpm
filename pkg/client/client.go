@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -976,8 +977,16 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			}
 		}
 
-		err := c.DepDownloader.Download(*downloader.NewDownloadOptions(
-			downloader.WithLocalPath(localPath),
+		// create a tmp dir to download the oci package.
+		tmpDir, err := os.MkdirTemp("", "")
+		if err != nil {
+			return nil, reporter.NewErrorEvent(reporter.Bug, err, fmt.Sprintf("failed to create temp dir '%s'.", tmpDir))
+		}
+		// clean the temp dir.
+		defer os.RemoveAll(tmpDir)
+
+		err = c.DepDownloader.Download(*downloader.NewDownloadOptions(
+			downloader.WithLocalPath(tmpDir),
 			downloader.WithSource(dep.Source),
 			downloader.WithLogWriter(c.logWriter),
 			downloader.WithSettings(c.settings),
@@ -985,10 +994,39 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		if err != nil {
 			return nil, err
 		}
-		dpkg, err := pkg.FindFirstKclPkgFrom(localPath)
+
+		// check the package in tmp dir is a valid kcl package.
+		_, err = pkg.FindFirstKclPkgFrom(tmpDir)
 		if err != nil {
 			return nil, err
 		}
+
+		// rename the tmp dir to the local path.
+		if utils.DirExists(localPath) {
+			err := os.RemoveAll(localPath)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if runtime.GOOS != "windows" {
+			err = os.Rename(tmpDir, localPath)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			err = copy.Copy(tmpDir, localPath)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		// load the package from the local path.
+		dpkg, err := c.LoadPkgFromPath(localPath)
+		if err != nil {
+			return nil, err
+		}
+
 		dep.FromKclPkg(dpkg)
 		dep.Sum, err = c.AcquireDepSum(*dep)
 		if err != nil {
