@@ -12,7 +12,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/otiai10/copy v1.14.0
 	github.com/sirupsen/logrus v1.9.3
-	github.com/urfave/cli/v2 v2.25.0
+	github.com/urfave/cli/v2 v2.27.2
 	golang.org/x/mod v0.18.0
 	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools/v3 v3.5.1
@@ -143,7 +143,7 @@ require (
 )
 
 require (
-	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/gofrs/flock v0.8.1
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
@@ -157,7 +157,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/stretchr/testify v1.9.0
 	github.com/thoas/go-funk v0.9.3
-	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
+	github.com/xrash/smetrics v0.0.0-20240312152122-5f08fbb34913 // indirect
 	oras.land/oras-go v1.2.5
 	oras.land/oras-go/v2 v2.5.0
 )
