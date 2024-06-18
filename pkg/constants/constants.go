@@ -1,6 +1,8 @@
 package constants
 
 const (
+	Default             = "default"
+	DefaultOciScheme    = "default-oci"
 	KFilePathSuffix     = ".k"
 	TarPathSuffix       = ".tar"
 	GitPathSuffix       = ".git"

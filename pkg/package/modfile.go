@@ -2,9 +2,7 @@
 package pkg
 
 import (
-	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,9 +11,8 @@ import (
 	orderedmap "github.com/elliotchance/orderedmap/v2"
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
-	"oras.land/oras-go/v2/registry"
 
-	"kcl-lang.io/kpm/pkg/constants"
+	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/runner"
@@ -199,11 +196,27 @@ type Dependency struct {
 	// The actual local path of the package.
 	// In vendor mode is "current_kcl_package/vendor"
 	// In non-vendor mode is "$KCL_PKG_PATH"
-	LocalFullPath string `json:"manifest_path" toml:"-"`
-	Source        `json:"-"`
+	LocalFullPath     string `json:"manifest_path" toml:"-"`
+	downloader.Source `json:"-"`
+}
+
+func (d *Dependency) ToString() (string, error) {
+	sourceStr, _ := d.Source.ToString()
+
+	if sourceStr != "" {
+		sourceStr = fmt.Sprintf(" (%s)", sourceStr)
+	}
+
+	versionStr := fmt.Sprintf(" %s", d.Version)
+	if d.Version == "" {
+		versionStr = ""
+	}
+
+	return d.Name + versionStr + sourceStr, nil
 }
 
 func (d *Dependency) FromKclPkg(pkg *KclPkg) {
+	d.Name = pkg.GetPkgName()
 	d.FullName = pkg.GetPkgFullName()
 	d.Version = pkg.GetPkgVersion()
 	d.LocalFullPath = pkg.HomePath
@@ -297,25 +310,25 @@ func (dep *Dependency) GetDownloadPath() string {
 	return ""
 }
 
-func GenSource(sourceType string, uri string, tagName string) (Source, error) {
-	source := Source{}
+func GenSource(sourceType string, uri string, tagName string) (downloader.Source, error) {
+	source := downloader.Source{}
 	if sourceType == GIT {
-		source.Git = &Git{
+		source.Git = &downloader.Git{
 			Url: uri,
 			Tag: tagName,
 		}
 		return source, nil
 	}
 	if sourceType == OCI {
-		oci := Oci{}
-		_, err := oci.FromString(uri + ":" + tagName)
+		oci := downloader.Oci{}
+		err := oci.FromString(uri + ":" + tagName)
 		if err != nil {
-			return Source{}, err
+			return downloader.Source{}, err
 		}
 		source.Oci = &oci
 	}
 	if sourceType == LOCAL {
-		source.Local = &Local{
+		source.Local = &downloader.Local{
 			Path: uri,
 		}
 	}
@@ -334,99 +347,6 @@ func (dep *Dependency) GetSourceType() string {
 		return LOCAL
 	}
 	return ""
-}
-
-// Source is the package source from registry.
-type Source struct {
-	*Registry
-	*Git
-	*Oci
-	*Local `toml:"-"`
-}
-
-type Local struct {
-	Path string `toml:"path,omitempty"`
-}
-
-type Oci struct {
-	Reg  string `toml:"reg,omitempty"`
-	Repo string `toml:"repo,omitempty"`
-	Tag  string `toml:"oci_tag,omitempty"`
-}
-
-type Registry struct {
-	*Oci    `toml:"-"`
-	Version string `toml:"-"`
-}
-
-func (oci *Oci) IntoOciUrl() string {
-	if oci != nil {
-		u := &url.URL{
-			Scheme: constants.OciScheme,
-			Host:   oci.Reg,
-			Path:   oci.Repo,
-		}
-
-		return u.String()
-	}
-	return ""
-}
-
-func (oci *Oci) FromString(ociUrl string) (*Oci, error) {
-	u, err := url.Parse(ociUrl)
-	if err != nil {
-		return nil, err
-	}
-
-	if u.Scheme != constants.OciScheme {
-		return nil, fmt.Errorf("invalid oci url with schema: %s", u.Scheme)
-	}
-
-	ref, err := registry.ParseReference(u.Host + u.Path)
-	if err != nil {
-		return nil, fmt.Errorf("'%s' invalid URL format: %w", ociUrl, err)
-	}
-
-	oci.Reg = ref.Registry
-	oci.Repo = ref.Repository
-	oci.Tag = ref.ReferenceOrDefault()
-
-	return oci, nil
-}
-
-// Git is the package source from git registry.
-type Git struct {
-	Url     string `toml:"url,omitempty"`
-	Branch  string `toml:"branch,omitempty"`
-	Commit  string `toml:"commit,omitempty"`
-	Tag     string `toml:"git_tag,omitempty"`
-	Version string `toml:"version,omitempty"`
-}
-
-// GetValidGitReference will get the valid git reference from git source.
-// Only one of branch, tag or commit is allowed.
-func (git *Git) GetValidGitReference() (string, error) {
-	nonEmptyFields := 0
-	var nonEmptyRef string
-
-	if git.Tag != "" {
-		nonEmptyFields++
-		nonEmptyRef = git.Tag
-	}
-	if git.Commit != "" {
-		nonEmptyFields++
-		nonEmptyRef = git.Commit
-	}
-	if git.Branch != "" {
-		nonEmptyFields++
-		nonEmptyRef = git.Branch
-	}
-
-	if nonEmptyFields != 1 {
-		return "", errors.New("only one of branch, tag or commit is allowed")
-	}
-
-	return nonEmptyRef, nil
 }
 
 // ModFileExists returns whether a 'kcl.mod' file exists in the path.
@@ -554,7 +474,7 @@ func (deps *Dependencies) loadLockFile(filepath string) error {
 // Parse out some information for a Dependency from registry url.
 func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 	if opt.Git != nil {
-		gitSource := Git{
+		gitSource := downloader.Git{
 			Url:    opt.Git.Url,
 			Branch: opt.Git.Branch,
 			Commit: opt.Git.Commit,
@@ -574,14 +494,14 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 		return &Dependency{
 			Name:     ParseRepoNameFromGitSource(gitSource),
 			FullName: fullName,
-			Source: Source{
+			Source: downloader.Source{
 				Git: &gitSource,
 			},
 			Version: gitRef,
 		}, nil
 	}
 	if opt.Oci != nil {
-		ociSource := Oci{
+		ociSource := downloader.Oci{
 			Reg:  opt.Oci.Reg,
 			Repo: opt.Oci.Repo,
 			Tag:  opt.Oci.Tag,
@@ -590,7 +510,7 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 		return &Dependency{
 			Name:     opt.Oci.PkgName,
 			FullName: opt.Oci.PkgName + "_" + opt.Oci.Tag,
-			Source: Source{
+			Source: downloader.Source{
 				Oci: &ociSource,
 			},
 			Version: opt.Oci.Tag,
@@ -606,8 +526,8 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 			Name:          depPkg.ModFile.Pkg.Name,
 			FullName:      depPkg.ModFile.Pkg.Name + "_" + depPkg.ModFile.Pkg.Version,
 			LocalFullPath: opt.Local.Path,
-			Source: Source{
-				Local: &Local{
+			Source: downloader.Source{
+				Local: &downloader.Local{
 					Path: opt.Local.Path,
 				},
 			},
@@ -615,7 +535,7 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 		}, nil
 	}
 	if opt.Registry != nil {
-		ociSource := Oci{
+		ociSource := downloader.Oci{
 			Reg:  opt.Registry.Reg,
 			Repo: opt.Registry.Repo,
 			Tag:  opt.Registry.Tag,
@@ -624,8 +544,8 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 		return &Dependency{
 			Name:     opt.Registry.PkgName,
 			FullName: opt.Registry.PkgName + "_" + opt.Registry.Tag,
-			Source: Source{
-				Registry: &Registry{
+			Source: downloader.Source{
+				Registry: &downloader.Registry{
 					Oci:     &ociSource,
 					Version: opt.Registry.Tag,
 				},
@@ -639,7 +559,7 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 const PKG_NAME_PATTERN = "%s_%s"
 
 // ParseRepoFullNameFromGitSource will extract the kcl package name from the git url.
-func ParseRepoFullNameFromGitSource(gitSrc Git) (string, error) {
+func ParseRepoFullNameFromGitSource(gitSrc downloader.Git) (string, error) {
 	ref, err := gitSrc.GetValidGitReference()
 	if err != nil {
 		return "", err
@@ -651,6 +571,6 @@ func ParseRepoFullNameFromGitSource(gitSrc Git) (string, error) {
 }
 
 // ParseRepoNameFromGitSource will extract the kcl package name from the git url.
-func ParseRepoNameFromGitSource(gitSrc Git) string {
+func ParseRepoNameFromGitSource(gitSrc downloader.Git) string {
 	return utils.ParseRepoNameFromGitUrl(gitSrc.Url)
 }

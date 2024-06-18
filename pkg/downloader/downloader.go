@@ -4,13 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/oci"
-	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/settings"
+	"kcl-lang.io/kpm/pkg/utils"
 )
 
 // DownloadOptions is the options for downloading a package.
@@ -18,40 +20,40 @@ type DownloadOptions struct {
 	// LocalPath is the local path to download the package.
 	LocalPath string
 	// Source is the source of the package. including git, oci, local.
-	Source pkg.Source
+	Source Source
 	// Settings is the default settings and authrization information.
 	Settings settings.Settings
 	// LogWriter is the writer to write the log.
 	LogWriter io.Writer
 }
 
-type Option func(*DownloadOptions)
+type DownloadOption func(*DownloadOptions)
 
-func WithLogWriter(logWriter io.Writer) Option {
+func WithLogWriter(logWriter io.Writer) DownloadOption {
 	return func(do *DownloadOptions) {
 		do.LogWriter = logWriter
 	}
 }
 
-func WithSettings(settings settings.Settings) Option {
+func WithSettings(settings settings.Settings) DownloadOption {
 	return func(do *DownloadOptions) {
 		do.Settings = settings
 	}
 }
 
-func WithLocalPath(localPath string) Option {
+func WithLocalPath(localPath string) DownloadOption {
 	return func(do *DownloadOptions) {
 		do.LocalPath = localPath
 	}
 }
 
-func WithSource(source pkg.Source) Option {
+func WithSource(source Source) DownloadOption {
 	return func(do *DownloadOptions) {
 		do.Source = source
 	}
 }
 
-func NewDownloadOptions(opts ...Option) *DownloadOptions {
+func NewDownloadOptions(opts ...DownloadOption) *DownloadOptions {
 	do := &DownloadOptions{}
 	for _, opt := range opts {
 		opt(do)
@@ -127,23 +129,42 @@ func (d *OciDownloader) Download(opts DownloadOptions) error {
 	if err != nil {
 		return err
 	}
-
+	ociCli.SetLogWriter(opts.LogWriter)
 	ociCli.PullOciOptions.Platform = d.Platform
-
-	reporter.ReportMsgTo(
-		fmt.Sprintf(
-			"downloading '%s:%s' from '%s/%s:%s'",
-			ociSource.Repo, ociSource.Tag, ociSource.Reg, ociSource.Repo, ociSource.Tag,
-		),
-		opts.LogWriter,
-	)
 
 	err = ociCli.Pull(localPath, ociSource.Tag)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	matches, _ := filepath.Glob(filepath.Join(localPath, "*.tar"))
+	if matches == nil || len(matches) != 1 {
+		// then try to glob tgz file
+		matches, _ = filepath.Glob(filepath.Join(localPath, "*.tgz"))
+		if matches == nil || len(matches) != 1 {
+			return fmt.Errorf("failed to find the downloaded kcl package tar file in '%s'", localPath)
+		}
+	}
+
+	tarPath := matches[0]
+	if utils.IsTar(tarPath) {
+		err = utils.UnTarDir(tarPath, localPath)
+	} else {
+		err = utils.ExtractTarball(tarPath, localPath)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to untar the kcl package tar from '%s' into '%s'", tarPath, localPath)
+	}
+
+	// After untar the downloaded kcl package tar file, remove the tar file.
+	if utils.DirExists(tarPath) {
+		rmErr := os.Remove(tarPath)
+		if rmErr != nil {
+			return fmt.Errorf("failed to remove the downloaded kcl package tar file '%s'", tarPath)
+		}
+	}
+
+	return err
 }
 
 func (d *GitDownloader) Download(opts DownloadOptions) error {

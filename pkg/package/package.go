@@ -203,6 +203,20 @@ func (kclPkg *KclPkg) UpdateModAndLockFile() error {
 	return nil
 }
 
+// GenOciManifestFromPkg will generate the oci manifest from the kcl package.
+func (kclPkg *KclPkg) GenOciManifestFromPkg() (map[string]string, error) {
+	res := make(map[string]string)
+	res[constants.DEFAULT_KCL_OCI_MANIFEST_NAME] = kclPkg.GetPkgName()
+	res[constants.DEFAULT_KCL_OCI_MANIFEST_VERSION] = kclPkg.GetPkgVersion()
+	res[constants.DEFAULT_KCL_OCI_MANIFEST_DESCRIPTION] = kclPkg.GetPkgDescription()
+	sum, err := kclPkg.GenCheckSum()
+	if err != nil {
+		return nil, err
+	}
+	res[constants.DEFAULT_KCL_OCI_MANIFEST_SUM] = sum
+	return res, nil
+}
+
 // LockDepsVersion locks the dependencies of the current kcl package into kcl.mod.lock.
 func (kclPkg *KclPkg) LockDepsVersion() error {
 	fullPath := filepath.Join(kclPkg.HomePath, MOD_LOCK_FILE)

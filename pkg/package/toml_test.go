@@ -9,6 +9,8 @@ import (
 	"github.com/BurntSushi/toml"
 	orderedmap "github.com/elliotchance/orderedmap/v2"
 	"github.com/stretchr/testify/assert"
+
+	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -31,8 +33,8 @@ func TestMarshalTOML(t *testing.T) {
 	dep := Dependency{
 		Name:     "MyKcl1",
 		FullName: "MyKcl1_v0.0.2",
-		Source: Source{
-			Git: &Git{
+		Source: downloader.Source{
+			Git: &downloader.Git{
 				Url: "https://github.com/test/MyKcl1.git",
 				Tag: "v0.0.2",
 			},
@@ -43,8 +45,8 @@ func TestMarshalTOML(t *testing.T) {
 		Name:     "MyOciKcl1",
 		FullName: "MyOciKcl1_0.0.1",
 		Version:  "0.0.1",
-		Source: Source{
-			Oci: &Oci{
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
 				Tag: "0.0.1",
 			},
 		},
@@ -102,8 +104,8 @@ func TestMarshalLockToml(t *testing.T) {
 		FullName: "MyKcl1_v0.0.2",
 		Version:  "v0.0.2",
 		Sum:      "hjkasdahjksdasdhjk",
-		Source: Source{
-			Git: &Git{
+		Source: downloader.Source{
+			Git: &downloader.Git{
 				Url: "https://github.com/test/MyKcl1.git",
 				Tag: "v0.0.2",
 			},
@@ -115,8 +117,8 @@ func TestMarshalLockToml(t *testing.T) {
 		FullName: "MyOciKcl1_0.0.1",
 		Version:  "0.0.1",
 		Sum:      "hjkasdahjksdasdhjk",
-		Source: Source{
-			Oci: &Oci{
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
 				Reg:  "test_reg",
 				Repo: "test_repo",
 				Tag:  "0.0.1",
@@ -239,8 +241,8 @@ func TestMarshalOciUrl(t *testing.T) {
 		Name:     "oci_pkg",
 		FullName: "oci_pkg_0.0.1",
 		Version:  "0.0.1",
-		Source: Source{
-			Oci: &Oci{
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
 				Reg:  "ghcr.io",
 				Repo: "kcl-lang/oci_pkg",
 				Tag:  "0.0.1",
