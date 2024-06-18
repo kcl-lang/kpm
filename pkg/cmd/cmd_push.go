@@ -180,7 +180,7 @@ func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, vendorMode bool, kpmcli *cli
 		)
 	}
 
-	ociOpts.Annotations, err = oci.GenOciManifestFromPkg(kclPkg)
+	ociOpts.Annotations, err = kclPkg.GenOciManifestFromPkg()
 	if err != nil {
 		return err
 	}

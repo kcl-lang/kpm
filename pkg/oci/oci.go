@@ -20,9 +20,7 @@ import (
 	dockerauth "oras.land/oras-go/pkg/auth/docker"
 	remoteauth "oras.land/oras-go/v2/registry/remote/auth"
 
-	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/opt"
-	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/semver"
 	"kcl-lang.io/kpm/pkg/settings"
@@ -172,6 +170,15 @@ func (ociClient *OciClient) Pull(localPath, tag string) error {
 	defer fs.Close()
 	copyOpts := ociClient.PullOciOptions.CopyOpts
 	copyOpts.FindSuccessors = ociClient.PullOciOptions.Successors
+
+	if len(tag) == 0 {
+		tag, err = ociClient.TheLatestTag()
+		if err != nil {
+			return err
+		}
+		reporter.ReportMsgTo(fmt.Sprintf("the lastest version '%s' will be pulled", tag), ociClient.logWriter)
+	}
+
 	_, err = oras.Copy(*ociClient.ctx, ociClient.repo, tag, fs, tag, *copyOpts)
 	if err != nil {
 		return reporter.NewErrorEvent(
@@ -386,20 +393,6 @@ func Push(localPath, hostName, repoName, tag string, settings *settings.Settings
 
 	// Push the oci package by the oci client.
 	return ociClient.Push(localPath, tag)
-}
-
-// GenOciManifestFromPkg will generate the oci manifest from the kcl package.
-func GenOciManifestFromPkg(kclPkg *pkg.KclPkg) (map[string]string, error) {
-	res := make(map[string]string)
-	res[constants.DEFAULT_KCL_OCI_MANIFEST_NAME] = kclPkg.GetPkgName()
-	res[constants.DEFAULT_KCL_OCI_MANIFEST_VERSION] = kclPkg.GetPkgVersion()
-	res[constants.DEFAULT_KCL_OCI_MANIFEST_DESCRIPTION] = kclPkg.GetPkgDescription()
-	sum, err := kclPkg.GenCheckSum()
-	if err != nil {
-		return nil, err
-	}
-	res[constants.DEFAULT_KCL_OCI_MANIFEST_SUM] = sum
-	return res, nil
 }
 
 func GetAllImageTags(imageName string) ([]string, error) {
