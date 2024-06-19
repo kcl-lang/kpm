@@ -256,6 +256,8 @@ func (c *KpmClient) getDepStorePath(search_path string, d *pkg.Dependency, isVen
 		} else {
 			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Git.Branch)
 		}
+	} else if d.Source.Registry != nil {
+		storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Registry.Version)
 	} else {
 		storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Version)
 	}
@@ -891,6 +893,18 @@ func (c *KpmClient) FillDepInfo(dep *pkg.Dependency, homepath string) error {
 			dep.Source.Oci.Repo = urlpath
 		}
 	}
+	if dep.Source.Registry != nil {
+		if len(dep.Source.Registry.Reg) == 0 {
+			dep.Source.Registry.Reg = c.GetSettings().DefaultOciRegistry()
+		}
+
+		if len(dep.Source.Registry.Repo) == 0 {
+			urlpath := utils.JoinPath(c.GetSettings().DefaultOciRepo(), dep.Name)
+			dep.Source.Registry.Repo = urlpath
+		}
+
+		dep.Version = dep.Source.Registry.Version
+	}
 	return nil
 }
 
@@ -946,14 +960,24 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		dep.Version = modFile.Pkg.Version
 	}
 
-	if dep.Source.Oci != nil {
+	if dep.Source.Oci != nil || dep.Source.Registry != nil {
+		var ociSource *pkg.Oci
+		if dep.Source.Oci != nil {
+			ociSource = dep.Source.Oci
+		} else if dep.Source.Registry != nil {
+			ociSource = dep.Source.Registry.Oci
+		}
 		// Select the latest tag, if the tag, the user inputed, is empty.
-		if dep.Source.Oci.Tag == "" || dep.Source.Oci.Tag == constants.LATEST {
-			latestTag, err := c.AcquireTheLatestOciVersion(*dep.Source.Oci)
+		if ociSource.Tag == "" || ociSource.Tag == constants.LATEST {
+			latestTag, err := c.AcquireTheLatestOciVersion(*ociSource)
 			if err != nil {
 				return nil, err
 			}
-			dep.Source.Oci.Tag = latestTag
+			ociSource.Tag = latestTag
+
+			if dep.Source.Registry != nil {
+				dep.Source.Registry.Tag = latestTag
+			}
 
 			// Complete some information that the local three dependencies depend on.
 			// The invalid path such as '$HOME/.kcl/kpm/k8s_' is placed because the version field is missing.

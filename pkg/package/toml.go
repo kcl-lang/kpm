@@ -87,6 +87,14 @@ const SOURCE_PATTERN = "{ %s }"
 
 func (source *Source) MarshalTOML() string {
 	var sb strings.Builder
+
+	if source.Registry != nil {
+		registryToml := source.Registry.MarshalTOML()
+		if len(registryToml) != 0 {
+			sb.WriteString(fmt.Sprintf("%q", registryToml))
+		}
+	}
+
 	if source.Git != nil {
 		gitToml := source.Git.MarshalTOML()
 		if len(gitToml) != 0 {
@@ -112,6 +120,12 @@ func (source *Source) MarshalTOML() string {
 		}
 	}
 
+	return sb.String()
+}
+
+func (registry *Registry) MarshalTOML() string {
+	var sb strings.Builder
+	sb.WriteString(registry.Version)
 	return sb.String()
 }
 
@@ -325,6 +339,9 @@ func (dep *Dependency) UnmarshalModTOML(data interface{}) error {
 	if source.Oci != nil {
 		version = source.Oci.Tag
 	}
+	if source.Registry != nil {
+		version = source.Registry.Version
+	}
 
 	dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, dep.Name, version)
 	dep.Version = version
@@ -348,24 +365,31 @@ func (source *Source) UnmarshalModTOML(data interface{}) error {
 				return err
 			}
 			source.Git = &git
-		} else {
+		} else if _, ok := meta["oci"]; ok {
 			oci := Oci{}
 			err := oci.UnmarshalModTOML(data)
 			if err != nil {
 				return err
 			}
 			source.Oci = &oci
+		} else {
+			reg := Registry{}
+			err := reg.UnmarshalModTOML(data)
+			if err != nil {
+				return err
+			}
+			source.Registry = &reg
 		}
 	}
 
 	_, ok = data.(string)
 	if ok {
-		oci := Oci{}
-		err := oci.UnmarshalModTOML(data)
+		registry := Registry{}
+		err := registry.UnmarshalModTOML(data)
 		if err != nil {
 			return err
 		}
-		source.Oci = &oci
+		source.Registry = &registry
 	}
 
 	return nil
@@ -402,10 +426,7 @@ func (git *Git) UnmarshalModTOML(data interface{}) error {
 }
 
 func (oci *Oci) UnmarshalModTOML(data interface{}) error {
-	tag, ok := data.(string)
-	if ok {
-		oci.Tag = tag
-	} else if meta, ok := data.(map[string]interface{}); ok {
+	if meta, ok := data.(map[string]interface{}); ok {
 		if v, ok := meta[constants.OciScheme].(string); ok {
 			_, err := oci.FromString(v)
 			if err != nil {
@@ -416,8 +437,6 @@ func (oci *Oci) UnmarshalModTOML(data interface{}) error {
 		if v, ok := meta[TAG_FLAG].(string); ok {
 			oci.Tag = v
 		}
-	} else {
-		return fmt.Errorf("unexpected data %T", data)
 	}
 
 	return nil
@@ -433,6 +452,17 @@ func (local *Local) UnmarshalModTOML(data interface{}) error {
 
 	if v, ok := meta[LOCAL_PATH_FLAG].(string); ok {
 		local.Path = v
+	}
+
+	return nil
+}
+
+func (reg *Registry) UnmarshalModTOML(data interface{}) error {
+	version, ok := data.(string)
+	if ok {
+		reg.Version = version
+		reg.Oci = &Oci{}
+		reg.Oci.Tag = version
 	}
 
 	return nil

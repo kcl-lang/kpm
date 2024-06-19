@@ -38,9 +38,9 @@ func TestNewRegistryOptionsFromRef(t *testing.T) {
 	settings := settings.GetSettings()
 	opts, err := NewRegistryOptionsFrom(ref, settings)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, opts.Oci.Tag, "latest")
-	assert.Equal(t, opts.Oci.Repo, "kcl-lang/test")
-	assert.Equal(t, opts.Oci.Reg, "ghcr.io")
+	assert.Equal(t, opts.Registry.Tag, "latest")
+	assert.Equal(t, opts.Registry.Repo, "kcl-lang/test")
+	assert.Equal(t, opts.Registry.Reg, "ghcr.io")
 
 	opts, err = NewRegistryOptionsFrom("oci://docker.io/kcllang/test1?tag=0.0.1", settings)
 	assert.Equal(t, err, nil)

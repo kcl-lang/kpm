@@ -46,7 +46,11 @@ func NewKclTypes(name, path string, tys *gpyrpc.KclType) *KclType {
 //
 // 'kcl_pkg_path' is the path of dependencies download by kpm.
 func GetKclPackage(pkgPath string) (*KclPackage, error) {
-	kclPkg, err := pkg.LoadKclPkg(pkgPath)
+	kpmcli, err := client.NewKpmClient()
+	if err != nil {
+		return nil, err
+	}
+	kclPkg, err := kpmcli.LoadPkgFromPath(pkgPath)
 	if err != nil {
 		return nil, err
 	}

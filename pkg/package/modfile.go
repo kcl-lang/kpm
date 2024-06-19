@@ -277,6 +277,9 @@ func (dep *Dependency) GetDownloadPath() string {
 	if dep.Source.Oci != nil {
 		return dep.Source.Oci.IntoOciUrl()
 	}
+	if dep.Source.Registry != nil {
+		return dep.Source.Registry.Oci.IntoOciUrl()
+	}
 	return ""
 }
 
@@ -310,7 +313,7 @@ func (dep *Dependency) GetSourceType() string {
 	if dep.Source.Git != nil {
 		return GIT
 	}
-	if dep.Source.Oci != nil {
+	if dep.Source.Oci != nil || dep.Source.Registry != nil {
 		return OCI
 	}
 	if dep.Source.Local != nil {
@@ -321,6 +324,7 @@ func (dep *Dependency) GetSourceType() string {
 
 // Source is the package source from registry.
 type Source struct {
+	*Registry
 	*Git
 	*Oci
 	*Local `toml:"-"`
@@ -334,6 +338,11 @@ type Oci struct {
 	Reg  string `toml:"reg,omitempty"`
 	Repo string `toml:"repo,omitempty"`
 	Tag  string `toml:"oci_tag,omitempty"`
+}
+
+type Registry struct {
+	*Oci    `toml:"-"`
+	Version string `toml:"-"`
 }
 
 func (oci *Oci) IntoOciUrl() string {
@@ -590,7 +599,25 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 			},
 			Version: depPkg.ModFile.Pkg.Version,
 		}, nil
+	}
+	if opt.Registry != nil {
+		ociSource := Oci{
+			Reg:  opt.Registry.Reg,
+			Repo: opt.Registry.Repo,
+			Tag:  opt.Registry.Tag,
+		}
 
+		return &Dependency{
+			Name:     opt.Registry.PkgName,
+			FullName: opt.Registry.PkgName + "_" + opt.Registry.Tag,
+			Source: Source{
+				Registry: &Registry{
+					Oci:     &ociSource,
+					Version: opt.Registry.Tag,
+				},
+			},
+			Version: opt.Registry.Tag,
+		}, nil
 	}
 	return nil, nil
 }

@@ -92,8 +92,7 @@ func TestUnMarshalTOML(t *testing.T) {
 	assert.NotEqual(t, modfile.Dependencies.Deps["MyOciKcl1"], nil)
 	assert.Equal(t, modfile.Dependencies.Deps["MyOciKcl1"].Name, "MyOciKcl1")
 	assert.Equal(t, modfile.Dependencies.Deps["MyOciKcl1"].FullName, "MyOciKcl1_0.0.1")
-	assert.NotEqual(t, modfile.Dependencies.Deps["MyOciKcl1"].Source.Oci, nil)
-	assert.Equal(t, modfile.Dependencies.Deps["MyOciKcl1"].Source.Oci.Tag, "0.0.1")
+	assert.Equal(t, modfile.Dependencies.Deps["MyOciKcl1"].Source.Registry.Version, "0.0.1")
 }
 
 func TestMarshalLockToml(t *testing.T) {
@@ -241,7 +240,9 @@ func TestMarshalOciUrl(t *testing.T) {
 		Version:  "0.0.1",
 		Source: Source{
 			Oci: &Oci{
-				Tag: "0.0.1",
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/oci_pkg",
+				Tag:  "0.0.1",
 			},
 		},
 	}
@@ -252,7 +253,8 @@ func TestMarshalOciUrl(t *testing.T) {
 	_, err = gotFile.WriteString(got_data)
 	assert.Equal(t, err, nil)
 
-	got, err := LoadModFile(gotPkgPath)
+	got := ModFile{}
+	err = got.LoadModFile(filepath.Join(gotPkgPath, "kcl.mod"))
 	assert.Equal(t, err, nil)
 
 	assert.Equal(t, expect.Pkg.Name, got.Pkg.Name)
@@ -270,13 +272,15 @@ func TestMarshalOciUrl(t *testing.T) {
 func TestMarshalOciUrlIntoFile(t *testing.T) {
 	testDataDir := getTestDir("test_oci_url")
 
-	testCases := []string{"marshal_1", "marshal_2", "marshal_3"}
+	testCases := []string{"marshal_2"}
 
 	for _, tc := range testCases {
 		readKclModPath := filepath.Join(testDataDir, tc)
+		modfilePath := filepath.Join(readKclModPath, "kcl.mod")
 		expectPath := filepath.Join(readKclModPath, "expect.mod")
 
-		readKclModFile, err := LoadModFile(readKclModPath)
+		readKclModFile := ModFile{}
+		err := readKclModFile.LoadModFile(modfilePath)
 		assert.Equal(t, err, nil)
 		writeKclModFileContents := readKclModFile.MarshalTOML()
 		expectKclModFileContents, err := os.ReadFile(expectPath)

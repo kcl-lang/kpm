@@ -190,9 +190,10 @@ func (opts *AddOptions) Validate() error {
 }
 
 type RegistryOptions struct {
-	Git   *GitOptions
-	Oci   *OciOptions
-	Local *LocalOptions
+	Git      *GitOptions
+	Oci      *OciOptions
+	Local    *LocalOptions
+	Registry *OciOptions
 }
 
 // NewRegistryOptionsFrom will parse the registry options from oci url, oci ref and git url.
@@ -258,7 +259,7 @@ func NewRegistryOptionsFrom(rawUrlorOciRef string, settings *settings.Settings) 
 
 	if ociOptions != nil {
 		return &RegistryOptions{
-			Oci: ociOptions,
+			Registry: ociOptions,
 		}, nil
 	}
 
