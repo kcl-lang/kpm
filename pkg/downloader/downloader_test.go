@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
-	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -35,8 +34,8 @@ func TestOciDownloader(t *testing.T) {
 	}
 
 	err := ociDownloader.Download(*NewDownloadOptions(
-		WithSource(pkg.Source{
-			Oci: &pkg.Oci{
+		WithSource(Source{
+			Oci: &Oci{
 				Reg:  "ghcr.io",
 				Repo: "zong-zhe/helloworld",
 				Tag:  "0.0.3",
@@ -60,8 +59,8 @@ func TestOciDownloader(t *testing.T) {
 	gitDownloader := GitDownloader{}
 
 	err = gitDownloader.Download(*NewDownloadOptions(
-		WithSource(pkg.Source{
-			Git: &pkg.Git{
+		WithSource(Source{
+			Git: &Git{
 				Url:    "https://github.com/kcl-lang/flask-demo-kcl-manifests.git",
 				Commit: "ade147b",
 			},
