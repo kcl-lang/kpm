@@ -23,6 +23,7 @@ package pkg
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -37,7 +38,9 @@ const NEWLINE = "\n"
 func (mod *ModFile) MarshalTOML() string {
 	var sb strings.Builder
 	sb.WriteString(mod.Pkg.MarshalTOML())
+	sb.WriteString(NEWLINE)
 	sb.WriteString(mod.Dependencies.MarshalTOML())
+	sb.WriteString(NEWLINE)
 	sb.WriteString(mod.Profiles.MarshalTOML())
 	return sb.String()
 }
@@ -54,7 +57,6 @@ func (pkg *Package) MarshalTOML() string {
 		return ""
 	}
 	sb.WriteString(buf.String())
-	sb.WriteString(NEWLINE)
 	return sb.String()
 }
 
@@ -207,7 +209,6 @@ func (p *Profile) MarshalTOML() string {
 			return ""
 		}
 		sb.WriteString(buf.String())
-		sb.WriteString(NEWLINE)
 	}
 	return sb.String()
 }
@@ -513,8 +514,14 @@ func (dep *Dependencies) UnmarshalLockTOML(data string) error {
 		return reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, "failed to load kcl.mod.lock")
 	}
 
-	for k, v := range lockDepdenciesUI.Deps {
-		dep.Deps.Set(k, v)
+	var keys []string
+	for k := range lockDepdenciesUI.Deps {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		dep.Deps.Set(k, lockDepdenciesUI.Deps[k])
 	}
 
 	return nil
