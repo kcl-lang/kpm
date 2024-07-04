@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
+
+	goerr "errors"
 
 	"github.com/BurntSushi/toml"
 	"github.com/dominikbraun/graph"
@@ -1064,7 +1067,16 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		if runtime.GOOS != "windows" {
 			err = os.Rename(tmpDir, localPath)
 			if err != nil {
-				return nil, err
+				// check the error is caused by moving the file across file systems.
+				if goerr.Is(err, syscall.EXDEV) {
+					// If it is, use copy as a fallback.
+					err = copy.Copy(tmpDir, localPath)
+					if err != nil {
+						return nil, err
+					}
+				} else {
+					return nil, err
+				}
 			}
 		} else {
 			err = copy.Copy(tmpDir, localPath)
