@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/dominikbraun/graph"
+	"github.com/elliotchance/orderedmap/v2"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/mod/module"
 	"kcl-lang.io/kpm/pkg/client"
@@ -114,7 +115,7 @@ func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
 		return reporter.NewErrorEvent(reporter.FailedTopologicalSort, err, "failed to sort the dependencies")
 	}
 
-	kclPkg.ModFile.Dependencies.Deps = make(map[string]pkg.Dependency)
+	kclPkg.ModFile.Dependencies.Deps = orderedmap.NewOrderedMap[string, pkg.Dependency]()
 
 	for _, module := range modules {
 		err = InsertModuleToDeps(kclPkg, module, target, buildList, reqs)
@@ -142,7 +143,7 @@ func GetModulesToUpdate(kclPkg *pkg.KclPkg, modulesToUpgrade []module.Version, m
 
 	var dep pkg.Dependency
 	var ok bool
-	if dep, ok = kclPkg.Deps[pkgName]; !ok {
+	if dep, ok = kclPkg.Deps.Get(pkgName); !ok {
 		return err
 	}
 
@@ -195,6 +196,6 @@ func InsertModuleToDeps(kclPkg *pkg.KclPkg, module module.Version, target module
 			return reporter.NewErrorEvent(reporter.FailedGenerateSource, err, "failed to generate source")
 		}
 	}
-	kclPkg.ModFile.Dependencies.Deps[module.Path] = d
+	kclPkg.ModFile.Dependencies.Deps.Set(module.Path, d)
 	return nil
 }

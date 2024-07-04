@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	orderedmap "github.com/elliotchance/orderedmap/v2"
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"oras.land/oras-go/v2/registry"
@@ -123,12 +124,16 @@ func (profile *Profile) GetEntries() []string {
 
 // FillDependenciesInfo will fill registry information for all dependencies in a kcl.mod.
 func (modFile *ModFile) FillDependenciesInfo() error {
-	for k, v := range modFile.Deps {
+	for _, k := range modFile.Deps.Keys() {
+		v, ok := modFile.Deps.Get(k)
+		if !ok {
+			break
+		}
 		err := v.FillDepInfo(modFile.HomePath)
 		if err != nil {
 			return err
 		}
-		modFile.Deps[k] = v
+		modFile.Deps.Set(k, v)
 	}
 	return nil
 }
@@ -143,16 +148,24 @@ func (modFile *ModFile) GetEntries() []string {
 
 // 'Dependencies' is dependencies section of 'kcl.mod'.
 type Dependencies struct {
-	Deps map[string]Dependency `json:"packages" toml:"dependencies,omitempty"`
+	Deps *orderedmap.OrderedMap[string, Dependency] `json:"packages" toml:"dependencies,omitempty"`
 }
 
 // ToDepMetadata will transform the dependencies into metadata.
 // And check whether the dependency name conflicts.
-func (deps *Dependencies) ToDepMetadata() (*Dependencies, error) {
-	depMetadata := Dependencies{
+func (deps *Dependencies) ToDepMetadata() (*DependenciesUI, error) {
+	depMetadata := DependenciesUI{
 		Deps: make(map[string]Dependency),
 	}
-	for _, d := range deps.Deps {
+	for _, depName := range deps.Deps.Keys() {
+		d, ok := deps.Deps.Get(depName)
+		if !ok {
+			return nil, reporter.NewErrorEvent(
+				reporter.DependencyNotFoundInOrderedMap,
+				fmt.Errorf("dependency %s not found", depName),
+				"internal bugs, please contact us to fix it.",
+			)
+		}
 		if _, ok := depMetadata.Deps[d.GetAliasName()]; ok {
 			return nil, reporter.NewErrorEvent(
 				reporter.PathIsEmpty,
@@ -169,7 +182,8 @@ func (deps *Dependencies) ToDepMetadata() (*Dependencies, error) {
 }
 
 func (deps *Dependencies) CheckForLocalDeps() bool {
-	for _, dep := range deps.Deps {
+	for _, depKeys := range deps.Deps.Keys() {
+		dep, _ := deps.Deps.Get(depKeys)
 		if dep.IsFromLocal() {
 			return true
 		}
@@ -428,7 +442,7 @@ func ModLockFileExists(path string) (bool, error) {
 // LoadLockDeps will load all dependencies from 'kcl.mod.lock'.
 func LoadLockDeps(homePath string) (*Dependencies, error) {
 	deps := new(Dependencies)
-	deps.Deps = make(map[string]Dependency)
+	deps.Deps = orderedmap.NewOrderedMap[string, Dependency]()
 	err := deps.loadLockFile(filepath.Join(homePath, MOD_LOCK_FILE))
 
 	if os.IsNotExist(err) {
@@ -474,7 +488,7 @@ func NewModFile(opts *opt.InitOptions) *ModFile {
 			Edition: defaultEdition,
 		},
 		Dependencies: Dependencies{
-			Deps: make(map[string]Dependency),
+			Deps: orderedmap.NewOrderedMap[string, Dependency](),
 		},
 	}
 }
@@ -507,7 +521,7 @@ func LoadModFile(homePath string) (*ModFile, error) {
 	modFile.HomePath = homePath
 
 	if modFile.Dependencies.Deps == nil {
-		modFile.Dependencies.Deps = make(map[string]Dependency)
+		modFile.Dependencies.Deps = orderedmap.NewOrderedMap[string, Dependency]()
 	}
 	err = modFile.FillDependenciesInfo()
 	if err != nil {

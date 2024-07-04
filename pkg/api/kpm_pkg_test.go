@@ -24,9 +24,9 @@ func TestPackageApi(t *testing.T) {
 	assert.Equal(t, pkg.GetPkgName(), "kcl_pkg")
 	assert.Equal(t, pkg.GetVersion(), "0.0.1")
 	assert.Equal(t, pkg.GetEdition(), "0.0.1")
-	assert.Equal(t, len(pkg.GetDependencies().Deps), 1)
+	assert.Equal(t, pkg.GetDependencies().Deps.Len(), 1)
 
-	dep := pkg.GetDependencies().Deps["k8s"]
+	dep, _ := pkg.GetDependencies().Deps.Get("k8s")
 	assert.Equal(t, dep.Name, "k8s")
 	assert.Equal(t, dep.FullName, "k8s_1.27")
 	assert.Equal(t, dep.Version, "1.27")
@@ -64,7 +64,7 @@ func TestApiGetDependenciesInModFile(t *testing.T) {
 	pkg_path := filepath.Join(getTestDir("test_get_mod_deps"), "kcl_pkg")
 	pkg, err := GetKclPackage(pkg_path)
 	assert.Equal(t, err, nil)
-	dep := pkg.GetDependenciesInModFile().Deps["k8s"]
+	dep, _ := pkg.GetDependenciesInModFile().Deps.Get("k8s")
 	assert.Equal(t, dep.Name, "k8s")
 	assert.Equal(t, dep.FullName, "k8s_1.27")
 	assert.Equal(t, dep.Version, "1.27")

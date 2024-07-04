@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/dominikbraun/graph"
+	"github.com/elliotchance/orderedmap/v2"
 	"github.com/hashicorp/go-version"
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
@@ -305,11 +306,11 @@ func TestUpdateKclModAndLock(t *testing.T) {
 		},
 	}
 
-	kclPkg.Dependencies.Deps["oci_test"] = oci_dep
-	kclPkg.ModFile.Dependencies.Deps["oci_test"] = oci_dep
+	kclPkg.Dependencies.Deps.Set("oci_test", oci_dep)
+	kclPkg.ModFile.Dependencies.Deps.Set("oci_test", oci_dep)
 
-	kclPkg.Dependencies.Deps["test"] = dep
-	kclPkg.ModFile.Dependencies.Deps["test"] = dep
+	kclPkg.Dependencies.Deps.Set("test", dep)
+	kclPkg.ModFile.Dependencies.Deps.Set("test", dep)
 
 	err = kclPkg.ModFile.StoreModFile()
 	assert.Equal(t, err, nil)
@@ -321,8 +322,8 @@ func TestUpdateKclModAndLock(t *testing.T) {
 	if gotKclMod, err := os.ReadFile(filepath.Join(testDir, "kcl.mod")); os.IsNotExist(err) {
 		t.Errorf("failed to find kcl.mod.")
 	} else {
-		assert.Equal(t, len(kclPkg.Dependencies.Deps), 2)
-		assert.Equal(t, len(kclPkg.ModFile.Deps), 2)
+		assert.Equal(t, kclPkg.Dependencies.Deps.Len(), 2)
+		assert.Equal(t, kclPkg.ModFile.Deps.Len(), 2)
 		expectKclMod, _ := os.ReadFile(filepath.Join(expectDir, "kcl.mod"))
 		expectKclModReverse, _ := os.ReadFile(filepath.Join(expectDir, "kcl.reverse.mod"))
 
@@ -343,8 +344,8 @@ func TestUpdateKclModAndLock(t *testing.T) {
 	if gotKclModLock, err := os.ReadFile(filepath.Join(testDir, "kcl.mod.lock")); os.IsNotExist(err) {
 		t.Errorf("failed to find kcl.mod.lock.")
 	} else {
-		assert.Equal(t, len(kclPkg.Dependencies.Deps), 2)
-		assert.Equal(t, len(kclPkg.ModFile.Deps), 2)
+		assert.Equal(t, kclPkg.Dependencies.Deps.Len(), 2)
+		assert.Equal(t, kclPkg.ModFile.Deps.Len(), 2)
 		expectKclModLock, _ := os.ReadFile(filepath.Join(expectDir, "kcl.mod.lock"))
 		expectKclModLockReverse, _ := os.ReadFile(filepath.Join(expectDir, "kcl.mod.reverse.lock"))
 
@@ -384,6 +385,10 @@ func TestVendorDeps(t *testing.T) {
 		Sum:      kcl2Sum,
 	}
 
+	mppTest := orderedmap.NewOrderedMap[string, pkg.Dependency]()
+	mppTest.Set("kcl1", depKcl1)
+	mppTest.Set("kcl2", depKcl2)
+
 	kclPkg := pkg.KclPkg{
 		ModFile: pkg.ModFile{
 			HomePath: filepath.Join(testDir, "my_kcl"),
@@ -392,20 +397,14 @@ func TestVendorDeps(t *testing.T) {
 			// in the current package directory.
 			VendorMode: false,
 			Dependencies: pkg.Dependencies{
-				Deps: map[string]pkg.Dependency{
-					"kcl1": depKcl1,
-					"kcl2": depKcl2,
-				},
+				Deps: mppTest,
 			},
 		},
 		HomePath: filepath.Join(testDir, "my_kcl"),
 		// The dependencies in the current kcl package are the dependencies of kcl.mod.lock,
 		// not the dependencies in kcl.mod.
 		Dependencies: pkg.Dependencies{
-			Deps: map[string]pkg.Dependency{
-				"kcl1": depKcl1,
-				"kcl2": depKcl2,
-			},
+			Deps: mppTest,
 		},
 	}
 
@@ -468,6 +467,9 @@ func TestResolveDepsVendorMode(t *testing.T) {
 		Sum:      kcl2Sum,
 	}
 
+	mppTest := orderedmap.NewOrderedMap[string, pkg.Dependency]()
+	mppTest.Set("kcl1", depKcl1)
+	mppTest.Set("kcl2", depKcl2)
 	kclPkg := pkg.KclPkg{
 		ModFile: pkg.ModFile{
 			HomePath: home_path,
@@ -476,20 +478,14 @@ func TestResolveDepsVendorMode(t *testing.T) {
 			// in the current package directory.
 			VendorMode: true,
 			Dependencies: pkg.Dependencies{
-				Deps: map[string]pkg.Dependency{
-					"kcl1": depKcl1,
-					"kcl2": depKcl2,
-				},
+				Deps: mppTest,
 			},
 		},
 		HomePath: home_path,
 		// The dependencies in the current kcl package are the dependencies of kcl.mod.lock,
 		// not the dependencies in kcl.mod.
 		Dependencies: pkg.Dependencies{
-			Deps: map[string]pkg.Dependency{
-				"kcl1": depKcl1,
-				"kcl2": depKcl2,
-			},
+			Deps: mppTest,
 		},
 	}
 	mySearchPath := filepath.Join(home_path, "vendor")
@@ -536,6 +532,10 @@ func TestCompileWithEntryFile(t *testing.T) {
 		Sum:      kcl2Sum,
 	}
 
+	mppTest := orderedmap.NewOrderedMap[string, pkg.Dependency]()
+	mppTest.Set("kcl1", depKcl1)
+	mppTest.Set("kcl2", depKcl2)
+
 	kclPkg := pkg.KclPkg{
 		ModFile: pkg.ModFile{
 			HomePath: home_path,
@@ -544,20 +544,14 @@ func TestCompileWithEntryFile(t *testing.T) {
 			// in the current package directory.
 			VendorMode: true,
 			Dependencies: pkg.Dependencies{
-				Deps: map[string]pkg.Dependency{
-					"kcl1": depKcl1,
-					"kcl2": depKcl2,
-				},
+				Deps: mppTest,
 			},
 		},
 		HomePath: home_path,
 		// The dependencies in the current kcl package are the dependencies of kcl.mod.lock,
 		// not the dependencies in kcl.mod.
 		Dependencies: pkg.Dependencies{
-			Deps: map[string]pkg.Dependency{
-				"kcl1": depKcl1,
-				"kcl2": depKcl2,
-			},
+			Deps: mppTest,
 		},
 	}
 
@@ -628,9 +622,10 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 
 	globalPkgPath, _ := env.GetAbsPkgPath()
 	res, err := kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
+	fmt.Printf("err: %v\n", err)
 	assert.Equal(t, err, nil)
 
-	expectedDep := pkg.Dependencies{
+	expectedDep := pkg.DependenciesUI{
 		Deps: make(map[string]pkg.Dependency),
 	}
 
@@ -1365,11 +1360,11 @@ func TestAddWithLocalPath(t *testing.T) {
 	expectpkg, err := kpmcli.LoadPkgFromPath(expectpath)
 	assert.Equal(t, err, nil)
 
-	assert.Equal(t, len(gotpkg.Dependencies.Deps), len(expectpkg.Dependencies.Deps))
-	assert.Equal(t, gotpkg.Dependencies.Deps["dep_pkg"].FullName, expectpkg.Dependencies.Deps["dep_pkg"].FullName)
-	assert.Equal(t, gotpkg.Dependencies.Deps["dep_pkg"].Version, expectpkg.Dependencies.Deps["dep_pkg"].Version)
-	assert.Equal(t, gotpkg.Dependencies.Deps["dep_pkg"].LocalFullPath, filepath.Join(tmppath, "dep_pkg"))
-	assert.Equal(t, gotpkg.Dependencies.Deps["dep_pkg"].Source.Local.Path, "../dep_pkg")
+	assert.Equal(t, gotpkg.Dependencies.Deps.Len(), expectpkg.Dependencies.Deps.Len())
+	assert.Equal(t, gotpkg.Dependencies.Deps.GetOrDefault("dep_pkg", pkg.TestPkgDependency).FullName, expectpkg.Dependencies.Deps.GetOrDefault("dep_pkg", pkg.TestPkgDependency).FullName)
+	assert.Equal(t, gotpkg.Dependencies.Deps.GetOrDefault("dep_pkg", pkg.TestPkgDependency).Version, expectpkg.Dependencies.Deps.GetOrDefault("dep_pkg", pkg.TestPkgDependency).Version)
+	assert.Equal(t, gotpkg.Dependencies.Deps.GetOrDefault("dep_pkg", pkg.TestPkgDependency).LocalFullPath, filepath.Join(tmppath, "dep_pkg"))
+	assert.Equal(t, gotpkg.Dependencies.Deps.GetOrDefault("dep_pkg", pkg.TestPkgDependency).Source.Local.Path, "../dep_pkg")
 }
 
 func TestRunOciWithSettingsFile(t *testing.T) {
@@ -1431,12 +1426,12 @@ func TestLoadOciUrlDiffSetting(t *testing.T) {
 
 	testPath := getTestDir("diffsettings")
 
-	pkg, err := kpmcli.LoadPkgFromPath(testPath)
+	pkg_local, err := kpmcli.LoadPkgFromPath(testPath)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, len(pkg.ModFile.Deps), 1)
-	assert.Equal(t, pkg.ModFile.Deps["oci_pkg"].Oci.Reg, "docker.io")
-	assert.Equal(t, pkg.ModFile.Deps["oci_pkg"].Oci.Repo, "test/oci_pkg")
-	assert.Equal(t, pkg.ModFile.Deps["oci_pkg"].Oci.Tag, "0.0.1")
+	assert.Equal(t, pkg_local.ModFile.Deps.Len(), 1)
+	assert.Equal(t, pkg_local.ModFile.Deps.GetOrDefault("oci_pkg", pkg.TestPkgDependency).Oci.Reg, "docker.io")
+	assert.Equal(t, pkg_local.ModFile.Deps.GetOrDefault("oci_pkg", pkg.TestPkgDependency).Oci.Repo, "test/oci_pkg")
+	assert.Equal(t, pkg_local.ModFile.Deps.GetOrDefault("oci_pkg", pkg.TestPkgDependency).Oci.Tag, "0.0.1")
 	assert.Equal(t, err, nil)
 }
 
@@ -1529,15 +1524,15 @@ func TestAddLocalPath(t *testing.T) {
 
 	modFile, err := kpmCli.LoadModFile(path)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, len(modFile.Deps), 1)
-	assert.Equal(t, modFile.Deps["dep"].Name, "dep")
-	assert.Equal(t, modFile.Deps["dep"].LocalFullPath, filepath.Join(path, "dep"))
+	assert.Equal(t, modFile.Deps.Len(), 1)
+	assert.Equal(t, modFile.Deps.GetOrDefault("dep", pkg.Dependency{}).Name, "dep")
+	assert.Equal(t, modFile.Deps.GetOrDefault("dep", pkg.Dependency{}).LocalFullPath, filepath.Join(path, "dep"))
 
 	kclPkg1, err := kpmCli.LoadPkgFromPath(path)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, kclPkg1.Dependencies.Deps["dep"].Name, "dep")
-	assert.Equal(t, kclPkg1.Dependencies.Deps["dep"].FullName, "dep_0.0.1")
-	assert.Equal(t, kclPkg1.Dependencies.Deps["dep"].Version, "0.0.1")
+	assert.Equal(t, kclPkg1.Dependencies.Deps.GetOrDefault("dep", pkg.Dependency{}).Name, "dep")
+	assert.Equal(t, kclPkg1.Dependencies.Deps.GetOrDefault("dep", pkg.Dependency{}).FullName, "dep_0.0.1")
+	assert.Equal(t, kclPkg1.Dependencies.Deps.GetOrDefault("dep", pkg.Dependency{}).Version, "0.0.1")
 	defer func() {
 		_ = os.Remove(filepath.Join(path, "kcl.mod.lock"))
 		_ = os.Remove(filepath.Join(path, "kcl.mod"))
@@ -1718,4 +1713,24 @@ func testRunDefaultRegistryDep(t *testing.T) {
 		_ = os.Remove(pkgWithSumCheckPathMod)
 		_ = os.Remove(pkgWithSumCheckPathModLock)
 	}()
+}
+
+func TestDependenciesOrder(t *testing.T) {
+	pkgPath := getTestDir("test_dep_order")
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	kclPkg, err := kpmcli.LoadPkgFromPath(pkgPath)
+	assert.Equal(t, err, nil)
+
+	err = kpmcli.UpdateDeps(kclPkg)
+	assert.Equal(t, err, nil)
+
+	got, err := os.ReadFile(filepath.Join(pkgPath, "kcl.mod"))
+	assert.Equal(t, err, nil)
+
+	expect, err := os.ReadFile(filepath.Join(pkgPath, "expect.mod"))
+	assert.Equal(t, err, nil)
+
+	assert.Equal(t, utils.RmNewline(string(got)), utils.RmNewline(string(expect)))
 }

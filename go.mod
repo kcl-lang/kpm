@@ -9,6 +9,7 @@ require (
 	github.com/containers/image/v5 v5.31.0
 	github.com/distribution/reference v0.6.0
 	github.com/dominikbraun/graph v0.23.0
+	github.com/elliotchance/orderedmap/v2 v2.2.0
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/otiai10/copy v1.14.0
 	github.com/sirupsen/logrus v1.9.3
@@ -144,7 +145,8 @@ require (
 
 require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
-	github.com/go-git/go-git/v5 v5.12.0
+	github.com/elliotchance/orderedmap v1.6.0
+	github.com/go-git/go-git/v5 v5.11.0
 	github.com/gofrs/flock v0.8.1
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect

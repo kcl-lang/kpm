@@ -23,9 +23,11 @@ package pkg
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	orderedmap "github.com/elliotchance/orderedmap/v2"
 
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -36,7 +38,9 @@ const NEWLINE = "\n"
 func (mod *ModFile) MarshalTOML() string {
 	var sb strings.Builder
 	sb.WriteString(mod.Pkg.MarshalTOML())
+	sb.WriteString(NEWLINE)
 	sb.WriteString(mod.Dependencies.MarshalTOML())
+	sb.WriteString(NEWLINE)
 	sb.WriteString(mod.Profiles.MarshalTOML())
 	return sb.String()
 }
@@ -53,7 +57,6 @@ func (pkg *Package) MarshalTOML() string {
 		return ""
 	}
 	sb.WriteString(buf.String())
-	sb.WriteString(NEWLINE)
 	return sb.String()
 }
 
@@ -61,9 +64,13 @@ const DEPS_PATTERN = "[dependencies]"
 
 func (dep *Dependencies) MarshalTOML() string {
 	var sb strings.Builder
-	if len(dep.Deps) != 0 {
+	if dep.Deps != nil && dep.Deps.Len() != 0 {
 		sb.WriteString(DEPS_PATTERN)
-		for _, dep := range dep.Deps {
+		for _, depKeys := range dep.Deps.Keys() {
+			dep, ok := dep.Deps.Get(depKeys)
+			if !ok {
+				break
+			}
 			sb.WriteString(NEWLINE)
 			sb.WriteString(dep.MarshalTOML())
 		}
@@ -202,7 +209,6 @@ func (p *Profile) MarshalTOML() string {
 			return ""
 		}
 		sb.WriteString(buf.String())
-		sb.WriteString(NEWLINE)
 	}
 	return sb.String()
 }
@@ -228,7 +234,7 @@ func (mod *ModFile) UnmarshalTOML(data interface{}) error {
 
 	if v, ok := meta[DEPS_FLAG]; ok {
 		deps := Dependencies{
-			Deps: make(map[string]Dependency),
+			Deps: orderedmap.NewOrderedMap[string, Dependency](),
 		}
 		err := deps.UnmarshalModTOML(v)
 		if err != nil {
@@ -315,7 +321,7 @@ func (deps *Dependencies) UnmarshalModTOML(data interface{}) error {
 		if err != nil {
 			return err
 		}
-		deps.Deps[k] = dep
+		deps.Deps.Set(k, dep)
 	}
 
 	return nil
@@ -468,17 +474,54 @@ func (reg *Registry) UnmarshalModTOML(data interface{}) error {
 	return nil
 }
 
+type DependenciesUI struct {
+	Deps map[string]Dependency `json:"packages" toml:"dependencies,omitempty"`
+}
+
 func (dep *Dependencies) MarshalLockTOML() (string, error) {
+
+	marshaledDeps := make(map[string]Dependency)
+	for _, depKey := range dep.Deps.Keys() {
+		dep, ok := dep.Deps.Get(depKey)
+		if !ok {
+			break
+		}
+		marshaledDeps[depKey] = dep
+	}
+
+	lockDepdenciesUI := DependenciesUI{
+		Deps: marshaledDeps,
+	}
+
 	buf := new(bytes.Buffer)
-	if err := toml.NewEncoder(buf).Encode(dep); err != nil {
+	if err := toml.NewEncoder(buf).Encode(&lockDepdenciesUI); err != nil {
 		return "", reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, "failed to lock dependencies version")
 	}
 	return buf.String(), nil
 }
 
 func (dep *Dependencies) UnmarshalLockTOML(data string) error {
-	if _, err := toml.NewDecoder(strings.NewReader(data)).Decode(dep); err != nil {
+
+	if dep.Deps == nil {
+		dep.Deps = orderedmap.NewOrderedMap[string, Dependency]()
+	}
+
+	lockDepdenciesUI := DependenciesUI{
+		Deps: make(map[string]Dependency),
+	}
+
+	if _, err := toml.NewDecoder(strings.NewReader(data)).Decode(&lockDepdenciesUI); err != nil {
 		return reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, "failed to load kcl.mod.lock")
+	}
+
+	var keys []string
+	for k := range lockDepdenciesUI.Deps {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		dep.Deps.Set(k, lockDepdenciesUI.Deps[k])
 	}
 
 	return nil
