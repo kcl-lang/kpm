@@ -132,6 +132,20 @@ func (d *OciDownloader) Download(opts DownloadOptions) error {
 
 	ociCli.PullOciOptions.Platform = d.Platform
 
+	if len(ociSource.Tag) == 0 {
+		tagSelected, err := ociCli.TheLatestTag()
+		if err != nil {
+			return err
+		}
+
+		reporter.ReportMsgTo(
+			fmt.Sprintf("the lastest version '%s' will be downloaded", tagSelected),
+			opts.LogWriter,
+		)
+
+		ociSource.Tag = tagSelected
+	}
+
 	reporter.ReportMsgTo(
 		fmt.Sprintf(
 			"downloading '%s:%s' from '%s/%s:%s'",
