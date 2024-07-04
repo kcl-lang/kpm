@@ -4,13 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/oci"
-	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/settings"
+	"kcl-lang.io/kpm/pkg/utils"
 )
 
 // DownloadOptions is the options for downloading a package.
@@ -18,7 +20,7 @@ type DownloadOptions struct {
 	// LocalPath is the local path to download the package.
 	LocalPath string
 	// Source is the source of the package. including git, oci, local.
-	Source pkg.Source
+	Source Source
 	// Settings is the default settings and authrization information.
 	Settings settings.Settings
 	// LogWriter is the writer to write the log.
@@ -45,7 +47,7 @@ func WithLocalPath(localPath string) Option {
 	}
 }
 
-func WithSource(source pkg.Source) Option {
+func WithSource(source Source) Option {
 	return func(do *DownloadOptions) {
 		do.Source = source
 	}
@@ -130,6 +132,20 @@ func (d *OciDownloader) Download(opts DownloadOptions) error {
 
 	ociCli.PullOciOptions.Platform = d.Platform
 
+	if len(ociSource.Tag) == 0 {
+		tagSelected, err := ociCli.TheLatestTag()
+		if err != nil {
+			return err
+		}
+
+		reporter.ReportMsgTo(
+			fmt.Sprintf("the lastest version '%s' will be downloaded", tagSelected),
+			opts.LogWriter,
+		)
+
+		ociSource.Tag = tagSelected
+	}
+
 	reporter.ReportMsgTo(
 		fmt.Sprintf(
 			"downloading '%s:%s' from '%s/%s:%s'",
@@ -143,7 +159,34 @@ func (d *OciDownloader) Download(opts DownloadOptions) error {
 		return err
 	}
 
-	return nil
+	matches, _ := filepath.Glob(filepath.Join(localPath, "*.tar"))
+	if matches == nil || len(matches) != 1 {
+		// then try to glob tgz file
+		matches, _ = filepath.Glob(filepath.Join(localPath, "*.tgz"))
+		if matches == nil || len(matches) != 1 {
+			return fmt.Errorf("failed to find the downloaded kcl package tar file in '%s'", localPath)
+		}
+	}
+
+	tarPath := matches[0]
+	if utils.IsTar(tarPath) {
+		err = utils.UnTarDir(tarPath, localPath)
+	} else {
+		err = utils.ExtractTarball(tarPath, localPath)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to untar the kcl package tar from '%s' into '%s'", tarPath, localPath)
+	}
+
+	// After untar the downloaded kcl package tar file, remove the tar file.
+	if utils.DirExists(tarPath) {
+		rmErr := os.Remove(tarPath)
+		if rmErr != nil {
+			return fmt.Errorf("failed to remove the downloaded kcl package tar file '%s'", tarPath)
+		}
+	}
+
+	return err
 }
 
 func (d *GitDownloader) Download(opts DownloadOptions) error {

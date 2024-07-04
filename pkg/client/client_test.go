@@ -67,8 +67,8 @@ func TestDownloadOci(t *testing.T) {
 	depFromOci := pkg.Dependency{
 		Name:    "helloworld",
 		Version: "0.1.2",
-		Source: pkg.Source{
-			Oci: &pkg.Oci{
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
 				Reg:  "ghcr.io",
 				Repo: "kcl-lang/helloworld",
 				Tag:  "0.1.2",
@@ -110,8 +110,8 @@ func TestDownloadLatestOci(t *testing.T) {
 	depFromOci := pkg.Dependency{
 		Name:    "helloworld",
 		Version: "",
-		Source: pkg.Source{
-			Oci: &pkg.Oci{
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
 				Reg:  "ghcr.io",
 				Repo: "kcl-lang/helloworld",
 				Tag:  "",
@@ -284,8 +284,8 @@ func TestUpdateKclModAndLock(t *testing.T) {
 		FullName: "test_version",
 		Version:  "test_version",
 		Sum:      "test_sum",
-		Source: pkg.Source{
-			Git: &pkg.Git{
+		Source: downloader.Source{
+			Git: &downloader.Git{
 				Url: "test_url",
 				Tag: "test_tag",
 			},
@@ -297,8 +297,8 @@ func TestUpdateKclModAndLock(t *testing.T) {
 		FullName: "test_version",
 		Version:  "test_version",
 		Sum:      "test_sum",
-		Source: pkg.Source{
-			Oci: &pkg.Oci{
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
 				Reg:  "test_reg",
 				Repo: "test_repo",
 				Tag:  "test_tag",
@@ -1305,7 +1305,7 @@ func TestLoadPkgFormOci(t *testing.T) {
 			assert.Equal(t, err, nil)
 		}()
 
-		kclpkg, err := cli.DownloadPkgFromOci(&pkg.Oci{
+		kclpkg, err := cli.DownloadPkgFromOci(&downloader.Oci{
 			Reg:  tc.Reg,
 			Repo: tc.Repo,
 			Tag:  tc.Tag,
@@ -1455,8 +1455,8 @@ func testAddWithOciDownloader(t *testing.T) {
 	dep := pkg.Dependency{
 		Name:     "helloworld",
 		FullName: "helloworld_0.0.3",
-		Source: pkg.Source{
-			Oci: &pkg.Oci{
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
 				Reg:  "ghcr.io",
 				Repo: "zong-zhe/helloworld",
 				Tag:  "0.0.3",

@@ -6,8 +6,6 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
-	pkg "kcl-lang.io/kpm/pkg/package"
-	"kcl-lang.io/kpm/pkg/utils"
 )
 
 const testDataDir = "test_data"
@@ -35,8 +33,8 @@ func TestOciDownloader(t *testing.T) {
 	}
 
 	err := ociDownloader.Download(*NewDownloadOptions(
-		WithSource(pkg.Source{
-			Oci: &pkg.Oci{
+		WithSource(Source{
+			Oci: &Oci{
 				Reg:  "ghcr.io",
 				Repo: "zong-zhe/helloworld",
 				Tag:  "0.0.3",
@@ -46,7 +44,6 @@ func TestOciDownloader(t *testing.T) {
 	))
 
 	assert.Equal(t, err, nil)
-	assert.Equal(t, true, utils.DirExists(filepath.Join(path_oci, "artifact.tgz")))
 
 	path_git := getTestDir("test_git")
 	if err := os.MkdirAll(path_oci, os.ModePerm); err != nil {
@@ -60,8 +57,8 @@ func TestOciDownloader(t *testing.T) {
 	gitDownloader := GitDownloader{}
 
 	err = gitDownloader.Download(*NewDownloadOptions(
-		WithSource(pkg.Source{
-			Git: &pkg.Git{
+		WithSource(Source{
+			Git: &Git{
 				Url:    "https://github.com/kcl-lang/flask-demo-kcl-manifests.git",
 				Commit: "ade147b",
 			},

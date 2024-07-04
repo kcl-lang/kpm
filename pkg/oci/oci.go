@@ -20,9 +20,7 @@ import (
 	dockerauth "oras.land/oras-go/pkg/auth/docker"
 	remoteauth "oras.land/oras-go/v2/registry/remote/auth"
 
-	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/opt"
-	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/semver"
 	"kcl-lang.io/kpm/pkg/settings"
@@ -386,20 +384,6 @@ func Push(localPath, hostName, repoName, tag string, settings *settings.Settings
 
 	// Push the oci package by the oci client.
 	return ociClient.Push(localPath, tag)
-}
-
-// GenOciManifestFromPkg will generate the oci manifest from the kcl package.
-func GenOciManifestFromPkg(kclPkg *pkg.KclPkg) (map[string]string, error) {
-	res := make(map[string]string)
-	res[constants.DEFAULT_KCL_OCI_MANIFEST_NAME] = kclPkg.GetPkgName()
-	res[constants.DEFAULT_KCL_OCI_MANIFEST_VERSION] = kclPkg.GetPkgVersion()
-	res[constants.DEFAULT_KCL_OCI_MANIFEST_DESCRIPTION] = kclPkg.GetPkgDescription()
-	sum, err := kclPkg.GenCheckSum()
-	if err != nil {
-		return nil, err
-	}
-	res[constants.DEFAULT_KCL_OCI_MANIFEST_SUM] = sum
-	return res, nil
 }
 
 func GetAllImageTags(imageName string) ([]string, error) {
