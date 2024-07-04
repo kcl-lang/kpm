@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/dominikbraun/graph"
-	"github.com/elliotchance/orderedmap"
+	"github.com/elliotchance/orderedmap/v2"
 	"github.com/hashicorp/go-version"
 	"golang.org/x/mod/module"
 	"kcl-lang.io/kpm/pkg/3rdparty/mvs"

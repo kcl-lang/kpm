@@ -622,18 +622,19 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 
 	globalPkgPath, _ := env.GetAbsPkgPath()
 	res, err := kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
+	fmt.Printf("err: %v\n", err)
 	assert.Equal(t, err, nil)
 
-	expectedDep := pkg.Dependencies{
-		Deps: orderedmap.NewOrderedMap[string, pkg.Dependency](),
+	expectedDep := pkg.DependenciesUI{
+		Deps: make(map[string]pkg.Dependency),
 	}
 
-	expectedDep.Deps.Set("flask_demo_kcl_manifests", pkg.Dependency{
+	expectedDep.Deps["flask_demo_kcl_manifests"] = pkg.Dependency{
 		Name:          "flask_demo_kcl_manifests",
 		FullName:      "flask-demo-kcl-manifests_ade147b",
 		Version:       "ade147b",
 		LocalFullPath: filepath.Join(globalPkgPath, "flask-demo-kcl-manifests_ade147b"),
-	})
+	}
 
 	expectedDepStr, err := json.Marshal(expectedDep)
 	assert.Equal(t, err, nil)
@@ -651,12 +652,12 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	assert.Equal(t, utils.DirExists(vendorDir), true)
 	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "flask-demo-kcl-manifests_ade147b")), true)
 
-	expectedDep.Deps.Set("flask_demo_kcl_manifests", pkg.Dependency{
+	expectedDep.Deps["flask_demo_kcl_manifests"] = pkg.Dependency{
 		Name:          "flask_demo_kcl_manifests",
 		FullName:      "flask-demo-kcl-manifests_ade147b",
 		Version:       "ade147b",
 		LocalFullPath: filepath.Join(vendorDir, "flask-demo-kcl-manifests_ade147b"),
-	})
+	}
 
 	expectedDepStr, err = json.Marshal(expectedDep)
 	assert.Equal(t, err, nil)
@@ -1523,15 +1524,15 @@ func TestAddLocalPath(t *testing.T) {
 
 	modFile, err := kpmCli.LoadModFile(path)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, len(modFile.Deps), 1)
-	assert.Equal(t, modFile.Deps["dep"].Name, "dep")
-	assert.Equal(t, modFile.Deps["dep"].LocalFullPath, filepath.Join(path, "dep"))
+	assert.Equal(t, modFile.Deps.Len(), 1)
+	assert.Equal(t, modFile.Deps.GetOrDefault("dep", pkg.Dependency{}).Name, "dep")
+	assert.Equal(t, modFile.Deps.GetOrDefault("dep", pkg.Dependency{}).LocalFullPath, filepath.Join(path, "dep"))
 
 	kclPkg1, err := kpmCli.LoadPkgFromPath(path)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, kclPkg1.Dependencies.Deps["dep"].Name, "dep")
-	assert.Equal(t, kclPkg1.Dependencies.Deps["dep"].FullName, "dep_0.0.1")
-	assert.Equal(t, kclPkg1.Dependencies.Deps["dep"].Version, "0.0.1")
+	assert.Equal(t, kclPkg1.Dependencies.Deps.GetOrDefault("dep", pkg.Dependency{}).Name, "dep")
+	assert.Equal(t, kclPkg1.Dependencies.Deps.GetOrDefault("dep", pkg.Dependency{}).FullName, "dep_0.0.1")
+	assert.Equal(t, kclPkg1.Dependencies.Deps.GetOrDefault("dep", pkg.Dependency{}).Version, "0.0.1")
 	defer func() {
 		_ = os.Remove(filepath.Join(path, "kcl.mod.lock"))
 		_ = os.Remove(filepath.Join(path, "kcl.mod"))
@@ -1712,4 +1713,24 @@ func testRunDefaultRegistryDep(t *testing.T) {
 		_ = os.Remove(pkgWithSumCheckPathMod)
 		_ = os.Remove(pkgWithSumCheckPathModLock)
 	}()
+}
+
+func TestDependenciesOrder(t *testing.T) {
+	pkgPath := getTestDir("test_dep_order")
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	kclPkg, err := kpmcli.LoadPkgFromPath(pkgPath)
+	assert.Equal(t, err, nil)
+
+	err = kpmcli.UpdateDeps(kclPkg)
+	assert.Equal(t, err, nil)
+
+	got, err := os.ReadFile(filepath.Join(pkgPath, "kcl.mod"))
+	assert.Equal(t, err, nil)
+
+	expect, err := os.ReadFile(filepath.Join(pkgPath, "expect.mod"))
+	assert.Equal(t, err, nil)
+
+	assert.Equal(t, utils.RmNewline(string(got)), utils.RmNewline(string(expect)))
 }

@@ -9,6 +9,7 @@ require (
 	github.com/containers/image/v5 v5.31.0
 	github.com/distribution/reference v0.6.0
 	github.com/dominikbraun/graph v0.23.0
+	github.com/elliotchance/orderedmap/v2 v2.2.0
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/otiai10/copy v1.14.0
 	github.com/sirupsen/logrus v1.9.3
@@ -55,7 +56,6 @@ require (
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/proto v1.13.2 // indirect
-	github.com/elliotchance/orderedmap/v2 v2.2.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect

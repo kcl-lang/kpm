@@ -178,7 +178,7 @@ func TestLoadModFile(t *testing.T) {
 
 	assert.Equal(t, modFile.Dependencies.Deps.GetOrDefault("oci_name", TestPkgDependency).Name, "oci_name")
 	assert.Equal(t, modFile.Dependencies.Deps.GetOrDefault("oci_name", TestPkgDependency).Version, "oci_tag")
-	assert.Equal(t, modFile.Dependencies.Deps.GetOrDefault("oci_name", TestPkgDependency).Source.Oci.Tag, "oci_tag")
+	assert.Equal(t, modFile.Dependencies.Deps.GetOrDefault("oci_name", TestPkgDependency).Source.Registry.Tag, "oci_tag")
 	assert.Equal(t, err, nil)
 
 	assert.Equal(t, modFile.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Name, "helloworld")
@@ -220,7 +220,8 @@ func TestStoreModFile(t *testing.T) {
 		},
 	}
 
-	_ = mfile.StoreModFile()
+	err := mfile.StoreModFile()
+	assert.Equal(t, err, nil)
 
 	expect, _ := os.ReadFile(filepath.Join(testPath, "expected.toml"))
 	got, _ := os.ReadFile(filepath.Join(testPath, "kcl.mod"))

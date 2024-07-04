@@ -62,10 +62,13 @@ const DEPS_PATTERN = "[dependencies]"
 
 func (dep *Dependencies) MarshalTOML() string {
 	var sb strings.Builder
-	if dep.Deps.Len() != 0 {
+	if dep.Deps != nil && dep.Deps.Len() != 0 {
 		sb.WriteString(DEPS_PATTERN)
 		for _, depKeys := range dep.Deps.Keys() {
-			dep, _ := dep.Deps.Get(depKeys)
+			dep, ok := dep.Deps.Get(depKeys)
+			if !ok {
+				break
+			}
 			sb.WriteString(NEWLINE)
 			sb.WriteString(dep.MarshalTOML())
 		}
@@ -470,17 +473,48 @@ func (reg *Registry) UnmarshalModTOML(data interface{}) error {
 	return nil
 }
 
+type DependenciesUI struct {
+	Deps map[string]Dependency `json:"packages" toml:"dependencies,omitempty"`
+}
+
 func (dep *Dependencies) MarshalLockTOML() (string, error) {
+
+	marshaledDeps := make(map[string]Dependency)
+	for _, depKey := range dep.Deps.Keys() {
+		dep, ok := dep.Deps.Get(depKey)
+		if !ok {
+			break
+		}
+		marshaledDeps[depKey] = dep
+	}
+
+	lockDepdenciesUI := DependenciesUI{
+		Deps: marshaledDeps,
+	}
+
 	buf := new(bytes.Buffer)
-	if err := toml.NewEncoder(buf).Encode(dep); err != nil {
+	if err := toml.NewEncoder(buf).Encode(&lockDepdenciesUI); err != nil {
 		return "", reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, "failed to lock dependencies version")
 	}
 	return buf.String(), nil
 }
 
 func (dep *Dependencies) UnmarshalLockTOML(data string) error {
-	if _, err := toml.NewDecoder(strings.NewReader(data)).Decode(dep); err != nil {
+
+	if dep.Deps == nil {
+		dep.Deps = orderedmap.NewOrderedMap[string, Dependency]()
+	}
+
+	lockDepdenciesUI := DependenciesUI{
+		Deps: make(map[string]Dependency),
+	}
+
+	if _, err := toml.NewDecoder(strings.NewReader(data)).Decode(&lockDepdenciesUI); err != nil {
 		return reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, "failed to load kcl.mod.lock")
+	}
+
+	for k, v := range lockDepdenciesUI.Deps {
+		dep.Deps.Set(k, v)
 	}
 
 	return nil

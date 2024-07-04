@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/elliotchance/orderedmap/v2"
 	"github.com/stretchr/testify/assert"
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/opt"
@@ -274,6 +275,9 @@ func TestStoreModAndModLockFile(t *testing.T) {
 		},
 	}
 
+	deps := orderedmap.NewOrderedMap[string, pkg.Dependency]()
+	deps.Set("dep1", testDep)
+
 	testModFile := pkg.ModFile{
 		Pkg: pkg.Package{
 			Name:    "test",
@@ -282,9 +286,7 @@ func TestStoreModAndModLockFile(t *testing.T) {
 		},
 		HomePath: filepath.Join(testPath, "dep1_0.0.1"),
 		Dependencies: pkg.Dependencies{
-			Deps: map[string]pkg.Dependency{
-				"dep1": testDep,
-			},
+			Deps: deps,
 		},
 	}
 

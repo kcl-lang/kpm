@@ -32,7 +32,7 @@ type KclPkg struct {
 	NoSumCheck bool
 }
 
-func (p *KclPkg) GetDepsMetadata() (*Dependencies, error) {
+func (p *KclPkg) GetDepsMetadata() (*DependenciesUI, error) {
 	return p.Dependencies.ToDepMetadata()
 }
 
@@ -59,7 +59,10 @@ func LoadKclPkg(pkgPath string) (*KclPkg, error) {
 
 	// Align the dependencies between kcl.mod and kcl.mod.lock.
 	for _, name := range modFile.Dependencies.Deps.Keys() {
-		dep, _ := modFile.Dependencies.Deps.Get(name)
+		dep, ok := modFile.Dependencies.Deps.Get(name)
+		if !ok {
+			break
+		}
 		if dep.Local != nil {
 			if ldep, ok := deps.Deps.Get(name); ok {
 				abs, err := filepath.Abs(filepath.Join(pkgPath, dep.Local.Path))

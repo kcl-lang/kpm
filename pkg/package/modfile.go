@@ -125,7 +125,10 @@ func (profile *Profile) GetEntries() []string {
 // FillDependenciesInfo will fill registry information for all dependencies in a kcl.mod.
 func (modFile *ModFile) FillDependenciesInfo() error {
 	for _, k := range modFile.Deps.Keys() {
-		v, _ := modFile.Deps.Get(k)
+		v, ok := modFile.Deps.Get(k)
+		if !ok {
+			break
+		}
 		err := v.FillDepInfo(modFile.HomePath)
 		if err != nil {
 			return err
@@ -148,23 +151,22 @@ type Dependencies struct {
 	Deps *orderedmap.OrderedMap[string, Dependency] `json:"packages" toml:"dependencies,omitempty"`
 }
 
-
 // ToDepMetadata will transform the dependencies into metadata.
 // And check whether the dependency name conflicts.
-func (deps *Dependencies) ToDepMetadata() (*Dependencies, error) {
-	depMetadata := Dependencies{
-		Deps: orderedmap.NewOrderedMap[string, Dependency](),
+func (deps *Dependencies) ToDepMetadata() (*DependenciesUI, error) {
+	depMetadata := DependenciesUI{
+		Deps: make(map[string]Dependency),
 	}
 	for _, depName := range deps.Deps.Keys() {
 		d, ok := deps.Deps.Get(depName)
 		if !ok {
 			return nil, reporter.NewErrorEvent(
 				reporter.DependencyNotFoundInOrderedMap,
-				fmt.Errorf("dependency %d not found", depName),
+				fmt.Errorf("dependency %s not found", depName),
 				"internal bugs, please contact us to fix it.",
 			)
 		}
-		if _, ok := depMetadata.Deps.Get(d.GetAliasName()); ok {
+		if _, ok := depMetadata.Deps[d.GetAliasName()]; ok {
 			return nil, reporter.NewErrorEvent(
 				reporter.PathIsEmpty,
 				fmt.Errorf("dependency name conflict, '%s' already exists", d.GetAliasName()),
@@ -173,14 +175,7 @@ func (deps *Dependencies) ToDepMetadata() (*Dependencies, error) {
 			)
 		}
 		d.Name = d.GetAliasName()
-		ok = depMetadata.Deps.Set(d.GetAliasName(), d)
-		if !ok {
-			return nil, reporter.NewErrorEvent(
-				reporter.DependencyNotSetInOrderedMap,
-				fmt.Errorf("unable to set %d as dependency", depName),
-				"internal bugs, please contact us to fix it.",
-			)
-		}
+		depMetadata.Deps[d.GetAliasName()] = d
 	}
 
 	return &depMetadata, nil

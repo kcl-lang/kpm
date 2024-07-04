@@ -112,7 +112,7 @@ func TestLoadKclPkgFromTar(t *testing.T) {
 
 	assert.Equal(t, kclPkg.ModFile.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Name, "oci_konfig")
 	assert.Equal(t, kclPkg.ModFile.Deps.GetOrDefault("oci_konfig", TestPkgDependency).FullName, "oci_konfig_0.0.1")
-	assert.Equal(t, kclPkg.ModFile.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Oci.Tag, "0.0.1")
+	assert.Equal(t, kclPkg.ModFile.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Registry.Tag, "0.0.1")
 
 	assert.Equal(t, kclPkg.Deps.Len(), 2)
 	assert.Equal(t, kclPkg.Deps.GetOrDefault("konfig", TestPkgDependency).Name, "konfig")

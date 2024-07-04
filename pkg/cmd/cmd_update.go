@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/dominikbraun/graph"
-	"github.com/elliotchance/orderedmap"
+	"github.com/elliotchance/orderedmap/v2"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/mod/module"
 	"kcl-lang.io/kpm/pkg/client"
