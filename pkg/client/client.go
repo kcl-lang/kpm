@@ -952,13 +952,71 @@ func (c *KpmClient) FillDependenciesInfo(modFile *pkg.ModFile) error {
 }
 
 // AcquireTheLatestOciVersion will acquire the latest version of the OCI reference.
-func (c *KpmClient) AcquireTheLatestOciVersion(ociSource pkg.Oci) (string, error) {
+func (c *KpmClient) AcquireTheLatestOciVersion(ociSource downloader.Oci) (string, error) {
 	ociClient, err := oci.NewOciClient(ociSource.Reg, ociSource.Repo, &c.settings)
 	if err != nil {
 		return "", err
 	}
 
 	return ociClient.TheLatestTag()
+}
+
+func (c *KpmClient) downloadPkg(options ...downloader.Option) (*pkg.KclPkg, error) {
+	opts := downloader.DownloadOptions{}
+	for _, option := range options {
+		option(&opts)
+	}
+
+	localPath := opts.LocalPath
+	tmpDir, err := os.MkdirTemp("", "")
+	if err != nil {
+		return nil, err
+	}
+	tmpDir = filepath.Join(tmpDir, constants.GitScheme)
+	// clean the temp dir.
+	defer os.RemoveAll(tmpDir)
+	err = c.DepDownloader.Download(*downloader.NewDownloadOptions(
+		downloader.WithLocalPath(tmpDir),
+		downloader.WithSource(opts.Source),
+		downloader.WithLogWriter(c.GetLogWriter()),
+		downloader.WithSettings(*c.GetSettings()),
+	))
+
+	if err != nil {
+		return nil, err
+	}
+
+	if utils.DirExists(localPath) {
+		err := os.RemoveAll(localPath)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	destDir := filepath.Dir(localPath)
+	if !utils.DirExists(destDir) {
+		err = os.MkdirAll(destDir, os.ModePerm)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err = utils.MoveFile(tmpDir, localPath)
+	if err != nil {
+		return nil, err
+	}
+
+	localPath, err = filepath.Abs(localPath)
+	if err != nil {
+		return nil, err
+	}
+
+	pkg, err := c.LoadPkgFromPath(localPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return pkg, nil
 }
 
 // Download will download the dependency to the local path.
@@ -992,7 +1050,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 	}
 
 	if dep.Source.Oci != nil || dep.Source.Registry != nil {
-		var ociSource *pkg.Oci
+		var ociSource *downloader.Oci
 		if dep.Source.Oci != nil {
 			ociSource = dep.Source.Oci
 		} else if dep.Source.Registry != nil {
@@ -1135,7 +1193,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 }
 
 // DownloadFromGit will download the dependency from the git repository.
-func (c *KpmClient) DownloadFromGit(dep *pkg.Git, localPath string) (string, error) {
+func (c *KpmClient) DownloadFromGit(dep *downloader.Git, localPath string) (string, error) {
 	var msg string
 	if len(dep.Tag) != 0 {
 		msg = fmt.Sprintf("with tag '%s'", dep.Tag)
@@ -1217,7 +1275,7 @@ func (c *KpmClient) ParseKclModFile(kclPkg *pkg.KclPkg) (map[string]map[string]s
 }
 
 // LoadPkgFromOci will download the kcl package from the oci repository and return an `KclPkg`.
-func (c *KpmClient) DownloadPkgFromOci(dep *pkg.Oci, localPath string) (*pkg.KclPkg, error) {
+func (c *KpmClient) DownloadPkgFromOci(dep *downloader.Oci, localPath string) (*pkg.KclPkg, error) {
 	ociClient, err := oci.NewOciClient(dep.Reg, dep.Repo, &c.settings)
 	if err != nil {
 		return nil, err
@@ -1263,7 +1321,7 @@ func (c *KpmClient) DownloadPkgFromOci(dep *pkg.Oci, localPath string) (*pkg.Kcl
 
 // DownloadFromOci will download the dependency from the oci repository.
 // Deprecated: Use the DownloadPkgFromOci instead.
-func (c *KpmClient) DownloadFromOci(dep *pkg.Oci, localPath string) (string, error) {
+func (c *KpmClient) DownloadFromOci(dep *downloader.Oci, localPath string) (string, error) {
 	ociClient, err := oci.NewOciClient(dep.Reg, dep.Repo, &c.settings)
 	if err != nil {
 		return "", err
