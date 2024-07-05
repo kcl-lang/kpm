@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/BurntSushi/toml"
 	orderedmap "github.com/elliotchance/orderedmap/v2"
 	"github.com/stretchr/testify/assert"
+	ktoml "kcl-lang.io/kcl-go/pkg/3rdparty/toml"
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/utils"
 )
@@ -74,7 +74,7 @@ func TestUnMarshalTOML(t *testing.T) {
 	modfile := ModFile{}
 	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected.toml"))
 
-	_ = toml.Unmarshal(expected_data, &modfile)
+	_ = ktoml.Unmarshal(expected_data, &modfile)
 	fmt.Printf("modfile: %v\n", modfile)
 
 	assert.Equal(t, modfile.Pkg.Name, "MyKcl")

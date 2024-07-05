@@ -26,8 +26,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/BurntSushi/toml"
 	orderedmap "github.com/elliotchance/orderedmap/v2"
+	ktoml "kcl-lang.io/kcl-go/pkg/3rdparty/toml"
 
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -52,7 +52,7 @@ func (pkg *Package) MarshalTOML() string {
 	sb.WriteString(PACKAGE_PATTERN)
 	sb.WriteString(NEWLINE)
 	var buf bytes.Buffer
-	if err := toml.NewEncoder(&buf).Encode(pkg); err != nil {
+	if err := ktoml.NewEncoder(&buf).Encode(pkg); err != nil {
 		fmt.Println(err)
 		return ""
 	}
@@ -98,7 +98,7 @@ func (p *Profile) MarshalTOML() string {
 		sb.WriteString(PROFILE_PATTERN)
 		sb.WriteString(NEWLINE)
 		var buf bytes.Buffer
-		if err := toml.NewEncoder(&buf).Encode(p); err != nil {
+		if err := ktoml.NewEncoder(&buf).Encode(p); err != nil {
 			fmt.Println(err)
 			return ""
 		}
@@ -140,10 +140,10 @@ func (mod *ModFile) UnmarshalTOML(data interface{}) error {
 	if v, ok := meta[PROFILES_FLAG]; ok {
 		p := NewProfile()
 		var buf bytes.Buffer
-		if err := toml.NewEncoder(&buf).Encode(v); err != nil {
+		if err := ktoml.NewEncoder(&buf).Encode(v); err != nil {
 			return err
 		}
-		err := toml.Unmarshal(buf.Bytes(), &p)
+		err := ktoml.Unmarshal(buf.Bytes(), &p)
 
 		if err != nil {
 			return err
@@ -207,7 +207,13 @@ func (deps *Dependencies) UnmarshalModTOML(data interface{}) error {
 		return fmt.Errorf("expected map[string]interface{}, got %T", data)
 	}
 
-	for k, v := range meta {
+	var keys []string
+	for k := range meta {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		v := meta[k]
 		dep := Dependency{}
 		dep.Name = k
 
@@ -268,7 +274,7 @@ func (dep *Dependencies) MarshalLockTOML() (string, error) {
 	}
 
 	buf := new(bytes.Buffer)
-	if err := toml.NewEncoder(buf).Encode(&lockDepdenciesUI); err != nil {
+	if err := ktoml.NewEncoder(buf).Encode(&lockDepdenciesUI); err != nil {
 		return "", reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, "failed to lock dependencies version")
 	}
 	return buf.String(), nil
@@ -284,7 +290,7 @@ func (dep *Dependencies) UnmarshalLockTOML(data string) error {
 		Deps: make(map[string]Dependency),
 	}
 
-	if _, err := toml.NewDecoder(strings.NewReader(data)).Decode(&lockDepdenciesUI); err != nil {
+	if _, err := ktoml.NewDecoder(strings.NewReader(data)).Decode(&lockDepdenciesUI); err != nil {
 		return reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, "failed to load kcl.mod.lock")
 	}
 

@@ -12,12 +12,12 @@ import (
 
 	goerr "errors"
 
-	"github.com/BurntSushi/toml"
 	"github.com/dominikbraun/graph"
 	"github.com/elliotchance/orderedmap/v2"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/otiai10/copy"
 	"golang.org/x/mod/module"
+	ktoml "kcl-lang.io/kcl-go/pkg/3rdparty/toml"
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"oras.land/oras-go/v2"
 
@@ -1246,7 +1246,7 @@ func (c *KpmClient) ParseKclModFile(kclPkg *pkg.KclPkg) (map[string]map[string]s
 
 	// Parse the TOML content
 	var modFileData map[string]interface{}
-	if err := toml.Unmarshal([]byte(modFileContent), &modFileData); err != nil {
+	if err := ktoml.Unmarshal([]byte(modFileContent), &modFileData); err != nil {
 		return nil, err
 	}
 
