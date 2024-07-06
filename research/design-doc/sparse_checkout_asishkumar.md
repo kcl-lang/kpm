@@ -14,16 +14,14 @@ The user can just provide the git url of the subdir they want to install. An exa
 kcl mod add --git https://github.com/kcl-lang/modules/tree/main/argoproj --tag <tag>
 ```
 
-kpm would parse the git url and extract the subdirectory path using `GetPath()` function from github.com/kubescape/go-git-url subdir. It will then download the subdirectory and append it in the subdir array of the `kcl.mod` file. 
+kpm would parse the git url and extract the subdirectory path using `GetPath()` function from github.com/kubescape/go-git-url subdir. 
 
 The `kcl.mod` file will look like this:
 
 ```
 [dependencies]
-bbb = { git = "https://github.com/kcl-lang/modules", commit = "ade147b", subdir = ["add-ndots"]}
+bbb = { git = "https://github.com/kcl-lang/modules", commit = "ade147b"}
 ```
-
-The subdir is a list because in the future if user wants to add another subdir from the same git repo then it can be added without overwritting the current subdir.
 
 ## Design
 
