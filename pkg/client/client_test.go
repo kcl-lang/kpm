@@ -1716,7 +1716,7 @@ func testRunDefaultRegistryDep(t *testing.T) {
 }
 
 func TestDependenciesOrder(t *testing.T) {
-	// test 100 times to make sure the order is correct
+	// test 1000 times to make sure the order is correct
 	// decrease the possibility of random error
 	for i := 0; i < 1000; i++ {
 		pkgPath := getTestDir("test_dep_order")
