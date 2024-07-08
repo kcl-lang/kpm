@@ -207,7 +207,13 @@ func (deps *Dependencies) UnmarshalModTOML(data interface{}) error {
 		return fmt.Errorf("expected map[string]interface{}, got %T", data)
 	}
 
-	for k, v := range meta {
+	var keys []string
+	for k := range meta {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		v := meta[k]
 		dep := Dependency{}
 		dep.Name = k
 

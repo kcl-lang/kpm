@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/BurntSushi/toml"
 	orderedmap "github.com/elliotchance/orderedmap/v2"
+	"github.com/BurntSushi/toml"
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
 

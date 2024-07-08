@@ -97,7 +97,7 @@ func TestUnMarshalTOML(t *testing.T) {
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).Source.Registry.Tag, "0.0.1")
 }
 
-func TestMarshalLockToml(t *testing.T) {
+func TestMarshalLockTOML(t *testing.T) {
 	dep := Dependency{
 		Name:     "MyKcl1",
 		FullName: "MyKcl1_v0.0.2",
@@ -137,7 +137,7 @@ func TestMarshalLockToml(t *testing.T) {
 	assert.Equal(t, utils.RmNewline(expected_toml), utils.RmNewline(tomlStr))
 }
 
-func TestUnmarshalLockToml(t *testing.T) {
+func TestUnmarshalLockTOML(t *testing.T) {
 	deps := Dependencies{
 		orderedmap.NewOrderedMap[string, Dependency](),
 	}
