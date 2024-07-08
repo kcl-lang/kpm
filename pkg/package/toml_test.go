@@ -59,15 +59,10 @@ func TestMarshalTOML(t *testing.T) {
 	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected.toml"))
 	expected_toml := utils.RmNewline(string(expected_data))
 
-	reversed_expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected_reversed.toml"))
-	reversed_expected_toml := utils.RmNewline(string(reversed_expected_data))
 	fmt.Printf("expected_toml: '%q'\n", expected_toml)
-	fmt.Printf("reversed_expected_toml: '%q'\n", reversed_expected_toml)
+
 	fmt.Printf("modfile: '%q'\n", got_data)
-	fmt.Printf("expected_toml == got_data: '%t'\n", expected_toml == got_data)
-	fmt.Printf("reversed_expected_toml == got_data: '%t'\n", reversed_expected_toml == got_data)
-	assert.Equal(t, (utils.RmNewline(expected_toml) == utils.RmNewline(got_data)) ||
-		(utils.RmNewline(reversed_expected_toml) == utils.RmNewline(got_data)), true, "got data is ", expected_toml, reversed_expected_toml, got_data)
+	assert.Equal(t, utils.RmNewline(expected_toml), utils.RmNewline(got_data))
 }
 
 func TestUnMarshalTOML(t *testing.T) {
