@@ -151,7 +151,7 @@ require (
 	github.com/gofrs/flock v0.11.0
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-getter v1.7.4
+	github.com/hashicorp/go-getter v1.7.5
 	github.com/hashicorp/go-version v1.7.0
 	github.com/kubescape/go-git-url v0.0.30
 	github.com/moby/term v0.5.0
