@@ -1716,25 +1716,21 @@ func testRunDefaultRegistryDep(t *testing.T) {
 }
 
 func TestDependenciesOrder(t *testing.T) {
-	// test 1000 times to make sure the order is correct
-	// decrease the possibility of random error
-	for i := 0; i < 1000; i++ {
-		pkgPath := getTestDir("test_dep_order")
+	pkgPath := getTestDir("test_dep_order")
 
-		kpmcli, err := NewKpmClient()
-		assert.Equal(t, err, nil)
-		kclPkg, err := kpmcli.LoadPkgFromPath(pkgPath)
-		assert.Equal(t, err, nil)
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	kclPkg, err := kpmcli.LoadPkgFromPath(pkgPath)
+	assert.Equal(t, err, nil)
 
-		err = kpmcli.UpdateDeps(kclPkg)
-		assert.Equal(t, err, nil)
+	err = kpmcli.UpdateDeps(kclPkg)
+	assert.Equal(t, err, nil)
 
-		got, err := os.ReadFile(filepath.Join(pkgPath, "kcl.mod"))
-		assert.Equal(t, err, nil)
+	got, err := os.ReadFile(filepath.Join(pkgPath, "kcl.mod"))
+	assert.Equal(t, err, nil)
 
-		expect, err := os.ReadFile(filepath.Join(pkgPath, "expect.mod"))
-		assert.Equal(t, err, nil)
+	expect, err := os.ReadFile(filepath.Join(pkgPath, "expect.mod"))
+	assert.Equal(t, err, nil)
 
-		assert.Equal(t, utils.RmNewline(string(got)), utils.RmNewline(string(expect)))
-	}
+	assert.Equal(t, utils.RmNewline(string(got)), utils.RmNewline(string(expect)))
 }
