@@ -97,7 +97,7 @@ func TestUnMarshalTOML(t *testing.T) {
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).Source.Registry.Tag, "0.0.1")
 }
 
-func TestMarshalLoctoml(t *testing.T) {
+func TestMarshalLockTOML(t *testing.T) {
 	dep := Dependency{
 		Name:     "MyKcl1",
 		FullName: "MyKcl1_v0.0.2",
@@ -131,20 +131,20 @@ func TestMarshalLoctoml(t *testing.T) {
 
 	deps.Deps.Set(dep.Name, dep)
 	deps.Deps.Set(ociDep.Name, ociDep)
-	tomlStr, _ := deps.MarshalLoctoml()
+	tomlStr, _ := deps.MarshalLockTOML()
 	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected_lock.toml"))
 	expected_toml := string(expected_data)
 	assert.Equal(t, utils.RmNewline(expected_toml), utils.RmNewline(tomlStr))
 }
 
-func TestUnmarshalLoctoml(t *testing.T) {
+func TestUnmarshalLockTOML(t *testing.T) {
 	deps := Dependencies{
 		orderedmap.NewOrderedMap[string, Dependency](),
 	}
 
 	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected_lock.toml"))
 	expected_toml := string(expected_data)
-	_ = deps.UnmarshalLoctoml(expected_toml)
+	_ = deps.UnmarshalLockTOML(expected_toml)
 
 	assert.Equal(t, deps.Deps.Len(), 2)
 	assert.NotEqual(t, deps.Deps.GetOrDefault("MyKcl1", TestPkgDependency), nil)
