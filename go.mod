@@ -6,7 +6,7 @@ toolchain go1.22.5
 
 require (
 	github.com/BurntSushi/toml v1.4.0
-	github.com/containers/image/v5 v5.31.0
+	github.com/containers/image/v5 v5.31.1
 	github.com/distribution/reference v0.6.0
 	github.com/dominikbraun/graph v0.23.0
 	github.com/elliotchance/orderedmap/v2 v2.2.0
