@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/BurntSushi/toml"
 	orderedmap "github.com/elliotchance/orderedmap/v2"
 	"github.com/stretchr/testify/assert"
-	ktoml "kcl-lang.io/kcl-go/pkg/3rdparty/toml"
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/utils"
 )
@@ -74,7 +74,7 @@ func TestUnMarshalTOML(t *testing.T) {
 	modfile := ModFile{}
 	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected.toml"))
 
-	_ = ktoml.Unmarshal(expected_data, &modfile)
+	_ = toml.Unmarshal(expected_data, &modfile)
 	fmt.Printf("modfile: %v\n", modfile)
 
 	assert.Equal(t, modfile.Pkg.Name, "MyKcl")
@@ -97,7 +97,7 @@ func TestUnMarshalTOML(t *testing.T) {
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).Source.Registry.Tag, "0.0.1")
 }
 
-func TestMarshalLockToml(t *testing.T) {
+func TestMarshalLoctoml(t *testing.T) {
 	dep := Dependency{
 		Name:     "MyKcl1",
 		FullName: "MyKcl1_v0.0.2",
@@ -131,20 +131,20 @@ func TestMarshalLockToml(t *testing.T) {
 
 	deps.Deps.Set(dep.Name, dep)
 	deps.Deps.Set(ociDep.Name, ociDep)
-	tomlStr, _ := deps.MarshalLockTOML()
+	tomlStr, _ := deps.MarshalLoctoml()
 	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected_lock.toml"))
 	expected_toml := string(expected_data)
 	assert.Equal(t, utils.RmNewline(expected_toml), utils.RmNewline(tomlStr))
 }
 
-func TestUnmarshalLockToml(t *testing.T) {
+func TestUnmarshalLoctoml(t *testing.T) {
 	deps := Dependencies{
 		orderedmap.NewOrderedMap[string, Dependency](),
 	}
 
 	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected_lock.toml"))
 	expected_toml := string(expected_data)
-	_ = deps.UnmarshalLockTOML(expected_toml)
+	_ = deps.UnmarshalLoctoml(expected_toml)
 
 	assert.Equal(t, deps.Deps.Len(), 2)
 	assert.NotEqual(t, deps.Deps.GetOrDefault("MyKcl1", TestPkgDependency), nil)

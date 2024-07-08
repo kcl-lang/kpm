@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	orderedmap "github.com/elliotchance/orderedmap/v2"
-	ktoml "kcl-lang.io/kcl-go/pkg/3rdparty/toml"
+	"github.com/BurntSushi/toml"
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
 
@@ -405,7 +405,7 @@ func (mod *ModFile) LoadModFile(filepath string) error {
 		return err
 	}
 
-	err = ktoml.Unmarshal(modData, &mod)
+	err = toml.Unmarshal(modData, &mod)
 
 	if err != nil {
 		return err
