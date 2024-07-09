@@ -199,6 +199,10 @@ func (d *GitDownloader) Download(opts DownloadOptions) error {
 		msg = fmt.Sprintf("with commit '%s'", opts.Source.Git.Commit)
 	}
 
+	if len(opts.Source.Git.Branch) != 0 {
+		msg = fmt.Sprintf("with branch '%s'", opts.Source.Git.Branch)
+	}
+
 	reporter.ReportMsgTo(
 		fmt.Sprintf("cloning '%s' %s", opts.Source.Git.Url, msg),
 		opts.LogWriter,

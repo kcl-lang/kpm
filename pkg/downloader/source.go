@@ -64,6 +64,14 @@ func (source *Source) IsLocalTarPath() bool {
 	return source.Local.IsLocalTarPath()
 }
 
+func (source *Source) IsLocalTgzPath() bool {
+	return source.Local.IsLocalTgzPath()
+}
+
+func (source *Source) IsRemote() bool {
+	return source.Git != nil || source.Oci != nil || source.Registry != nil
+}
+
 func (source *Source) IsPackaged() bool {
 	return source.IsLocalTarPath() || source.Git != nil || source.Oci != nil || source.Registry != nil
 }
@@ -89,6 +97,10 @@ func (source *Source) FindRootPath() (string, error) {
 }
 
 func (local *Local) IsLocalTarPath() bool {
+	return local != nil && filepath.Ext(local.Path) == constants.TarPathSuffix
+}
+
+func (local *Local) IsLocalTgzPath() bool {
 	return local != nil && filepath.Ext(local.Path) == constants.TarPathSuffix
 }
 
@@ -301,8 +313,9 @@ func (local *Local) ToString() (string, error) {
 		return "", fmt.Errorf("local source is nil")
 	}
 
-	pathUrl := &url.URL{
-		Path: local.Path,
+	pathUrl, error := url.Parse(local.Path)
+	if error != nil {
+		return "", error
 	}
 
 	return pathUrl.String(), nil
