@@ -5,6 +5,7 @@ const (
 	DefaultOciScheme    = "default-oci"
 	KFilePathSuffix     = ".k"
 	TarPathSuffix       = ".tar"
+	TgzPathSuffix       = ".tgz"
 	GitPathSuffix       = ".git"
 	OciScheme           = "oci"
 	GitScheme           = "git"

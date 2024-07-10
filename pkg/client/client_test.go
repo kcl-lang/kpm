@@ -1734,3 +1734,161 @@ func TestDependenciesOrder(t *testing.T) {
 
 	assert.Equal(t, utils.RmNewline(string(got)), utils.RmNewline(string(expect)))
 }
+
+func TestRunLocalWithoutArgs(t *testing.T) {
+	pkgPath := getTestDir("test_run_options")
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	logbuf := new(bytes.Buffer)
+	kpmcli.SetLogWriter(logbuf)
+
+	tests := []struct {
+		workdirSuffix string
+		withVendor    bool
+		diagnostic    string
+		expected      string
+	}{
+		{"run_0", false, "", "The_first_kcl_program: Hello World!"},
+		{"run_1", false, "", "The_sub_kcl_program: Hello Sub World!"},
+		{"run_2", false, "", "The_sub_kcl_program: Hello Sub World!"},
+		{"run_3", false, "", "The_yaml_sub_kcl_program: Hello Yaml Sub World!"},
+		{"run_4", true, "", "a: A package in vendor path"},
+		{"run_5", true, "", "kcl_6: KCL 6\na: sub6\nkcl_7: KCL 7\nb: sub7"},
+		{filepath.Join("run_6", "main"), true, "", "The_sub_kcl_program: Hello Sub World!\nThe_first_kcl_program: Hello World!"},
+	}
+
+	for _, test := range tests {
+		workdir := filepath.Join(pkgPath, "no_args", test.workdirSuffix)
+		res, err := kpmcli.Run(
+			WithWorkDir(workdir),
+			WithVendor(test.withVendor),
+		)
+
+		assert.Equal(t, err, nil)
+		assert.Equal(t, logbuf.String(), test.diagnostic)
+		assert.Equal(t, res.GetRawYamlResult(), test.expected)
+		logbuf.Reset()
+	}
+}
+
+func TestRunLocalWithArgs(t *testing.T) {
+	pkgPath := getTestDir("test_run_options")
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	logbuf := new(bytes.Buffer)
+	kpmcli.SetLogWriter(logbuf)
+
+	tests := []struct {
+		inputs     []string
+		workdir    string
+		withVendor bool
+		diagnostic string
+		expected   string
+	}{
+		{
+			[]string{filepath.Join(pkgPath, "with_args", "run_0", "main.k")}, filepath.Join(pkgPath, "with_args", "run_0"),
+			false, "", "The_first_kcl_program: Hello World!"},
+		{
+			[]string{filepath.Join(pkgPath, "with_args", "run_1", "main.k")}, filepath.Join(pkgPath, "with_args", "run_1"),
+			false, "", "The_first_kcl_program: Hello World!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_2", "base.k"),
+			filepath.Join(pkgPath, "with_args", "run_2", "main.k"),
+		}, filepath.Join(pkgPath, "with_args", "run_2"), false, "", "base: Base\nThe_first_kcl_program: Hello World!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_3", "main.k"),
+		}, filepath.Join(pkgPath, "with_args", "run_3"), false, "", "The_first_kcl_program: Hello World!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_4", "main.k"),
+		}, filepath.Join(pkgPath, "with_args", "run_4"), false, "", "The_first_kcl_program: Hello World!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_5"),
+		}, filepath.Join(pkgPath, "with_args", "run_5"), false, "", "The_first_kcl_program: Hello World!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_6"),
+		}, filepath.Join(pkgPath, "with_args", "run_6"), false, "", "The_first_kcl_program: Hello World!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_7"),
+		}, filepath.Join(pkgPath, "with_args", "run_7"), false, "", "base: Base\nThe_first_kcl_program: Hello World!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_8"),
+		}, filepath.Join(pkgPath, "with_args", "run_8"), false, "", "The_first_kcl_program: Hello World!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_9"),
+		}, filepath.Join(pkgPath, "with_args", "run_9"), false, "", "The_first_kcl_program: Hello World!"},
+	}
+
+	for _, test := range tests {
+		res, err := kpmcli.Run(
+			WithRunSourceUrls(test.inputs),
+			WithWorkDir(test.workdir),
+		)
+
+		assert.Equal(t, err, nil)
+		assert.Equal(t, logbuf.String(), test.diagnostic)
+		assert.Equal(t, res.GetRawYamlResult(), test.expected)
+		logbuf.Reset()
+	}
+}
+
+func TestRunRemoteWithArgs(t *testing.T) {
+	pkgPath := getTestDir("test_run_options")
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	logbuf := new(bytes.Buffer)
+	kpmcli.SetLogWriter(logbuf)
+
+	type testCase struct {
+		sourceURL      string
+		expectedLog    string
+		expectedYaml   string
+		expectedYamlFn func(pkgPath string) (string, error) // Function to dynamically get expected YAML
+	}
+
+	testCases := []testCase{
+		{
+			sourceURL:    "oci://ghcr.io/kcl-lang/helloworld?tag=0.1.2",
+			expectedLog:  "downloading 'kcl-lang/helloworld:0.1.2' from 'ghcr.io/kcl-lang/helloworld:0.1.2'\n",
+			expectedYaml: "The_first_kcl_program: Hello World!",
+		},
+		{
+			sourceURL:   "git://github.com/kcl-lang/flask-demo-kcl-manifests?branch=main",
+			expectedLog: "cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests' with branch 'main'\n",
+			expectedYamlFn: func(pkgPath string) (string, error) {
+				expected, err := os.ReadFile(filepath.Join(pkgPath, "remote", "expect_1.yaml"))
+				return string(expected), err
+			},
+		},
+		{
+			sourceURL:   "git://github.com/kcl-lang/flask-demo-kcl-manifests?commit=ade147b",
+			expectedLog: "cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests' with commit 'ade147b'\n",
+			expectedYamlFn: func(pkgPath string) (string, error) {
+				expected, err := os.ReadFile(filepath.Join(pkgPath, "remote", "expect_2.yaml"))
+				return string(expected), err
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		res, err := kpmcli.Run(WithRunSourceUrl(tc.sourceURL))
+		assert.Equal(t, err, nil)
+		assert.Equal(t, logbuf.String(), tc.expectedLog)
+
+		var expectedYaml string
+		if tc.expectedYamlFn != nil {
+			var err error
+			expectedYaml, err = tc.expectedYamlFn(pkgPath)
+			assert.Equal(t, err, nil)
+		} else {
+			expectedYaml = tc.expectedYaml
+		}
+
+		assert.Equal(t, utils.RmNewline(res.GetRawYamlResult()), utils.RmNewline(expectedYaml))
+		logbuf.Reset()
+	}
+}
