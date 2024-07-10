@@ -1,3 +1,65 @@
+/*
+This file provides the api for running a kcl package.
+You can use `RunOptions` to set the options for running a kcl package.
+Before running a kcl package, you should create a instance for `KpmClient`.
+
+```go
+kpmcli := client.NewKpmClient()
+```
+
+You can use the method `Run` for `KpmClient` with options `RunOptions` to run a kcl package.
+
+```go
+kpmcli.Run(
+	WithWorkDir("path/to/workdir"),
+	WithRunSourceUrl("path/to/source"),
+)
+```
+
+You can set the KCL package sources by `WithRunSourceUrls` or `WithRunSourceUrl`.
+The KCL package sources include the local path, the remote git/oci path, etc.
+For remote git/oci path, you can set the package sources
+
+```go
+// The KCL package sources are the remote git repo.
+kpmcli.Run(
+	WithRunSourceUrl("git://github.com/test/test.git"),
+)
+
+// The KCL package sources are the remote oci registry.
+kpmcli.Run(
+	WithRunSourceUrl("oci://ghcr.com/test/test"),
+)
+```
+
+For local paths, you can set multiple *.k files or directories.
+likg:
+
+```go
+kpmcli.Run(
+	WithRunSourceUrl("local/usr/test1/main.k"),
+	WithRunSourceUrl("local/usr/test2/base.k"),
+	WithRunSourceUrl("local/usr/test3/"),
+)
+```
+
+For the source above, `kpmcli.Run()` will do :
+1.find a package root path from the sources.
+2.load the package from the package root path.
+3.take all the sources as the compile entry to compile the package.
+
+NOTE: `kpmcli.Run()` do not support compiling multiple packages at the same time. so, all the sources should belong to the same package root path.
+
+`kpmcli.Run()` will iterate all the sources and find the source root path.
+For source `local/usr/test1/main.k`, `kpmcli.Run()` will start from the path `local/usr/test1` and iterate all the parent directories.
+
+If `kcl.mod` are found, the path of `kcl.mod` will be used as the source root path.
+If `kcl.mod` are not found, the path of the source will be used as the source root path.
+
+So if the kcl.mod is located in the path `local/usr/`, `kpmcli.Run()` will load package from `local/usr/` and load dependencies from `local/usr/kcl.mod`.
+And take all the KCL program files in the sources as the compile entry to compile the package.
+*/
+
 package client
 
 import (
@@ -317,6 +379,12 @@ func (o *RunOptions) applyCompileOptions(kclPkg *pkg.KclPkg, workDir string) err
 				} else {
 					compiledFiles = append(compiledFiles, filepath.Join(workDir, source.Path))
 				}
+			} else {
+				return reporter.NewErrorEvent(
+					reporter.CompileFailed,
+					fmt.Errorf("cannot compile multiple packages at the same time"),
+					"only allows one package to be compiled at a time",
+				)
 			}
 		}
 		o.KFilenameList = compiledFiles

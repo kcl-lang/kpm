@@ -1756,6 +1756,7 @@ func TestRunLocalWithoutArgs(t *testing.T) {
 		{"run_3", false, "", "The_yaml_sub_kcl_program: Hello Yaml Sub World!"},
 		{"run_4", true, "", "a: A package in vendor path"},
 		{"run_5", true, "", "kcl_6: KCL 6\na: sub6\nkcl_7: KCL 7\nb: sub7"},
+		{filepath.Join("run_6", "main"), true, "", "The_sub_kcl_program: Hello Sub World!\nThe_first_kcl_program: Hello World!"},
 	}
 
 	for _, test := range tests {
