@@ -379,12 +379,6 @@ func (o *RunOptions) applyCompileOptions(kclPkg *pkg.KclPkg, workDir string) err
 				} else {
 					compiledFiles = append(compiledFiles, filepath.Join(workDir, source.Path))
 				}
-			} else {
-				return reporter.NewErrorEvent(
-					reporter.CompileFailed,
-					fmt.Errorf("cannot compile multiple packages at the same time"),
-					"only allows one package to be compiled at a time",
-				)
 			}
 		}
 		o.KFilenameList = compiledFiles
