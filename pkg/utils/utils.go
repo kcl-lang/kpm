@@ -306,7 +306,7 @@ func DirExists(path string) bool {
 	return err == nil
 }
 
-const ModRelativePathPattern = `^\$\{[^}]+:KCL_MOD\}/main\.k$`
+const ModRelativePathPattern = `\$\{([a-zA-Z0-9_-]+:)?KCL_MOD\}/`
 
 // If the path preffix is `${KCL_MOD}` or `${KCL_MOD:xxx}`
 func IsModRelativePath(s string) bool {

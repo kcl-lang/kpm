@@ -296,3 +296,9 @@ func TestIsSymlinkExist(t *testing.T) {
 		assert.Equal(t, err, nil)
 	}()
 }
+
+func TestIsModRelativePath(t *testing.T) {
+	assert.Equal(t, IsModRelativePath("${KCL_MOD}/aaa"), true)
+	assert.Equal(t, IsModRelativePath("${helloworld:KCL_MOD}/aaa"), true)
+	assert.Equal(t, IsModRelativePath("xxx/xxx/xxx"), false)
+}
