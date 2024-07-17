@@ -382,6 +382,7 @@ type GitOptions struct {
 	Branch string
 	Commit string
 	Tag    string
+	SubPackage string
 }
 
 func (opts *GitOptions) Validate() error {

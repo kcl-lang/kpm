@@ -58,6 +58,7 @@ func (registry *Registry) MarshalTOML() string {
 const GIT_URL_PATTERN = "git = \"%s\""
 const TAG_PATTERN = "tag = \"%s\""
 const GIT_COMMIT_PATTERN = "commit = \"%s\""
+const GIT_SUB_PACKAGE_PATTERN = "sub-package = \"%s\""
 const GIT_BRANCH_PATTERN = "branch = \"%s\""
 const VERSION_PATTERN = "version = \"%s\""
 const SEPARATOR = ", "
@@ -74,6 +75,11 @@ func (git *Git) MarshalTOML() string {
 	if len(git.Commit) != 0 {
 		sb.WriteString(SEPARATOR)
 		sb.WriteString(fmt.Sprintf(GIT_COMMIT_PATTERN, git.Commit))
+	}
+
+	if len(git.SubPackage) != 0 {
+		sb.WriteString(SEPARATOR)
+		sb.WriteString(fmt.Sprintf(GIT_SUB_PACKAGE_PATTERN, git.SubPackage))
 	}
 
 	if len(git.Branch) != 0 {
@@ -165,6 +171,7 @@ func (source *Source) UnmarshalModTOML(data interface{}) error {
 const GIT_URL_FLAG = "git"
 const TAG_FLAG = "tag"
 const GIT_COMMIT_FLAG = "commit"
+const GIT_SUB_PACKAGE_flag = "sub-package"
 const GIT_BRANCH_FLAG = "branch"
 
 func (git *Git) UnmarshalModTOML(data interface{}) error {
@@ -183,6 +190,10 @@ func (git *Git) UnmarshalModTOML(data interface{}) error {
 
 	if v, ok := meta[GIT_COMMIT_FLAG].(string); ok {
 		git.Commit = v
+	}
+
+	if v, ok := meta[GIT_SUB_PACKAGE_PATTERN].(string); ok {
+		git.SubPackage = v
 	}
 
 	if v, ok := meta[GIT_BRANCH_FLAG].(string); ok {

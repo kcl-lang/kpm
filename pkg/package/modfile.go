@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	orderedmap "github.com/elliotchance/orderedmap/v2"
 	"github.com/BurntSushi/toml"
+	orderedmap "github.com/elliotchance/orderedmap/v2"
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
 
@@ -459,10 +459,11 @@ func (deps *Dependencies) loadLockFile(filepath string) error {
 func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 	if opt.Git != nil {
 		gitSource := downloader.Git{
-			Url:    opt.Git.Url,
-			Branch: opt.Git.Branch,
-			Commit: opt.Git.Commit,
-			Tag:    opt.Git.Tag,
+			Url:        opt.Git.Url,
+			Branch:     opt.Git.Branch,
+			Commit:     opt.Git.Commit,
+			Tag:        opt.Git.Tag,
+			SubPackage: opt.Git.SubPackage,
 		}
 
 		gitRef, err := gitSource.GetValidGitReference()

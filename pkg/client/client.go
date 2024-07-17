@@ -628,6 +628,7 @@ func (c *KpmClient) CompileGitPkg(gitOpts *git.CloneOptions, compileOpts *opt.Co
 		git.WithCommit(gitOpts.Commit),
 		git.WithBranch(gitOpts.Branch),
 		git.WithTag(gitOpts.Tag),
+		git.WithSubPackage(gitOpts.SubPackage),
 		git.WithRepoURL(gitOpts.RepoURL),
 		git.WithLocalPath(tmpDir),
 	)
@@ -1203,6 +1204,10 @@ func (c *KpmClient) DownloadFromGit(dep *downloader.Git, localPath string) (stri
 		msg = fmt.Sprintf("with commit '%s'", dep.Commit)
 	}
 
+	if len(dep.SubPackage) != 0 {
+		msg = fmt.Sprintf("with subpackage '%s'", dep.SubPackage)
+	}
+
 	if len(dep.Branch) != 0 {
 		msg = fmt.Sprintf("with branch '%s'", dep.Branch)
 	}
@@ -1216,6 +1221,7 @@ func (c *KpmClient) DownloadFromGit(dep *downloader.Git, localPath string) (stri
 		git.WithCommit(dep.Commit),
 		git.WithTag(dep.Tag),
 		git.WithRepoURL(dep.Url),
+		git.WithSubPackage(dep.SubPackage),
 		git.WithLocalPath(localPath),
 		git.WithWriter(c.logWriter),
 	)

@@ -34,11 +34,12 @@ type Oci struct {
 
 // Git is the package source from git registry.
 type Git struct {
-	Url     string `toml:"url,omitempty"`
-	Branch  string `toml:"branch,omitempty"`
-	Commit  string `toml:"commit,omitempty"`
-	Tag     string `toml:"git_tag,omitempty"`
-	Version string `toml:"version,omitempty"`
+	Url        string `toml:"url,omitempty"`
+	Branch     string `toml:"branch,omitempty"`
+	Commit     string `toml:"commit,omitempty"`
+	SubPackage string `toml:"sub-package,omitempty"`
+	Tag        string `toml:"git_tag,omitempty"`
+	Version    string `toml:"version,omitempty"`
 }
 
 type Registry struct {

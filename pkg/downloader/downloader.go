@@ -203,6 +203,10 @@ func (d *GitDownloader) Download(opts DownloadOptions) error {
 		msg = fmt.Sprintf("with branch '%s'", opts.Source.Git.Branch)
 	}
 
+	if len(opts.Source.Git.SubPackage) != 0 {
+		msg = fmt.Sprintf("with sub-package '%s'", opts.Source.Git.SubPackage)
+	}
+
 	reporter.ReportMsgTo(
 		fmt.Sprintf("cloning '%s' %s", opts.Source.Git.Url, msg),
 		opts.LogWriter,
@@ -213,10 +217,13 @@ func (d *GitDownloader) Download(opts DownloadOptions) error {
 		return errors.New("git source is nil")
 	}
 
+	fmt.Println("===>", gitSource.SubPackage)
+
 	_, err := git.CloneWithOpts(
 		git.WithCommit(gitSource.Commit),
 		git.WithBranch(gitSource.Branch),
 		git.WithTag(gitSource.Tag),
+		git.WithSubPackage(gitSource.SubPackage),
 		git.WithRepoURL(gitSource.Url),
 		git.WithLocalPath(opts.LocalPath),
 	)

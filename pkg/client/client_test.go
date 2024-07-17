@@ -1010,7 +1010,7 @@ func TestRunGit(t *testing.T) {
 	testPath := getTestDir("test_run_git")
 
 	opts := opt.DefaultCompileOptions()
-	gitOpts := git.NewCloneOptions("https://github.com/KusionStack/catalog", "", "0.1.2", "", filepath.Join(testPath, "catalog"), nil)
+	gitOpts := git.NewCloneOptions("https://github.com/KusionStack/catalog", "", "0.1.2", "", "", filepath.Join(testPath, "catalog"), nil)
 	defer func() {
 		_ = os.RemoveAll(filepath.Join(testPath, "catalog"))
 	}()
@@ -1400,7 +1400,7 @@ func TestRunGitWithLocalDep(t *testing.T) {
 
 		expectPath := filepath.Join(testPath, tc.expectFile)
 		opts := opt.DefaultCompileOptions()
-		gitOpts := git.NewCloneOptions("https://github.com/kcl-lang/flask-demo-kcl-manifests.git", tc.ref, "", "", "", nil)
+		gitOpts := git.NewCloneOptions("https://github.com/kcl-lang/flask-demo-kcl-manifests.git", tc.ref, "", "", "", "", nil)
 
 		result, err := kpmcli.CompileGitPkg(gitOpts, opts)
 		assert.Equal(t, err, nil)

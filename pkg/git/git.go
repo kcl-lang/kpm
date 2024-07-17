@@ -17,25 +17,27 @@ import (
 
 // CloneOptions is a struct for specifying options for cloning a git repository
 type CloneOptions struct {
-	RepoURL   string
-	Commit    string
-	Tag       string
-	Branch    string
-	LocalPath string
-	Writer    io.Writer
+	RepoURL    string
+	Commit     string
+	Tag        string
+	SubPackage string
+	Branch     string
+	LocalPath  string
+	Writer     io.Writer
 }
 
 // CloneOption is a function that modifies CloneOptions
 type CloneOption func(*CloneOptions)
 
-func NewCloneOptions(repoUrl, commit, tag, branch, localpath string, Writer io.Writer) *CloneOptions {
+func NewCloneOptions(repoUrl, commit, tag, subpackage, branch, localpath string, Writer io.Writer) *CloneOptions {
 	return &CloneOptions{
-		RepoURL:   repoUrl,
-		Commit:    commit,
-		Tag:       tag,
-		Branch:    branch,
-		LocalPath: localpath,
-		Writer:    Writer,
+		RepoURL:    repoUrl,
+		Commit:     commit,
+		Tag:        tag,
+		SubPackage: subpackage,
+		Branch:     branch,
+		LocalPath:  localpath,
+		Writer:     Writer,
 	}
 }
 
@@ -57,6 +59,13 @@ func WithBranch(branch string) CloneOption {
 func WithCommit(commit string) CloneOption {
 	return func(o *CloneOptions) {
 		o.Commit = commit
+	}
+}
+
+// WithSubPackage sets the subpackage for CloneOptions
+func WithSubPackage(subpackage string) CloneOption {
+	return func(o *CloneOptions) {
+		o.SubPackage = subpackage
 	}
 }
 
@@ -84,6 +93,7 @@ func WithWriter(writer io.Writer) CloneOption {
 // Validate checks if the CloneOptions are valid
 func (cloneOpts *CloneOptions) Validate() error {
 	onlyOneAllowed := 0
+	onlyOnePackageAllowed := 0
 	if cloneOpts.Branch != "" {
 		onlyOneAllowed++
 	}
@@ -93,9 +103,15 @@ func (cloneOpts *CloneOptions) Validate() error {
 	if cloneOpts.Commit != "" {
 		onlyOneAllowed++
 	}
+	if cloneOpts.SubPackage != "" {
+		onlyOnePackageAllowed++
+	}
 
 	if onlyOneAllowed > 1 {
 		return errors.New("only one of branch, tag or commit is allowed")
+	}
+	if onlyOnePackageAllowed > 1 {
+		return errors.New("only one subpackage is allowed")
 	}
 
 	return nil
@@ -111,6 +127,9 @@ func (cloneOpts *CloneOptions) Clone() (*git.Repository, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println("===>", cloneOpts.SubPackage)
+	fmt.Println(url)
 
 	client := &getter.Client{
 		Src:       url,
