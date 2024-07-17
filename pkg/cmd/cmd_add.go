@@ -202,11 +202,7 @@ func parseGitRegistryOptions(c *cli.Context) (*opt.RegistryOptions, *reporter.Kp
 		return nil, err
 	}
 
-	gitSubPackage, err := onlyOnceOption(c, "sub-package")
-
-	if err != (*reporter.KpmEvent)(nil) {
-		return nil, err
-	}
+	gitSubPackage := c.String("sub-package")
 
 	if gitUrl == "" {
 		return nil, reporter.NewErrorEvent(reporter.InvalidGitUrl, fmt.Errorf("the argument 'git' is required"))
