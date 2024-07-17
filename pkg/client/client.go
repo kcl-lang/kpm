@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,7 +20,9 @@ import (
 	"github.com/otiai10/copy"
 	"golang.org/x/mod/module"
 	"kcl-lang.io/kcl-go/pkg/kcl"
+	"oras.land/oras-go/pkg/auth"
 	"oras.land/oras-go/v2"
+	remoteauth "oras.land/oras-go/v2/registry/remote/auth"
 
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/downloader"
@@ -41,6 +44,8 @@ type KpmClient struct {
 	logWriter io.Writer
 	// The downloader of the dependencies.
 	DepDownloader *downloader.DepDownloader
+	// credential store
+	credsClient *downloader.CredClient
 	// The home path of kpm for global configuration file and kcl package storage path.
 	homePath string
 	// The settings of kpm loaded from the global configuration file.
@@ -73,6 +78,33 @@ func NewKpmClient() (*KpmClient, error) {
 // SetNoSumCheck will set the 'noSumCheck' flag.
 func (c *KpmClient) SetNoSumCheck(noSumCheck bool) {
 	c.noSumCheck = noSumCheck
+}
+
+// GetCredsClient will return the credential client.
+func (c *KpmClient) GetCredsClient() (*downloader.CredClient, error) {
+	if c.credsClient == nil {
+		credCli, err := downloader.LoadCredentialFile(c.settings.CredentialsFile)
+		if err != nil {
+			return nil, err
+		}
+		c.credsClient = credCli
+	}
+	return c.credsClient, nil
+}
+
+// GetCredentials will return the credentials of the host.
+func (c *KpmClient) GetCredentials(hostName string) (*remoteauth.Credential, error) {
+	credCli, err := c.GetCredsClient()
+	if err != nil {
+		return nil, err
+	}
+
+	creds, err := credCli.Credential(hostName)
+	if err != nil {
+		return nil, err
+	}
+
+	return creds, nil
 }
 
 // GetNoSumCheck will return the 'noSumCheck' flag.
@@ -953,7 +985,18 @@ func (c *KpmClient) FillDependenciesInfo(modFile *pkg.ModFile) error {
 
 // AcquireTheLatestOciVersion will acquire the latest version of the OCI reference.
 func (c *KpmClient) AcquireTheLatestOciVersion(ociSource downloader.Oci) (string, error) {
-	ociClient, err := oci.NewOciClient(ociSource.Reg, ociSource.Repo, &c.settings)
+	repoPath := utils.JoinPath(ociSource.Reg, ociSource.Repo)
+	cred, err := c.GetCredentials(ociSource.Reg)
+	if err != nil {
+		return "", err
+	}
+
+	ociClient, err := oci.NewOciClientWithOpts(
+		oci.WithCredential(cred),
+		oci.WithRepoPath(repoPath),
+		oci.WithPlainHttp(c.GetSettings().DefaultOciPlainHttp()),
+	)
+
 	if err != nil {
 		return "", err
 	}
@@ -1098,11 +1141,16 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		// clean the temp dir.
 		defer os.RemoveAll(tmpDir)
 
+		credCli, err := c.GetCredsClient()
+		if err != nil {
+			return nil, err
+		}
 		err = c.DepDownloader.Download(*downloader.NewDownloadOptions(
 			downloader.WithLocalPath(tmpDir),
 			downloader.WithSource(dep.Source),
 			downloader.WithLogWriter(c.logWriter),
 			downloader.WithSettings(c.settings),
+			downloader.WithCredsClient(credCli),
 		))
 		if err != nil {
 			return nil, err
@@ -1276,10 +1324,22 @@ func (c *KpmClient) ParseKclModFile(kclPkg *pkg.KclPkg) (map[string]map[string]s
 
 // LoadPkgFromOci will download the kcl package from the oci repository and return an `KclPkg`.
 func (c *KpmClient) DownloadPkgFromOci(dep *downloader.Oci, localPath string) (*pkg.KclPkg, error) {
-	ociClient, err := oci.NewOciClient(dep.Reg, dep.Repo, &c.settings)
+	repoPath := utils.JoinPath(dep.Reg, dep.Repo)
+	cred, err := c.GetCredentials(dep.Reg)
 	if err != nil {
 		return nil, err
 	}
+
+	ociClient, err := oci.NewOciClientWithOpts(
+		oci.WithCredential(cred),
+		oci.WithRepoPath(repoPath),
+		oci.WithPlainHttp(c.GetSettings().DefaultOciPlainHttp()),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
 	ociClient.SetLogWriter(c.logWriter)
 	// Select the latest tag, if the tag, the user inputed, is empty.
 	var tagSelected string
@@ -1478,7 +1538,18 @@ func (c *KpmClient) PullFromOci(localPath, source, tag string) error {
 
 // PushToOci will push a kcl package to oci registry.
 func (c *KpmClient) PushToOci(localPath string, ociOpts *opt.OciOptions) error {
-	ociCli, err := oci.NewOciClient(ociOpts.Reg, ociOpts.Repo, &c.settings)
+	repoPath := utils.JoinPath(ociOpts.Reg, ociOpts.Repo)
+	cred, err := c.GetCredentials(ociOpts.Reg)
+	if err != nil {
+		return err
+	}
+
+	ociCli, err := oci.NewOciClientWithOpts(
+		oci.WithCredential(cred),
+		oci.WithRepoPath(repoPath),
+		oci.WithPlainHttp(c.GetSettings().DefaultOciPlainHttp()),
+	)
+
 	if err != nil {
 		return err
 	}
@@ -1504,12 +1575,46 @@ func (c *KpmClient) PushToOci(localPath string, ociOpts *opt.OciOptions) error {
 
 // LoginOci will login to the oci registry.
 func (c *KpmClient) LoginOci(hostname, username, password string) error {
-	return oci.Login(hostname, username, password, &c.settings)
+
+	credCli, err := c.GetCredsClient()
+	if err != nil {
+		return err
+	}
+
+	err = credCli.GetAuthClient().LoginWithOpts(
+		[]auth.LoginOption{
+			auth.WithLoginHostname(hostname),
+			auth.WithLoginUsername(username),
+			auth.WithLoginSecret(password),
+		}...,
+	)
+
+	if err != nil {
+		return reporter.NewErrorEvent(
+			reporter.FailedLogin,
+			err,
+			fmt.Sprintf("failed to login '%s', please check registry, username and password is valid", hostname),
+		)
+	}
+
+	return nil
 }
 
 // LogoutOci will logout from the oci registry.
 func (c *KpmClient) LogoutOci(hostname string) error {
-	return oci.Logout(hostname, &c.settings)
+
+	credCli, err := c.GetCredsClient()
+	if err != nil {
+		return err
+	}
+
+	err = credCli.GetAuthClient().Logout(context.Background(), hostname)
+
+	if err != nil {
+		return reporter.NewErrorEvent(reporter.FailedLogout, err, fmt.Sprintf("failed to logout '%s'", hostname))
+	}
+
+	return nil
 }
 
 // ParseOciRef will parser '<repo_name>:<repo_tag>' into an 'OciOptions'.
@@ -1753,7 +1858,18 @@ func (c *KpmClient) pullTarFromOci(localPath string, ociOpts *opt.OciOptions) er
 		return reporter.NewErrorEvent(reporter.Bug, err)
 	}
 
-	ociCli, err := oci.NewOciClient(ociOpts.Reg, ociOpts.Repo, &c.settings)
+	repoPath := utils.JoinPath(ociOpts.Reg, ociOpts.Repo)
+	cred, err := c.GetCredentials(ociOpts.Reg)
+	if err != nil {
+		return err
+	}
+
+	ociCli, err := oci.NewOciClientWithOpts(
+		oci.WithCredential(cred),
+		oci.WithRepoPath(repoPath),
+		oci.WithPlainHttp(c.GetSettings().DefaultOciPlainHttp()),
+	)
+
 	if err != nil {
 		return err
 	}
@@ -1790,7 +1906,19 @@ func (c *KpmClient) pullTarFromOci(localPath string, ociOpts *opt.OciOptions) er
 
 // FetchOciManifestConfIntoJsonStr will fetch the oci manifest config of the kcl package from the oci registry and return it into json string.
 func (c *KpmClient) FetchOciManifestIntoJsonStr(opts opt.OciFetchOptions) (string, error) {
-	ociCli, err := oci.NewOciClient(opts.Reg, opts.Repo, &c.settings)
+
+	repoPath := utils.JoinPath(opts.Reg, opts.Repo)
+	cred, err := c.GetCredentials(opts.Reg)
+	if err != nil {
+		return "", err
+	}
+
+	ociCli, err := oci.NewOciClientWithOpts(
+		oci.WithCredential(cred),
+		oci.WithRepoPath(repoPath),
+		oci.WithPlainHttp(c.GetSettings().DefaultOciPlainHttp()),
+	)
+
 	if err != nil {
 		return "", err
 	}

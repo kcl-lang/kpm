@@ -96,7 +96,42 @@ type OciClient struct {
 	repo           *remote.Repository
 	ctx            *context.Context
 	logWriter      io.Writer
+	cred           *remoteauth.Credential
 	PullOciOptions *PullOciOptions
+}
+
+// OciClientOption configures how we set up the OciClient
+type OciClientOption func(*OciClient) error
+
+// WithRepoPath sets the repo path of the OciClient
+func WithRepoPath(repoPath string) OciClientOption {
+	return func(c *OciClient) error {
+		var err error
+		c.repo, err = remote.NewRepository(repoPath)
+		if err != nil {
+			return fmt.Errorf("repository '%s' not found", repoPath)
+		}
+		return nil
+	}
+}
+
+// WithCredential sets the credential of the OciClient
+func WithCredential(credential *remoteauth.Credential) OciClientOption {
+	return func(c *OciClient) error {
+		c.cred = credential
+		return nil
+	}
+}
+
+// WithPlainHttp sets the plain http of the OciClient
+func WithPlainHttp(plainHttp bool) OciClientOption {
+	return func(c *OciClient) error {
+		if c.repo == nil {
+			return fmt.Errorf("repo is nil")
+		}
+		c.repo.PlainHTTP = plainHttp
+		return nil
+	}
 }
 
 type PullOciOptions struct {
@@ -112,40 +147,25 @@ func (ociClient *OciClient) GetReference() string {
 	return ociClient.repo.Reference.String()
 }
 
-// NewOciClient will new an OciClient.
-// regName is the registry. e.g. ghcr.io or docker.io.
-// repoName is the repo name on registry.
-func NewOciClient(regName, repoName string, settings *settings.Settings) (*OciClient, error) {
-	repoPath := utils.JoinPath(regName, repoName)
-	repo, err := remote.NewRepository(repoPath)
-
-	if err != nil {
-		return nil, reporter.NewErrorEvent(
-			reporter.RepoNotFound,
-			err,
-			fmt.Sprintf("repository '%s' not found", repoPath),
-		)
+// NewOciClientWithOpts will new an OciClient with options.
+func NewOciClientWithOpts(opts ...OciClientOption) (*OciClient, error) {
+	client := &OciClient{}
+	for _, opt := range opts {
+		err := opt(client)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	ctx := context.Background()
-	repo.PlainHTTP = settings.DefaultOciPlainHttp()
-
-	// Login
-	credential, err := loadCredential(regName, settings)
-	if err != nil {
-		return nil, reporter.NewErrorEvent(
-			reporter.FailedLoadCredential,
-			err,
-			fmt.Sprintf("failed to load credential for '%s' from '%s'.", regName, settings.CredentialsFile),
-		)
-	}
-	repo.Client = &remoteauth.Client{
+	client.repo.Client = &remoteauth.Client{
 		Client:     retry.DefaultClient,
 		Cache:      remoteauth.DefaultCache,
-		Credential: remoteauth.StaticCredential(repo.Reference.Host(), *credential),
+		Credential: remoteauth.StaticCredential(client.repo.Reference.Host(), *client.cred),
 	}
 
 	return &OciClient{
-		repo: repo,
+		repo: client.repo,
 		ctx:  &ctx,
 		PullOciOptions: &PullOciOptions{
 			CopyOpts: &oras.CopyOptions{
@@ -155,6 +175,28 @@ func NewOciClient(regName, repoName string, settings *settings.Settings) (*OciCl
 			},
 		},
 	}, nil
+}
+
+// NewOciClient will new an OciClient.
+// regName is the registry. e.g. ghcr.io or docker.io.
+// repoName is the repo name on registry.
+// Deprecated: use NewOciClientWithOpts instead.
+func NewOciClient(regName, repoName string, settings *settings.Settings) (*OciClient, error) {
+	// Login
+	credential, err := loadCredential(regName, settings)
+	if err != nil {
+		return nil, reporter.NewErrorEvent(
+			reporter.FailedLoadCredential,
+			err,
+			fmt.Sprintf("failed to load credential for '%s' from '%s'.", regName, settings.CredentialsFile),
+		)
+	}
+
+	return NewOciClientWithOpts(
+		WithRepoPath(utils.JoinPath(regName, repoName)),
+		WithCredential(credential),
+		WithPlainHttp(settings.DefaultOciPlainHttp()),
+	)
 }
 
 // The default limit of the store size is 64 MiB.
