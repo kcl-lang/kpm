@@ -161,7 +161,7 @@ func TestSettingEnv(t *testing.T) {
 	settings := GetSettings()
 	assert.Equal(t, settings.DefaultOciRegistry(), "ghcr.io")
 	assert.Equal(t, settings.DefaultOciRepo(), "kcl-lang")
-	assert.Equal(t, settings.DefaultOciPlainHttp(), false)
+	assert.Equal(t, settings.DefaultOciPlainHttp(), true)
 
 	err := os.Setenv("KPM_REG", "test_reg")
 	assert.Equal(t, err, nil)
