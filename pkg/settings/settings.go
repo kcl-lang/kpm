@@ -30,14 +30,14 @@ const PACKAGE_CACHE_PATH = ".kpm/config/package-cache"
 type KpmConf struct {
 	DefaultOciRegistry  string
 	DefaultOciRepo      string
-	DefaultOciPlainHttp bool
+	DefaultOciPlainHttp *bool `json:",omitempty"`
 }
 
 const ON = "on"
 const OFF = "off"
 const DEFAULT_REGISTRY = "ghcr.io"
 const DEFAULT_REPO = "kcl-lang"
-const DEFAULT_OCI_PLAIN_HTTP = OFF
+const DEFAULT_OCI_PLAIN_HTTP = ON
 const DEFAULT_REGISTRY_ENV = "KPM_REG"
 const DEFAULT_REPO_ENV = "KPM_REPO"
 const DEFAULT_OCI_PLAIN_HTTP_ENV = "OCI_REG_PLAIN_HTTP"
@@ -52,7 +52,7 @@ func DefaultKpmConf() KpmConf {
 	return KpmConf{
 		DefaultOciRegistry:  DEFAULT_REGISTRY,
 		DefaultOciRepo:      DEFAULT_REPO,
-		DefaultOciPlainHttp: DEFAULT_OCI_PLAIN_HTTP == ON,
+		DefaultOciPlainHttp: nil,
 	}
 }
 
@@ -132,8 +132,25 @@ func (settings *Settings) DefaultOciRepo() string {
 }
 
 // DefaultOciPlainHttp return the default OCI plain http 'false'.
+// Deprecated: DefaultOciPlainHttp is deprecated, please use ForceOciPlainHttp() instead.
 func (settings *Settings) DefaultOciPlainHttp() bool {
-	return settings.Conf.DefaultOciPlainHttp
+	plainHttp, force := settings.ForceOciPlainHttp()
+	if force {
+		return plainHttp
+	}
+
+	// If the force OCI plain http is not set,
+	// return the default OCI plain http.
+	return true
+}
+
+// ForceOciPlainHttp return the force OCI plain http.
+func (settings *Settings) ForceOciPlainHttp() (bool, bool) {
+	if settings.Conf.DefaultOciPlainHttp == nil {
+		return false, false
+	}
+
+	return *settings.Conf.DefaultOciPlainHttp, true
 }
 
 // DefaultOciRef return the default OCI ref 'ghcr.io/kcl-lang'.
@@ -156,9 +173,9 @@ func (settings *Settings) LoadSettingsFromEnv() (*Settings, *reporter.KpmEvent) 
 
 	// Load the env OCI_REG_PLAIN_HTTP
 	plainHttp := os.Getenv(DEFAULT_OCI_PLAIN_HTTP_ENV)
-	var err error
 	if len(plainHttp) > 0 {
-		settings.Conf.DefaultOciPlainHttp, err = isOn(plainHttp)
+		isPlainHttp, err := isOn(plainHttp)
+		settings.Conf.DefaultOciPlainHttp = &isPlainHttp
 		if err != nil {
 			return settings, reporter.NewErrorEvent(
 				reporter.UnknownEnv,
