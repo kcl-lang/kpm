@@ -1760,6 +1760,7 @@ func TestRunLocalWithoutArgs(t *testing.T) {
 		{"run_5", true, "", "kcl_6: KCL 6\na: sub6\nkcl_7: KCL 7\nb: sub7"},
 		{filepath.Join("run_6", "main"), true, "", "The_sub_kcl_program: Hello Sub World!\nThe_first_kcl_program: Hello World!"},
 		{"run_7", true, "", "hello: Hello World!\nThe_first_kcl_program: Hello World!"},
+		{filepath.Join("run_8", "sub"), true, "", "sub: Hello Sub !"},
 	}
 
 	for _, test := range tests {
