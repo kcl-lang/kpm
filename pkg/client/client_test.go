@@ -773,7 +773,9 @@ func TestNewKpmClient(t *testing.T) {
 	assert.Equal(t, kpmcli.GetSettings().CredentialsFile, filepath.Join(kpmhome, ".kpm", "config", "config.json"))
 	assert.Equal(t, kpmcli.GetSettings().Conf.DefaultOciRepo, "kcl-lang")
 	assert.Equal(t, kpmcli.GetSettings().Conf.DefaultOciRegistry, "ghcr.io")
-	assert.Equal(t, kpmcli.GetSettings().Conf.DefaultOciPlainHttp, false)
+	plainHttp, force := kpmcli.GetSettings().ForceOciPlainHttp()
+	assert.Equal(t, plainHttp, false)
+	assert.Equal(t, force, false)
 }
 
 func TestParseOciOptionFromString(t *testing.T) {
@@ -1757,6 +1759,8 @@ func TestRunLocalWithoutArgs(t *testing.T) {
 		{"run_4", true, "", "a: A package in vendor path"},
 		{"run_5", true, "", "kcl_6: KCL 6\na: sub6\nkcl_7: KCL 7\nb: sub7"},
 		{filepath.Join("run_6", "main"), true, "", "The_sub_kcl_program: Hello Sub World!\nThe_first_kcl_program: Hello World!"},
+		{"run_7", true, "", "hello: Hello World!\nThe_first_kcl_program: Hello World!"},
+		{filepath.Join("run_8", "sub"), true, "", "sub: Hello Sub !"},
 	}
 
 	for _, test := range tests {

@@ -72,7 +72,7 @@ func (vpv *VirtualPkgVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		return fmt.Errorf("source is not local")
 	}
 
-	sourcePath, err := s.FindRootPath()
+	sourcePath, err := s.ToFilePath()
 	if err != nil {
 		return err
 	}
@@ -244,7 +244,7 @@ func NewVisitor(source downloader.Source, kpmcli *KpmClient) Visitor {
 	} else if source.IsLocalTarPath() || source.IsLocalTgzPath() {
 		return NewArchiveVisitor(NewPkgVisitor(kpmcli))
 	} else if source.IsLocalPath() {
-		rootPath, err := source.FindRootPath()
+		rootPath, err := source.ToFilePath()
 		if err != nil {
 			return nil
 		}

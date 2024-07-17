@@ -110,6 +110,9 @@ func (local *Local) IsLocalKPath() bool {
 }
 
 func (local *Local) IsDir() bool {
+	if local == nil {
+		return false
+	}
 	fileInfo, err := os.Stat(local.Path)
 	if err != nil {
 		return false
@@ -215,9 +218,8 @@ func (oci *Oci) ToFilePath() (string, error) {
 	}
 
 	ociUrl := &url.URL{
-		Scheme: constants.OciScheme,
-		Host:   oci.Reg,
-		Path:   oci.Repo,
+		Host: oci.Reg,
+		Path: oci.Repo,
 	}
 
 	return filepath.Join(constants.OciScheme, ociUrl.Host, ociUrl.Path, oci.Tag), nil

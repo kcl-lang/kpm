@@ -337,7 +337,7 @@ func (o *RunOptions) applyCompileOptionsFromYaml(workdir string) bool {
 	// transform the relative path to the absolute path in kcl.yaml by workdir
 	var updatedKFilenameList []string
 	for _, kfile := range o.KFilenameList {
-		if !filepath.IsAbs(kfile) {
+		if !filepath.IsAbs(kfile) && !utils.IsModRelativePath(kfile) {
 			kfile = filepath.Join(workdir, kfile)
 		}
 		updatedKFilenameList = append(updatedKFilenameList, kfile)
@@ -354,7 +354,7 @@ func (o *RunOptions) applyCompileOptionsFromKclMod(kclPkg *pkg.KclPkg) bool {
 	var updatedKFilenameList []string
 	// transform the relative path to the absolute path in kcl.yaml by kcl.mod path
 	for _, kfile := range o.KFilenameList {
-		if !filepath.IsAbs(kfile) {
+		if !filepath.IsAbs(kfile) && !utils.IsModRelativePath(kfile) {
 			kfile = filepath.Join(kclPkg.HomePath, kfile)
 		}
 		updatedKFilenameList = append(updatedKFilenameList, kfile)
@@ -374,11 +374,11 @@ func (o *RunOptions) applyCompileOptions(kclPkg *pkg.KclPkg, workDir string) err
 		// All the cli relative path should be transformed to the absolute path by workdir
 		for _, source := range o.Sources {
 			if source.IsLocalPath() {
-				if filepath.IsAbs(source.Path) {
-					compiledFiles = append(compiledFiles, source.Path)
-				} else {
-					compiledFiles = append(compiledFiles, filepath.Join(workDir, source.Path))
+				sPath := source.Path
+				if !filepath.IsAbs(sPath) && !utils.IsModRelativePath(sPath) {
+					sPath = filepath.Join(workDir, sPath)
 				}
+				compiledFiles = append(compiledFiles, sPath)
 			}
 		}
 		o.KFilenameList = compiledFiles
@@ -459,6 +459,18 @@ func (o *RunOptions) getRootPkgSource() (*downloader.Source, error) {
 						)
 					}
 				}
+			}
+		}
+
+		if rootPkgSource.IsLocalKPath() || rootPkgSource.IsDir() {
+			rootPath, err = rootPkgSource.FindRootPath()
+			if err != nil {
+				return nil, err
+			}
+
+			rootPkgSource, err = downloader.NewSourceFromStr(rootPath)
+			if err != nil {
+				return nil, err
 			}
 		}
 	}

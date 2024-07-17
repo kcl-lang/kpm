@@ -306,6 +306,14 @@ func DirExists(path string) bool {
 	return err == nil
 }
 
+const ModRelativePathPattern = `\$\{([a-zA-Z0-9_-]+:)?KCL_MOD\}/`
+
+// If the path preffix is `${KCL_MOD}` or `${KCL_MOD:xxx}`
+func IsModRelativePath(s string) bool {
+	re := regexp.MustCompile(ModRelativePathPattern)
+	return re.MatchString(s)
+}
+
 // MoveFile will move the file from 'src' to 'dest'.
 // On windows, it will copy the file from 'src' to 'dest', and then delete the file under 'src'.
 // On unix-like systems, it will rename the file from 'src' to 'dest'.
