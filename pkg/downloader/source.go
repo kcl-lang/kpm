@@ -109,6 +109,9 @@ func (local *Local) IsLocalKPath() bool {
 }
 
 func (local *Local) IsDir() bool {
+	if local == nil {
+		return false
+	}
 	fileInfo, err := os.Stat(local.Path)
 	if err != nil {
 		return false

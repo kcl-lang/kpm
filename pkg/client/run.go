@@ -461,6 +461,18 @@ func (o *RunOptions) getRootPkgSource() (*downloader.Source, error) {
 				}
 			}
 		}
+
+		if rootPkgSource.IsLocalKPath() || rootPkgSource.IsDir() {
+			rootPath, err = rootPkgSource.FindRootPath()
+			if err != nil {
+				return nil, err
+			}
+
+			rootPkgSource, err = downloader.NewSourceFromStr(rootPath)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	if rootPkgSource == nil {
