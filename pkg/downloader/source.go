@@ -214,9 +214,8 @@ func (oci *Oci) ToFilePath() (string, error) {
 	}
 
 	ociUrl := &url.URL{
-		Scheme: constants.OciScheme,
-		Host:   oci.Reg,
-		Path:   oci.Repo,
+		Host: oci.Reg,
+		Path: oci.Repo,
 	}
 
 	return filepath.Join(constants.OciScheme, ociUrl.Host, ociUrl.Path, oci.Tag), nil

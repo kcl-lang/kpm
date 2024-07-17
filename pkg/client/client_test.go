@@ -773,7 +773,9 @@ func TestNewKpmClient(t *testing.T) {
 	assert.Equal(t, kpmcli.GetSettings().CredentialsFile, filepath.Join(kpmhome, ".kpm", "config", "config.json"))
 	assert.Equal(t, kpmcli.GetSettings().Conf.DefaultOciRepo, "kcl-lang")
 	assert.Equal(t, kpmcli.GetSettings().Conf.DefaultOciRegistry, "ghcr.io")
-	assert.Equal(t, kpmcli.GetSettings().Conf.DefaultOciPlainHttp, false)
+	plainHttp, force := kpmcli.GetSettings().ForceOciPlainHttp()
+	assert.Equal(t, plainHttp, false)
+	assert.Equal(t, force, false)
 }
 
 func TestParseOciOptionFromString(t *testing.T) {
