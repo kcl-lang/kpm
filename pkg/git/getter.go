@@ -8,12 +8,6 @@ import (
 	"kcl-lang.io/kpm/pkg/constants"
 )
 
-var goGetterGetters = map[string]getter.Getter{
-	"git": new(getter.GitGetter),
-}
-
-var goGetterNoDetectors = []getter.Detector{}
-
 const GIT_PROTOCOL = "git::"
 
 func ForceProtocol(url, protocol string) string {

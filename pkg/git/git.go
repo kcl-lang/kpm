@@ -128,19 +128,7 @@ func (cloneOpts *CloneOptions) Clone() (*git.Repository, error) {
 		return nil, err
 	}
 
-	fmt.Println("===>", cloneOpts.SubPackage)
-	fmt.Println(url)
-
-	client := &getter.Client{
-		Src:       url,
-		Dst:       cloneOpts.LocalPath,
-		Pwd:       cloneOpts.LocalPath,
-		Mode:      getter.ClientModeDir,
-		Detectors: goGetterNoDetectors,
-		Getters:   goGetterGetters,
-	}
-
-	if err := client.Get(); err != nil {
+	if err := getter.GetAny(cloneOpts.LocalPath, url); err != nil {
 		return nil, err
 	}
 
