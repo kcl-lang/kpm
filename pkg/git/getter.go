@@ -3,8 +3,6 @@ package git
 
 import (
 	"fmt"
-
-	"github.com/hashicorp/go-getter"
 	"kcl-lang.io/kpm/pkg/constants"
 )
 
