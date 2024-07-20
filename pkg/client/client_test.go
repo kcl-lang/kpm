@@ -1878,9 +1878,9 @@ func TestRunRemoteWithArgs(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
+	for i, tc := range testCases {
 		res, err := kpmcli.Run(WithRunSourceUrl(tc.sourceURL))
-		assert.Equal(t, err, nil)
+		assert.Equal(t, err, nil, "%v-st", i)
 		assert.Equal(t, logbuf.String(), tc.expectedLog)
 
 		var expectedYaml string
