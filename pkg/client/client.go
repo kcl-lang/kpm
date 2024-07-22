@@ -1020,7 +1020,7 @@ func (c *KpmClient) AcquireTheLatestOciVersion(ociSource downloader.Oci) (string
 	ociClient, err := oci.NewOciClientWithOpts(
 		oci.WithCredential(cred),
 		oci.WithRepoPath(repoPath),
-		oci.WithPlainHttp(c.GetSettings().DefaultOciPlainHttp()),
+		oci.WithSettings(c.GetSettings()),
 	)
 
 	if err != nil {
@@ -1359,7 +1359,7 @@ func (c *KpmClient) DownloadPkgFromOci(dep *downloader.Oci, localPath string) (*
 	ociClient, err := oci.NewOciClientWithOpts(
 		oci.WithCredential(cred),
 		oci.WithRepoPath(repoPath),
-		oci.WithPlainHttp(c.GetSettings().DefaultOciPlainHttp()),
+		oci.WithSettings(c.GetSettings()),
 	)
 
 	if err != nil {
@@ -1573,7 +1573,7 @@ func (c *KpmClient) PushToOci(localPath string, ociOpts *opt.OciOptions) error {
 	ociCli, err := oci.NewOciClientWithOpts(
 		oci.WithCredential(cred),
 		oci.WithRepoPath(repoPath),
-		oci.WithPlainHttp(c.GetSettings().DefaultOciPlainHttp()),
+		oci.WithSettings(c.GetSettings()),
 	)
 
 	if err != nil {
@@ -1893,7 +1893,7 @@ func (c *KpmClient) pullTarFromOci(localPath string, ociOpts *opt.OciOptions) er
 	ociCli, err := oci.NewOciClientWithOpts(
 		oci.WithCredential(cred),
 		oci.WithRepoPath(repoPath),
-		oci.WithPlainHttp(c.GetSettings().DefaultOciPlainHttp()),
+		oci.WithSettings(c.GetSettings()),
 	)
 
 	if err != nil {
@@ -1942,7 +1942,7 @@ func (c *KpmClient) FetchOciManifestIntoJsonStr(opts opt.OciFetchOptions) (strin
 	ociCli, err := oci.NewOciClientWithOpts(
 		oci.WithCredential(cred),
 		oci.WithRepoPath(repoPath),
-		oci.WithPlainHttp(c.GetSettings().DefaultOciPlainHttp()),
+		oci.WithSettings(c.GetSettings()),
 	)
 
 	if err != nil {

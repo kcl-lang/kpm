@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/dominikbraun/graph"
 	"github.com/elliotchance/orderedmap/v2"
@@ -1938,4 +1939,43 @@ func TestRunInVendor(t *testing.T) {
 
 	assert.Equal(t, buf.String(), "")
 	assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
+}
+
+func TestPushWithPlainHttp(t *testing.T) {
+	tests := []struct {
+		Reg           string
+		Repo          string
+		SkipOnWindows bool
+	}{
+		{Reg: "localhost:5001", Repo: "test/helloworld", SkipOnWindows: true},
+		{Reg: "ghcr.io", Repo: "kcl-lang/helloworld", SkipOnWindows: true},
+	}
+
+	for _, test := range tests {
+		if runtime.GOOS == "windows" && test.SkipOnWindows {
+			t.Logf("Skipping test on Windows for %s/%s", test.Reg, test.Repo)
+			continue // 在Windows上跳过此测试用例
+		}
+
+		tag := fmt.Sprintf("test-%d", time.Now().Unix())
+		httpOciOpts := opt.OciOptions{
+			Reg:     test.Reg,
+			Repo:    test.Repo,
+			PkgName: "helloworld",
+			Tag:     tag,
+		}
+
+		pkgPath := getTestDir("test_push_plain_http")
+		tarPath := filepath.Join(pkgPath, "helloworld_0.0.1.tar")
+
+		kpmcli, err := NewKpmClient()
+		assert.Equal(t, err, nil)
+
+		buf := new(bytes.Buffer)
+		kpmcli.logWriter = buf
+		err = kpmcli.PushToOci(tarPath, &httpOciOpts)
+		assert.Equal(t, err, (*reporter.KpmEvent)(nil))
+		expectedMessage := fmt.Sprintf("pushed [registry] %s/test/helloworld", test.Reg)
+		assert.Contains(t, buf.String(), expectedMessage)
+	}
 }
