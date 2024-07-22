@@ -247,6 +247,29 @@ func (dep *Dependency) GetLocalFullPath(rootpath string) string {
 	return dep.LocalFullPath
 }
 
+func (d *Dependency) GenPathSuffix() string {
+
+	var storePkgName string
+
+	if d.Source.Oci != nil {
+		storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Oci.Tag)
+	} else if d.Source.Git != nil {
+		if len(d.Source.Git.Tag) != 0 {
+			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Git.Tag)
+		} else if len(d.Source.Git.Commit) != 0 {
+			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Git.Commit)
+		} else {
+			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Git.Branch)
+		}
+	} else if d.Source.Registry != nil {
+		storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Registry.Version)
+	} else {
+		storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Version)
+	}
+
+	return storePkgName
+}
+
 func (dep *Dependency) IsFromLocal() bool {
 	return dep.Source.Oci == nil && dep.Source.Git == nil && dep.Source.Local != nil
 }

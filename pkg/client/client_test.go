@@ -1913,3 +1913,29 @@ func TestRunRemoteWithArgs(t *testing.T) {
 		logbuf.Reset()
 	}
 }
+
+func TestRunInVendor(t *testing.T) {
+	// Create a new kpm client.
+	kpmcli, err := NewKpmClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pkgPath := getTestDir("test_run_in_vendor")
+	workdir := filepath.Join(pkgPath, "pkg")
+
+	buf := new(bytes.Buffer)
+	kpmcli.logWriter = buf
+
+	// Run the kcl package with vendor mode.
+	res, err := kpmcli.Run(
+		WithWorkDir(workdir),
+		WithVendor(true),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, buf.String(), "")
+	assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
+}
