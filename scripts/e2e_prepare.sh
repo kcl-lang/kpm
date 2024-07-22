@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Build kpm binary
+LDFLAGS="-X kcl-lang.io/kpm/pkg/version.version=test_version"
+go build -ldflags "$LDFLAGS" -o ./bin/kpm
+
 # Check kpm version
 version=$(./bin/kpm --version)
 if ! echo "$version" | grep -q "kpm version test_version"; then

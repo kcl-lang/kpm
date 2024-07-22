@@ -150,7 +150,7 @@ func (d *OciDownloader) Download(opts DownloadOptions) error {
 	ociCli, err := oci.NewOciClientWithOpts(
 		oci.WithCredential(cred),
 		oci.WithRepoPath(repoPath),
-		oci.WithPlainHttp(opts.Settings.DefaultOciPlainHttp()),
+		oci.WithSettings(&opts.Settings),
 	)
 
 	if err != nil {

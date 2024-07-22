@@ -26,6 +26,19 @@ jobs:
       - run: go build ./...
       - run: go vet ./...
 
+      - name: Running custom script
+        run: |
+          ./scripts/reg.sh
+          ./scripts/e2e_prepare.sh
+
+      - name: Login to ghcr.io
+        run: |
+          ./bin/kpm login -u ${{ secrets.DEPLOY_ACCESS_NAME }} -p ${{ secrets.DEPLOY_ACCESS_TOKEN }} ghcr.io
+
+      - name: Login to localhost:5001
+        run: |
+          ./bin/kpm login -u test -p 1234 localhost:5001
+
       - name: Running go tests with coverage
         env:
           GO111MODULE: on
