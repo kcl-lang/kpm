@@ -51,7 +51,16 @@ func (source *Source) MarshalTOML() string {
 
 func (registry *Registry) MarshalTOML() string {
 	var sb strings.Builder
-	sb.WriteString(registry.Version)
+	if len(registry.Version) != 0 {
+		sb.WriteString(registry.Version)
+		return sb.String()
+	}
+
+	if len(registry.Oci.Tag) != 0 {
+		sb.WriteString(registry.Oci.Tag)
+		return sb.String()
+	}
+
 	return sb.String()
 }
 
