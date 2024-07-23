@@ -11,7 +11,6 @@ fi
 
 export KPM_REG="localhost:5001"
 export KPM_REPO="test"
-export OCI_REG_PLAIN_HTTP=on
 
 # Prepare the package on the registry
 current_dir=$(pwd)
