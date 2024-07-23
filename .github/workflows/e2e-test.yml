@@ -32,7 +32,7 @@ jobs:
 
       - name: Login to docker.io
         run: |
-          ./bin/kpm login -u ${{ secrets.DEPLOY_ACCESS_NAME }} -p ${{ secrets.DEPLOY_ACCESS_TOKEN }} docker.io
+          ./bin/kpm login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} docker.io
 
       - name: run e2e
         run: |

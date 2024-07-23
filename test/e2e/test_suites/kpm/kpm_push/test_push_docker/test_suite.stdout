@@ -1,2 +1,2 @@
 package 'helloworld' will be pushed
-pushed [registry] localhost:5001/test/helloworld
+pushed [registry] docker.io/kcllang/helloworld
