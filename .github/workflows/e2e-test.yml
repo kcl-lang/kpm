@@ -21,6 +21,19 @@ jobs:
         with:
           go-version: 1.22
   
+      - name: Prepare the test oci registry
+        run: |
+          ./scripts/reg.sh
+          ./scripts/e2e_prepare.sh
+    
+      - name: Login to ghcr.io
+        run: |
+          ./bin/kpm login -u ${{ secrets.DEPLOY_ACCESS_NAME }} -p ${{ secrets.DEPLOY_ACCESS_TOKEN }} ghcr.io
+
+      - name: Login to docker.io
+        run: |
+          ./bin/kpm login -u ${{ secrets.DEPLOY_ACCESS_NAME }} -p ${{ secrets.DEPLOY_ACCESS_TOKEN }} docker.io
+
       - name: run e2e
         run: |
           make e2e
