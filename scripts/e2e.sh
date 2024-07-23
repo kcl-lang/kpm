@@ -7,7 +7,6 @@
 # set the kpm default registry and repository
 export KPM_REG="localhost:5001"
 export KPM_REPO="test"
-export OCI_REG_PLAIN_HTTP=on
 
 set -o errexit
 set -o nounset

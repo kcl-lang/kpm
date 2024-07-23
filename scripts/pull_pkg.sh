@@ -10,7 +10,6 @@ fi
 # set the kpm default registry and repository
 export KPM_REG="ghcr.io"
 export KPM_REPO="kcl-lang"
-export OCI_REG_PLAIN_HTTP=off
 
 current_dir=$(pwd)
 
