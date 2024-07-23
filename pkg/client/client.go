@@ -772,7 +772,8 @@ func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pk
 			return nil, fmt.Errorf("dependency '%s' not found in 'kcl.mod'", d.Name)
 		}
 		tempDeps.Name = opt.NewPkgName
-		kclPkg.ModFile.Dependencies.Deps.Set(d.Name, tempDeps)
+		kclPkg.ModFile.Dependencies.Deps.Set(tempDeps.Name, tempDeps)
+		kclPkg.ModFile.Dependencies.Deps.Delete(d.Name)
 
 		// update the kcl.mod.lock with NewPkgName
 		tempDeps, ok = kclPkg.Dependencies.Deps.Get(d.Name)

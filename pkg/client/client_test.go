@@ -1939,3 +1939,56 @@ func TestRunInVendor(t *testing.T) {
 	assert.Equal(t, buf.String(), "")
 	assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
 }
+
+func TestAddDepWithRename(t *testing.T) {
+	// Create a new kpm client.
+	kpmcli, err := NewKpmClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pkgRoot := getTestDir("add_with_local_path_rename")
+	pkgPath := filepath.Join(pkgRoot, "pkg")
+
+	err = copy.Copy(filepath.Join(pkgPath, "kcl.mod.bk"), filepath.Join(pkgPath, "kcl.mod"))
+	assert.Equal(t, err, nil)
+	err = copy.Copy(filepath.Join(pkgPath, "kcl.mod.lock.bk"), filepath.Join(pkgPath, "kcl.mod.lock"))
+	assert.Equal(t, err, nil)
+
+	kpkg, err := kpmcli.LoadPkgFromPath(pkgPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	opts := opt.AddOptions{
+		LocalPath: pkgPath,
+		RegistryOpts: opt.RegistryOptions{
+			Local: &opt.LocalOptions{
+				Path: filepath.Join(pkgRoot, "dep"),
+			},
+		},
+		NewPkgName: "new_dep",
+	}
+
+	for i := 0; i < 10; i++ {
+		_, err = kpmcli.AddDepWithOpts(kpkg, &opts)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	gotPkg, err := kpmcli.LoadPkgFromPath(pkgPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, gotPkg.ModFile.Dependencies.Deps.Len(), 1)
+	assert.Equal(t, gotPkg.Dependencies.Deps.Len(), 1)
+	assert.Equal(t, gotPkg.ModFile.Dependencies.Deps.GetOrDefault("new_dep", pkg.Dependency{}).Name, "new_dep")
+	assert.Equal(t, gotPkg.Dependencies.Deps.GetOrDefault("new_dep", pkg.Dependency{}).Source.Local.Path, filepath.Join(pkgRoot, "dep"))
+
+	defer func() {
+		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
+		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod"))
+	}()
+}
