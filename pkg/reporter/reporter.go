@@ -5,36 +5,48 @@ package reporter
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
+
+	"kcl-lang.io/kpm/pkg/errors"
 
 	"github.com/sirupsen/logrus"
 )
 
 // Init the log.
 func InitReporter() {
-	log.SetFlags(0)
 	logrus.SetLevel(logrus.ErrorLevel)
 }
 
 // Report prints to the logger.
 // Arguments are handled in the manner of fmt.Println.
 func Report(v ...any) {
-	log.Println(v...)
+	logrus.Error(v...)
 }
 
-// ExitWithReport prints to the logger and exit with 0.
+// ExitWithReport prints to the logger and exits with 0.
 // Arguments are handled in the manner of fmt.Println.
 func ExitWithReport(v ...any) {
-	log.Println(v...)
+	logrus.Error(v...)
 	os.Exit(0)
 }
 
-// Fatal prints to the logger and exit with 1.
+// Fatal prints to the logger and exits with 1.
 // Arguments are handled in the manner of fmt.Println.
 func Fatal(v ...any) {
-	log.Fatal(v...)
+	logrus.Error(v...)
+	os.Exit(1)
+}
+
+// LogError logs the error using the centralized error logging system.
+func LogError(err error) {
+	logrus.Error(err)
+}
+
+// WrapError wraps the given error with a context message and logs it.
+func WrapError(context string, err error) error {
+	wrappedErr := errors.NewKpmError("Operation failed", err, context)
+	return wrappedErr
 }
 
 // Event is the interface that specifies the event used to show logs to users.

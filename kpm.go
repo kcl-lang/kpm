@@ -16,7 +16,8 @@ func main() {
 	reporter.InitReporter()
 	kpmcli, err := client.NewKpmClient()
 	if err != nil {
-		reporter.Fatal(err)
+		wrappedErr := reporter.WrapError("failed to initialize kpm client", err)
+		reporter.Fatal(wrappedErr)
 	}
 	app := cli.NewApp()
 	app.Name = "kpm"
