@@ -29,7 +29,7 @@ type CloneOptions struct {
 // CloneOption is a function that modifies CloneOptions
 type CloneOption func(*CloneOptions)
 
-func NewCloneOptions(repoUrl, commit, tag, branch, localpath string, Writer io.Writer, isBare bool) *CloneOptions {
+func NewCloneOptions(repoUrl, commit, tag, branch, localpath string, Writer io.Writer) *CloneOptions {
 	return &CloneOptions{
 		RepoURL:   repoUrl,
 		Commit:    commit,
@@ -37,7 +37,6 @@ func NewCloneOptions(repoUrl, commit, tag, branch, localpath string, Writer io.W
 		Branch:    branch,
 		LocalPath: localpath,
 		Writer:    Writer,
-		Bare:      isBare,
 	}
 }
 
