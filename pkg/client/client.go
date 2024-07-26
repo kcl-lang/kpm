@@ -36,6 +36,7 @@ import (
 	"kcl-lang.io/kpm/pkg/runner"
 	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/utils"
+	"kcl-lang.io/kpm/pkg/unified"
 )
 
 // KpmClient is the client of kpm.
@@ -67,11 +68,14 @@ func NewKpmClient() (*KpmClient, error) {
 		return nil, err
 	}
 
+	ds := unified.NewDependencySystem()
+    depDownloader := downloader.NewDepDownloader("", ds)
+
 	return &KpmClient{
 		logWriter:     os.Stdout,
 		settings:      *settings,
 		homePath:      homePath,
-		DepDownloader: &downloader.DepDownloader{},
+		DepDownloader: depDownloader,
 	}, nil
 }
 
