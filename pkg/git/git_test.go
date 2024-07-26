@@ -11,6 +11,8 @@ import (
 
 func TestWithGitOptions(t *testing.T) {
 	cloneOpts := &CloneOptions{}
+	WithBare(true)(cloneOpts)
+	assert.Equal(t, cloneOpts.Bare, true)
 	WithRepoURL("test_url")(cloneOpts)
 	assert.Equal(t, cloneOpts.RepoURL, "test_url")
 	WithBranch("test_branch")(cloneOpts)
