@@ -11,6 +11,8 @@ import (
 
 func TestWithGitOptions(t *testing.T) {
 	cloneOpts := &CloneOptions{}
+	WithBare(true)(cloneOpts)
+	assert.Equal(t, cloneOpts.Bare, true)
 	WithRepoURL("test_url")(cloneOpts)
 	assert.Equal(t, cloneOpts.RepoURL, "test_url")
 	WithBranch("test_branch")(cloneOpts)
@@ -26,7 +28,8 @@ func TestWithGitOptions(t *testing.T) {
 }
 
 func TestNewCloneOptions(t *testing.T) {
-	cloneOpts := NewCloneOptions("https://github.com/kcl-lang/kcl", "", "v1.0.0", "", "", nil)
+	cloneOpts := NewCloneOptions("https://github.com/kcl-lang/kcl", "", "v1.0.0", "", "", nil, true)
+	assert.Equal(t, cloneOpts.Bare, true)
 	assert.Equal(t, cloneOpts.RepoURL, "https://github.com/kcl-lang/kcl")
 	assert.Equal(t, cloneOpts.Tag, "v1.0.0")
 	assert.Equal(t, cloneOpts.Commit, "")

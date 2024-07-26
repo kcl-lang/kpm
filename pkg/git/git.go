@@ -23,12 +23,13 @@ type CloneOptions struct {
 	Branch    string
 	LocalPath string
 	Writer    io.Writer
+	Bare      bool // New field to indicate if the clone should be bare
 }
 
 // CloneOption is a function that modifies CloneOptions
 type CloneOption func(*CloneOptions)
 
-func NewCloneOptions(repoUrl, commit, tag, branch, localpath string, Writer io.Writer) *CloneOptions {
+func NewCloneOptions(repoUrl, commit, tag, branch, localpath string, Writer io.Writer, isBare bool) *CloneOptions {
 	return &CloneOptions{
 		RepoURL:   repoUrl,
 		Commit:    commit,
@@ -36,6 +37,14 @@ func NewCloneOptions(repoUrl, commit, tag, branch, localpath string, Writer io.W
 		Branch:    branch,
 		LocalPath: localpath,
 		Writer:    Writer,
+		Bare:      isBare,
+	}
+}
+
+// WithBare sets the bare flag for CloneOptions
+func WithBare(isBare bool) CloneOption {
+	return func(o *CloneOptions) {
+		o.Bare = isBare
 	}
 }
 
@@ -102,6 +111,23 @@ func (cloneOpts *CloneOptions) Validate() error {
 }
 
 // Clone clones a git repository
+func (cloneOpts *CloneOptions) CloneBare() (*git.Repository, error) {
+	if err := cloneOpts.Validate(); err != nil {
+		return nil, err
+	}
+
+	repo, err := git.PlainClone(cloneOpts.LocalPath, cloneOpts.Bare, &git.CloneOptions{
+		URL:      cloneOpts.RepoURL,
+		Progress: cloneOpts.Writer,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return repo, nil
+}
+
+// Clone clones a git repository
 func (cloneOpts *CloneOptions) Clone() (*git.Repository, error) {
 	if err := cloneOpts.Validate(); err != nil {
 		return nil, err
@@ -126,7 +152,6 @@ func (cloneOpts *CloneOptions) Clone() (*git.Repository, error) {
 	}
 
 	repo, err := git.PlainOpen(cloneOpts.LocalPath)
-
 	if err != nil {
 		return nil, err
 	}
@@ -144,6 +169,9 @@ func CloneWithOpts(opts ...CloneOption) (*git.Repository, error) {
 	err := cloneOpts.Validate()
 	if err != nil {
 		return nil, err
+	}
+	if cloneOpts.Bare {
+		return cloneOpts.CloneBare()
 	}
 
 	return cloneOpts.Clone()
