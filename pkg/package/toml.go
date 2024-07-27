@@ -85,7 +85,17 @@ func (dep *Dependency) MarshalTOML() string {
 	source := dep.Source.MarshalTOML()
 	var sb strings.Builder
 	if len(source) != 0 {
-		sb.WriteString(fmt.Sprintf(DEP_PATTERN, dep.Name, source))
+		sourceWithoutBrace := strings.TrimSuffix(source, "}")
+
+		// Add the version if it exists
+        if dep.Version != "" {
+            sourceWithoutBrace += fmt.Sprintf(`, version = "%s"`, dep.Version)
+        }
+
+		// Add the closing brace back
+        sourceWithoutBrace += "}"
+
+		sb.WriteString(fmt.Sprintf(DEP_PATTERN, dep.Name, sourceWithoutBrace))
 	}
 	return sb.String()
 }
@@ -235,6 +245,14 @@ func (dep *Dependency) UnmarshalModTOML(data interface{}) error {
 	}
 
 	dep.Source = source
+
+	// Try to extract version from the data
+    if meta, ok := data.(map[string]interface{}); ok {
+        if v, ok := meta["version"].(string); ok {
+            dep.Version = v
+        }
+    }
+
 	var version string
 	if source.Git != nil {
 		version, err = source.Git.GetValidGitReference()
@@ -248,6 +266,11 @@ func (dep *Dependency) UnmarshalModTOML(data interface{}) error {
 	if source.Registry != nil {
 		version = source.Registry.Version
 	}
+
+	// If version is not set explicitly, use the one from the source
+    if dep.Version == "" {
+        dep.Version = version
+    }
 
 	dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, dep.Name, version)
 	dep.Version = version
