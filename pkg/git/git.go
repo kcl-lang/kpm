@@ -128,34 +128,50 @@ func (cloneOpts *CloneOptions) CloneBare() (*git.Repository, error) {
 
 // CheckoutFromBare checks out the specified reference from a bare repository
 func (cloneOpts *CloneOptions) CheckoutFromBare() error {
-    if !cloneOpts.Bare {
-        return errors.New("repository is not bare")
-    }
+	// Ensure the repository is bare
+	if !cloneOpts.Bare {
+		return errors.New("repository is not bare")
+	}
 
-    repo, err := git.PlainOpen(cloneOpts.LocalPath)
-    if err != nil {
-        return err
-    }
+	// Open the repository at the specified local path
+	repo, err := git.PlainOpen(cloneOpts.LocalPath)
+	if err != nil {
+		return err
+	}
 
-    worktree, err := repo.Worktree()
-    if err != nil {
-        return err
-    }
+	// Get the worktree of the repository
+	worktree, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
 
-    checkoutOpts := &git.CheckoutOptions{
-        Force: true,
-    }
+	// Create the checkout options and set the force option
+	checkoutOptions := &git.CheckoutOptions{
+		Force: true,
+	}
 
-    if cloneOpts.Branch != "" {
-        checkoutOpts.Branch = plumbing.NewBranchReferenceName(cloneOpts.Branch)
-    } else if cloneOpts.Tag != "" {
-        checkoutOpts.Branch = plumbing.NewTagReferenceName(cloneOpts.Tag)
-    } else if cloneOpts.Commit != "" {
-        hash := plumbing.NewHash(cloneOpts.Commit)
-        checkoutOpts.Hash = hash
-    }
+	// Handle the specific reference (commit, tag, or branch)
+	if cloneOpts.Commit != "" {
+		checkoutOptions.Hash = plumbing.NewHash(cloneOpts.Commit)
+	} else if cloneOpts.Tag != "" {
+		tagRef, err := repo.Tag(cloneOpts.Tag)
+		if err != nil {
+			return err
+		}
+		checkoutOptions.Hash = tagRef.Hash()
+	} else if cloneOpts.Branch != "" {
+		branchRef, err := repo.Branch(cloneOpts.Branch)
+		if err != nil {
+			return err
+		}
+		checkoutOptions.Branch = branchRef.Merge
+	} else {
+		// Fallback to the master branch if no specific reference is provided
+		checkoutOptions.Branch = plumbing.Master
+	}
 
-    return worktree.Checkout(checkoutOpts)
+	// Perform the checkout
+	return worktree.Checkout(checkoutOptions)
 }
 
 // Clone clones a git repository
@@ -204,22 +220,22 @@ func CloneWithOpts(opts ...CloneOption) (*git.Repository, error) {
 
 	var repo *git.Repository
 
-    if cloneOpts.Bare {
-        repo, err = cloneOpts.CloneBare()
-        if err != nil {
-            return nil, err
-        }
+	if cloneOpts.Bare {
+		repo, err = cloneOpts.CloneBare()
+		if err != nil {
+			return nil, err
+		}
 
-        err = cloneOpts.CheckoutFromBare()
-        if err != nil {
-            return nil, err
-        }
-    } else {
-        repo, err = cloneOpts.Clone()
-        if err != nil {
-            return nil, err
-        }
-    }
+		err = cloneOpts.CheckoutFromBare()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		repo, err = cloneOpts.Clone()
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	return repo, nil
 }
