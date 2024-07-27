@@ -6,8 +6,101 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+
 	"gotest.tools/v3/assert"
 )
+
+// TestCheckoutFromBare tests the CheckoutFromBare method with branch, tag, and commit scenarios.
+func TestCheckoutFromBare(t *testing.T) {
+	setupTestRepo := func(t *testing.T) (*git.Repository, string) {
+		// Create a temporary directory for the repository
+		dir := t.TempDir()
+		repo, err := git.PlainInit(dir, true) // Create a bare repository
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Create a worktree to make commits
+		worktree, err := repo.Worktree()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Commit the initial changes
+		_, err = worktree.Commit("Initial commit", &git.CommitOptions{})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Create a branch and a tag
+		err = repo.CreateBranch(&config.Branch{Name: "test-branch", Remote: "origin"})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		_, err = repo.CreateTag("v1.0.0", plumbing.NewHash("initial-commit-hash"), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		return repo, dir
+	}
+
+	repo, dir := setupTestRepo(t)
+
+	// Test branch checkout
+	cloneOptsBranch := &CloneOptions{
+		LocalPath: dir,
+		Branch:    "test-branch",
+		Bare:      true,
+	}
+	err := cloneOptsBranch.CheckoutFromBare()
+	assert.NilError(t, err)
+	headRef, err := repo.Head()
+	assert.NilError(t, err)
+	assert.Equal(t, "refs/heads/test-branch", headRef.Name().String())
+
+	// Test tag checkout
+	cloneOptsTag := &CloneOptions{
+		LocalPath: dir,
+		Tag:       "v1.0.0",
+		Bare:      true,
+	}
+	err = cloneOptsTag.CheckoutFromBare()
+	assert.NilError(t, err)
+	headRef, err = repo.Head()
+	assert.NilError(t, err)
+	assert.Equal(t, "refs/tags/v1.0.0", headRef.Name().String())
+
+	// Test commit checkout
+	headRef, err = repo.Head()
+	assert.NilError(t, err)
+	commitHash := headRef.Hash().String()
+	cloneOptsCommit := &CloneOptions{
+		LocalPath: dir,
+		Commit:    commitHash,
+		Bare:      true,
+	}
+	err = cloneOptsCommit.CheckoutFromBare()
+	assert.NilError(t, err)
+	headRef, err = repo.Head()
+	assert.NilError(t, err)
+	assert.Equal(t, commitHash, headRef.Hash().String())
+
+	// Test default checkout (fallback to master branch)
+	cloneOptsDefault := &CloneOptions{
+		LocalPath: dir,
+		Bare:      true,
+	}
+	err = cloneOptsDefault.CheckoutFromBare()
+	assert.NilError(t, err)
+	headRef, err = repo.Head()
+	assert.NilError(t, err)
+	assert.Equal(t, plumbing.Master.String(), headRef.Name().String())
+}
 
 func TestWithGitOptions(t *testing.T) {
 	cloneOpts := &CloneOptions{}
