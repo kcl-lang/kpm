@@ -330,14 +330,13 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 
 				CopyDir(filepath.Join(testDataRoot, ts.Name), filepath.Join(workspace, ts.Name))
 
-				tag := fmt.Sprintf("test-%d", time.Now().Unix())
 				kpmcli, err := client.NewKpmClient()
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 				fmt.Printf("ts.Name: %v\n", ts.Name)
 				kpkg, err := kpmcli.LoadPkgFromPath(filepath.Join(workspace, ts.Name))
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 
-				kpkg.ModFile.Pkg.Version = tag
+				kpkg.ModFile.Pkg.Version = "0.0.100"
 				kpkg.ModFile.Pkg.Name = "helloworld"
 
 				kpkg.HomePath = filepath.Join(workspace, ts.Name, "helloworld")
