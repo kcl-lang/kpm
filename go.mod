@@ -156,7 +156,7 @@ require (
 	github.com/kubescape/go-git-url v0.0.30
 	github.com/moby/term v0.5.0
 	github.com/onsi/ginkgo/v2 v2.19.0
-	github.com/onsi/gomega v1.33.1
+	github.com/onsi/gomega v1.34.0
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/stretchr/testify v1.9.0
 	github.com/thoas/go-funk v0.9.3
