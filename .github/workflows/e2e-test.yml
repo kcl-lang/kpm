@@ -25,14 +25,6 @@ jobs:
         run: |
           ./scripts/reg.sh
           ./scripts/e2e_prepare.sh
-    
-      - name: Login to ghcr.io
-        run: |
-          ./bin/kpm login -u ${{ secrets.DEPLOY_ACCESS_NAME }} -p ${{ secrets.DEPLOY_ACCESS_TOKEN }} ghcr.io
-
-      - name: Login to docker.io
-        run: |
-          ./bin/kpm login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} docker.io
 
       - name: run e2e
         run: |
