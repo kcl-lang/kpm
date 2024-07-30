@@ -833,7 +833,10 @@ func (c *KpmClient) AddDepToPkg(kclPkg *pkg.KclPkg, d *pkg.Dependency) error {
 	if err != nil {
 		return fmt.Errorf("failed to load downloaded package: %w", err)
 	}
-	d.Source.Git.Version = dep.GetPkgVersion()
+
+	if d.Source.Git != nil {
+		d.Source.Git.Version = dep.GetPkgVersion()
+	}
 
 	return err
 }
