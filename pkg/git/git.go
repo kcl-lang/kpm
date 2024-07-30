@@ -141,8 +141,8 @@ func (cloneOpts *CloneOptions) cloneBare() (*git.Repository, error) {
 		}
 	}
 
-	return repo, nil
-}
+// 	return repo, nil
+// }
 
 // CheckoutFromBare checks out the specified reference from a bare repository
 func (cloneOpts *CloneOptions) CheckoutFromBare() error {
@@ -176,12 +176,31 @@ func (cloneOpts *CloneOptions) CheckoutFromBare() error {
 	return nil
 }
 
-// Clone clones a git repository
+// Clone clones a git repository, handling both bare and non-bare options
 func (cloneOpts *CloneOptions) Clone() (*git.Repository, error) {
 	if err := cloneOpts.Validate(); err != nil {
 		return nil, err
 	}
 
+	if cloneOpts.Bare {
+		// Use local git command to clone as bare repository
+		cmdArgs := []string{"clone", "--bare", cloneOpts.RepoURL, cloneOpts.LocalPath}
+		cmd := exec.Command("git", cmdArgs...)
+
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			return nil, fmt.Errorf("failed to clone repository: %s, error: %w", string(output), err)
+		}
+
+		repo, err := git.PlainOpen(cloneOpts.LocalPath)
+		if err != nil {
+			return nil, err
+		}
+
+		return repo, nil
+	}
+
+	// Default non-bare clone using go-getter
 	url, err := cloneOpts.ForceGitUrl()
 	if err != nil {
 		return nil, err
