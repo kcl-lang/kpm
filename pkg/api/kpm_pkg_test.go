@@ -208,3 +208,16 @@ func TestGetEntries(t *testing.T) {
 	assert.Equal(t, res.GetRawYamlResult(), "sub: test in sub")
 	assert.Equal(t, res.GetRawJsonResult(), "{\"sub\": \"test in sub\"}")
 }
+
+func TestExportSwaggerV2Spec(t *testing.T) {
+	pkg_path := filepath.Join(getTestDir("test_kpm_package"), "export_swagger", "aaa")
+	pkg, err := GetKclPackage(pkg_path)
+	assert.Equal(t, err, nil)
+	kpmcli, err := client.NewKpmClient()
+	assert.Equal(t, err, nil)
+	err = kpmcli.ResolvePkgDepsMetadata(pkg.pkg, true)
+	assert.Equal(t, err, nil)
+	spec, err := pkg.ExportSwaggerV2Spec()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(spec.Definitions), 1)
+}

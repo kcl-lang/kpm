@@ -128,34 +128,34 @@ func (cloneOpts *CloneOptions) CloneBare() (*git.Repository, error) {
 
 // CheckoutFromBare checks out the specified reference from a bare repository
 func (cloneOpts *CloneOptions) CheckoutFromBare() error {
-    if !cloneOpts.Bare {
-        return errors.New("repository is not bare")
-    }
+	if !cloneOpts.Bare {
+		return errors.New("repository is not bare")
+	}
 
-    repo, err := git.PlainOpen(cloneOpts.LocalPath)
-    if err != nil {
-        return err
-    }
+	repo, err := git.PlainOpen(cloneOpts.LocalPath)
+	if err != nil {
+		return err
+	}
 
-    worktree, err := repo.Worktree()
-    if err != nil {
-        return err
-    }
+	worktree, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
 
-    checkoutOpts := &git.CheckoutOptions{
-        Force: true,
-    }
+	checkoutOpts := &git.CheckoutOptions{
+		Force: true,
+	}
 
-    if cloneOpts.Branch != "" {
-        checkoutOpts.Branch = plumbing.NewBranchReferenceName(cloneOpts.Branch)
-    } else if cloneOpts.Tag != "" {
-        checkoutOpts.Branch = plumbing.NewTagReferenceName(cloneOpts.Tag)
-    } else if cloneOpts.Commit != "" {
-        hash := plumbing.NewHash(cloneOpts.Commit)
-        checkoutOpts.Hash = hash
-    }
+	if cloneOpts.Branch != "" {
+		checkoutOpts.Branch = plumbing.NewBranchReferenceName(cloneOpts.Branch)
+	} else if cloneOpts.Tag != "" {
+		checkoutOpts.Branch = plumbing.NewTagReferenceName(cloneOpts.Tag)
+	} else if cloneOpts.Commit != "" {
+		hash := plumbing.NewHash(cloneOpts.Commit)
+		checkoutOpts.Hash = hash
+	}
 
-    return worktree.Checkout(checkoutOpts)
+	return worktree.Checkout(checkoutOpts)
 }
 
 // Clone clones a git repository
@@ -204,22 +204,22 @@ func CloneWithOpts(opts ...CloneOption) (*git.Repository, error) {
 
 	var repo *git.Repository
 
-    if cloneOpts.Bare {
-        repo, err = cloneOpts.CloneBare()
-        if err != nil {
-            return nil, err
-        }
+	if cloneOpts.Bare {
+		repo, err = cloneOpts.CloneBare()
+		if err != nil {
+			return nil, err
+		}
 
-        err = cloneOpts.CheckoutFromBare()
-        if err != nil {
-            return nil, err
-        }
-    } else {
-        repo, err = cloneOpts.Clone()
-        if err != nil {
-            return nil, err
-        }
-    }
+		err = cloneOpts.CheckoutFromBare()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		repo, err = cloneOpts.Clone()
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	return repo, nil
 }
