@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os/exec"
 	"regexp"
 	"time"
 
@@ -111,79 +110,60 @@ func (cloneOpts *CloneOptions) Validate() error {
 }
 
 // Clone clones a git repository
-// func (cloneOpts *CloneOptions) CloneBare() (*git.Repository, error) {
-// 	if err := cloneOpts.Validate(); err != nil {
-// 		return nil, err
-// 	}
+func (cloneOpts *CloneOptions) CloneBare() (*git.Repository, error) {
+	if err := cloneOpts.Validate(); err != nil {
+		return nil, err
+	}
 
-// 	repo, err := git.PlainClone(cloneOpts.LocalPath, cloneOpts.Bare, &git.CloneOptions{
-// 		URL:      cloneOpts.RepoURL,
-// 		Progress: cloneOpts.Writer,
-// 	})
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	repo, err := git.PlainClone(cloneOpts.LocalPath, cloneOpts.Bare, &git.CloneOptions{
+		URL:      cloneOpts.RepoURL,
+		Progress: cloneOpts.Writer,
+	})
+	if err != nil {
+		return nil, err
+	}
 
-// 	return repo, nil
-// }
+	return repo, nil
+}
 
 // CheckoutFromBare checks out the specified reference from a bare repository
-// func (cloneOpts *CloneOptions) CheckoutFromBare() error {
-// 	if !cloneOpts.Bare {
-// 		return errors.New("repository is not bare")
-// 	}
+func (cloneOpts *CloneOptions) CheckoutFromBare() error {
+    if !cloneOpts.Bare {
+        return errors.New("repository is not bare")
+    }
 
-// 	repo, err := git.PlainOpen(cloneOpts.LocalPath)
-// 	if err != nil {
-// 		return err
-// 	}
+    repo, err := git.PlainOpen(cloneOpts.LocalPath)
+    if err != nil {
+        return err
+    }
 
-// 	worktree, err := repo.Worktree()
-// 	if err != nil {
-// 		return err
-// 	}
+    worktree, err := repo.Worktree()
+    if err != nil {
+        return err
+    }
 
-// 	checkoutOpts := &git.CheckoutOptions{
-// 		Force: true,
-// 	}
+    checkoutOpts := &git.CheckoutOptions{
+        Force: true,
+    }
 
-// 	if cloneOpts.Branch != "" {
-// 		checkoutOpts.Branch = plumbing.NewBranchReferenceName(cloneOpts.Branch)
-// 	} else if cloneOpts.Tag != "" {
-// 		checkoutOpts.Branch = plumbing.NewTagReferenceName(cloneOpts.Tag)
-// 	} else if cloneOpts.Commit != "" {
-// 		hash := plumbing.NewHash(cloneOpts.Commit)
-// 		checkoutOpts.Hash = hash
-// 	}
+    if cloneOpts.Branch != "" {
+        checkoutOpts.Branch = plumbing.NewBranchReferenceName(cloneOpts.Branch)
+    } else if cloneOpts.Tag != "" {
+        checkoutOpts.Branch = plumbing.NewTagReferenceName(cloneOpts.Tag)
+    } else if cloneOpts.Commit != "" {
+        hash := plumbing.NewHash(cloneOpts.Commit)
+        checkoutOpts.Hash = hash
+    }
 
-// 	return worktree.Checkout(checkoutOpts)
-// }
+    return worktree.Checkout(checkoutOpts)
+}
 
-// Clone clones a git repository, handling both bare and non-bare options
+// Clone clones a git repository
 func (cloneOpts *CloneOptions) Clone() (*git.Repository, error) {
 	if err := cloneOpts.Validate(); err != nil {
 		return nil, err
 	}
 
-	if cloneOpts.Bare {
-		// Use local git command to clone as bare repository
-		cmdArgs := []string{"clone", "--bare", cloneOpts.RepoURL, cloneOpts.LocalPath}
-		cmd := exec.Command("git", cmdArgs...)
-
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			return nil, fmt.Errorf("failed to clone repository: %s, error: %w", string(output), err)
-		}
-
-		repo, err := git.PlainOpen(cloneOpts.LocalPath)
-		if err != nil {
-			return nil, err
-		}
-
-		return repo, nil
-	}
-
-	// Default non-bare clone using go-getter
 	url, err := cloneOpts.ForceGitUrl()
 	if err != nil {
 		return nil, err
@@ -224,11 +204,22 @@ func CloneWithOpts(opts ...CloneOption) (*git.Repository, error) {
 
 	var repo *git.Repository
 
-	repo, err = cloneOpts.Clone()
+    if cloneOpts.Bare {
+        repo, err = cloneOpts.CloneBare()
+        if err != nil {
+            return nil, err
+        }
 
-	if err != nil {
-		return nil, err
-	}
+        err = cloneOpts.CheckoutFromBare()
+        if err != nil {
+            return nil, err
+        }
+    } else {
+        repo, err = cloneOpts.Clone()
+        if err != nil {
+            return nil, err
+        }
+    }
 
 	return repo, nil
 }
