@@ -220,8 +220,6 @@ func CloneWithOpts(opts ...CloneOption) (*git.Repository, error) {
 		return nil, err
 	}
 
-	var repo *git.Repository
-
 	if cloneOpts.Bare {
 		return cloneOpts.cloneBare()
 	}
