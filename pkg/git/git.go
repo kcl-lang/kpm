@@ -155,7 +155,11 @@ func (cloneOpts *CloneOptions) CheckoutFromBare() error {
         return errors.New("repository is not bare")
     }
 
+<<<<<<< HEAD
     var reference string
+=======
+	var reference  string
+>>>>>>> 2707f52 (modified the `checkoutFromBare` method and added its test case)
 
     if cloneOpts.Branch != "" {
         reference = "refs/heads/" + cloneOpts.Branch
@@ -167,11 +171,21 @@ func (cloneOpts *CloneOptions) CheckoutFromBare() error {
         return errors.New("no reference specified for checkout")
     }
 
+<<<<<<< HEAD
     cmd := exec.Command("git", "-C", cloneOpts.LocalPath, "symbolic-ref", "HEAD", reference)
     if cloneOpts.Commit != "" {
         cmd = exec.Command("git", "-C", cloneOpts.LocalPath, "update-ref", "HEAD", reference)
     }
     cmd.Stdout = cloneOpts.Writer
+=======
+	cmd := exec.Command("git", "-C", cloneOpts.LocalPath, "symbolic-ref", "HEAD", reference)
+
+	if cloneOpts.Commit != "" {
+        cmd = exec.Command("git", "-C", cloneOpts.LocalPath, "update-ref", "HEAD", reference)
+    }
+
+	cmd.Stdout = cloneOpts.Writer
+>>>>>>> 2707f52 (modified the `checkoutFromBare` method and added its test case)
     cmd.Stderr = cloneOpts.Writer
 
     if err := cmd.Run(); err != nil {

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/go-git/go-git/v5/plumbing"
 	"gotest.tools/v3/assert"
 	"github.com/go-git/go-git/v5/plumbing"
 )
