@@ -221,13 +221,11 @@ func CloneWithOpts(opts ...CloneOption) (*git.Repository, error) {
 		return nil, err
 	}
 
-	var repo *git.Repository
-
 	if cloneOpts.Bare {
 		return cloneOpts.cloneBare()
 	}
 
-	return repo, nil
+	return cloneOpts.Clone()
 }
 
 // Clone will clone from `repoURL` to `localPath` via git by tag name.
