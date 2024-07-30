@@ -183,6 +183,38 @@ func (cloneOpts *CloneOptions) CheckoutFromBare() error {
     return nil
 }
 
+// CheckoutFromBare checks out the specified reference from a bare repository
+func (cloneOpts *CloneOptions) CheckoutFromBare() error {
+	if !cloneOpts.Bare {
+		return errors.New("repository is not bare")
+	}
+
+	repo, err := git.PlainOpen(cloneOpts.LocalPath)
+	if err != nil {
+		return err
+	}
+
+	worktree, err := repo.Worktree()
+	if err != nil {
+		return err
+	}
+
+	checkoutOpts := &git.CheckoutOptions{
+		Force: true,
+	}
+
+	if cloneOpts.Branch != "" {
+		checkoutOpts.Branch = plumbing.NewBranchReferenceName(cloneOpts.Branch)
+	} else if cloneOpts.Tag != "" {
+		checkoutOpts.Branch = plumbing.NewTagReferenceName(cloneOpts.Tag)
+	} else if cloneOpts.Commit != "" {
+		hash := plumbing.NewHash(cloneOpts.Commit)
+		checkoutOpts.Hash = hash
+	}
+
+	return worktree.Checkout(checkoutOpts)
+}
+
 // Clone clones a git repository
 func (cloneOpts *CloneOptions) Clone() (*git.Repository, error) {
 	if err := cloneOpts.Validate(); err != nil {
@@ -226,11 +258,11 @@ func CloneWithOpts(opts ...CloneOption) (*git.Repository, error) {
 		return nil, err
 	}
 
-    if cloneOpts.Bare {
-        return cloneOpts.cloneBare()
-    }
+   if cloneOpts.Bare {
+       return cloneOpts.cloneBare()
+   }
 
-	return cloneOpts.Clone()
+	return repo, nil
 }
 
 // Clone will clone from `repoURL` to `localPath` via git by tag name.
