@@ -11,41 +11,41 @@ import (
 const NEWLINE = "\n"
 const SOURCE_PATTERN = "{ %s }"
 
-func (source *Source) MarshalTOML() string {
+func (source *Source) MarshalTOML(d string) string {
 	var sb strings.Builder
 
 	if source.Registry != nil {
 		registryToml := source.Registry.MarshalTOML()
 		if len(registryToml) != 0 {
+			sb.WriteString(fmt.Sprintf("%q", d))
 			sb.WriteString(fmt.Sprintf("%q", registryToml))
 		}
 	}
 
 	if source.Git != nil {
-		gitToml := source.Git.MarshalTOML()
+		gitToml := source.Git.MarshalTOML(d)
 		if len(gitToml) != 0 {
 			sb.WriteString(fmt.Sprintf(SOURCE_PATTERN, gitToml))
 		}
 	}
 
 	if source.Oci != nil {
-		ociToml := source.Oci.MarshalTOML()
+		ociToml := source.Oci.MarshalTOML(d)
 		if len(ociToml) != 0 {
 			if len(source.Oci.Reg) != 0 && len(source.Oci.Repo) != 0 {
 				sb.WriteString(fmt.Sprintf(SOURCE_PATTERN, ociToml))
 			} else {
-				sb.WriteString(ociToml)
+				sb.WriteString(fmt.Sprintf(SOURCE_PATTERN, ociToml))
 			}
 		}
 	}
 
 	if source.Local != nil {
-		localPathToml := source.Local.MarshalTOML()
+		localPathToml := source.Local.MarshalTOML(d)
 		if len(localPathToml) != 0 {
 			sb.WriteString(fmt.Sprintf(SOURCE_PATTERN, localPathToml))
 		}
 	}
-
 	return sb.String()
 }
 
@@ -60,7 +60,6 @@ func (registry *Registry) MarshalTOML() string {
 		sb.WriteString(registry.Oci.Tag)
 		return sb.String()
 	}
-
 	return sb.String()
 }
 
@@ -69,9 +68,10 @@ const TAG_PATTERN = "tag = \"%s\""
 const GIT_COMMIT_PATTERN = "commit = \"%s\""
 const GIT_BRANCH_PATTERN = "branch = \"%s\""
 const VERSION_PATTERN = "version = \"%s\""
+const PACKAGE_PATTERN = "package = \"%s\""
 const SEPARATOR = ", "
 
-func (git *Git) MarshalTOML() string {
+func (git *Git) MarshalTOML(d string) string {
 	var sb strings.Builder
 	if len(git.Url) != 0 {
 		sb.WriteString(fmt.Sprintf(GIT_URL_PATTERN, git.Url))
@@ -94,12 +94,14 @@ func (git *Git) MarshalTOML() string {
 		sb.WriteString(SEPARATOR)
 		sb.WriteString(fmt.Sprintf(VERSION_PATTERN, git.Version))
 	}
+	sb.WriteString(SEPARATOR)
+	sb.WriteString(fmt.Sprintf(PACKAGE_PATTERN, d))
 	return sb.String()
 }
 
 const OCI_URL_PATTERN = "oci = \"%s\""
 
-func (oci *Oci) MarshalTOML() string {
+func (oci *Oci) MarshalTOML(d string) string {
 	var sb strings.Builder
 	if len(oci.Reg) != 0 && len(oci.Repo) != 0 {
 		sb.WriteString(fmt.Sprintf(OCI_URL_PATTERN, oci.IntoOciUrl()))
@@ -110,17 +112,20 @@ func (oci *Oci) MarshalTOML() string {
 	} else if len(oci.Reg) == 0 && len(oci.Repo) == 0 && len(oci.Tag) != 0 {
 		sb.WriteString(fmt.Sprintf(`"%s"`, oci.Tag))
 	}
-
+	sb.WriteString(SEPARATOR)
+	sb.WriteString(fmt.Sprintf(PACKAGE_PATTERN, d))
 	return sb.String()
 }
 
 const LOCAL_PATH_PATTERN = "path = %s"
 
-func (local *Local) MarshalTOML() string {
+func (local *Local) MarshalTOML(d string) string {
 	var sb strings.Builder
 	if len(local.Path) != 0 {
 		sb.WriteString(fmt.Sprintf(LOCAL_PATH_PATTERN, fmt.Sprintf("%q", local.Path)))
 	}
+	sb.WriteString(SEPARATOR)
+	sb.WriteString(fmt.Sprintf(PACKAGE_PATTERN, d))
 	return sb.String()
 }
 
