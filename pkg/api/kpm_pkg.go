@@ -271,7 +271,6 @@ func (pkg *KclPackage) ExportSwaggerV2Spec() (*gen.SwaggerV2Spec, error) {
 		for _, t := range p {
 			id := gen.SchemaId(packagePath, t.KclType)
 			spec.Definitions[id] = gen.GetKclOpenAPIType(packagePath, t.KclType, false)
-			fmt.Printf("exporting openAPI spec from schema %s\n", id)
 		}
 	}
 	return spec, nil
