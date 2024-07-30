@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"time"
+	"os/exec"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -110,20 +111,74 @@ func (cloneOpts *CloneOptions) Validate() error {
 }
 
 // Clone clones a git repository
-func (cloneOpts *CloneOptions) CloneBare() (*git.Repository, error) {
+func (cloneOpts *CloneOptions) cloneBare() (*git.Repository, error) {
 	if err := cloneOpts.Validate(); err != nil {
 		return nil, err
 	}
 
-	repo, err := git.PlainClone(cloneOpts.LocalPath, cloneOpts.Bare, &git.CloneOptions{
-		URL:      cloneOpts.RepoURL,
-		Progress: cloneOpts.Writer,
-	})
+	args := []string{"clone", "--bare"}
+
+	if cloneOpts.Commit != "" {
+		args = append(args, "--no-checkout")
+	}
+	args = append(args, cloneOpts.RepoURL, cloneOpts.LocalPath)
+	
+	cmd := exec.Command("git", args...)
+	cmd.Stdout = cloneOpts.Writer
+	cmd.Stderr = cloneOpts.Writer
+
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("failed to clone bare repository: %w", err)
+	}
+
+	repo, err := git.PlainOpen(cloneOpts.LocalPath)
 	if err != nil {
 		return nil, err
 	}
 
-	return repo, nil
+	if cloneOpts.Commit != "" {
+		cmd = exec.Command("git", "update-ref", "HEAD", cloneOpts.Commit)
+		cmd.Dir = cloneOpts.LocalPath
+		cmd.Stdout = cloneOpts.Writer
+		cmd.Stderr = cloneOpts.Writer
+		if err := cmd.Run(); err != nil {
+			return nil, fmt.Errorf("failed to update HEAD to specified commit: %w", err)
+		}
+	}
+
+	return repo, nil	
+}
+
+// CheckoutFromBare checks out the specified reference from a bare repository
+func (cloneOpts *CloneOptions) CheckoutFromBare() error {
+    if !cloneOpts.Bare {
+        return errors.New("repository is not bare")
+    }
+
+    var reference string
+
+    if cloneOpts.Branch != "" {
+        reference = "refs/heads/" + cloneOpts.Branch
+    } else if cloneOpts.Tag != "" {
+        reference = "refs/tags/" + cloneOpts.Tag
+    } else if cloneOpts.Commit != "" {
+        reference = cloneOpts.Commit
+    } else {
+        return errors.New("no reference specified for checkout")
+    }
+
+    cmd := exec.Command("git", "-C", cloneOpts.LocalPath, "symbolic-ref", "HEAD", reference)
+    if cloneOpts.Commit != "" {
+        cmd = exec.Command("git", "-C", cloneOpts.LocalPath, "update-ref", "HEAD", reference)
+    }
+    cmd.Stdout = cloneOpts.Writer
+    cmd.Stderr = cloneOpts.Writer
+
+    if err := cmd.Run(); err != nil {
+        return fmt.Errorf("failed to update HEAD in bare repository: %w", err)
+    }
+
+    return nil
 }
 
 // Clone clones a git repository
@@ -131,7 +186,6 @@ func (cloneOpts *CloneOptions) Clone() (*git.Repository, error) {
 	if err := cloneOpts.Validate(); err != nil {
 		return nil, err
 	}
-
 	url, err := cloneOpts.ForceGitUrl()
 	if err != nil {
 		return nil, err
@@ -169,9 +223,10 @@ func CloneWithOpts(opts ...CloneOption) (*git.Repository, error) {
 	if err != nil {
 		return nil, err
 	}
-	if cloneOpts.Bare {
-		return cloneOpts.CloneBare()
-	}
+
+    if cloneOpts.Bare {
+        return cloneOpts.cloneBare()
+    }
 
 	return cloneOpts.Clone()
 }
