@@ -220,11 +220,14 @@ func CloneWithOpts(opts ...CloneOption) (*git.Repository, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	var repo *git.Repository
+
 	if cloneOpts.Bare {
 		return cloneOpts.cloneBare()
 	}
 
-	return cloneOpts.Clone()
+	return repo, nil
 }
 
 // Clone will clone from `repoURL` to `localPath` via git by tag name.
