@@ -17,7 +17,6 @@ func (source *Source) MarshalTOML(d string) string {
 	if source.Registry != nil {
 		registryToml := source.Registry.MarshalTOML()
 		if len(registryToml) != 0 {
-			sb.WriteString(fmt.Sprintf("%q", d))
 			sb.WriteString(fmt.Sprintf("%q", registryToml))
 		}
 	}

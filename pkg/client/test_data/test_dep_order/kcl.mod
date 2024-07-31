@@ -4,8 +4,8 @@ edition = "v0.9.0"
 version = "0.0.1"
 
 [dependencies]
-helloworld = { oci = "oci://ghcr.io/kcl-lang/helloworld", tag = "0.1.2" }
-jsonpatch = { oci = "oci://ghcr.io/kcl-lang/jsonpatch", tag = "0.0.5" }
+helloworld = { oci = "oci://ghcr.io/kcl-lang/helloworld", tag = "0.1.2", package = "helloworld" }
+jsonpatch = { oci = "oci://ghcr.io/kcl-lang/jsonpatch", tag = "0.0.5", package = "jsonpatch" }
 
 [profile]
 entries = ["./sub/main.k"]
