@@ -6,5 +6,5 @@ include = ["src/", "README.md", "LICENSE"]
 exclude = ["target/", ".git/", "*.log"]
 
 [dependencies]
-MyOciKcl1 = { "0.0.1", package = "MyOciKcl1" }
+MyOciKcl1 = "0.0.1"
 MyKcl1 = { git = "https://github.com/test/MyKcl1.git", tag = "v0.0.2", package = "MyKcl1" }

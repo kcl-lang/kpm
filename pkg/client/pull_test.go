@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,7 +12,11 @@ import (
 )
 
 func TestPull(t *testing.T) {
-	pulledPath := getTestDir("test_pull")
+	tmpDir, err := ioutil.TempDir("", "test_pull")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
 
 	kpmcli, err := NewKpmClient()
 	assert.NilError(t, err)
@@ -20,7 +25,7 @@ func TestPull(t *testing.T) {
 	kpmcli.SetLogWriter(&buf)
 
 	kPkg, err := kpmcli.Pull(
-		WithLocalPath(pulledPath),
+		WithLocalPath(tmpDir),
 		WithPullSource(&downloader.Source{
 			Oci: &downloader.Oci{
 				Reg:  "ghcr.io",
@@ -30,24 +35,25 @@ func TestPull(t *testing.T) {
 		}),
 	)
 
-	pkgPath := filepath.Join(pulledPath, "oci", "ghcr.io", "kcl-lang", "helloworld", "0.0.1")
+	pkgPath := filepath.Join(tmpDir, "oci", "ghcr.io", "kcl-lang", "helloworld", "0.0.1")
 	assert.NilError(t, err)
 	assert.Equal(t, kPkg.GetPkgName(), "helloworld")
 	assert.Equal(t, kPkg.GetPkgVersion(), "0.0.1")
 	assert.Equal(t, kPkg.HomePath, pkgPath)
 
 	kPkg, err = kpmcli.Pull(
-		WithLocalPath(pulledPath),
+		WithLocalPath(tmpDir),
 		WithPullSourceUrl("oci://ghcr.io/kcl-lang/helloworld?tag=0.1.0"),
 	)
-	pkgPath = filepath.Join(pulledPath, "oci", "ghcr.io", "kcl-lang", "helloworld", "0.1.0")
+	pkgPath = filepath.Join(tmpDir, "oci", "ghcr.io", "kcl-lang", "helloworld", "0.1.0")
 	assert.NilError(t, err)
 	assert.Equal(t, kPkg.GetPkgName(), "helloworld")
 	assert.Equal(t, kPkg.GetPkgVersion(), "0.1.0")
 	assert.Equal(t, kPkg.HomePath, pkgPath)
 
-	defer func() {
-		err = os.RemoveAll(filepath.Join(pulledPath, "oci"))
-		assert.NilError(t, err)
-	}()
+	// Handle cleanup within the same filesystem
+	err = os.RemoveAll(filepath.Join(tmpDir, "oci"))
+	if err != nil {
+		t.Errorf("Failed to remove directory: %v", err)
+	}
 }

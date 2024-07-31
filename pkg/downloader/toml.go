@@ -30,12 +30,10 @@ func (source *Source) MarshalTOML(d string) string {
 
 	if source.Oci != nil {
 		ociToml := source.Oci.MarshalTOML(d)
-		if len(ociToml) != 0 {
-			if len(source.Oci.Reg) != 0 && len(source.Oci.Repo) != 0 {
-				sb.WriteString(fmt.Sprintf(SOURCE_PATTERN, ociToml))
-			} else {
-				sb.WriteString(fmt.Sprintf(SOURCE_PATTERN, ociToml))
-			}
+		if len(source.Oci.Reg) != 0 && len(source.Oci.Repo) != 0 {
+			sb.WriteString(fmt.Sprintf(SOURCE_PATTERN, ociToml))
+		} else {
+			sb.WriteString(ociToml)
 		}
 	}
 
@@ -108,11 +106,11 @@ func (oci *Oci) MarshalTOML(d string) string {
 			sb.WriteString(SEPARATOR)
 			sb.WriteString(fmt.Sprintf(TAG_PATTERN, oci.Tag))
 		}
+		sb.WriteString(SEPARATOR)
+		sb.WriteString(fmt.Sprintf(PACKAGE_PATTERN, d))
 	} else if len(oci.Reg) == 0 && len(oci.Repo) == 0 && len(oci.Tag) != 0 {
 		sb.WriteString(fmt.Sprintf(`"%s"`, oci.Tag))
 	}
-	sb.WriteString(SEPARATOR)
-	sb.WriteString(fmt.Sprintf(PACKAGE_PATTERN, d))
 	return sb.String()
 }
 
