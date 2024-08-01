@@ -259,22 +259,31 @@ type DependenciesUI struct {
 }
 
 func (dep *Dependencies) MarshalLockTOML() (string, error) {
+	if dep == nil {
+		return "", fmt.Errorf("dependencies is nil")
+	}
+	if dep.Deps == nil {
+		return "", fmt.Errorf("deps is nil")
+	}
 
 	marshaledDeps := make(map[string]Dependency)
 	for _, depKey := range dep.Deps.Keys() {
-		dep, ok := dep.Deps.Get(depKey)
+		dependency, ok := dep.Deps.Get(depKey)
 		if !ok {
 			break
 		}
-		marshaledDeps[depKey] = dep
+		if dependency.Source.Git != nil {
+			dependency.Source.Git.Version = ""
+		}
+		marshaledDeps[depKey] = dependency
 	}
 
-	lockDepdenciesUI := DependenciesUI{
+	lockDependenciesUI := DependenciesUI{
 		Deps: marshaledDeps,
 	}
 
 	buf := new(bytes.Buffer)
-	if err := toml.NewEncoder(buf).Encode(&lockDepdenciesUI); err != nil {
+	if err := toml.NewEncoder(buf).Encode(&lockDependenciesUI); err != nil {
 		return "", reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, "failed to lock dependencies version")
 	}
 	return buf.String(), nil
