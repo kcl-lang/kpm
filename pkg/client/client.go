@@ -828,16 +828,13 @@ func (c *KpmClient) AddDepToPkg(kclPkg *pkg.KclPkg, d *pkg.Dependency) error {
 	if err != nil {
 		return err
 	}
-
-	dep, err := c.LoadPkgFromPath(c.getDepStorePath(c.homePath, d, false))
-	if err != nil {
-		return fmt.Errorf("failed to load downloaded package: %w", err)
+	if dep, ok := kclPkg.Dependencies.Deps.Get(d.Name); ok {
+		if dep1, ok := kclPkg.ModFile.Dependencies.Deps.Get(d.Name); ok {
+			if dep1.Git != nil {
+				dep1.Git.Version = dep.Version
+			}
+		}
 	}
-
-	if d.Source.Git != nil {
-		d.Source.Git.Version = dep.GetPkgVersion()
-	}
-
 	return err
 }
 
