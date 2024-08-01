@@ -12,9 +12,10 @@ if [ "$(docker ps -aq -f name=kcl-registry)" ]; then
     docker stop kcl-registry
     docker rm kcl-registry
 fi
+export KCL_REGISTRY_PORT=${KCL_REGISTRY_PORT:-"5001"}
 
 # start the Docker Registry with authentication
-docker run -p 5001:5000 \
+docker run -p ${KCL_REGISTRY_PORT}:5000 \
 --restart=always \
 --name kcl-registry \
 -v /var/lib/registry:/var/lib/registry \
