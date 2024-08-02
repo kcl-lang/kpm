@@ -776,6 +776,9 @@ func TestNewKpmClient(t *testing.T) {
 	plainHttp, force := kpmcli.GetSettings().ForceOciPlainHttp()
 	assert.Equal(t, plainHttp, false)
 	assert.Equal(t, force, false)
+	plainHttp, force := kpmcli.GetSettings().ForceOciPlainHttp()
+	assert.Equal(t, plainHttp, false)
+	assert.Equal(t, force, false)
 }
 
 func TestParseOciOptionFromString(t *testing.T) {
