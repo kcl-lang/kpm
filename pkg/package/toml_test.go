@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/BurntSushi/toml"
@@ -330,6 +331,9 @@ func TestInitEmptyPkg(t *testing.T) {
 
 	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected.toml"))
 	expected_toml := string(expected_data)
+
+	expected_toml = strings.ReplaceAll(expected_toml, "\r\n", "\n")
+	got_data = strings.ReplaceAll(got_data, "\r\n", "\n")
 
 	fmt.Printf("expected_toml: '%q'\n", expected_toml)
 
