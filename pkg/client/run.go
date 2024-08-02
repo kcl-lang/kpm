@@ -65,6 +65,7 @@ package client
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -87,6 +88,16 @@ type RunOptions struct {
 }
 
 type RunOption func(*RunOptions) error
+
+func WithLogger(l io.Writer) RunOption {
+	return func(ro *RunOptions) error {
+		if ro.Option == nil {
+			ro.Option = kcl.NewOption()
+		}
+		ro.Merge(kcl.WithLogger(l))
+		return nil
+	}
+}
 
 // WithWorkDir sets the work directory for running the kcl package.
 func WithWorkDir(workDir string) RunOption {
