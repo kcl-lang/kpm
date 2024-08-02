@@ -266,6 +266,9 @@ func (dep *Dependencies) MarshalLockTOML() (string, error) {
 		if !ok {
 			break
 		}
+		if dep.Source.Git != nil {
+			dep.Source.Git.Version = ""
+		}
 		marshaledDeps[depKey] = dep
 	}
 
