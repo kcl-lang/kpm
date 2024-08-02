@@ -21,6 +21,11 @@ jobs:
         with:
           go-version: 1.22
   
+      - name: Prepare the test oci registry
+        run: |
+          ./scripts/reg.sh
+          ./scripts/e2e_prepare.sh
+
       - name: run e2e
         run: |
           make e2e

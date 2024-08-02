@@ -1542,68 +1542,85 @@ func TestAddLocalPath(t *testing.T) {
 }
 
 func testAddDefaultRegistryDep(t *testing.T) {
-	pkgPath := getTestDir("add_with_default_dep")
+	type testCase struct {
+		tag           string
+		pkgPath       string
+		modBak        string
+		mod           string
+		modExpect     string
+		modLockBak    string
+		modLock       string
+		modLockExpect string
+	}
 
-	pkgWithSumCheckPathModBak := filepath.Join(pkgPath, "kcl.mod.bak")
-	pkgWithSumCheckPathMod := filepath.Join(pkgPath, "kcl.mod")
-	pkgWithSumCheckPathModExpect := filepath.Join(pkgPath, "kcl.mod.expect")
-
-	pkgWithSumCheckPathModLockBak := filepath.Join(pkgPath, "kcl.mod.lock.bak")
-	pkgWithSumCheckPathModLock := filepath.Join(pkgPath, "kcl.mod.lock")
-	pkgWithSumCheckPathModLockExpect := filepath.Join(pkgPath, "kcl.mod.lock.expect")
-
-	err := copy.Copy(pkgWithSumCheckPathModBak, pkgWithSumCheckPathMod)
-	assert.Equal(t, err, nil)
-	err = copy.Copy(pkgWithSumCheckPathModLockBak, pkgWithSumCheckPathModLock)
-	assert.Equal(t, err, nil)
-
-	kpmcli, err := NewKpmClient()
-	assert.Equal(t, err, nil)
-
-	kclPkg, err := kpmcli.LoadPkgFromPath(pkgPath)
-	assert.Equal(t, err, nil)
-
-	opts := opt.AddOptions{
-		LocalPath: pkgPath,
-		RegistryOpts: opt.RegistryOptions{
-			Registry: &opt.OciOptions{
-				Reg:     "ghcr.io",
-				Repo:    "kcl-lang/helloworld",
-				PkgName: "helloworld",
-				Tag:     "0.1.2",
-			},
+	rootTestPath := getTestDir("add_with_default_dep")
+	testCases := []testCase{
+		{
+			tag:     "",
+			pkgPath: filepath.Join(rootTestPath, "no_tag"),
+		},
+		{
+			tag:     "0.1.2",
+			pkgPath: filepath.Join(rootTestPath, "with_tag"),
 		},
 	}
 
-	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
-	assert.Equal(t, err, nil)
+	for _, tc := range testCases {
+		tc.modBak = filepath.Join(tc.pkgPath, "kcl.mod.bak")
+		tc.mod = filepath.Join(tc.pkgPath, "kcl.mod")
+		tc.modExpect = filepath.Join(tc.pkgPath, "kcl.mod.expect")
+		tc.modLockBak = filepath.Join(tc.pkgPath, "kcl.mod.lock.bak")
+		tc.modLock = filepath.Join(tc.pkgPath, "kcl.mod.lock")
+		tc.modLockExpect = filepath.Join(tc.pkgPath, "kcl.mod.lock.expect")
 
-	modContent, err := os.ReadFile(pkgWithSumCheckPathMod)
-	modContentStr := strings.ReplaceAll(string(modContent), "\r\n", "")
-	modContentStr = strings.ReplaceAll(modContentStr, "\n", "")
-	assert.Equal(t, err, nil)
+		err := copy.Copy(tc.modBak, tc.mod)
+		assert.Equal(t, err, nil)
+		err = copy.Copy(tc.modLockBak, tc.modLock)
+		assert.Equal(t, err, nil)
 
-	modExpectContent, err := os.ReadFile(pkgWithSumCheckPathModExpect)
-	modExpectContentStr := strings.ReplaceAll(string(modExpectContent), "\r\n", "")
-	modExpectContentStr = strings.ReplaceAll(modExpectContentStr, "\n", "")
+		kpmcli, err := NewKpmClient()
+		assert.Equal(t, err, nil)
 
-	assert.Equal(t, err, nil)
-	assert.Equal(t, modContentStr, modExpectContentStr)
+		kclPkg, err := kpmcli.LoadPkgFromPath(tc.pkgPath)
+		assert.Equal(t, err, nil)
 
-	modLockContent, err := os.ReadFile(pkgWithSumCheckPathModLock)
-	modLockContentStr := strings.ReplaceAll(string(modLockContent), "\r\n", "")
-	modLockContentStr = strings.ReplaceAll(modLockContentStr, "\n", "")
-	assert.Equal(t, err, nil)
-	modLockExpectContent, err := os.ReadFile(pkgWithSumCheckPathModLockExpect)
-	modLockExpectContentStr := strings.ReplaceAll(string(modLockExpectContent), "\r\n", "")
-	modLockExpectContentStr = strings.ReplaceAll(modLockExpectContentStr, "\n", "")
-	assert.Equal(t, err, nil)
-	assert.Equal(t, modLockContentStr, modLockExpectContentStr)
+		opts := opt.AddOptions{
+			LocalPath: tc.pkgPath,
+			RegistryOpts: opt.RegistryOptions{
+				Registry: &opt.OciOptions{
+					Reg:     "ghcr.io",
+					Repo:    "kcl-lang/helloworld",
+					PkgName: "helloworld",
+					Tag:     tc.tag,
+				},
+			},
+		}
 
-	defer func() {
-		_ = os.Remove(pkgWithSumCheckPathMod)
-		_ = os.Remove(pkgWithSumCheckPathModLock)
-	}()
+		_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
+		assert.Equal(t, err, nil)
+
+		verifyFileContent(t, tc.mod, tc.modExpect)
+		verifyFileContent(t, tc.modLock, tc.modLockExpect)
+
+		defer func() {
+			_ = os.Remove(tc.mod)
+			_ = os.Remove(tc.modLock)
+		}()
+	}
+}
+
+func verifyFileContent(t *testing.T, filePath, expectPath string) {
+	content, err := os.ReadFile(filePath)
+	assert.Equal(t, err, nil)
+	contentStr := strings.ReplaceAll(string(content), "\r\n", "")
+	contentStr = strings.ReplaceAll(contentStr, "\n", "")
+
+	expectContent, err := os.ReadFile(expectPath)
+	assert.Equal(t, err, nil)
+	expectContentStr := strings.ReplaceAll(string(expectContent), "\r\n", "")
+	expectContentStr = strings.ReplaceAll(expectContentStr, "\n", "")
+
+	assert.Equal(t, contentStr, expectContentStr)
 }
 
 func testUpdateDefaultRegistryDep(t *testing.T) {
@@ -1878,9 +1895,9 @@ func TestRunRemoteWithArgs(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
+	for i, tc := range testCases {
 		res, err := kpmcli.Run(WithRunSourceUrl(tc.sourceURL))
-		assert.Equal(t, err, nil)
+		assert.Equal(t, err, nil, "%v-st", i)
 		assert.Equal(t, logbuf.String(), tc.expectedLog)
 
 		var expectedYaml string
@@ -1895,4 +1912,46 @@ func TestRunRemoteWithArgs(t *testing.T) {
 		assert.Equal(t, utils.RmNewline(res.GetRawYamlResult()), utils.RmNewline(expectedYaml))
 		logbuf.Reset()
 	}
+}
+
+func TestRunInVendor(t *testing.T) {
+	// Create a new kpm client.
+	kpmcli, err := NewKpmClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pkgPath := getTestDir("test_run_in_vendor")
+	workdir := filepath.Join(pkgPath, "pkg")
+
+	buf := new(bytes.Buffer)
+	kpmcli.logWriter = buf
+
+	// Run the kcl package with vendor mode.
+	res, err := kpmcli.Run(
+		WithWorkDir(workdir),
+		WithVendor(true),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, buf.String(), "")
+	assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
+}
+
+func TestRunWithLogger(t *testing.T) {
+	pkgPath := getTestDir("test_run_with_logger")
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	logbuf := new(bytes.Buffer)
+
+	_, err = kpmcli.Run(
+		WithWorkDir(pkgPath),
+		WithLogger(logbuf),
+	)
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, logbuf.String(), "Hello, World!\n")
 }

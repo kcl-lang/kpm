@@ -7,6 +7,7 @@ import (
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kcl-go/pkg/spec/gpyrpc"
+	"kcl-lang.io/kcl-go/pkg/tools/gen"
 	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/errors"
@@ -246,6 +247,33 @@ func (pkg *KclPackage) GetSchemaTypeMappingWithFilters(filterFuncs []KclTypeFilt
 	}
 
 	return schemaTypes, nil
+}
+
+// ExportSwaggerV2Spec extracts the swagger v2 representation of a kcl package
+// with external dependencies.
+func (pkg *KclPackage) ExportSwaggerV2Spec() (*gen.SwaggerV2Spec, error) {
+	spec := &gen.SwaggerV2Spec{
+		Swagger:     "2.0",
+		Definitions: make(map[string]*gen.KclOpenAPIType),
+		Paths:       map[string]interface{}{},
+		Info: gen.SpecInfo{
+			Title:   pkg.GetPkgName(),
+			Version: pkg.GetVersion(),
+		},
+	}
+	pkgMapping, err := pkg.GetAllSchemaTypeMapping()
+	if err != nil {
+		return spec, err
+	}
+	// package path -> package
+	for packagePath, p := range pkgMapping {
+		// schema name -> schema type
+		for _, t := range p {
+			id := gen.SchemaId(packagePath, t.KclType)
+			spec.Definitions[id] = gen.GetKclOpenAPIType(packagePath, t.KclType, false)
+		}
+	}
+	return spec, nil
 }
 
 type KclTypeFilterFunc func(kt *KclType) bool

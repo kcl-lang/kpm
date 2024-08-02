@@ -13,6 +13,7 @@ import (
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/utils"
+	remoteauth "oras.land/oras-go/v2/registry/remote/auth"
 )
 
 // DownloadOptions is the options for downloading a package.
@@ -25,9 +26,17 @@ type DownloadOptions struct {
 	Settings settings.Settings
 	// LogWriter is the writer to write the log.
 	LogWriter io.Writer
+	// credsClient is the client to get the credentials.
+	credsClient *CredClient
 }
 
 type Option func(*DownloadOptions)
+
+func WithCredsClient(credsClient *CredClient) Option {
+	return func(do *DownloadOptions) {
+		do.credsClient = credsClient
+	}
+}
 
 func WithLogWriter(logWriter io.Writer) Option {
 	return func(do *DownloadOptions) {
@@ -125,7 +134,25 @@ func (d *OciDownloader) Download(opts DownloadOptions) error {
 
 	localPath := opts.LocalPath
 
-	ociCli, err := oci.NewOciClient(ociSource.Reg, ociSource.Repo, &opts.Settings)
+	repoPath := utils.JoinPath(ociSource.Reg, ociSource.Repo)
+
+	var cred *remoteauth.Credential
+	var err error
+	if opts.credsClient != nil {
+		cred, err = opts.credsClient.Credential(ociSource.Reg)
+		if err != nil {
+			return err
+		}
+	} else {
+		cred = &remoteauth.Credential{}
+	}
+
+	ociCli, err := oci.NewOciClientWithOpts(
+		oci.WithCredential(cred),
+		oci.WithRepoPath(repoPath),
+		oci.WithSettings(&opts.Settings),
+	)
+
 	if err != nil {
 		return err
 	}

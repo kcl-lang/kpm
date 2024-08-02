@@ -150,12 +150,18 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		tmpDir = filepath.Join(tmpDir, constants.GitScheme)
 	}
 
+	credCli, err := rv.kpmcli.GetCredsClient()
+	if err != nil {
+		return err
+	}
+
 	defer os.RemoveAll(tmpDir)
 	err = rv.kpmcli.DepDownloader.Download(*downloader.NewDownloadOptions(
 		downloader.WithLocalPath(tmpDir),
 		downloader.WithSource(*s),
 		downloader.WithLogWriter(rv.kpmcli.GetLogWriter()),
 		downloader.WithSettings(*rv.kpmcli.GetSettings()),
+		downloader.WithCredsClient(credCli),
 	))
 
 	if err != nil {
@@ -244,7 +250,7 @@ func NewVisitor(source downloader.Source, kpmcli *KpmClient) Visitor {
 	} else if source.IsLocalTarPath() || source.IsLocalTgzPath() {
 		return NewArchiveVisitor(NewPkgVisitor(kpmcli))
 	} else if source.IsLocalPath() {
-		rootPath, err := source.ToFilePath()
+		rootPath, err := source.FindRootPath()
 		if err != nil {
 			return nil
 		}

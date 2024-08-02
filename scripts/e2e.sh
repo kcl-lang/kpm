@@ -7,7 +7,6 @@
 # set the kpm default registry and repository
 export KPM_REG="localhost:5001"
 export KPM_REPO="test"
-export OCI_REG_PLAIN_HTTP=on
 
 set -o errexit
 set -o nounset
@@ -15,10 +14,6 @@ set -o pipefail
 
 # Install ginkgo
 GO111MODULE=on go install github.com/onsi/ginkgo/v2/ginkgo@v2.0.0
-
-# Build kpm binary
-LDFLAGS="-X kcl-lang.io/kpm/pkg/version.version=test_version"
-go build -ldflags "$LDFLAGS" -o ./bin/kpm
 
 # Prepare e2e test env
 ./scripts/e2e_prepare.sh

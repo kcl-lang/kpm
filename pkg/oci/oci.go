@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -96,7 +97,49 @@ type OciClient struct {
 	repo           *remote.Repository
 	ctx            *context.Context
 	logWriter      io.Writer
+	settings       *settings.Settings
+	isPlainHttp    *bool
+	cred           *remoteauth.Credential
 	PullOciOptions *PullOciOptions
+}
+
+// OciClientOption configures how we set up the OciClient
+type OciClientOption func(*OciClient) error
+
+// WithSettings sets the kpm settings of the OciClient
+func WithSettings(settings *settings.Settings) OciClientOption {
+	return func(c *OciClient) error {
+		c.settings = settings
+		return nil
+	}
+}
+
+// WithRepoPath sets the repo path of the OciClient
+func WithRepoPath(repoPath string) OciClientOption {
+	return func(c *OciClient) error {
+		var err error
+		c.repo, err = remote.NewRepository(repoPath)
+		if err != nil {
+			return fmt.Errorf("repository '%s' not found", repoPath)
+		}
+		return nil
+	}
+}
+
+// WithCredential sets the credential of the OciClient
+func WithCredential(credential *remoteauth.Credential) OciClientOption {
+	return func(c *OciClient) error {
+		c.cred = credential
+		return nil
+	}
+}
+
+// WithPlainHttp sets the plain http of the OciClient
+func WithPlainHttp(plainHttp bool) OciClientOption {
+	return func(c *OciClient) error {
+		c.isPlainHttp = &plainHttp
+		return nil
+	}
 }
 
 type PullOciOptions struct {
@@ -112,23 +155,60 @@ func (ociClient *OciClient) GetReference() string {
 	return ociClient.repo.Reference.String()
 }
 
+// NewOciClientWithOpts will new an OciClient with options.
+func NewOciClientWithOpts(opts ...OciClientOption) (*OciClient, error) {
+	client := &OciClient{}
+	for _, opt := range opts {
+		err := opt(client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	ctx := context.Background()
+	client.repo.Client = &remoteauth.Client{
+		Client:     retry.DefaultClient,
+		Cache:      remoteauth.DefaultCache,
+		Credential: remoteauth.StaticCredential(client.repo.Reference.Host(), *client.cred),
+	}
+
+	// If the plain http is not specified
+	if client.isPlainHttp == nil {
+		// Set the default value of the plain http
+		registry := client.repo.Reference.String()
+		host, _, _ := net.SplitHostPort(registry)
+		if host == "localhost" || registry == "localhost" {
+			// not specified, defaults to plain http for localhost
+			client.repo.PlainHTTP = true
+		}
+
+		// If the plain http is specified in the settings file
+		// Override the default value of the plain http
+		if client.settings != nil {
+			isPlainHttp, force := client.settings.ForceOciPlainHttp()
+			if force {
+				client.repo.PlainHTTP = isPlainHttp
+			}
+		}
+	}
+
+	client.ctx = &ctx
+	client.PullOciOptions = &PullOciOptions{
+		CopyOpts: &oras.CopyOptions{
+			CopyGraphOptions: oras.CopyGraphOptions{
+				MaxMetadataBytes: DEFAULT_LIMIT_STORE_SIZE, // default is 64 MiB
+			},
+		},
+	}
+
+	return client, nil
+}
+
 // NewOciClient will new an OciClient.
 // regName is the registry. e.g. ghcr.io or docker.io.
 // repoName is the repo name on registry.
+// Deprecated: use NewOciClientWithOpts instead.
 func NewOciClient(regName, repoName string, settings *settings.Settings) (*OciClient, error) {
-	repoPath := utils.JoinPath(regName, repoName)
-	repo, err := remote.NewRepository(repoPath)
-
-	if err != nil {
-		return nil, reporter.NewErrorEvent(
-			reporter.RepoNotFound,
-			err,
-			fmt.Sprintf("repository '%s' not found", repoPath),
-		)
-	}
-	ctx := context.Background()
-	repo.PlainHTTP = settings.DefaultOciPlainHttp()
-
 	// Login
 	credential, err := loadCredential(regName, settings)
 	if err != nil {
@@ -138,23 +218,12 @@ func NewOciClient(regName, repoName string, settings *settings.Settings) (*OciCl
 			fmt.Sprintf("failed to load credential for '%s' from '%s'.", regName, settings.CredentialsFile),
 		)
 	}
-	repo.Client = &remoteauth.Client{
-		Client:     retry.DefaultClient,
-		Cache:      remoteauth.DefaultCache,
-		Credential: remoteauth.StaticCredential(repo.Reference.Host(), *credential),
-	}
 
-	return &OciClient{
-		repo: repo,
-		ctx:  &ctx,
-		PullOciOptions: &PullOciOptions{
-			CopyOpts: &oras.CopyOptions{
-				CopyGraphOptions: oras.CopyGraphOptions{
-					MaxMetadataBytes: DEFAULT_LIMIT_STORE_SIZE, // default is 64 MiB
-				},
-			},
-		},
-	}, nil
+	return NewOciClientWithOpts(
+		WithRepoPath(utils.JoinPath(regName, repoName)),
+		WithCredential(credential),
+		WithSettings(settings),
+	)
 }
 
 // The default limit of the store size is 64 MiB.
