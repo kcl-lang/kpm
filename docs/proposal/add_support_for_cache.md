@@ -138,16 +138,23 @@ kpm/oci
    - Store these bare repositories in a dedicated directory `kpm/git/db` , similar to Cargo's `$CARGO_HOME/git/db`.
 
     ```go
-       func CloneBareRepository(repoURL, localPath string) error {
-       cmd := exec.Command("git", "clone", "--bare", repoURL, localPath)
-      cmd.Stdout = os.Stdout
-      cmd.Stderr = os.Stderr
-      return cmd.Run()
-      }
+    const (
+    cacheDir    = "kpm/git/db"
+    checkoutDir = "kpm/git/checkouts"
+    )
 
-       func CalculateRepoHash(repoURL string) string {
-      return fmt.Sprintf("%x", sha256.Sum256([]byte(repoURL)))
-      }
+    func initBareRepo(repoName, repoURL string) error {
+        repoPath := filepath.Join(cacheDir, repoName)
+        if err := os.MkdirAll(repoPath, os.ModePerm); err != nil {
+            return err
+        }
+        cmd := exec.Command("git", "clone", "--bare", repoURL, repoPath)
+        return cmd.Run()
+    }
+
+    func CalculateRepoHash(repoURL string) string {
+        return fmt.Sprintf("%x", sha256.Sum256([]byte(repoURL)))
+    }
     ```
 
 2. **Fetch or Update the Bare Repository**:
@@ -173,38 +180,30 @@ kpm/oci
 1. **Checkout a Specific Commit or Branch**:
    - Create a working copy of the repository at a specific commit or branch. This is similar to Cargo’s checkouts.
 
-  ```go
-  func CloneRepo(repoURL string) (string, error) {
-      hash := CalculateRepoHash(repoURL)
-      localPath := filepath.Join(".kpm", "git", "db", fmt.Sprintf("%s-%s", getRepoName(repoURL), hash))
-      if err := CloneBareRepository(repoURL, localPath); err != nil {
-          return "", err
-      }
-      return localPath, nil
-  }
+    ```go
+    func checkoutCommit(repoName, commit string) (string, error) {
+        bareRepoPath := filepath.Join(cacheDir, repoName)
+        workTreePath := filepath.Join(checkoutDir, repoName+"-"+commit)
 
-  func CreateCheckout(repoPath, commit, localPath string) error {
-      cmd := exec.Command("git", "--git-dir", repoPath, "--work-tree", localPath, "checkout", commit)
-      cmd.Stdout = os.Stdout
-      cmd.Stderr = os.Stderr
-      return cmd.Run()
-  }
-  ```
- - **Download and Cache Dependency:**
-  ```go
-  func DownloadDependency(repoURL, version string) error {
-      localPath, err := CloneRepo(repoURL)
-      if err != nil {
-          return err
-      }
-      commit := version // Simplified, map version to commit
-      checkoutPath := fmt.Sprintf(".kpm/git/checkouts/%s-%s/%s", getRepoName(repoURL), CalculateRepoHash(repoURL), commit)
-      if err := CreateCheckout(localPath, commit, checkoutPath); err != nil {
-          return err
-      }
-      return nil
-  }
-  ```
+            if err := os.MkdirAll(workTreePath, os.ModePerm); err != nil {
+                return "", err
+            }
+
+        // Clone from bare repository
+        cmd := exec.Command("git", "clone", bareRepoPath, workTreePath)
+            if err := cmd.Run(); err != nil {
+                return "", err
+            }
+
+        // Checkout the specific commit
+        cmd = exec.Command("git", "-C", workTreePath, "checkout", commit)
+            if err := cmd.Run(); err != nil {
+                return "", err
+            }
+
+        return workTreePath, nil
+        }
+    ```
 ### Related Work Done for PRETEST2
 
 - [PRETEST 2]:[Changed checkoutfrombare() by adding hash values and error handling](https://github.com/kcl-lang/kpm/pull/403)
