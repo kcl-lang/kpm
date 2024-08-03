@@ -131,7 +131,7 @@ kpm/oci
 │   ├── docker.io-578669463c900b87
 │   │   └── k8s_1.28
 ```
-### 1.[PRETES 1]: Enhance git module to support clone and update bare repository
+### 1.[PRETEST 1]: Enhance git module to support clone and update bare repository
 
 1. **Initialize the Bare Repository**:
    - Use Go's `os/exec` package to run Git commands to initialize a bare repository.
@@ -175,7 +175,7 @@ kpm/oci
 - [PRETEST1]: [Initial changes for adding support to clone bare repo](https://github.com/kcl-lang/kpm/pull/400)
 - [PRETEST]: [Added support for bare repo in clone function of git module](https://github.com/kcl-lang/kpm/pull/419)
 
-### 2.[PRETES 2]: Enhance git module by addding function to Clone Repo and Create Checkouts
+### 2.[PRETEST 2]: Enhance git module by addding function to Create Checkouts
 
 1. **Checkout a Specific Commit or Branch**:
    - Create a working copy of the repository at a specific commit or branch. This is similar to Cargo’s checkouts.
@@ -208,7 +208,7 @@ kpm/oci
 
 - [PRETEST 2]:[Changed checkoutfrombare() by adding hash values and error handling](https://github.com/kcl-lang/kpm/pull/403)
 
-### 3.[PRETES 3]: Research work for implementing a unified dependency support system in KPM
+### 3.[PRETEST 3]: Research work for implementing a unified dependency support system in KPM
 
 ### Proposal for Unified Dependency Support in KPM
 
