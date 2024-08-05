@@ -3,4 +3,17 @@
     name = "bbb"
     full_name = "bbb_0.0.1"
     version = "0.0.1"
-    sum = "/PGJJE6Rp0lAsq3n9RUZ34jPGfwzYIZESs17L6kSG/Y="
+  [dependencies.helloworld]
+    name = "helloworld"
+    full_name = "helloworld_0.1.2"
+    version = "0.1.2"
+    reg = "localhost:5001"
+    repo = "test/helloworld"
+    oci_tag = "0.1.2"
+  [dependencies.k8s]
+    name = "k8s"
+    full_name = "k8s_1.27"
+    version = "1.27"
+    reg = "localhost:5001"
+    repo = "test/k8s"
+    oci_tag = "1.27"

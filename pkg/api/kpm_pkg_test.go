@@ -221,3 +221,18 @@ func TestExportSwaggerV2Spec(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, len(spec.Definitions), 1)
 }
+
+func TestXXX(t *testing.T) {
+	pkg_path := filepath.Join(getTestDir("test_kpm_package"), "export_swagger", "aaa")
+	pkg, _ := GetKclPackage(pkg_path)
+	// tys, _ := pkg.GetAllSchemaTypeMapping()
+	kpmcli, _ := client.NewKpmClient()
+
+	tys, _ := pkg.GetFullSchemaTypeMappingWithFilters(
+		kpmcli,
+		[]KclTypeFilterFunc{},
+	)
+	for k, v := range tys {
+		fmt.Println("key:"+k, fmt.Sprintf("val: %s", v))
+	}
+}
