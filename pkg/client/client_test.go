@@ -1939,3 +1939,19 @@ func TestRunInVendor(t *testing.T) {
 	assert.Equal(t, buf.String(), "")
 	assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
 }
+
+func TestRunWithLogger(t *testing.T) {
+	pkgPath := getTestDir("test_run_with_logger")
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	logbuf := new(bytes.Buffer)
+
+	_, err = kpmcli.Run(
+		WithWorkDir(pkgPath),
+		WithLogger(logbuf),
+	)
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, logbuf.String(), "Hello, World!\n")
+}
