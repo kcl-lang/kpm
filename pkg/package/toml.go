@@ -74,7 +74,6 @@ func (dep *Dependencies) MarshalTOML() string {
 			sb.WriteString(NEWLINE)
 			sb.WriteString(dep.MarshalTOML())
 		}
-		sb.WriteString(NEWLINE)
 	}
 	return sb.String()
 }
