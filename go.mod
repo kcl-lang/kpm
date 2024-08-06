@@ -18,7 +18,7 @@ require (
 	golang.org/x/mod v0.20.0
 	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools/v3 v3.5.1
-	kcl-lang.io/kcl-go v0.10.0-alpha.1.0.20240730084238-c647f95196d2
+	kcl-lang.io/kcl-go v0.10.0-alpha.2
 )
 
 require (
@@ -61,7 +61,7 @@ require (
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/getkin/kin-openapi v0.126.0 // indirect
+	github.com/getkin/kin-openapi v0.127.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.5.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
@@ -143,7 +143,7 @@ require (
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5 // indirect
-	kcl-lang.io/lib v0.10.0-alpha.1 // indirect
+	kcl-lang.io/lib v0.10.0-alpha.2.0.20240805133606-f538c9780908 // indirect
 )
 
 require (
