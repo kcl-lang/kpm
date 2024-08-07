@@ -83,12 +83,6 @@ func (vpv *VirtualPkgVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		// After the visitFunc is executed, clean the virtual kcl.mod file.
 		defer func() error {
 			vKclModLockPath := filepath.Join(sourcePath, constants.KCL_MOD_LOCK)
-			if utils.DirExists(vKclModPath) {
-				err := os.RemoveAll(vKclModPath)
-				if err != nil {
-					return err
-				}
-			}
 			if utils.DirExists(vKclModLockPath) {
 				err := os.RemoveAll(vKclModLockPath)
 				if err != nil {
@@ -97,28 +91,16 @@ func (vpv *VirtualPkgVisitor) Visit(s *downloader.Source, v visitFunc) error {
 			}
 			return nil
 		}()
-		initOpts := opt.InitOptions{
-			Name:     "vPkg_" + uuid.New().String(),
-			InitPath: sourcePath,
-		}
 
-		modfile := pkg.NewModFile(&initOpts)
-		logWriter := vpv.kpmcli.GetLogWriter()
-		vpv.kpmcli.SetLogWriter(nil)
-		err = vpv.kpmcli.createIfNotExist(modfile.GetModFilePath(), modfile.StoreModFile)
-		if err != nil {
-			return err
-		}
-		vpv.kpmcli.SetLogWriter(logWriter)
+	}
+	initOpts := opt.InitOptions{
+		Name:     "vPkg_" + uuid.New().String(),
+		InitPath: sourcePath,
 	}
 
-	kclPkg, err := vpv.kpmcli.LoadPkgFromPath(sourcePath)
-	if err != nil {
-		return err
-	}
-
+	kpkg := pkg.NewKclPkg(&initOpts)
 	// If the required files are present, proceed with the visitFunc
-	return v(kclPkg)
+	return v(&kpkg)
 }
 
 // RemoteVisitor is the visitor for visiting a remote package.
