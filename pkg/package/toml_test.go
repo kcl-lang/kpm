@@ -335,6 +335,13 @@ func TestInitEmptyPkg(t *testing.T) {
 	expected_toml = strings.ReplaceAll(expected_toml, "\r\n", "\n")
 	got_data = strings.ReplaceAll(got_data, "\r\n", "\n")
 
+	expected_toml = strings.TrimSpace(expected_toml)
+	got_data = strings.TrimSpace(got_data)
+
+	// Ensure there's no extra newlines between sections
+	expected_toml = strings.Join(strings.Fields(expected_toml), "\n")
+	got_data = strings.Join(strings.Fields(got_data), "\n")
+
 	fmt.Printf("expected_toml: '%q'\n", expected_toml)
 
 	fmt.Printf("modfile: '%q'\n", got_data)

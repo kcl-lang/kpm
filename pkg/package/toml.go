@@ -38,10 +38,16 @@ const NEWLINE = "\n"
 func (mod *ModFile) MarshalTOML() string {
 	var sb strings.Builder
 	sb.WriteString(mod.Pkg.MarshalTOML())
-	sb.WriteString(NEWLINE)
-	sb.WriteString(mod.Dependencies.MarshalTOML())
-	sb.WriteString(NEWLINE)
-	sb.WriteString(mod.Profiles.MarshalTOML())
+	dependencies := mod.Dependencies.MarshalTOML()
+	if dependencies != "" {
+		sb.WriteString(NEWLINE)
+		sb.WriteString(dependencies)
+	}
+	profiles := mod.Profiles.MarshalTOML()
+	if profiles != "" {
+		sb.WriteString(NEWLINE)
+		sb.WriteString(profiles)
+	}
 	return sb.String()
 }
 
@@ -106,9 +112,11 @@ func (p *Profile) MarshalTOML() string {
 	return sb.String()
 }
 
-const PACKAGE_FLAG = "package"
-const DEPS_FLAG = "dependencies"
-const PROFILES_FLAG = "profile"
+const (
+	PACKAGE_FLAG  = "package"
+	DEPS_FLAG     = "dependencies"
+	PROFILES_FLAG = "profile"
+)
 
 func (mod *ModFile) UnmarshalTOML(data interface{}) error {
 	meta, ok := data.(map[string]interface{})
@@ -143,7 +151,6 @@ func (mod *ModFile) UnmarshalTOML(data interface{}) error {
 			return err
 		}
 		err := toml.Unmarshal(buf.Bytes(), &p)
-
 		if err != nil {
 			return err
 		}
@@ -152,12 +159,14 @@ func (mod *ModFile) UnmarshalTOML(data interface{}) error {
 	return nil
 }
 
-const NAME_FLAG = "name"
-const EDITION_FLAG = "edition"
-const VERSION_FLAG = "version"
-const DESCRIPTION_FLAG = "description"
-const INCLUDE_FLAG = "include"
-const EXCLUDE_FLAG = "exclude"
+const (
+	NAME_FLAG        = "name"
+	EDITION_FLAG     = "edition"
+	VERSION_FLAG     = "version"
+	DESCRIPTION_FLAG = "description"
+	INCLUDE_FLAG     = "include"
+	EXCLUDE_FLAG     = "exclude"
+)
 
 func (pkg *Package) UnmarshalTOML(data interface{}) error {
 	meta, ok := data.(map[string]interface{})
@@ -258,7 +267,6 @@ type DependenciesUI struct {
 }
 
 func (dep *Dependencies) MarshalLockTOML() (string, error) {
-
 	marshaledDeps := make(map[string]Dependency)
 	for _, depKey := range dep.Deps.Keys() {
 		dep, ok := dep.Deps.Get(depKey)
@@ -280,7 +288,6 @@ func (dep *Dependencies) MarshalLockTOML() (string, error) {
 }
 
 func (dep *Dependencies) UnmarshalLockTOML(data string) error {
-
 	if dep.Deps == nil {
 		dep.Deps = orderedmap.NewOrderedMap[string, Dependency]()
 	}
