@@ -330,10 +330,13 @@ func WithVendor(vendor bool) RunOption {
 // applyCompileOptionsFromYaml applies the compile options from the kcl.yaml file.
 func (o *RunOptions) applyCompileOptionsFromYaml(workdir string) bool {
 	succeed := false
+	// save the kfile list before loading the kcl.yaml
+	kFileList := o.KFilenameList
+
+	o.KFilenameList = []string{}
 	// load the kcl.yaml from cli
 	if len(o.settingYamlFiles) != 0 {
 		// If kcl.yaml is set by cli, the kfile list will override, so clean the kfile list.
-		o.KFilenameList = []string{}
 		for _, settingYamlFile := range o.settingYamlFiles {
 			o.Merge(kcl.WithSettings(settingYamlFile))
 			succeed = true
@@ -344,7 +347,6 @@ func (o *RunOptions) applyCompileOptionsFromYaml(workdir string) bool {
 		settingsYamlPath := filepath.Join(workdir, constants.KCL_YAML)
 		if utils.DirExists(settingsYamlPath) {
 			// If kcl.yaml is set by cli, the kfile list will override, so clean the kfile list.
-			o.KFilenameList = []string{}
 			o.Merge(kcl.WithSettings(settingsYamlPath))
 			succeed = true
 		}
@@ -359,6 +361,10 @@ func (o *RunOptions) applyCompileOptionsFromYaml(workdir string) bool {
 		updatedKFilenameList = append(updatedKFilenameList, kfile)
 	}
 	o.KFilenameList = updatedKFilenameList
+
+	if len(o.KFilenameList) == 0 {
+		o.KFilenameList = kFileList
+	}
 
 	return succeed
 }
