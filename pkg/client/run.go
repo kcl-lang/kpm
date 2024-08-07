@@ -68,12 +68,14 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/downloader"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
+	"kcl-lang.io/kpm/pkg/runner"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -330,6 +332,8 @@ func (o *RunOptions) applyCompileOptionsFromYaml(workdir string) bool {
 	succeed := false
 	// load the kcl.yaml from cli
 	if len(o.settingYamlFiles) != 0 {
+		// If kcl.yaml is set by cli, the kfile list will override, so clean the kfile list.
+		o.KFilenameList = []string{}
 		for _, settingYamlFile := range o.settingYamlFiles {
 			o.Merge(kcl.WithSettings(settingYamlFile))
 			succeed = true
@@ -339,6 +343,8 @@ func (o *RunOptions) applyCompileOptionsFromYaml(workdir string) bool {
 		// If the workdir is not empty, try to find the settings.yaml file in the workdir.
 		settingsYamlPath := filepath.Join(workdir, constants.KCL_YAML)
 		if utils.DirExists(settingsYamlPath) {
+			// If kcl.yaml is set by cli, the kfile list will override, so clean the kfile list.
+			o.KFilenameList = []string{}
 			o.Merge(kcl.WithSettings(settingsYamlPath))
 			succeed = true
 		}
@@ -375,41 +381,39 @@ func (o *RunOptions) applyCompileOptionsFromKclMod(kclPkg *pkg.KclPkg) bool {
 }
 
 // applyCompileOptions applies the compile options from cli, kcl.yaml and kcl.mod.
-func (o *RunOptions) applyCompileOptions(source downloader.Source, kclPkg *pkg.KclPkg, workDir string) error {
+func (o *RunOptions) applyCompileOptions(compiledKfiles []string, kclPkg *pkg.KclPkg, workDir string) error {
 	o.Merge(kcl.WithWorkDir(workDir))
 
-	// If the sources from cli is not empty, use the sources from cli.
-	if len(o.Sources) != 0 {
-		var compiledFiles []string
-		// All the cli relative path should be transformed to the absolute path by workdir
-		for _, source := range o.Sources {
-			if source.IsLocalPath() {
-				sPath := source.Path
-				if !filepath.IsAbs(sPath) && !utils.IsModRelativePath(sPath) {
-					sPath = filepath.Join(workDir, sPath)
-				}
-				compiledFiles = append(compiledFiles, sPath)
+	// The compile options from cli
+	cliopts := o.Option
+
+	// Create an empty compile option to get the options from kcl.mod and kcl.yaml
+	o.Option = kcl.NewOption()
+
+	// Load the compile options from kcl.mod
+	loadmod := o.applyCompileOptionsFromKclMod(kclPkg)
+	// Load the compile options from kcl.yaml, it will override the compile options from kcl.mod
+	loadyaml := o.applyCompileOptionsFromYaml(workDir)
+
+	// Finally, the compile options from cli will override the compile options from kcl.yaml and kcl.mod
+	o.Merge(*cliopts)
+
+	// The k files from cli will override kcl.yaml and kcl.mod
+	if len(compiledKfiles) != 0 {
+		var tmpKFilenameList []string
+		for _, compiledKfile := range compiledKfiles {
+			if !filepath.IsAbs(compiledKfile) {
+				compiledKfile = filepath.Join(workDir, compiledKfile)
 			}
+			tmpKFilenameList = append(tmpKFilenameList, compiledKfile)
 		}
-		o.KFilenameList = compiledFiles
-		if len(o.KFilenameList) == 0 {
-			if !o.applyCompileOptionsFromKclMod(kclPkg) {
-				o.KFilenameList = []string{kclPkg.HomePath}
-			}
-		}
-	} else {
-		// If the sources from cli is empty, try to apply the compile options from kcl.yaml
-		if !o.applyCompileOptionsFromYaml(workDir) {
-			// If the sources from kcl.yaml is empty, try to apply the compile options from kcl.mod
-			if !o.applyCompileOptionsFromKclMod(kclPkg) {
-				// If the sources from kcl.mod is empty, compile the current sources.
-				if source.IsLocalPath() {
-					o.KFilenameList = []string{workDir}
-				} else {
-					o.KFilenameList = []string{kclPkg.HomePath}
-				}
-			}
-		}
+		o.KFilenameList = tmpKFilenameList
+	}
+
+	// If there is no compiled k files set by cli, kcl.yaml and kcl.mod,
+	// use the kcl package path as the compiled k files.
+	if !loadmod && !loadyaml && len(o.KFilenameList) == 0 {
+		o.KFilenameList = []string{kclPkg.HomePath}
 	}
 
 	return nil
@@ -417,6 +421,8 @@ func (o *RunOptions) applyCompileOptions(source downloader.Source, kclPkg *pkg.K
 
 // getPkgSource returns the package source.
 // Compiling multiple packages at the same time will cause an error.
+// If more than one source is set, `getPkgSource` will get the root path of the package.
+// If no source is set, `getPkgSource` will find the root path of the package from the workdir.
 func (o *RunOptions) getPkgSource() (*downloader.Source, error) {
 	workDir := o.WorkDir
 
@@ -428,11 +434,20 @@ func (o *RunOptions) getPkgSource() (*downloader.Source, error) {
 		}
 		// If no sources set by options, return a localSource to facilitate searching for
 		// compilation entries from configurations such as kcl.yaml and kcl.mod files.
-		return &downloader.Source{
+		tmpSource := &downloader.Source{
 			Local: &downloader.Local{
 				Path: workDir,
 			},
-		}, nil
+		}
+
+		// PkgSource is the root path of the package.
+		// WorkDir maybe not the root path of the package.
+		// Find the root package path from WorkDir.
+		pkgRootPath, err := tmpSource.FindRootPath()
+		if err != nil {
+			return nil, err
+		}
+		return downloader.NewSourceFromStr(pkgRootPath)
 	} else {
 		var rootPath string
 		var err error
@@ -499,6 +514,57 @@ func (o *RunOptions) getPkgSource() (*downloader.Source, error) {
 	return pkgSource, nil
 }
 
+// getCompileEntry returns the compile entry.
+// Depending on the sources, the compile entry finds the package root path and the compiled files.
+func (o *RunOptions) getCompileEntry() (*runner.Entry, error) {
+	// 1. find the root path of the package by the sources or workdir.
+	ps, err := o.getPkgSource()
+	if err != nil {
+		return nil, err
+	}
+
+	compiledFiles := make([]string, 0)
+	if len(o.Sources) != 0 {
+		// If the package root path is the first source,
+		// the other sources are compiled files.
+		if reflect.DeepEqual(ps, o.Sources[0]) {
+			for i := 1; i < len(o.Sources); i++ {
+				filePath, err := o.Sources[i].ToFilePath()
+				if err != nil {
+					return nil, err
+				}
+				compiledFiles = append(compiledFiles, filePath)
+			}
+		} else {
+			// If the package root path not the first source,
+			// all sources are compiled files.
+			for _, source := range o.Sources {
+				filePath, err := source.ToFilePath()
+				if err != nil {
+					return nil, err
+				}
+				compiledFiles = append(compiledFiles, filePath)
+			}
+		}
+	} else {
+		// If there is no source, workdir is the package source.
+		// Compile the workdir.
+		workDirSource, err := downloader.NewSourceFromStr(o.WorkDir)
+		if err != nil {
+			return nil, err
+		}
+
+		if !reflect.DeepEqual(ps, workDirSource) {
+			compiledFiles = append(compiledFiles, o.WorkDir)
+		}
+	}
+
+	return runner.NewEntry(
+		runner.WithEntryFiles(compiledFiles),
+		runner.WithPackageSource(ps),
+	), nil
+}
+
 // Run runs the kcl package.
 func (c *KpmClient) Run(options ...RunOption) (*kcl.KCLResultList, error) {
 	opts := &RunOptions{}
@@ -518,45 +584,46 @@ func (c *KpmClient) Run(options ...RunOption) (*kcl.KCLResultList, error) {
 	}
 
 	// Find the package source, note is maybe local compile entries or paths that contains `kcl.mod`
-	pkgSource, err := opts.getPkgSource()
+	compileEntry, err := opts.getCompileEntry()
 	if err != nil {
 		return nil, err
 	}
 
 	// Visit the root package source.
 	var res *kcl.KCLResultList
-	err = NewVisitor(*pkgSource, c).Visit(pkgSource, func(kclPkg *pkg.KclPkg) error {
-		// Apply the compile options from cli, kcl.yaml or kcl.mod
-		err = opts.applyCompileOptions(*pkgSource, kclPkg, opts.WorkDir)
-		if err != nil {
-			return err
-		}
-
-		kclPkg.SetVendorMode(opts.vendor)
-
-		// Resolve and update the dependencies into a map.
-		pkgMap, err := c.ResolveDepsIntoMap(kclPkg)
-		if err != nil {
-			return err
-		}
-
-		// Fill the dependency path.
-		for dName, dPath := range pkgMap {
-			if !filepath.IsAbs(dPath) {
-				dPath = filepath.Join(c.homePath, dPath)
+	err = NewVisitor(*compileEntry.GetPackageSource(), c).
+		Visit(compileEntry.GetPackageSource(), func(kclPkg *pkg.KclPkg) error {
+			// Apply the compile options from cli, kcl.yaml or kcl.mod
+			err = opts.applyCompileOptions(compileEntry.EntryFiles(), kclPkg, opts.WorkDir)
+			if err != nil {
+				return err
 			}
 
-			opts.Merge(kcl.WithExternalPkgs(fmt.Sprintf(constants.EXTERNAL_PKGS_ARG_PATTERN, dName, dPath)))
-		}
+			kclPkg.SetVendorMode(opts.vendor)
 
-		// Compile the kcl package.
-		res, err = kcl.RunWithOpts(*opts.Option)
-		if err != nil {
-			return err
-		}
+			// Resolve and update the dependencies into a map.
+			pkgMap, err := c.ResolveDepsIntoMap(kclPkg)
+			if err != nil {
+				return err
+			}
 
-		return nil
-	})
+			// Fill the dependency path.
+			for dName, dPath := range pkgMap {
+				if !filepath.IsAbs(dPath) {
+					dPath = filepath.Join(c.homePath, dPath)
+				}
+
+				opts.Merge(kcl.WithExternalPkgs(fmt.Sprintf(constants.EXTERNAL_PKGS_ARG_PATTERN, dName, dPath)))
+			}
+
+			// Compile the kcl package.
+			res, err = kcl.RunWithOpts(*opts.Option)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		})
 
 	if err != nil {
 		return nil, err

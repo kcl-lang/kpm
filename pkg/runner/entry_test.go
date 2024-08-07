@@ -52,7 +52,10 @@ func TestGetSourceKindFrom(t *testing.T) {
 func TestFindRunEntryFrom(t *testing.T) {
 	res, err := FindRunEntryFrom([]string{"./testdata_external/external/main.k", "./testdata_external/external"})
 	assert.Equal(t, err, (*reporter.KpmEvent)(nil))
-	assert.Equal(t, res.packageSource, "./testdata_external/external")
+
+	pkgSource, gerr := res.packageSource.ToFilePath()
+	assert.Equal(t, gerr, nil)
+	assert.Equal(t, pkgSource, "./testdata_external/external")
 
 	res, err = FindRunEntryFrom([]string{"./testdata_external/external/main.k", "./testdata_external/external", "./testdata/test_find_mod/sub/main.k"})
 	assert.Equal(t, err.Type(), reporter.CompileFailed)

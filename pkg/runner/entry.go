@@ -8,6 +8,7 @@ import (
 
 	"github.com/golang-collections/collections/set"
 	"kcl-lang.io/kpm/pkg/constants"
+	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/utils"
@@ -25,11 +26,41 @@ type EntryKind string
 // Entry is the entry of 'kpm run'.
 type Entry struct {
 	// The package source of the entry, filepath, tar path, url or ref.
-	packageSource string
+	packageSource *downloader.Source
 	// The start files for one compilation.
 	entryFiles []string
 	// The kind of the entry, file, tar, url or ref.
 	kind EntryKind
+}
+
+// Option is a function that configures an Entry.
+type Option func(*Entry)
+
+// NewEntry creates a new Entry with the given options.
+func NewEntry(opts ...Option) *Entry {
+	e := &Entry{}
+	for _, opt := range opts {
+		opt(e)
+	}
+	return e
+}
+
+// WithPackageSource sets the package source of the entry.
+func WithPackageSource(source *downloader.Source) Option {
+	return func(e *Entry) {
+		e.packageSource = source
+	}
+}
+
+// WithEntryFiles sets the entry files of the entry.
+func WithEntryFiles(files []string) Option {
+	return func(e *Entry) {
+		e.entryFiles = files
+	}
+}
+
+func (e *Entry) GetPackageSource() *downloader.Source {
+	return e.packageSource
 }
 
 // SetKind will set the kind of the entry.
@@ -73,12 +104,18 @@ func (e *Entry) IsGit() bool {
 
 // IsEmpty will return true if the entry is empty.
 func (e *Entry) IsEmpty() bool {
-	return len(e.packageSource) == 0
+	return e.packageSource == nil
 }
 
 // PackageSource will return the package source of the entry.
+// Deperated: use GetPackageSource instead.
 func (e *Entry) PackageSource() string {
-	return e.packageSource
+	packageStr, err := e.packageSource.ToString()
+	if err != nil {
+		return ""
+	}
+
+	return packageStr
 }
 
 // EntryFiles will return the entry files of the entry.
@@ -88,7 +125,11 @@ func (e *Entry) EntryFiles() []string {
 
 // SetPackageSource will set the package source of the entry.
 func (e *Entry) SetPackageSource(packageSource string) {
-	e.packageSource = packageSource
+	source, err := downloader.NewSourceFromStr(packageSource)
+	if err != nil {
+		e.packageSource = nil
+	}
+	e.packageSource = source
 }
 
 // AddEntryFile will add a entry file to the entry.
