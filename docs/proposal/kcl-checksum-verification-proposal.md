@@ -206,3 +206,126 @@ Whenever a user downloads a new dependency, we will log a warning if `FLAG_NO_SU
 - We also need to create a User Guide to help users understand how to rectify errors related to checksum verification that may occur while downloading a dependency through KPM. This guide will include instructions on:
     - Changing the FLAG_NO_SUM_CHECK: How users can modify the FLAG_NO_SUM_CHECK setting to bypass checksum verification for specific dependencies.
     - Avoiding Checksum Database or Registry Checks: Instructions on how to configure KPM to avoid checking the checksum database or registry, if necessary, for particular scenarios.
+
+## Additional changes based on review
+
+### Checksum Database Design
+#### About Go's Checksum Database
+The checksum database is served by sum.golang.org, and is built on a Transparent Log (or “Merkle tree”) of hashes backed by Trillian. The main advantage of a Merkle tree is that it is tamper proof and has properties that don’t allow for misbehavior to go undetected, which makes it more trustworthy than a simple database. The go command uses this tree to check “inclusion” proofs (that a specific record exists in the log) and “consistency” proofs (that the tree hasn’t been tampered with) before adding new go.sum lines to your module’s go.sum file.
+
+**NOTE**:- For more Info Check:- https://www.youtube.com/watch?v=KqTySYYhPUE
+
+#### Process behind checksum database in Go
+* When a new module version is published, its checksums are calculated.
+* These checksums are then submitted to `sum.golang.org` and added to the centralized `Merkle tree`.
+* The Merkle tree is updated to reflect the new entries, ensuring the root hash changes to represent the new state.
+* When we run `go mod tidy`, `go build`, or other commands that interact with Go modules, our local Go toolchain communicates with sum.golang.org to fetch and verify checksums.
+https://github.com/golang/mod/blob/bc151c4e8ccc31931553c47d43e41c0efc246096/sumdb/client.go#L206-L293
+* The go command requests inclusion and consistency proofs from sum.golang.org.
+https://github.com/golang/mod/blob/bc151c4e8ccc31931553c47d43e41c0efc246096/gosumcheck/main.go#L185-L211
+* The inclusion proof ensures that a specific module's checksum is included in the Merkle tree.
+* This involves fetching a proof that shows the path from the checksum entry to the root hash of the tree, verifying its inclusion.
+https://github.com/golang/mod/blob/bc151c4e8ccc31931553c47d43e41c0efc246096/sumdb/tlog/note.go#L113-L135
+* The consistency proof ensures that the Merkle tree has not been tampered with between different states.
+* This proof demonstrates that the root hash at a previous state is consistent with the root hash at the current state, indicating no unauthorized changes.(older tree is contained within a newer tree in the transparency log)
+https://github.com/golang/mod/blob/bc151c4e8ccc31931553c47d43e41c0efc246096/sumdb/client.go#L295-L476
+* If the proofs are valid, the go command updates the go.sum file with the verified checksums.
+https://github.com/golang/go/blob/1f0c044d60211e435dc58844127544dd3ecb6a41/src/cmd/go/internal/modfetch/sumdb.go#L69-L80
+
+Go's Checksum Database proposal - https://go.googlesource.com/proposal/+/master/design/25530-sumdb.md#checksum-database
+
+More Info on Go's Checksum Database 
+- https://go.dev/blog/module-mirror-launch
+- https://go.dev/ref/mod#checksum-database
+
+**Request made to checksum Database** -
+
+Example- GET https://sum.golang.org/lookup/github.com/gogo/protobuf@v1.3.2
+Response-
+~~~
+2451746
+github.com/gogo/protobuf v1.3.2 h1:Ov1cvc58UF3b5XjBnZv7+opcTcQFZebYjWzi34vdm4Q=
+github.com/gogo/protobuf v1.3.2/go.mod h1:P1XiOD3dCwIKUDQYPy72D8LYyHL2YPYrpS2s69NZV8Q=
+
+go.sum database tree
+28852277
+IDh4gnKScdn3WD9jflNCi2BmvZvdJ0Z2jeK20t8QF1E=
+
+— sum.golang.org Az3grkvHyq7VdmI/sCI/Jl0SsMAC/Bnol0lsMJHaL4b+mPEnHxDoea72xevZL3vEKp0q3NXFJrJfiaody1x9Dtim9gI=
+~~~
+So GET request on https://sum.golang.org/lookup/module@version gives response as log record number for the entry about module M version V, followed by the data for the record (that is, the go.sum lines for module M version V) and a signed tree hash for a tree that contains the record.
+
+#### Information stored by other package managers
+- Cargo uses a registry (like crates.io) that includes an index with information about all available crates. The registry is a Git repository where each crate’s metadata is stored(https://github.com/rust-lang/crates.io-index).
+Each commit in this repository is signed using GPG, ensuring that the metadata cannot be tampered with without invalidating the signatures.
+
+If someone tampers with the cargo-index data (e.g. by altering crate metadata or checksums), the GPG signature of the affected commit(s) will no longer match the expected signature.
+When Cargo attempts to verify the tampered commit, the GPG verification process will fail because the content hash will differ from the hash that was originally signed.
+https://github.com/rust-lang/cargo/issues/4768
+
+Cargo Index format-
+https://doc.rust-lang.org/cargo/reference/registry-index.html#index-format
+
+- Go Uses `modulePath@moduleVersion` as unique key to get the ID of particular dependency in database.
+https://github.com/golang/mod/blob/bc151c4e8ccc31931553c47d43e41c0efc246096/sumdb/test.go#L78-L117
+
+- The npm public registry is powered by a CouchDB database, of which there is a public mirror at- https://skimdb.npmjs.com/registry
+To know what it store for a package use - `skimdb.npmjs.com/registry/<package-name>`
+
+#### What Information to store in Checksum Database for kpm
+I think we can store data like -
+- **Kpm dependency records**:- Path, Version and Checksum for the each Dependency.
+```Go
+type ChecksumDBSchema struct {
+	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	Path        string             `bson:"path" json:"path"`
+	Version     string             `bson:"version" json:"version"`
+	Checksum    string             `bson:"checksum" json:"checksum"`
+	PathVersion string             `bson:"path_version" json:"path_version"`
+}
+```
+We can use `Path@Version` (PathVersion) as a unique key to identify an entry for the dependency in the checksum database.
+
+- Other then this if we followed merkle tree strcuture to store data in database then we need additional things to store:- NodeID, ParentID, HASH, ROOT_HASH, Signature(digital signature for verifying the authenticity of the Signed tree head(STH)- need public/private key for that),Signature algorithm, Hash algorithm, TimeStamp(creation time of the STH), TREE_SIZE etc.
+
+OR
+
+(Instead of using merkle tree for checksum database)We can take motivation from Cargo - where we store `Kpm module records` in Git Repository and each commit to this repository is signed with GPG keys. When we fetch metadata of the module we will also fetch its signed commit, after that we can verify the GPG signature of the commit, This verification ensures that the commits were made by an authorized entity and that the commit data has not been altered.
+
+
+### Work flow of kpm process and the effective position of checksum verification
+
+#### Position of checksum verification in kpm mod update
+- Step 1. `ModUpdate` sets `--no_sum_check` then run `LoadPkgFromPath`(load mod file and dependency from kcl.mod.lock). After that it runs `ResolveDepsMetadataInJsonStr`(re-downloads the non-existsent packages, and return the calculated metadata of dependent packages serialized into a json string)
+- Step 2. `ResolveDepsMetadataInJsonStr` runs `ResolvePkgDepsMetadata`(re-downloads the non-existsent packages) which runs `resolvePkgDeps`.
+- Step 3. Now `resolvePkgDeps` will function accordingly depending on `--no_sum_check` flag is set or not.
+- Step 4. Then it triggers `AddDepToPkg` to redownload a package if does not exist, now `AddDepToPkg` will run `InitGraphAndDownloadDeps` initializes a dependency graph and calls `DownloadDeps`
+- Step 5. `DownloadDeps`(**Require sum here**) will trigger `Download`(**Verify sum here**) function to download dependencies.
+- Step 6. During Donwload it calculates the hash of the dependency and will match it with the actual sum. If it matches `DownloadDeps` will set the new dependencies otherwise it returns an error.
+- Step 7. If the sum matches, it updates mod and lock file using `UpdateModAndLockFile`.
+
+**Suggestion**- Although the checksum is implemented in `kcl mod update`, some modifications can be made as suggested above to make checksum verification more secure.Also I think in Step 3 we can introduce checksum for existing dependency if `--no_sum_check` flag is not set to ensure the existing packages are consistent.
+
+**Note**- Similar procedure can be followed for `kcl mod add`(Since most of the steps coincide with kcl mod update including `InitGraphAndDownloadDeps`,`DownloadDeps`,`Download` and `UpdateModAndLockFile` )
+
+#### Position of checksum verification in kpm mod pull
+During `kpm mod pull` it would be better if there is some checksum verification to ensure consistent package is downloaded from registry-
+
+- Step 1. `pull` will set up the `source`(from where package to be downloaded) and `localPath`(local place where package should be downloaded), then runs `Pull`(to pull the package from source)
+- Step 2. `Pull` will run `downloadPkg` which runs `Download`(dispatches the download to the specific downloader by package source)
+- Step 3a.(**Require sum here**) If the source is git repository `(d *GitDownloader) Download` will be triggered which will clone the repository will specified options.
+- Step 3b.(**Require sum here**) If the source is OCI registry `(d *OciDownloader) Download` will be triggered which runs `Pull`(pull the oci artifacts from oci registry), `Download` will run `UnTarDir`/`ExtractTarball` to get the contents of the package from the `localPath`.
+- Step 4.(**Verify sum here**)The `downloadPkg` will then runs `LoadPkgFromPath`(load mod file and dependency from kcl.mod.lock) for the specified `localPath`.
+
+**Suggestion**- I think we need to compute the checksum in step 3a and 3b when we are cloning a git repo, or extracting a tarball. Since this is first download we need to verify its checksum against the package entry in checksum database to ensure consistent package is downloaded.
+
+#### Suggestions of kcl mod push
+Whenever user pushes the package to oci registry we should create some mechanism such that required `Kpm module records` are also be pushed to checksum database for checksum verification during the pull.
+
+- Step 1. `ModPush` runs `pushCurrentPackage`/`pushTarPackage` depending on whether tar package is specified or not.
+- Step 2. `pushTarPackage` will load the kcl package from the tar path using `LoadKclPkgFromTar`.
+- Step 3. Now `LoadKclPkg` runs to load modfile and to get dependencies from kcl.mod.lock, after this `pushPackage` runs to push the kcl package to the oci registry.
+- Step 4. `pushPackage` will generate OCI options from oci url and the version of current kcl package from `ParseOciOptionFromOciUrl` and then runs `GenOciManifestFromPkg`(generate the oci manifest from the kcl package).
+- Step 5. `pushPackage` runs `PushToOci`(push a kcl package to oci registry) which in turn runs `PushWithOciManifest`(push the oci artifacts to oci registry from local path).
+
+**Suggestions** - After the Step 5 we should compute the checksum of the pushed package and add the corresponding entry in checksum database.
