@@ -193,6 +193,7 @@ type Dependency struct {
 	FullName string `json:"-" toml:"full_name,omitempty"`
 	Version  string `json:"-" toml:"version,omitempty"`
 	Sum      string `json:"-" toml:"sum,omitempty"`
+	Package  string `json:"package" toml:"package,omitempty"`
 	// The actual local path of the package.
 	// In vendor mode is "current_kcl_package/vendor"
 	// In non-vendor mode is "$KCL_PKG_PATH"
@@ -501,6 +502,7 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 		return &Dependency{
 			Name:     ParseRepoNameFromGitSource(gitSource),
 			FullName: fullName,
+			Package:  ParseRepoNameFromGitSource(gitSource),
 			Source: downloader.Source{
 				Git: &gitSource,
 			},
@@ -517,6 +519,7 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 		return &Dependency{
 			Name:     opt.Oci.PkgName,
 			FullName: opt.Oci.PkgName + "_" + opt.Oci.Tag,
+			Package:  opt.Oci.PkgName,
 			Source: downloader.Source{
 				Oci: &ociSource,
 			},
@@ -533,6 +536,7 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 			Name:          depPkg.ModFile.Pkg.Name,
 			FullName:      depPkg.ModFile.Pkg.Name + "_" + depPkg.ModFile.Pkg.Version,
 			LocalFullPath: opt.Local.Path,
+			Package:       depPkg.ModFile.Pkg.Name,
 			Source: downloader.Source{
 				Local: &downloader.Local{
 					Path: opt.Local.Path,
@@ -551,6 +555,7 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 		return &Dependency{
 			Name:     opt.Registry.PkgName,
 			FullName: opt.Registry.PkgName + "_" + opt.Registry.Tag,
+			Package:  opt.Registry.PkgName,
 			Source: downloader.Source{
 				Registry: &downloader.Registry{
 					Oci:     &ociSource,
