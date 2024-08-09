@@ -77,22 +77,6 @@ func (vpv *VirtualPkgVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		return err
 	}
 
-	// If the source path does not contain a kcl.mod file, create a virtual kcl.mod file.
-	vKclModPath := filepath.Join(sourcePath, constants.KCL_MOD)
-	if !utils.DirExists(vKclModPath) {
-		// After the visitFunc is executed, clean the virtual kcl.mod file.
-		defer func() error {
-			vKclModLockPath := filepath.Join(sourcePath, constants.KCL_MOD_LOCK)
-			if utils.DirExists(vKclModLockPath) {
-				err := os.RemoveAll(vKclModLockPath)
-				if err != nil {
-					return err
-				}
-			}
-			return nil
-		}()
-
-	}
 	initOpts := opt.InitOptions{
 		Name:     "vPkg_" + uuid.New().String(),
 		InitPath: sourcePath,
