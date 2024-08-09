@@ -829,6 +829,14 @@ func (c *KpmClient) AddDepToPkg(kclPkg *pkg.KclPkg, d *pkg.Dependency) error {
 		return err
 	}
 
+	if dep, ok := kclPkg.Dependencies.Deps.Get(d.Name); ok {
+		if dep1, ok := kclPkg.ModFile.Dependencies.Deps.Get(d.Name); ok {
+			if dep1.Git != nil {
+				dep1.Git.Version = dep.Version
+			}
+		}
+	}
+
 	return err
 }
 
