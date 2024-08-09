@@ -1965,3 +1965,27 @@ func TestRunWithLogger(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, logbuf.String(), "Hello, World!\n")
 }
+
+func TestVirtualPackageVisiter(t *testing.T) {
+	pkgPath := getTestDir("test_virtual_pkg_visitor")
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	pkgSource, err := downloader.NewSourceFromStr(pkgPath)
+	assert.Equal(t, err, nil)
+
+	v := NewVisitor(*pkgSource, kpmcli)
+	err = v.Visit(pkgSource, func(p *pkg.KclPkg) error {
+		assert.Contains(t, p.GetPkgName(), "vPkg_")
+		_, err = os.Stat(filepath.Join(pkgPath, "kcl.mod"))
+		assert.Equal(t, os.IsNotExist(err), true)
+		_, err = os.Stat(filepath.Join(pkgPath, "kcl.mod.lock"))
+		assert.Equal(t, os.IsNotExist(err), true)
+		return nil
+	})
+	assert.Equal(t, err, nil)
+	_, err = os.Stat(filepath.Join(pkgPath, "kcl.mod"))
+	assert.Equal(t, os.IsNotExist(err), true)
+	_, err = os.Stat(filepath.Join(pkgPath, "kcl.mod.lock"))
+	assert.Equal(t, os.IsNotExist(err), true)
+}
