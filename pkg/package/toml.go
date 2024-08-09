@@ -89,6 +89,9 @@ const DEP_PATTERN = "%s = %s"
 func (dep *Dependency) MarshalTOML() string {
 	source := dep.Source.MarshalTOML()
 	var sb strings.Builder
+	if len(dep.Package) != 0 {
+		source = "{ " + source + ", " + "package = " + "\"" + dep.Package + "\"" + " }"
+	}
 	if len(source) != 0 {
 		sb.WriteString(fmt.Sprintf(DEP_PATTERN, dep.Name, source))
 	}
