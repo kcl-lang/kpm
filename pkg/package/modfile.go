@@ -193,7 +193,7 @@ type Dependency struct {
 	FullName string `json:"-" toml:"full_name,omitempty"`
 	Version  string `json:"-" toml:"version,omitempty"`
 	Sum      string `json:"-" toml:"sum,omitempty"`
-	Package  string `json:"package" toml:"package,omitempty"`
+	Package  string `json:"-" toml:"package,omitempty"`
 	// The actual local path of the package.
 	// In vendor mode is "current_kcl_package/vendor"
 	// In non-vendor mode is "$KCL_PKG_PATH"
