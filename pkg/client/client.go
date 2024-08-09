@@ -829,6 +829,15 @@ func (c *KpmClient) AddDepToPkg(kclPkg *pkg.KclPkg, d *pkg.Dependency) error {
 		return err
 	}
 
+	// After downloading, extract the version from the kcl.mod file
+    downloadedPkg, err := c.LoadPkgFromPath(c.getDepStorePath(c.homePath, d, false))
+    if err != nil {
+        return fmt.Errorf("failed to load downloaded package: %w", err)
+    }
+    d.Version = downloadedPkg.GetPkgVersion()
+    kclPkg.ModFile.Dependencies.Deps.Set(d.Name, *d)
+
+
 	return err
 }
 

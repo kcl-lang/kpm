@@ -191,13 +191,13 @@ func (deps *Dependencies) CheckForLocalDeps() bool {
 type Dependency struct {
 	Name     string `json:"name" toml:"name,omitempty"`
 	FullName string `json:"-" toml:"full_name,omitempty"`
-	Version  string `json:"-" toml:"version,omitempty"`
 	Sum      string `json:"-" toml:"sum,omitempty"`
 	// The actual local path of the package.
 	// In vendor mode is "current_kcl_package/vendor"
 	// In non-vendor mode is "$KCL_PKG_PATH"
 	LocalFullPath     string `json:"manifest_path" toml:"-"`
 	downloader.Source `json:"-"`
+	Version string `json:"version,omitempty" toml:"version,omitempty"`
 }
 
 func (d *Dependency) FromKclPkg(pkg *KclPkg) {
