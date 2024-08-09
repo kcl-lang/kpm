@@ -143,7 +143,7 @@ func KpmRun(c *cli.Context, kpmcli *client.KpmClient) error {
 			// 'kpm run' compile the package from the kcl package tar.
 			compileResult, err = kpmcli.CompileTarPkg(runEntry.PackageSource(), kclOpts)
 		} else if runEntry.IsGit() {
-			gitOpts := git.NewCloneOptions(runEntry.PackageSource(), "", c.String(FLAG_TAG), "", "", nil)
+			gitOpts := git.NewCloneOptions(runEntry.PackageSource(), "", c.String(FLAG_TAG), "", "", "", nil)
 			// 'kpm run' compile the package from the git url
 			compileResult, err = kpmcli.CompileGitPkg(gitOpts, kclOpts)
 		} else {
