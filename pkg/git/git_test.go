@@ -2,6 +2,7 @@ package git
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -160,6 +161,9 @@ func TestCloneWithOptions(t *testing.T) {
 		err = cmd.Run()
 		assert.Equal(t, err, nil)
 
+		// Construct the file URL for the local bare repository
+		bareRepoURL := fmt.Sprintf("file://%s", bareRepoPath)
+
 		// Clone the local bare repository as a normal repository and checkout a commit
 		tmpdir, err := os.MkdirTemp("", "clone_non_bare_repo")
 		assert.Equal(t, err, nil)
@@ -169,7 +173,7 @@ func TestCloneWithOptions(t *testing.T) {
 		}()
 
 		repo, err := CloneWithOpts(
-			WithRepoURL(bareRepoPath),
+			WithRepoURL(bareRepoURL),
 			WithCommit("4e59d5852cd76542f9f0ec65e5773ca9f4e02462"),
 			WithWriter(&buf),
 			WithLocalPath(tmpdir),
