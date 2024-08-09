@@ -3,6 +3,7 @@ package git
 import (
 	"bytes"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -51,31 +52,8 @@ func TestValidateGitOptions(t *testing.T) {
 func TestCloneWithOptions(t *testing.T) {
 	var buf bytes.Buffer
 
-	// Test non-bare repository cloning
-	t.Run("NonBareClone", func(t *testing.T) {
-		tmpdir, err := os.MkdirTemp("", "git")
-		assert.Equal(t, err, nil)
-		defer func() {
-			rErr := os.RemoveAll(tmpdir)
-			assert.Equal(t, rErr, nil)
-		}()
-
-		repo, err := CloneWithOpts(
-			WithRepoURL("https://github.com/KusionStack/catalog.git"),
-			WithCommit("4e59d5852cd76542f9f0ec65e5773ca9f4e02462"),
-			WithWriter(&buf),
-			WithLocalPath(tmpdir),
-		)
-		assert.Equal(t, err, nil)
-
-		head, err := repo.Head()
-		assert.Equal(t, err, nil)
-		assert.Equal(t, head.Hash().String(), "4e59d5852cd76542f9f0ec65e5773ca9f4e02462")
-		assert.Equal(t, err, nil)
-	})
-
-	// Test bare repository cloning
-	t.Run("BareClone", func(t *testing.T) {
+	// Test cloning a remote repo as a bare repo
+	t.Run("RemoteBareClone", func(t *testing.T) {
 		tmpdir, err := os.MkdirTemp("", "git_bare")
 		assert.Equal(t, err, nil)
 		defer func() {
@@ -85,8 +63,6 @@ func TestCloneWithOptions(t *testing.T) {
 
 		_, err = CloneWithOpts(
 			WithRepoURL("https://github.com/KusionStack/catalog.git"),
-			WithCommit("4e59d5852cd76542f9f0ec65e5773ca9f4e02462"),
-			WithWriter(&buf),
 			WithLocalPath(tmpdir),
 			WithBare(true), // Set the Bare flag to true
 		)
@@ -104,6 +80,106 @@ func TestCloneWithOptions(t *testing.T) {
 
 		_, err = os.Stat(filepath.Join(tmpdir, "refs"))
 		assert.Equal(t, os.IsNotExist(err), false)
+	})
+
+	// Test cloning a remote repo as a normal repo and checking out a commit
+	t.Run("RemoteNonBareCloneWithCommit", func(t *testing.T) {
+		tmpdir, err := os.MkdirTemp("", "git_non_bare")
+		assert.Equal(t, err, nil)
+		defer func() {
+			rErr := os.RemoveAll(tmpdir)
+			assert.Equal(t, rErr, nil)
+		}()
+
+		repo, err := CloneWithOpts(
+			WithRepoURL("https://github.com/KusionStack/catalog.git"),
+			WithCommit("4e59d5852cd76542f9f0ec65e5773ca9f4e02462"),
+			WithWriter(&buf),
+			WithLocalPath(tmpdir),
+			WithBare(false), // Ensure the Bare flag is false
+		)
+		assert.Equal(t, err, nil)
+
+		head, err := repo.Head()
+		assert.Equal(t, err, nil)
+		assert.Equal(t, head.Hash().String(), "4e59d5852cd76542f9f0ec65e5773ca9f4e02462")
+	})
+
+	// Test cloning a bare repo as a bare repo
+	t.Run("LocalBareCloneAsBare", func(t *testing.T) {
+		// Setup a local bare repository
+		bareRepoPath, err := os.MkdirTemp("", "local_bare_repo")
+		assert.Equal(t, err, nil)
+		defer func() {
+			rErr := os.RemoveAll(bareRepoPath)
+			assert.Equal(t, rErr, nil)
+		}()
+		cmd := exec.Command("git", "clone", "--bare", "https://github.com/KusionStack/catalog.git", bareRepoPath)
+		err = cmd.Run()
+		assert.Equal(t, err, nil)
+
+		// Clone the local bare repository as a bare repository
+		tmpdir, err := os.MkdirTemp("", "clone_bare_repo")
+		assert.Equal(t, err, nil)
+		defer func() {
+			rErr := os.RemoveAll(tmpdir)
+			assert.Equal(t, rErr, nil)
+		}()
+
+		_, err = CloneWithOpts(
+			WithRepoURL(bareRepoPath),
+			WithLocalPath(tmpdir),
+			WithBare(true), // Set the Bare flag to true
+		)
+		assert.Equal(t, err, nil)
+
+		// Verify the directory is a bare repository
+		_, err = os.Stat(filepath.Join(tmpdir, "HEAD"))
+		assert.Equal(t, os.IsNotExist(err), false)
+
+		_, err = os.Stat(filepath.Join(tmpdir, "config"))
+		assert.Equal(t, os.IsNotExist(err), false)
+
+		_, err = os.Stat(filepath.Join(tmpdir, "objects"))
+		assert.Equal(t, os.IsNotExist(err), false)
+
+		_, err = os.Stat(filepath.Join(tmpdir, "refs"))
+		assert.Equal(t, os.IsNotExist(err), false)
+	})
+
+	// Test cloning a bare repo as a normal repo and checking out a commit
+	t.Run("LocalBareCloneAsNonBareWithCommit", func(t *testing.T) {
+		// Setup a local bare repository
+		bareRepoPath, err := os.MkdirTemp("", "local_bare_repo")
+		assert.Equal(t, err, nil)
+		defer func() {
+			rErr := os.RemoveAll(bareRepoPath)
+			assert.Equal(t, rErr, nil)
+		}()
+		cmd := exec.Command("git", "clone", "--bare", "https://github.com/KusionStack/catalog.git", bareRepoPath)
+		err = cmd.Run()
+		assert.Equal(t, err, nil)
+
+		// Clone the local bare repository as a normal repository and checkout a commit
+		tmpdir, err := os.MkdirTemp("", "clone_non_bare_repo")
+		assert.Equal(t, err, nil)
+		defer func() {
+			rErr := os.RemoveAll(tmpdir)
+			assert.Equal(t, rErr, nil)
+		}()
+
+		repo, err := CloneWithOpts(
+			WithRepoURL(bareRepoPath),
+			WithCommit("4e59d5852cd76542f9f0ec65e5773ca9f4e02462"),
+			WithWriter(&buf),
+			WithLocalPath(tmpdir),
+			WithBare(false), // Ensure the Bare flag is false
+		)
+		assert.Equal(t, err, nil)
+
+		head, err := repo.Head()
+		assert.Equal(t, err, nil)
+		assert.Equal(t, head.Hash().String(), "4e59d5852cd76542f9f0ec65e5773ca9f4e02462")
 	})
 }
 
