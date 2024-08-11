@@ -19,9 +19,9 @@ func (cloneOpts *CloneOptions) ForceGitUrl() (string, error) {
 		return "", nil
 	}
 
-	newRepoUrl := ""
+	newRepoUrl := cloneOpts.RepoURL
 	if cloneOpts.SubPackage != "" {
-		newRepoUrl = cloneOpts.RepoURL + "//" + cloneOpts.SubPackage
+		newRepoUrl += "//" + cloneOpts.SubPackage
 	}
 
 	var attributes = []string{cloneOpts.Branch, cloneOpts.Commit, cloneOpts.Tag}

@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os/exec"
 	"regexp"
 	"time"
-	"os/exec"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -133,7 +133,6 @@ func (cloneOpts *CloneOptions) cloneBare() (*git.Repository, error) {
 		args = append(args, "--no-checkout")
 	}
 	args = append(args, cloneOpts.RepoURL, cloneOpts.LocalPath)
-	
 	cmd := exec.Command("git", args...)
 	cmd.Stdout = cloneOpts.Writer
 	cmd.Stderr = cloneOpts.Writer
@@ -156,7 +155,6 @@ func (cloneOpts *CloneOptions) cloneBare() (*git.Repository, error) {
 			return nil, fmt.Errorf("failed to update HEAD to specified commit: %w", err)
 		}
 	}
-
 
 	return repo, nil
 }
@@ -208,9 +206,13 @@ func (cloneOpts *CloneOptions) Clone() (*git.Repository, error) {
 		return nil, err
 	}
 
-	repo, err := git.PlainOpen(cloneOpts.LocalPath)
-	if err != nil {
-		return nil, err
+	repo := &git.Repository{}
+
+	if cloneOpts.SubPackage == "" {
+		repo, err = git.PlainOpen(cloneOpts.LocalPath)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return repo, nil
