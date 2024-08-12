@@ -378,12 +378,31 @@ func getCompileOptionsFromKclMod(kclPkg *pkg.KclPkg) *kcl.Option {
 func (o *RunOptions) applyCompileOptions(source downloader.Source, kclPkg *pkg.KclPkg, workDir string) error {
 	o.Merge(kcl.WithWorkDir(workDir))
 
+	// Check if the source is a local path and is the kcl package.
+	sourceIsKclPackage := func(pkgSource *downloader.Source) bool {
+		if !pkgSource.IsLocalPath() {
+			return false
+		}
+		sourcePath := pkgSource.Path
+		if !filepath.IsAbs(sourcePath) && !utils.IsModRelativePath(sourcePath) {
+			sourcePath = filepath.Join(workDir, sourcePath)
+		}
+
+		pkgHome := kclPkg.HomePath
+
+		if !filepath.IsAbs(pkgHome) && !utils.IsModRelativePath(sourcePath) {
+			pkgHome = filepath.Join(workDir, pkgHome)
+		}
+
+		return sourcePath == pkgHome
+	}
+
 	// If the sources from cli is not empty, use the sources from cli.
 	if len(o.Sources) != 0 {
 		var compiledFiles []string
 		// All the cli relative path should be transformed to the absolute path by workdir
 		for _, source := range o.Sources {
-			if source.IsLocalPath() && source.Path != kclPkg.HomePath {
+			if source.IsLocalPath() && !sourceIsKclPackage(source) {
 				sPath := source.Path
 				if !filepath.IsAbs(sPath) && !utils.IsModRelativePath(sPath) {
 					sPath = filepath.Join(workDir, sPath)
@@ -402,7 +421,7 @@ func (o *RunOptions) applyCompileOptions(source downloader.Source, kclPkg *pkg.K
 	var yamlOpts *kcl.Option
 	// For the packaged kcl package, git, oci and tar, settings yaml file should be find from the package path if not set by cli.
 	// For the local kcl package, settings yaml file should be find from the workdir if not set by cli.
-	if source.IsPackaged() {
+	if source.IsPackaged() || sourceIsKclPackage(&source) {
 		yamlOpts = o.getCompileOptionsFromYaml(kclPkg.HomePath)
 	} else {
 		yamlOpts = o.getCompileOptionsFromYaml(workDir)
@@ -431,7 +450,7 @@ func (o *RunOptions) applyCompileOptions(source downloader.Source, kclPkg *pkg.K
 	if len(o.KFilenameList) == 0 {
 		// For the packaged kcl package, git, oci and tar, no *.k files are set by cli, kcl.yaml or kcl.mod, compile the package path.
 		// For the local kcl package, no *.k files are set by cli, kcl.yaml or kcl.mod, compile the workdir.
-		if source.IsPackaged() {
+		if source.IsPackaged() || sourceIsKclPackage(&source) {
 			o.KFilenameList = []string{kclPkg.HomePath}
 		} else {
 			o.KFilenameList = []string{workDir}
