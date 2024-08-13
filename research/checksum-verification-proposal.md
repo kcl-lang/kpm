@@ -254,3 +254,111 @@ To maintain compatibility with existing KPM dependencies while introducing check
 - Generate log warnings for packages without checksums initially.
 - Make checksum verification optional during a transition period.
 - After the transition period, make checksum verification mandatory for all packages.
+
+## Checker Module
+
+To improve modularity and testability, we'll introduce a separate Checker module for validating KCL dependencies. This module will handle name validation, version checking, and checksum verification.
+
+### Checker Module Design
+
+Create a new file pkg/checker/checker.go
+```go
+package checker
+
+import (
+    "fmt"
+    "regexp"
+
+    "github.com/Masterminds/semver/v3"
+    "kcl-lang.io/kpm/pkg/utils"
+    "kcl-lang.io/kpm/pkg/package"
+)
+
+type Checker struct {
+    NoSumCheck bool
+}
+
+func NewChecker(noSumCheck bool) *Checker {
+    return &Checker{NoSumCheck: noSumCheck}
+}
+
+func (c *Checker) ValidateDependency(dep pkg.Dependency, localPath string) error {
+    if err := c.validateName(dep.Name); err != nil {
+        return err
+    }
+
+    if err := c.validateVersion(dep.Version); err != nil {
+        return err
+    }
+
+    if !c.NoSumCheck {
+        if err := c.validateChecksum(dep, localPath); err != nil {
+            return err
+        }
+    }
+
+    return nil
+}
+
+func (c *Checker) validateName(name string) error {
+    validName := regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+    if !validName.MatchString(name) {
+        return fmt.Errorf("invalid dependency name: %s", name)
+    }
+    return nil
+}
+
+func (c *Checker) validateVersion(version string) error {
+    _, err := semver.NewVersion(version)
+    if err != nil {
+        return fmt.Errorf("invalid version: %s", version)
+    }
+    return nil
+}
+
+func (c *Checker) validateChecksum(dep pkg.Dependency, localPath string) error {
+    if dep.Sum == "" {
+        return fmt.Errorf("missing checksum for dependency: %s", dep.Name)
+    }
+
+    calculatedSum, err := utils.HashDir(localPath)
+    if err != nil {
+        return fmt.Errorf("failed to calculate checksum: %w", err)
+    }
+
+    if dep.Sum != calculatedSum {
+        return fmt.Errorf("checksum mismatch for dependency %s: expected %s, got %s", dep.Name, dep.Sum, calculatedSum)
+    }
+
+    return nil
+}
+```
+
+**Integration with KpmClient**
+
+Update the `KpmClient` struct in `pkg/client/client.go` to include the Checker:
+```go
+type KpmClient struct {
+    // ... existing fields
+    checker *checker.Checker
+}
+```
+Modify the `NewKpmClient` function to initialize the Checker:
+
+```go
+func NewKpmClient() (*KpmClient, error) {
+    return &KpmClient{
+        // ... existing fields
+        checker: checker.NewChecker(false),
+    }, nil
+}
+```
+
+Update the `SetNoSumCheck` method to also update the Checker:
+
+```go
+func (c *KpmClient) SetNoSumCheck(noSumCheck bool) {
+    c.noSumCheck = noSumCheck
+    c.checker = checker.NewChecker(noSumCheck)
+}
+```
