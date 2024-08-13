@@ -1096,6 +1096,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			downloader.WithSource(dep.Source),
 			downloader.WithLogWriter(c.logWriter),
 			downloader.WithSettings(c.settings),
+			downloader.WithHomePath(c.homePath),
 		))
 		if err != nil {
 			return nil, err

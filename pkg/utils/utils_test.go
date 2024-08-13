@@ -302,3 +302,19 @@ func TestIsModRelativePath(t *testing.T) {
 	assert.Equal(t, IsModRelativePath("${helloworld:KCL_MOD}/aaa"), true)
 	assert.Equal(t, IsModRelativePath("xxx/xxx/xxx"), false)
 }
+
+func TestCalculateHash(t *testing.T) {
+    testCases := []struct {
+        input    string
+        expected string
+    }{
+        {"test", "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"},
+        {"hello world", "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"},
+        {"", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
+    }
+
+    for _, tc := range testCases {
+        result := CalculateHash(tc.input)
+        assert.Equal(t, result, tc.expected[:16], "CalculateHash failed for input: %s", tc.input)
+    }
+}

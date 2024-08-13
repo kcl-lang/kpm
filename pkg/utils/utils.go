@@ -599,3 +599,9 @@ func AbsTarPath(tarPath string) (string, error) {
 
 	return absTarPath, nil
 }
+
+func CalculateHash(s string) string {
+    h := sha256.New()
+    h.Write([]byte(s))
+    return fmt.Sprintf("%x", h.Sum(nil))[:16]
+}

@@ -28,6 +28,7 @@ type DownloadOptions struct {
 	LogWriter io.Writer
 	// credsClient is the client to get the credentials.
 	credsClient *CredClient
+	HomePath  string
 }
 
 type Option func(*DownloadOptions)
@@ -68,6 +69,12 @@ func NewDownloadOptions(opts ...Option) *DownloadOptions {
 		opt(do)
 	}
 	return do
+}
+
+func WithHomePath(homePath string) func(*DownloadOptions) {
+    return func(o *DownloadOptions) {
+        o.HomePath = homePath
+    }
 }
 
 // Downloader is the interface for downloading a package.
@@ -132,8 +139,6 @@ func (d *OciDownloader) Download(opts DownloadOptions) error {
 		return errors.New("oci source is nil")
 	}
 
-	localPath := opts.LocalPath
-
 	repoPath := utils.JoinPath(ociSource.Reg, ociSource.Repo)
 
 	var cred *remoteauth.Credential
@@ -181,28 +186,37 @@ func (d *OciDownloader) Download(opts DownloadOptions) error {
 		opts.LogWriter,
 	)
 
-	err = ociCli.Pull(localPath, ociSource.Tag)
-	if err != nil {
-		return err
-	}
 
-	matches, _ := filepath.Glob(filepath.Join(localPath, "*.tar"))
-	if matches == nil || len(matches) != 1 {
-		// then try to glob tgz file
-		matches, _ = filepath.Glob(filepath.Join(localPath, "*.tgz"))
-		if matches == nil || len(matches) != 1 {
-			return fmt.Errorf("failed to find the downloaded kcl package tar file in '%s'", localPath)
-		}
-	}
+    // Use new directory structure
+    ociDir := filepath.Join(opts.HomePath, "oci")
+    cacheDir := filepath.Join(ociDir, "cache")
+    srcDir := filepath.Join(ociDir, "src")
 
-	tarPath := matches[0]
+    repoHash := utils.CalculateHash(ociSource.Reg + "/" + ociSource.Repo)
+    cacheSubDir := filepath.Join(cacheDir, fmt.Sprintf("%s-%s", ociSource.Reg, repoHash))
+    srcSubDir := filepath.Join(srcDir, fmt.Sprintf("%s-%s", ociSource.Reg, repoHash))
+
+	if err := os.MkdirAll(cacheSubDir, 0755); err != nil {
+        return err
+    }
+    if err := os.MkdirAll(srcSubDir, 0755); err != nil {
+        return err
+    }
+
+	tarPath := filepath.Join(cacheSubDir, fmt.Sprintf("%s_%s.tar", ociSource.Repo, ociSource.Tag))
+    err = ociCli.Pull(tarPath, ociSource.Tag)
+    if err != nil {
+        return err
+    }
+
+	extractPath := filepath.Join(srcSubDir, fmt.Sprintf("%s_%s", ociSource.Repo, ociSource.Tag))
 	if utils.IsTar(tarPath) {
-		err = utils.UnTarDir(tarPath, localPath)
+		err = utils.UnTarDir(tarPath, extractPath)
 	} else {
-		err = utils.ExtractTarball(tarPath, localPath)
+		err = utils.ExtractTarball(tarPath, extractPath)
 	}
 	if err != nil {
-		return fmt.Errorf("failed to untar the kcl package tar from '%s' into '%s'", tarPath, localPath)
+		return fmt.Errorf("failed to untar the kcl package tar from '%s' into '%s'", tarPath, extractPath)
 	}
 
 	// After untar the downloaded kcl package tar file, remove the tar file.
@@ -213,7 +227,7 @@ func (d *OciDownloader) Download(opts DownloadOptions) error {
 		}
 	}
 
-	return err
+	return utils.MoveFile(extractPath, opts.LocalPath)
 }
 
 func (d *GitDownloader) Download(opts DownloadOptions) error {
@@ -234,23 +248,52 @@ func (d *GitDownloader) Download(opts DownloadOptions) error {
 		fmt.Sprintf("cloning '%s' %s", opts.Source.Git.Url, msg),
 		opts.LogWriter,
 	)
+
+	gitDir := filepath.Join(opts.HomePath, "git")
+    checkoutsDir := filepath.Join(gitDir, "checkouts")
+    dbDir := filepath.Join(gitDir, "db")
+
+	if err := os.MkdirAll(checkoutsDir, 0755); err != nil {
+        return err
+    }
+    if err := os.MkdirAll(dbDir, 0755); err != nil {
+        return err
+    }
+
 	// download the package from the git repo
 	gitSource := opts.Source.Git
 	if gitSource == nil {
 		return errors.New("git source is nil")
 	}
 
+	repoHash := utils.CalculateHash(gitSource.Url)
+    repoName := utils.ParseRepoNameFromGitUrl(gitSource.Url)
+    bareRepoDir := filepath.Join(dbDir, fmt.Sprintf("%s-%s", repoName, repoHash))
+
+	if !utils.DirExists(bareRepoDir) {
+        _, err := git.CloneWithOpts(
+            git.WithBare(true),
+            git.WithRepoURL(gitSource.Url),
+            git.WithLocalPath(bareRepoDir),
+        )
+        if err != nil {
+            return err
+        }
+    }
+    
+	checkoutDir := filepath.Join(checkoutsDir, fmt.Sprintf("%s-%s", repoName, repoHash), gitSource.Commit)
+
 	_, err := git.CloneWithOpts(
-		git.WithCommit(gitSource.Commit),
-		git.WithBranch(gitSource.Branch),
-		git.WithTag(gitSource.Tag),
-		git.WithRepoURL(gitSource.Url),
-		git.WithLocalPath(opts.LocalPath),
-	)
+        git.WithRepoURL(bareRepoDir),
+        git.WithCommit(gitSource.Commit),
+        git.WithBranch(gitSource.Branch),
+        git.WithTag(gitSource.Tag),
+        git.WithLocalPath(checkoutDir),
+    )
 
 	if err != nil {
 		return err
 	}
 
-	return nil
+	return utils.MoveFile(checkoutDir, opts.LocalPath)
 }
