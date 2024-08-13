@@ -244,8 +244,6 @@ func (d *GitDownloader) Download(opts DownloadOptions) error {
 		return errors.New("git source is nil")
 	}
 
-	fmt.Println("===>", gitSource.SubPackage)
-
 	_, err := git.CloneWithOpts(
 		git.WithCommit(gitSource.Commit),
 		git.WithBranch(gitSource.Branch),
