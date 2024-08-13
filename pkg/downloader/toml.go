@@ -9,7 +9,7 @@ import (
 )
 
 const NEWLINE = "\n"
-const SOURCE_PATTERN = "%s"
+const SOURCE_PATTERN = "{ %s }"
 
 func (source *Source) MarshalTOML() string {
 	var sb strings.Builder

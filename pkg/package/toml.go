@@ -90,7 +90,7 @@ func (dep *Dependency) MarshalTOML() string {
 	source := dep.Source.MarshalTOML()
 	var sb strings.Builder
 	if len(dep.Package) != 0 {
-		source = fmt.Sprintf("{ %s, package = \"%s\" }", source, dep.Package)
+		source = source[:len(source)-2] + fmt.Sprintf(", package = \"%s\" }", dep.Package)
 	}
 
 	if len(source) != 0 {
