@@ -326,64 +326,83 @@ func WithVendor(vendor bool) RunOption {
 }
 
 // applyCompileOptionsFromYaml applies the compile options from the kcl.yaml file.
-func (o *RunOptions) applyCompileOptionsFromYaml(workdir string) bool {
-	succeed := false
+func (o *RunOptions) getCompileOptionsFromYaml(workdir string) *kcl.Option {
+	resOpts := kcl.NewOption()
+	var settingsYamlDir string
 	// load the kcl.yaml from cli
 	if len(o.settingYamlFiles) != 0 {
 		for _, settingYamlFile := range o.settingYamlFiles {
-			o.Merge(kcl.WithSettings(settingYamlFile))
-			succeed = true
+			settingsYamlDir = filepath.Dir(settingYamlFile)
+			resOpts.Merge(kcl.WithSettings(settingYamlFile))
 		}
 	} else {
 		// load the kcl.yaml from the workdir
 		// If the workdir is not empty, try to find the settings.yaml file in the workdir.
-		settingsYamlPath := filepath.Join(workdir, constants.KCL_YAML)
+		settingsYamlDir = workdir
+		settingsYamlPath := filepath.Join(settingsYamlDir, constants.KCL_YAML)
 		if utils.DirExists(settingsYamlPath) {
-			o.Merge(kcl.WithSettings(settingsYamlPath))
-			succeed = true
+			resOpts.Merge(kcl.WithSettings(settingsYamlPath))
 		}
 	}
 
 	// transform the relative path to the absolute path in kcl.yaml by workdir
 	var updatedKFilenameList []string
-	for _, kfile := range o.KFilenameList {
+	for _, kfile := range resOpts.KFilenameList {
 		if !filepath.IsAbs(kfile) && !utils.IsModRelativePath(kfile) {
-			kfile = filepath.Join(workdir, kfile)
+			kfile = filepath.Join(settingsYamlDir, kfile)
 		}
 		updatedKFilenameList = append(updatedKFilenameList, kfile)
 	}
-	o.KFilenameList = updatedKFilenameList
+	resOpts.KFilenameList = updatedKFilenameList
 
-	return succeed
+	return resOpts
 }
 
 // applyCompileOptionsFromKclMod applies the compile options from the kcl.mod file.
-func (o *RunOptions) applyCompileOptionsFromKclMod(kclPkg *pkg.KclPkg) bool {
-	o.Merge(*kclPkg.GetKclOpts())
-
+func getCompileOptionsFromKclMod(kclPkg *pkg.KclPkg) *kcl.Option {
+	resOpts := kcl.NewOption()
+	resOpts.Merge(*kclPkg.GetKclOpts())
 	var updatedKFilenameList []string
 	// transform the relative path to the absolute path in kcl.yaml by kcl.mod path
-	for _, kfile := range o.KFilenameList {
+	for _, kfile := range resOpts.KFilenameList {
 		if !filepath.IsAbs(kfile) && !utils.IsModRelativePath(kfile) {
 			kfile = filepath.Join(kclPkg.HomePath, kfile)
 		}
 		updatedKFilenameList = append(updatedKFilenameList, kfile)
 	}
-	o.KFilenameList = updatedKFilenameList
-
-	return len(o.KFilenameList) != 0
+	resOpts.KFilenameList = updatedKFilenameList
+	return resOpts
 }
 
 // applyCompileOptions applies the compile options from cli, kcl.yaml and kcl.mod.
 func (o *RunOptions) applyCompileOptions(source downloader.Source, kclPkg *pkg.KclPkg, workDir string) error {
 	o.Merge(kcl.WithWorkDir(workDir))
 
+	// Check if the source is a local path and is the kcl package.
+	sourceIsKclPackage := func(pkgSource *downloader.Source) bool {
+		if !pkgSource.IsLocalPath() {
+			return false
+		}
+		sourcePath := pkgSource.Path
+		if !filepath.IsAbs(sourcePath) && !utils.IsModRelativePath(sourcePath) {
+			sourcePath = filepath.Join(workDir, sourcePath)
+		}
+
+		pkgHome := kclPkg.HomePath
+
+		if !filepath.IsAbs(pkgHome) && !utils.IsModRelativePath(sourcePath) {
+			pkgHome = filepath.Join(workDir, pkgHome)
+		}
+
+		return sourcePath == pkgHome
+	}
+
 	// If the sources from cli is not empty, use the sources from cli.
 	if len(o.Sources) != 0 {
 		var compiledFiles []string
 		// All the cli relative path should be transformed to the absolute path by workdir
 		for _, source := range o.Sources {
-			if source.IsLocalPath() {
+			if source.IsLocalPath() && !sourceIsKclPackage(source) {
 				sPath := source.Path
 				if !filepath.IsAbs(sPath) && !utils.IsModRelativePath(sPath) {
 					sPath = filepath.Join(workDir, sPath)
@@ -392,23 +411,49 @@ func (o *RunOptions) applyCompileOptions(source downloader.Source, kclPkg *pkg.K
 			}
 		}
 		o.KFilenameList = compiledFiles
-		if len(o.KFilenameList) == 0 {
-			if !o.applyCompileOptionsFromKclMod(kclPkg) {
-				o.KFilenameList = []string{kclPkg.HomePath}
-			}
-		}
+	}
+
+	cliOpts := o.Option
+	// Get the compile options from kcl.mod
+	modOpts := getCompileOptionsFromKclMod(kclPkg)
+
+	// Get the compile options from kcl.yaml
+	var yamlOpts *kcl.Option
+	// For the packaged kcl package, git, oci and tar, settings yaml file should be find from the package path if not set by cli.
+	// For the local kcl package, settings yaml file should be find from the workdir if not set by cli.
+	if source.IsPackaged() || sourceIsKclPackage(&source) {
+		yamlOpts = o.getCompileOptionsFromYaml(kclPkg.HomePath)
 	} else {
-		// If the sources from cli is empty, try to apply the compile options from kcl.yaml
-		if !o.applyCompileOptionsFromYaml(workDir) {
-			// If the sources from kcl.yaml is empty, try to apply the compile options from kcl.mod
-			if !o.applyCompileOptionsFromKclMod(kclPkg) {
-				// If the sources from kcl.mod is empty, compile the current sources.
-				if source.IsLocalPath() {
-					o.KFilenameList = []string{workDir}
-				} else {
-					o.KFilenameList = []string{kclPkg.HomePath}
-				}
-			}
+		yamlOpts = o.getCompileOptionsFromYaml(workDir)
+	}
+
+	// Merge the compile options from cli, kcl.mod and kcl.yaml
+	// The options from cli will override the options from kcl.mod and kcl.yaml
+	// The options from kcl.yaml will override the options from kcl.mod
+	o.Option = kcl.NewOption()
+	o.Merge(*modOpts).Merge(*yamlOpts).Merge(*cliOpts)
+	if len(modOpts.KFilenameList) != 0 {
+		o.KFilenameList = modOpts.KFilenameList
+	}
+
+	if len(yamlOpts.KFilenameList) != 0 {
+		o.KFilenameList = yamlOpts.KFilenameList
+	}
+
+	if len(cliOpts.KFilenameList) != 0 {
+		o.KFilenameList = cliOpts.KFilenameList
+	}
+
+	// There is no compiled files from cli, kcl.mod and kcl.yaml,
+	// use the workdir as input.
+	// the workdir is the dictionary which executes `kcl run`
+	if len(o.KFilenameList) == 0 {
+		// For the packaged kcl package, git, oci and tar, no *.k files are set by cli, kcl.yaml or kcl.mod, compile the package path.
+		// For the local kcl package, no *.k files are set by cli, kcl.yaml or kcl.mod, compile the workdir.
+		if source.IsPackaged() || sourceIsKclPackage(&source) {
+			o.KFilenameList = []string{kclPkg.HomePath}
+		} else {
+			o.KFilenameList = []string{workDir}
 		}
 	}
 
