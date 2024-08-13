@@ -2,11 +2,13 @@ package oci
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -32,7 +34,6 @@ import (
 	"oras.land/oras-go/v2/content/file"
 	"oras.land/oras-go/v2/registry/remote"
 	"oras.land/oras-go/v2/registry/remote/errcode"
-	"oras.land/oras-go/v2/registry/remote/retry"
 )
 
 const OCI_SCHEME = "oci"
@@ -165,9 +166,19 @@ func NewOciClientWithOpts(opts ...OciClientOption) (*OciClient, error) {
 		}
 	}
 
+	custoemTransport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	customClient := &http.Client{
+		Transport: custoemTransport,
+	}
+
 	ctx := context.Background()
 	client.repo.Client = &remoteauth.Client{
-		Client:     retry.DefaultClient,
+		Client:     customClient,
 		Cache:      remoteauth.DefaultCache,
 		Credential: remoteauth.StaticCredential(client.repo.Reference.Host(), *client.cred),
 	}
