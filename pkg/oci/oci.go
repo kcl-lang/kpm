@@ -100,12 +100,21 @@ type OciClient struct {
 	logWriter      io.Writer
 	settings       *settings.Settings
 	isPlainHttp    *bool
+	isTLSVerify    *bool
 	cred           *remoteauth.Credential
 	PullOciOptions *PullOciOptions
 }
 
 // OciClientOption configures how we set up the OciClient
 type OciClientOption func(*OciClient) error
+
+// WithSkipTLSVerify is an option to set the skip TLS verification flag.
+func WithSkipTLSVerify(skipTLSVerify bool) OciClientOption {
+	return func(c *OciClient) error {
+		c.isTLSVerify = &skipTLSVerify
+		return nil
+	}
+}
 
 // WithSettings sets the kpm settings of the OciClient
 func WithSettings(settings *settings.Settings) OciClientOption {
@@ -166,14 +175,14 @@ func NewOciClientWithOpts(opts ...OciClientOption) (*OciClient, error) {
 		}
 	}
 
-	custoemTransport := &http.Transport{
+	customTransport := &http.Transport{
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: *client.isTLSVerify,
 		},
 	}
 
 	customClient := &http.Client{
-		Transport: custoemTransport,
+		Transport: customTransport,
 	}
 
 	ctx := context.Background()

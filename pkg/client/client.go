@@ -1486,7 +1486,7 @@ func (c *KpmClient) DownloadFromOci(dep *downloader.Oci, localPath string) (stri
 }
 
 // PullFromOci will pull a kcl package from oci registry and unpack it.
-func (c *KpmClient) PullFromOci(localPath, source, tag string) error {
+func (c *KpmClient) PullFromOci(localPath, source, tag string, skipTLSVerify bool) error {
 	localPath, err := filepath.Abs(localPath)
 	if err != nil {
 		return reporter.NewErrorEvent(reporter.Bug, err)
@@ -1524,7 +1524,7 @@ func (c *KpmClient) PullFromOci(localPath, source, tag string) error {
 	defer os.RemoveAll(tmpDir)
 
 	storepath := ociOpts.SanitizePathWithSuffix(tmpDir)
-	err = c.pullTarFromOci(storepath, ociOpts)
+	err = c.pullTarFromOci(storepath, ociOpts, skipTLSVerify)
 	if err != nil {
 		return err
 	}
@@ -1878,7 +1878,7 @@ func (c *KpmClient) DownloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependenc
 }
 
 // pullTarFromOci will pull a kcl package tar file from oci registry.
-func (c *KpmClient) pullTarFromOci(localPath string, ociOpts *opt.OciOptions) error {
+func (c *KpmClient) pullTarFromOci(localPath string, ociOpts *opt.OciOptions, skipTLSVerify bool) error {
 	absPullPath, err := filepath.Abs(localPath)
 	if err != nil {
 		return reporter.NewErrorEvent(reporter.Bug, err)
@@ -1894,6 +1894,7 @@ func (c *KpmClient) pullTarFromOci(localPath string, ociOpts *opt.OciOptions) er
 		oci.WithCredential(cred),
 		oci.WithRepoPath(repoPath),
 		oci.WithSettings(c.GetSettings()),
+		oci.WithSkipTLSVerify(skipTLSVerify),
 	)
 
 	if err != nil {
