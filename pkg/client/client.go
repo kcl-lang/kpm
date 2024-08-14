@@ -663,7 +663,7 @@ func (c *KpmClient) CompileGitPkg(gitOpts *git.CloneOptions, compileOpts *opt.Co
 }
 
 // CompileOciPkg will compile the kcl package from the OCI reference or url.
-func (c *KpmClient) CompileOciPkg(ociSource, version string, opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
+func (c *KpmClient) CompileOciPkg(ociSource, version string, opts *opt.CompileOptions, skipTLSVerify bool) (*kcl.KCLResultList, error) {
 	ociOpts, err := c.ParseOciOptionFromString(ociSource, version)
 
 	if err != nil {
@@ -681,7 +681,7 @@ func (c *KpmClient) CompileOciPkg(ociSource, version string, opts *opt.CompileOp
 	localPath := ociOpts.SanitizePathWithSuffix(tmpDir)
 
 	// 2. Pull the tar.
-	err = c.pullTarFromOci(localPath, ociOpts)
+	err = c.pullTarFromOci(localPath, ociOpts, skipTLSVerify)
 
 	if err != nil {
 		return nil, err

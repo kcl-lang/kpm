@@ -1377,7 +1377,7 @@ func TestRunOciWithSettingsFile(t *testing.T) {
 	opts.SetEntries([]string{})
 	opts.Merge(kcl.WithSettings(filepath.Join(".", "test_data", "test_run_oci_with_settings", "kcl.yaml")))
 	opts.SetHasSettingsYaml(true)
-	_, err = kpmcli.CompileOciPkg("oci://ghcr.io/kcl-lang/helloworld", "", opts)
+	_, err = kpmcli.CompileOciPkg("oci://ghcr.io/kcl-lang/helloworld", "", opts, false)
 	assert.Equal(t, err, nil)
 }
 
