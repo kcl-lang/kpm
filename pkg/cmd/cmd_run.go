@@ -81,6 +81,12 @@ func NewRunCmd(kpmcli *client.KpmClient) *cli.Command {
 				Aliases: []string{"k"},
 				Usage:   "sort result keys",
 			},
+
+			// KCL arg: --package
+			&cli.StringFlag{
+				Name:    FLAG_PACKAGE,
+				Usage:   "specify the package name",
+			},
 		},
 		Action: func(c *cli.Context) error {
 			return KpmRun(c, kpmcli)
@@ -168,6 +174,9 @@ func CompileOptionFromCli(c *cli.Context) *opt.CompileOptions {
 
 	// --vendor
 	opts.SetVendor(c.Bool(FLAG_VENDOR))
+
+	// --package
+	opts.SetPackage(c.String(FLAG_PACKAGE))
 
 	// --setting, -Y
 	settingsOpt := c.StringSlice(FLAG_SETTING)

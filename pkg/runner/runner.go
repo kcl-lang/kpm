@@ -6,6 +6,7 @@ import (
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kcl-go/scripts"
 	"kcl-lang.io/kpm/pkg/opt"
+	"kcl-lang.io/kpm/pkg/utils"
 )
 
 // The pattern of the external package argument.
@@ -43,6 +44,10 @@ func (compiler *Compiler) AddKclOption(opt kcl.Option) *Compiler {
 
 // AddDep will add a file path to the dependency list.
 func (compiler *Compiler) AddDepPath(depName string, depPath string) *Compiler {
+	pkg := compiler.opts.Option.Package
+	if pkg != "" {
+		depPath, _ = utils.FindFolder(depPath, pkg)
+	}
 	compiler.opts.Merge(kcl.WithExternalPkgs(fmt.Sprintf(EXTERNAL_PKGS_ARG_PATTERN, depName, depPath)))
 	return compiler
 }

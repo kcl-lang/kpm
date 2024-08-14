@@ -17,6 +17,7 @@ const FLAG_DISABLE_NONE = "disable_none"
 const FLAG_ARGUMENT = "argument"
 const FLAG_OVERRIDES = "overrides"
 const FLAG_SORT_KEYS = "sort_keys"
+const FLAG_PACKAGE = "package"
 
 const FLAG_QUIET = "quiet"
 const FLAG_NO_SUM_CHECK = "no_sum_check"

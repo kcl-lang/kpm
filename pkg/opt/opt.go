@@ -127,6 +127,11 @@ func (opts *CompileOptions) SetVendor(isVendor bool) {
 	opts.isVendor = isVendor
 }
 
+// SetPackage will set the 'package' flag.
+func (opts *CompileOptions) SetPackage(pkg string) {
+	opts.Package = pkg
+}
+
 // IsVendor will return the 'isVendor' flag.
 func (opts *CompileOptions) IsVendor() bool {
 	return opts.isVendor

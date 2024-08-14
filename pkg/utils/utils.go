@@ -599,3 +599,35 @@ func AbsTarPath(tarPath string) (string, error) {
 
 	return absTarPath, nil
 }
+
+// FindFolder will find the folder 'targetFolder' under the 'root' directory recursively. 
+func FindFolder(root, targetFolder string) (string, error) {
+	var result string
+
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() && strings.EqualFold(info.Name(), targetFolder) {
+			absPath, err := filepath.Abs(path)
+			if err != nil {
+				return err
+			}
+			result = absPath
+			return filepath.SkipAll
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	if result == "" {
+		return "", fmt.Errorf("folder '%s' not found", targetFolder)
+	}
+
+	return result, nil
+}
