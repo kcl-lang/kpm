@@ -52,6 +52,8 @@ type KpmClient struct {
 	settings settings.Settings
 	// The flag of whether to check the checksum of the package and update kcl.mod.lock.
 	noSumCheck bool
+	// The subpackage within a directory
+	subPackage string
 }
 
 // NewKpmClient will create a new kpm client with default settings.
@@ -499,6 +501,9 @@ func (c *KpmClient) Compile(kclPkg *pkg.KclPkg, kclvmCompiler *runner.Compiler) 
 	for dName, dPath := range pkgMap {
 		if !filepath.IsAbs(dPath) {
 			dPath = filepath.Join(c.homePath, dPath)
+		}
+		if c.subPackage != "" {
+			dPath, _ = utils.FindFolder(dPath, c.subPackage)
 		}
 		kclvmCompiler.AddDepPath(dName, dPath)
 	}
@@ -1875,6 +1880,14 @@ func (c *KpmClient) DownloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependenc
 	}
 
 	return &newDeps, nil
+}
+
+func (c *KpmClient) SetSubPackage (pkgName string) {
+	c.subPackage = pkgName
+}
+
+func (c *KpmClient) GetSubPackage () string {
+	return c.subPackage
 }
 
 // pullTarFromOci will pull a kcl package tar file from oci registry.

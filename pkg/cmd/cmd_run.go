@@ -109,6 +109,8 @@ func KpmRun(c *cli.Context, kpmcli *client.KpmClient) error {
 		}
 	}()
 
+	kpmcli.SetSubPackage(c.String(FLAG_PACKAGE))
+
 	kclOpts := CompileOptionFromCli(c)
 	kclOpts.SetNoSumCheck(c.Bool(FLAG_NO_SUM_CHECK))
 	runEntry, errEvent := runner.FindRunEntryFrom(c.Args().Slice())
@@ -174,9 +176,6 @@ func CompileOptionFromCli(c *cli.Context) *opt.CompileOptions {
 
 	// --vendor
 	opts.SetVendor(c.Bool(FLAG_VENDOR))
-
-	// --package
-	opts.SetPackage(c.String(FLAG_PACKAGE))
 
 	// --setting, -Y
 	settingsOpt := c.StringSlice(FLAG_SETTING)
