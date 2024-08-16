@@ -17,6 +17,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/BurntSushi/toml"
 	"github.com/distribution/reference"
 	"github.com/moby/term"
 	"github.com/otiai10/copy"
@@ -600,34 +601,47 @@ func AbsTarPath(tarPath string) (string, error) {
 	return absTarPath, nil
 }
 
-// FindFolder will find the folder 'targetFolder' under the 'root' directory recursively. 
-func FindFolder(root, targetFolder string) (string, error) {
+func FindPackage(root, targetPackage string) (string, error) {
 	var result string
-
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-
-		if info.IsDir() && strings.EqualFold(info.Name(), targetFolder) {
-			absPath, err := filepath.Abs(path)
-			if err != nil {
-				return err
+		if info.IsDir() {
+			kclModPath := filepath.Join(path, "kcl.mod")
+			if _, err := os.Stat(kclModPath); err == nil {
+				if matchesPackageName(kclModPath, targetPackage) {
+					result = path
+					return filepath.SkipAll
+				}
 			}
-			result = absPath
-			return filepath.SkipAll
 		}
-
 		return nil
 	})
 
 	if err != nil {
 		return "", err
 	}
-
 	if result == "" {
-		return "", fmt.Errorf("folder '%s' not found", targetFolder)
+		return "", fmt.Errorf("kcl.mod with package '%s' not found", targetPackage)
+	}
+	return result, nil
+}
+
+func matchesPackageName(kclModPath, targetPackage string) bool {
+	type Package struct {
+		Name string `toml:"name"`
+	}
+	type ModFile struct {
+		Package Package `toml:"package"`
 	}
 
-	return result, nil
+	var modFile ModFile
+	_, err := toml.DecodeFile(kclModPath, &modFile)
+	if err != nil {
+		fmt.Printf("Error parsing kcl.mod file: %v\n", err)
+		return false
+	}
+
+	return modFile.Package.Name == targetPackage
 }

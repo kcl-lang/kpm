@@ -503,7 +503,7 @@ func (c *KpmClient) Compile(kclPkg *pkg.KclPkg, kclvmCompiler *runner.Compiler) 
 			dPath = filepath.Join(c.homePath, dPath)
 		}
 		if c.subPackage != "" {
-			dPath, _ = utils.FindFolder(dPath, c.subPackage)
+			dPath, _ = utils.FindPackage(dPath, c.subPackage)
 		}
 		kclvmCompiler.AddDepPath(dName, dPath)
 	}
@@ -1882,11 +1882,11 @@ func (c *KpmClient) DownloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependenc
 	return &newDeps, nil
 }
 
-func (c *KpmClient) SetSubPackage (pkgName string) {
+func (c *KpmClient) SetSubPackage(pkgName string) {
 	c.subPackage = pkgName
 }
 
-func (c *KpmClient) GetSubPackage () string {
+func (c *KpmClient) GetSubPackage() string {
 	return c.subPackage
 }
 
