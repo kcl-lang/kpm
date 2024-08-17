@@ -52,6 +52,8 @@ type KpmClient struct {
 	settings settings.Settings
 	// The flag of whether to check the checksum of the package and update kcl.mod.lock.
 	noSumCheck bool
+	// The package to use in case of multiple packages.
+	pkg string
 }
 
 // NewKpmClient will create a new kpm client with default settings.
@@ -73,6 +75,16 @@ func NewKpmClient() (*KpmClient, error) {
 		homePath:      homePath,
 		DepDownloader: &downloader.DepDownloader{},
 	}, nil
+}
+
+// SetPackage will set the 'package' to be used in case of multiple packages in a single repo.
+func (c *KpmClient) SetPackage(pkgName string) {
+	c.pkg = pkgName
+}
+
+// GetPackage will get the 'package' to be used in case of multiple packages in a single repo.
+func (c *KpmClient) GetPackage() string {
+	return c.pkg
 }
 
 // SetNoSumCheck will set the 'noSumCheck' flag.
@@ -1101,7 +1113,15 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			return nil, err
 		}
 
-		dep.LocalFullPath = localPath
+		if c.GetPackage() != "" {
+			localFullPath, err := utils.FindPackage(localPath, c.GetPackage())
+			if err != nil {
+				return nil, err
+			}
+			dep.LocalFullPath = localFullPath
+		} else {
+			dep.LocalFullPath = localPath
+		}
 		// Creating symbolic links in a global cache is not an optimal solution.
 		// This allows kclvm to locate the package by default.
 		// This feature is unstable and will be removed soon.
@@ -1111,7 +1131,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		// }
 		dep.FullName = dep.GenDepFullName()
 
-		modFile, err := c.LoadModFile(localPath)
+		modFile, err := c.LoadModFile(dep.LocalFullPath)
 		if err != nil {
 			return nil, err
 		}
