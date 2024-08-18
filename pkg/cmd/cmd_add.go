@@ -140,7 +140,7 @@ func parseAddOptions(c *cli.Context, kpmcli *client.KpmClient, localPath string)
 	noSumCheck := c.Bool(FLAG_NO_SUM_CHECK)
 	newPkgName := c.String("rename")
 	pkg := c.StringSlice("package")
-	if pkg[0] != "" {
+	if len(pkg) >= 1 {
 		kpmcli.SetPackage(pkg[0])
 	}
 	// parse from 'kpm add -git https://xxx/xxx.git -tag v0.0.1'.
