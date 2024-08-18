@@ -759,7 +759,7 @@ func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pk
 	c.noSumCheck = opt.NoSumCheck
 	kclPkg.NoSumCheck = opt.NoSumCheck
 
-	// 1. get the name and version of the repository from the input arguments.
+	// 1. get the name and version of the repository/package from the input arguments.
 	d, err := pkg.ParseOpt(&opt.RegistryOpts)
 	if err != nil {
 		return nil, err
