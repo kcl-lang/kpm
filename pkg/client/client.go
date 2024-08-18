@@ -295,17 +295,20 @@ const PKG_NAME_PATTERN = "%s_%s"
 // 2. in the vendor subdirectory of the current package.
 // 3. the dependency is from the local path.
 func (c *KpmClient) getDepStorePath(search_path string, d *pkg.Dependency, isVendor bool) string {
-
 	storePkgName := d.GenPathSuffix()
-
 	if d.IsFromLocal() {
 		return d.GetLocalFullPath(search_path)
 	} else {
+		path := ""
 		if isVendor {
-			return filepath.Join(search_path, "vendor", storePkgName)
+			path = filepath.Join(search_path, "vendor", storePkgName)
 		} else {
-			return filepath.Join(c.homePath, storePkgName)
+			path = filepath.Join(c.homePath, storePkgName)
 		}
+		if d.Source.Git.Package != "" {
+			path, _ = utils.FindPackage(path, d.Source.Git.Package)
+		}
+		return path
 	}
 }
 
