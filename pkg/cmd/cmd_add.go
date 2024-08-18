@@ -98,10 +98,6 @@ func KpmAdd(c *cli.Context, kpmcli *client.KpmClient) error {
 		return err
 	}
 
-	if addOpts.RegistryOpts.Git.Package != "" {
-		kpmcli.SetPackage(addOpts.RegistryOpts.Git.Package)
-	}
-
 	if addOpts.RegistryOpts.Local != nil {
 		absAddPath, err := filepath.Abs(addOpts.RegistryOpts.Local.Path)
 		if err != nil {
@@ -143,6 +139,10 @@ func onlyOnceOption(c *cli.Context, name string) (string, *reporter.KpmEvent) {
 func parseAddOptions(c *cli.Context, kpmcli *client.KpmClient, localPath string) (*opt.AddOptions, error) {
 	noSumCheck := c.Bool(FLAG_NO_SUM_CHECK)
 	newPkgName := c.String("rename")
+	pkg := c.StringSlice("package")
+	if pkg[0] != "" {
+		kpmcli.SetPackage(pkg[0])
+	}
 	// parse from 'kpm add -git https://xxx/xxx.git -tag v0.0.1'.
 	if c.NArg() == 0 {
 		gitOpts, err := parseGitRegistryOptions(c)
