@@ -39,6 +39,7 @@ type Git struct {
 	Commit  string `toml:"commit,omitempty"`
 	Tag     string `toml:"git_tag,omitempty"`
 	Version string `toml:"version,omitempty"`
+	Package string `toml:"package,omitempty"`
 }
 
 type Registry struct {

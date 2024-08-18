@@ -69,6 +69,7 @@ const TAG_PATTERN = "tag = \"%s\""
 const GIT_COMMIT_PATTERN = "commit = \"%s\""
 const GIT_BRANCH_PATTERN = "branch = \"%s\""
 const VERSION_PATTERN = "version = \"%s\""
+const GIT_PACKAGE = "package = \"%s\""
 const SEPARATOR = ", "
 
 func (git *Git) MarshalTOML() string {
@@ -94,6 +95,12 @@ func (git *Git) MarshalTOML() string {
 		sb.WriteString(SEPARATOR)
 		sb.WriteString(fmt.Sprintf(VERSION_PATTERN, git.Version))
 	}
+
+	if len(git.Package) != 0 {
+		sb.WriteString(SEPARATOR)
+		sb.WriteString(fmt.Sprintf(GIT_PACKAGE, git.Package))
+	}
+
 	return sb.String()
 }
 
@@ -175,6 +182,7 @@ const GIT_URL_FLAG = "git"
 const TAG_FLAG = "tag"
 const GIT_COMMIT_FLAG = "commit"
 const GIT_BRANCH_FLAG = "branch"
+const GIT_PACKAGE_FLAG = "package"
 
 func (git *Git) UnmarshalModTOML(data interface{}) error {
 	meta, ok := data.(map[string]interface{})
@@ -196,6 +204,10 @@ func (git *Git) UnmarshalModTOML(data interface{}) error {
 
 	if v, ok := meta[GIT_BRANCH_FLAG].(string); ok {
 		git.Branch = v
+	}
+
+	if v, ok := meta[GIT_PACKAGE_FLAG].(string); ok {
+		git.Package = v
 	}
 
 	return nil

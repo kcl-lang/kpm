@@ -1119,6 +1119,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 				return nil, err
 			}
 			dep.LocalFullPath = localFullPath
+			dep.Name = c.GetPackage()
 		} else {
 			dep.LocalFullPath = localPath
 		}
