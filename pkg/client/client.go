@@ -305,8 +305,8 @@ func (c *KpmClient) getDepStorePath(search_path string, d *pkg.Dependency, isVen
 		} else {
 			path = filepath.Join(c.homePath, storePkgName)
 		}
-		if d.Source.Git.Package != "" {
-			path, _ = utils.FindPackage(path, d.Source.Git.Package)
+		if c.GetPackage() != "" {
+			path, _ = utils.FindPackage(path, c.GetPackage())
 		}
 		return path
 	}
