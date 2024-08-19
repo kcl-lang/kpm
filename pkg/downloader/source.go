@@ -212,6 +212,13 @@ func (git *Git) ToFilePath() (string, error) {
 	), nil
 }
 
+func (git *Git) GetPackage() string {
+	if(git == nil) {
+		return ""
+	}
+	return git.Package
+}
+
 func (oci *Oci) ToFilePath() (string, error) {
 	if oci == nil {
 		return "", fmt.Errorf("oci source is nil")

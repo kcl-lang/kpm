@@ -52,8 +52,6 @@ type KpmClient struct {
 	settings settings.Settings
 	// The flag of whether to check the checksum of the package and update kcl.mod.lock.
 	noSumCheck bool
-	// The package to use in case of multiple packages.
-	pkg string
 }
 
 // NewKpmClient will create a new kpm client with default settings.
@@ -75,16 +73,6 @@ func NewKpmClient() (*KpmClient, error) {
 		homePath:      homePath,
 		DepDownloader: &downloader.DepDownloader{},
 	}, nil
-}
-
-// SetPackage will set the 'package' to be used in case of multiple packages in a single repo.
-func (c *KpmClient) SetPackage(pkgName string) {
-	c.pkg = pkgName
-}
-
-// GetPackage will get the 'package' to be used in case of multiple packages in a single repo.
-func (c *KpmClient) GetPackage() string {
-	return c.pkg
 }
 
 // SetNoSumCheck will set the 'noSumCheck' flag.
@@ -305,8 +293,8 @@ func (c *KpmClient) getDepStorePath(search_path string, d *pkg.Dependency, isVen
 		} else {
 			path = filepath.Join(c.homePath, storePkgName)
 		}
-		if c.GetPackage() != "" {
-			path, _ = utils.FindPackage(path, c.GetPackage())
+		if d.GetPackage() != "" {
+			path, _ = utils.FindPackage(path, d.GetPackage())
 		}
 		return path
 	}
@@ -1116,13 +1104,13 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			return nil, err
 		}
 
-		if c.GetPackage() != "" {
-			localFullPath, err := utils.FindPackage(localPath, c.GetPackage())
+		if dep.GetPackage() != "" {
+			localFullPath, err := utils.FindPackage(localPath, dep.GetPackage())
 			if err != nil {
 				return nil, err
 			}
 			dep.LocalFullPath = localFullPath
-			dep.Name = c.GetPackage()
+			dep.Name = dep.GetPackage()
 		} else {
 			dep.LocalFullPath = localPath
 		}

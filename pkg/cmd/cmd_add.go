@@ -139,10 +139,6 @@ func onlyOnceOption(c *cli.Context, name string) (string, *reporter.KpmEvent) {
 func parseAddOptions(c *cli.Context, kpmcli *client.KpmClient, localPath string) (*opt.AddOptions, error) {
 	noSumCheck := c.Bool(FLAG_NO_SUM_CHECK)
 	newPkgName := c.String("rename")
-	pkg := c.StringSlice("package")
-	if len(pkg) >= 1 {
-		kpmcli.SetPackage(pkg[0])
-	}
 	// parse from 'kpm add -git https://xxx/xxx.git -tag v0.0.1'.
 	if c.NArg() == 0 {
 		gitOpts, err := parseGitRegistryOptions(c)
