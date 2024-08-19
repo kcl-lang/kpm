@@ -191,6 +191,7 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 				Package: "agent",
 			},
 		},
+		NoSumCheck: false,
 	}
 
 	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
@@ -202,8 +203,8 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 
 	expected_path := filepath.Join(testPkgPath, "expect.mod.lock")
 	expected_content, err := os.ReadFile(expected_path)
-
 	assert.Equal(t, err, nil)
+
 	assert.Equal(t, string(got_content), string(expected_content))
 
 	got_lock_file = filepath.Join(testPkgPath, "kcl.mod")
@@ -212,8 +213,8 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 
 	expected_path = filepath.Join(testPkgPath, "expect.mod")
 	expected_content, err = os.ReadFile(expected_path)
-
 	assert.Equal(t, err, nil)
+
 	assert.Equal(t, string(got_content), string(expected_content))
 }
 
