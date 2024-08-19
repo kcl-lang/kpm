@@ -195,6 +195,26 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 
 	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
 	assert.Equal(t, err, nil)
+
+	got_lock_file := filepath.Join(testPkgPath, "kcl.mod.lock")
+	got_content, err := os.ReadFile(got_lock_file)
+	assert.Equal(t, err, nil)
+
+	expected_path := filepath.Join(testPkgPath, "expect.mod.lock")
+	expected_content, err := os.ReadFile(expected_path)
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, string(got_content), string(expected_content))
+
+	got_lock_file = filepath.Join(testPkgPath, "kcl.mod")
+	got_content, err = os.ReadFile(got_lock_file)
+	assert.Equal(t, err, nil)
+
+	expected_path = filepath.Join(testPkgPath, "expect.mod")
+	expected_content, err = os.ReadFile(expected_path)
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, string(got_content), string(expected_content))
 }
 
 func TestDependencyGraph(t *testing.T) {
@@ -947,7 +967,7 @@ func TestUpdateWithKclModlock(t *testing.T) {
 	err = kpmcli.UpdateDeps(kclPkg)
 	assert.Equal(t, err, nil)
 	got_lock_file := filepath.Join(dest_testDir, "kcl.mod.lock")
-	got_content, err := os.ReadFile(got_lock_file)
+	got_content, err := os.ReadFile(got_lock_file) // help
 	assert.Equal(t, err, nil)
 
 	expected_path := filepath.Join(dest_testDir, "expected")
