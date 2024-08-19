@@ -18,7 +18,7 @@ require (
 	golang.org/x/mod v0.20.0
 	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools/v3 v3.5.1
-	kcl-lang.io/kcl-go v0.10.0-alpha.3
+	kcl-lang.io/kcl-go v0.10.0-beta.1
 )
 
 require (
@@ -143,7 +143,7 @@ require (
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5 // indirect
-	kcl-lang.io/lib v0.10.0-alpha.3 // indirect
+	kcl-lang.io/lib v0.10.0-beta.1 // indirect
 )
 
 require (
