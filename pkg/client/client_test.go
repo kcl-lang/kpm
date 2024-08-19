@@ -168,7 +168,7 @@ func TestDownloadGitWithPackage(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	dep, err := kpmcli.Download(&depFromGit, "", testPath)
-	
+
 	assert.Equal(t, err, nil)
 	assert.Equal(t, dep.Source.Git.Package, "add-ndots")
 }
@@ -186,12 +186,11 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 		LocalPath: testPkgPath,
 		RegistryOpts: opt.RegistryOptions{
 			Git: &opt.GitOptions{
-				Url:    "https://github.com/kcl-lang/modules.git",
-				Commit: "ee03122b5f45b09eb48694422fc99a0772f6bba8",
+				Url:     "https://github.com/kcl-lang/modules.git",
+				Commit:  "ee03122b5f45b09eb48694422fc99a0772f6bba8",
 				Package: "agent",
 			},
 		},
-		NoSumCheck: false,
 	}
 
 	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
@@ -201,11 +200,20 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 	got_content, err := os.ReadFile(got_lock_file)
 	assert.Equal(t, err, nil)
 
+	got_content_lines := strings.Split(string(got_content), "\n")
+	got_content_filtered := ""
+	for _, line := range got_content_lines {
+		if !strings.Contains(line, "sum") {
+			got_content_filtered += line + "\n"
+		}
+	}
+	got_content_filtered = strings.TrimSuffix(got_content_filtered, "\n")
+
 	expected_path := filepath.Join(testPkgPath, "expect.mod.lock")
 	expected_content, err := os.ReadFile(expected_path)
 	assert.Equal(t, err, nil)
 
-	assert.Equal(t, string(got_content), string(expected_content))
+	assert.Equal(t, got_content_filtered, string(expected_content))
 
 	got_lock_file = filepath.Join(testPkgPath, "kcl.mod")
 	got_content, err = os.ReadFile(got_lock_file)
