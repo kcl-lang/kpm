@@ -139,6 +139,40 @@ func TestDownloadLatestOci(t *testing.T) {
 	assert.Equal(t, utils.DirExists(filepath.Join(getTestDir("download"), "helloworld")), false)
 }
 
+func TestDownloadGitWithPackage(t *testing.T) {
+	testPath := filepath.Join(getTestDir("download"), "a_random_name")
+
+	defer func() {
+		err := os.RemoveAll(getTestDir("download"))
+		if err != nil {
+			t.Errorf("Failed to remove directory: %v", err)
+		}
+	}()
+
+	err := os.MkdirAll(testPath, 0755)
+	assert.Equal(t, err, nil)
+
+	depFromGit := pkg.Dependency{
+		Name:    "k8s",
+		Version: "",
+		Source: downloader.Source{
+			Git: &downloader.Git{
+				Url:     "https://github.com/kcl-lang/modules.git",
+				Commit:  "bdd4d00a88bc3534ae50affa8328df2927fd2171",
+				Package: "add-ndots",
+			},
+		},
+	}
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	dep, err := kpmcli.Download(&depFromGit, "", testPath)
+	
+	assert.Equal(t, err, nil)
+	assert.Equal(t, dep.Source.Git.Package, "add-ndots")
+}
+
 func TestDependencyGraph(t *testing.T) {
 	testDir := getTestDir("test_dependency_graph")
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl.mod.lock")), false)
