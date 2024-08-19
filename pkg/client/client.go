@@ -293,9 +293,6 @@ func (c *KpmClient) getDepStorePath(search_path string, d *pkg.Dependency, isVen
 		} else {
 			path = filepath.Join(c.homePath, storePkgName)
 		}
-		if d.GetPackage() != "" {
-			path, _ = utils.FindPackage(path, d.GetPackage())
-		}
 		return path
 	}
 }
