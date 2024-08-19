@@ -215,11 +215,6 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 
 	assert.Equal(t, got_content_filtered, string(expected_content))
 
-	defer func() {
-		err = os.Truncate(got_lock_file, 0)
-		assert.Equal(t, err, nil)
-	} ()
-
 	got_mod_lock_file := filepath.Join(testPkgPath, "kcl.mod")
 	got_content, err = os.ReadFile(got_mod_lock_file)
 	assert.Equal(t, err, nil)
@@ -229,11 +224,6 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	assert.Equal(t, string(got_content), string(expected_content))
-
-	defer func() {
-		err = os.Truncate(got_mod_lock_file, 0)
-		assert.Equal(t, err, nil)
-	} ()
 }
 
 func TestDependencyGraph(t *testing.T) {
