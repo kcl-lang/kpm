@@ -16,6 +16,8 @@ kcl mod add --git https://github.com/officialasishkumar/check-kcl.git --commit 8
 
 This command will recursively search for the package name within all the existing kcl.mod files in the repository and load it by specifying the package name in `kcl.mod` under `dependencies`.
 
+The package flag is optional. If not provided kpm will work normally as before and you will need to have a `kcl.mod` file in the root of the repository.
+
 The user can then run `kcl mod run` to run the code: 
 
 `kcl mod run`
