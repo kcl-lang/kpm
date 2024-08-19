@@ -173,6 +173,30 @@ func TestDownloadGitWithPackage(t *testing.T) {
 	assert.Equal(t, dep.Source.Git.Package, "add-ndots")
 }
 
+func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
+	testPkgPath := getTestDir("test_mod_file_package")
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	kclPkg, err := kpmcli.LoadPkgFromPath(testPkgPath)
+	assert.Equal(t, err, nil)
+
+	opts := opt.AddOptions{
+		LocalPath: testPkgPath,
+		RegistryOpts: opt.RegistryOptions{
+			Git: &opt.GitOptions{
+				Url:    "https://github.com/kcl-lang/modules.git",
+				Commit: "ee03122b5f45b09eb48694422fc99a0772f6bba8",
+				Package: "agent",
+			},
+		},
+	}
+
+	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
+	assert.Equal(t, err, nil)
+}
+
 func TestDependencyGraph(t *testing.T) {
 	testDir := getTestDir("test_dependency_graph")
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl.mod.lock")), false)
