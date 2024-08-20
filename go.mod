@@ -6,10 +6,10 @@ toolchain go1.22.5
 
 require (
 	github.com/BurntSushi/toml v1.4.0
-	github.com/containers/image/v5 v5.32.0
+	github.com/containers/image/v5 v5.32.1
 	github.com/distribution/reference v0.6.0
 	github.com/dominikbraun/graph v0.23.0
-	github.com/elliotchance/orderedmap/v2 v2.2.0
+	github.com/elliotchance/orderedmap/v2 v2.4.0
 	github.com/google/uuid v1.6.0
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/otiai10/copy v1.14.0
@@ -18,7 +18,7 @@ require (
 	golang.org/x/mod v0.20.0
 	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools/v3 v3.5.1
-	kcl-lang.io/kcl-go v0.10.0-alpha.3
+	kcl-lang.io/kcl-go v0.10.0-beta.1
 )
 
 require (
@@ -128,7 +128,7 @@ require (
 	golang.org/x/crypto v0.26.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/net v0.28.0 // indirect
-	golang.org/x/oauth2 v0.21.0 // indirect
+	golang.org/x/oauth2 v0.22.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.23.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
@@ -143,7 +143,7 @@ require (
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	k8s.io/utils v0.0.0-20230220204549-a5ecb0141aa5 // indirect
-	kcl-lang.io/lib v0.10.0-alpha.3 // indirect
+	kcl-lang.io/lib v0.10.0-beta.1 // indirect
 )
 
 require (
@@ -152,7 +152,7 @@ require (
 	github.com/gofrs/flock v0.12.1
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-getter v1.7.5
+	github.com/hashicorp/go-getter v1.7.6
 	github.com/hashicorp/go-version v1.7.0
 	github.com/kubescape/go-git-url v0.0.30
 	github.com/moby/term v0.5.0
