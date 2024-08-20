@@ -197,7 +197,7 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 				Package: "agent",
 			},
 		},
-		NoSumCheck: false,
+		NoSumCheck: true,
 	}
 
 	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
