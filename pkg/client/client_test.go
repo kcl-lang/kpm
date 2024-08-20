@@ -217,7 +217,6 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 	modContentStr := string(modContent)
 	modExpectContentStr := string(modExpectContent)
 
-	// Clean and normalize both strings
 	for _, str := range []*string{&modContentStr, &modExpectContentStr} {
 		*str = strings.ReplaceAll(*str, " ", "")
 		*str = strings.ReplaceAll(*str, "\r\n", "")
