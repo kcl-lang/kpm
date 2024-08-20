@@ -283,17 +283,17 @@ const PKG_NAME_PATTERN = "%s_%s"
 // 2. in the vendor subdirectory of the current package.
 // 3. the dependency is from the local path.
 func (c *KpmClient) getDepStorePath(search_path string, d *pkg.Dependency, isVendor bool) string {
-
 	storePkgName := d.GenPathSuffix()
-
 	if d.IsFromLocal() {
 		return d.GetLocalFullPath(search_path)
 	} else {
+		path := ""
 		if isVendor {
-			return filepath.Join(search_path, "vendor", storePkgName)
+			path = filepath.Join(search_path, "vendor", storePkgName)
 		} else {
-			return filepath.Join(c.homePath, storePkgName)
+			path = filepath.Join(c.homePath, storePkgName)
 		}
+		return path
 	}
 }
 
@@ -747,7 +747,7 @@ func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pk
 	c.noSumCheck = opt.NoSumCheck
 	kclPkg.NoSumCheck = opt.NoSumCheck
 
-	// 1. get the name and version of the repository from the input arguments.
+	// 1. get the name and version of the repository/package from the input arguments.
 	d, err := pkg.ParseOpt(&opt.RegistryOpts)
 	if err != nil {
 		return nil, err
@@ -1101,7 +1101,16 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			return nil, err
 		}
 
-		dep.LocalFullPath = localPath
+		if dep.GetPackage() != "" {
+			localFullPath, err := utils.FindPackage(localPath, dep.GetPackage())
+			if err != nil {
+				return nil, err
+			}
+			dep.LocalFullPath = localFullPath
+			dep.Name = dep.GetPackage()
+		} else {
+			dep.LocalFullPath = localPath
+		}
 		// Creating symbolic links in a global cache is not an optimal solution.
 		// This allows kclvm to locate the package by default.
 		// This feature is unstable and will be removed soon.
@@ -1111,7 +1120,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		// }
 		dep.FullName = dep.GenDepFullName()
 
-		modFile, err := c.LoadModFile(localPath)
+		modFile, err := c.LoadModFile(dep.LocalFullPath)
 		if err != nil {
 			return nil, err
 		}

@@ -482,10 +482,11 @@ func (deps *Dependencies) loadLockFile(filepath string) error {
 func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 	if opt.Git != nil {
 		gitSource := downloader.Git{
-			Url:    opt.Git.Url,
-			Branch: opt.Git.Branch,
-			Commit: opt.Git.Commit,
-			Tag:    opt.Git.Tag,
+			Url:     opt.Git.Url,
+			Branch:  opt.Git.Branch,
+			Commit:  opt.Git.Commit,
+			Tag:     opt.Git.Tag,
+			Package: opt.Git.Package,
 		}
 
 		gitRef, err := gitSource.GetValidGitReference()
@@ -566,18 +567,29 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 const PKG_NAME_PATTERN = "%s_%s"
 
 // ParseRepoFullNameFromGitSource will extract the kcl package name from the git url.
+// If the package flag is passed then it will be used as the package name.
 func ParseRepoFullNameFromGitSource(gitSrc downloader.Git) (string, error) {
 	ref, err := gitSrc.GetValidGitReference()
 	if err != nil {
 		return "", err
 	}
 	if len(ref) != 0 {
+		if len(gitSrc.Package) != 0 {
+			return fmt.Sprintf(PKG_NAME_PATTERN, gitSrc.Package, ref), nil
+		}
 		return fmt.Sprintf(PKG_NAME_PATTERN, utils.ParseRepoNameFromGitUrl(gitSrc.Url), ref), nil
+	}
+	if len(gitSrc.Package) != 0 {
+		return gitSrc.Package, nil
 	}
 	return utils.ParseRepoNameFromGitUrl(gitSrc.Url), nil
 }
 
 // ParseRepoNameFromGitSource will extract the kcl package name from the git url.
+// If the package flag is passed then it will be used
 func ParseRepoNameFromGitSource(gitSrc downloader.Git) string {
+	if gitSrc.Package != "" {
+		return gitSrc.Package
+	}
 	return utils.ParseRepoNameFromGitUrl(gitSrc.Url)
 }

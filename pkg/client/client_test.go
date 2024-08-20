@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strings"
@@ -137,6 +138,129 @@ func TestDownloadLatestOci(t *testing.T) {
 	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "helloworld_0.1.2.tar")), false)
 
 	assert.Equal(t, utils.DirExists(filepath.Join(getTestDir("download"), "helloworld")), false)
+}
+
+func TestDownloadGitWithPackage(t *testing.T) {
+	testPath := filepath.Join(getTestDir("download"), "a_random_name")
+
+	defer func() {
+		err := os.RemoveAll(getTestDir("download"))
+		if err != nil {
+			t.Errorf("Failed to remove directory: %v", err)
+		}
+	}()
+
+	err := os.MkdirAll(testPath, 0755)
+	assert.Equal(t, err, nil)
+
+	depFromGit := pkg.Dependency{
+		Name:    "k8s",
+		Version: "",
+		Source: downloader.Source{
+			Git: &downloader.Git{
+				Url:     "https://github.com/kcl-lang/modules.git",
+				Commit:  "bdd4d00a88bc3534ae50affa8328df2927fd2171",
+				Package: "add-ndots",
+			},
+		},
+	}
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	dep, err := kpmcli.Download(&depFromGit, "", testPath)
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, dep.Source.Git.Package, "add-ndots")
+}
+
+func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
+	testPkgPath := getTestDir("test_mod_file_package")
+
+	if runtime.GOOS == "windows" {
+		testPkgPath = filepath.Join(testPkgPath, "test_pkg_win")
+	} else {
+		testPkgPath = filepath.Join(testPkgPath, "test_pkg")
+	}
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	kclPkg, err := kpmcli.LoadPkgFromPath(testPkgPath)
+	assert.Equal(t, err, nil)
+
+	opts := opt.AddOptions{
+		LocalPath: testPkgPath,
+		RegistryOpts: opt.RegistryOptions{
+			Git: &opt.GitOptions{
+				Url:     "https://github.com/kcl-lang/modules.git",
+				Commit:  "ee03122b5f45b09eb48694422fc99a0772f6bba8",
+				Package: "agent",
+			},
+		},
+	}
+
+	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
+	assert.Equal(t, err, nil)
+
+	testPkgPathMod := filepath.Join(testPkgPath, "kcl.mod")
+	testPkgPathModExpect := filepath.Join(testPkgPath, "expect.mod")
+	testPkgPathModLock := filepath.Join(testPkgPath, "kcl.mod.lock")
+	testPkgPathModLockExpect := filepath.Join(testPkgPath, "expect.mod.lock")
+
+	modContent, err := os.ReadFile(testPkgPathMod)
+	assert.Equal(t, err, nil)
+
+	modExpectContent, err := os.ReadFile(testPkgPathModExpect)
+	assert.Equal(t, err, nil)
+
+	modContentStr := string(modContent)
+	modExpectContentStr := string(modExpectContent)
+
+	for _, str := range []*string{&modContentStr, &modExpectContentStr} {
+		*str = strings.ReplaceAll(*str, " ", "")
+		*str = strings.ReplaceAll(*str, "\r\n", "")
+		*str = strings.ReplaceAll(*str, "\n", "")
+
+		sumRegex := regexp.MustCompile(`sum\s*=\s*"[^"]+"`)
+		*str = sumRegex.ReplaceAllString(*str, "")
+
+		*str = strings.TrimRight(*str, ", \t\r\n")
+	}
+
+	assert.Equal(t, modExpectContentStr, modContentStr)
+
+	modLockContent, err := os.ReadFile(testPkgPathModLock)
+	assert.Equal(t, err, nil)
+
+	modLockExpectContent, err := os.ReadFile(testPkgPathModLockExpect)
+	assert.Equal(t, err, nil)
+
+	modLockContentStr := string(modLockContent)
+	modLockExpectContentStr := string(modLockExpectContent)
+
+	for _, str := range []*string{&modLockContentStr, &modLockExpectContentStr} {
+		*str = strings.ReplaceAll(*str, " ", "")
+		*str = strings.ReplaceAll(*str, "\r\n", "")
+		*str = strings.ReplaceAll(*str, "\n", "")
+
+		sumRegex := regexp.MustCompile(`sum\s*=\s*"[^"]+"`)
+		*str = sumRegex.ReplaceAllString(*str, "")
+
+		*str = strings.TrimRight(*str, ", \t\r\n")
+	}
+
+	fmt.Println(modLockContentStr)
+
+	assert.Equal(t, modLockExpectContentStr, modLockContentStr)
+
+	defer func() {
+		err = os.Truncate(testPkgPathMod, 0)
+		assert.Equal(t, err, nil)
+
+		err = os.Truncate(testPkgPathModLock, 0)
+		assert.Equal(t, err, nil)
+	}()
 }
 
 func TestDependencyGraph(t *testing.T) {
@@ -889,7 +1013,7 @@ func TestUpdateWithKclModlock(t *testing.T) {
 	err = kpmcli.UpdateDeps(kclPkg)
 	assert.Equal(t, err, nil)
 	got_lock_file := filepath.Join(dest_testDir, "kcl.mod.lock")
-	got_content, err := os.ReadFile(got_lock_file)
+	got_content, err := os.ReadFile(got_lock_file) // help
 	assert.Equal(t, err, nil)
 
 	expected_path := filepath.Join(dest_testDir, "expected")
