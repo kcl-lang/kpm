@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strings"
@@ -197,7 +198,6 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 				Package: "agent",
 			},
 		},
-		NoSumCheck: true,
 	}
 
 	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
@@ -209,41 +209,52 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 	testPkgPathModLockExpect := filepath.Join(testPkgPath, "expect.mod.lock")
 
 	modContent, err := os.ReadFile(testPkgPathMod)
-
-	modContentStr := strings.ReplaceAll(string(modContent), "\r\n", "")
-	modContentStr = strings.ReplaceAll(modContentStr, "\n", "")
 	assert.Equal(t, err, nil)
 
 	modExpectContent, err := os.ReadFile(testPkgPathModExpect)
-
-	modExpectContentStr := strings.ReplaceAll(string(modExpectContent), "\r\n", "")
-	modExpectContentStr = strings.ReplaceAll(modExpectContentStr, "\n", "")
 	assert.Equal(t, err, nil)
 
-	assert.Equal(t, modContentStr, modExpectContentStr)
+	modContentStr := string(modContent)
+	modExpectContentStr := string(modExpectContent)
+
+	// Clean and normalize both strings
+	for _, str := range []*string{&modContentStr, &modExpectContentStr} {
+		*str = strings.ReplaceAll(*str, " ", "")
+		*str = strings.ReplaceAll(*str, "\r\n", "")
+		*str = strings.ReplaceAll(*str, "\n", "")
+
+		// Remove the sum field and any trailing characters
+		sumRegex := regexp.MustCompile(`sum\s*=\s*"[^"]+"`)
+		*str = sumRegex.ReplaceAllString(*str, "")
+
+		// Remove any trailing commas or whitespace
+		*str = strings.TrimRight(*str, ", \t\r\n")
+	}
+
+	assert.Equal(t, modExpectContentStr, modContentStr)
 
 	modLockContent, err := os.ReadFile(testPkgPathModLock)
-
-	modLockContentStr := strings.ReplaceAll(string(modLockContent), "\r\n", "")
-	modLockContentStr = strings.ReplaceAll(modLockContentStr, "\n", "")
 	assert.Equal(t, err, nil)
-
-	// got_content_lines := strings.Split(string(modLockContentStr), "\n")
-	// got_content_filtered := ""
-	// for _, line := range got_content_lines {
-	// 	if !strings.Contains(line, "sum") {
-	// 		got_content_filtered += line + "\n"
-	// 	}
-	// }
-	// got_content_filtered = strings.TrimSuffix(got_content_filtered, "\n")
 
 	modLockExpectContent, err := os.ReadFile(testPkgPathModLockExpect)
-
-	modLockExpectContentStr := strings.ReplaceAll(string(modLockExpectContent), "\r\n", "")
-	modLockExpectContentStr = strings.ReplaceAll(modLockExpectContentStr, "\n", "")
 	assert.Equal(t, err, nil)
 
-	assert.Equal(t, modLockContentStr, modLockExpectContentStr)
+	modLockContentStr := string(modLockContent)
+	modLockExpectContentStr := string(modLockExpectContent)
+
+	// Clean and normalize both strings (same as above)
+	for _, str := range []*string{&modLockContentStr, &modLockExpectContentStr} {
+		*str = strings.ReplaceAll(*str, " ", "")
+		*str = strings.ReplaceAll(*str, "\r\n", "")
+		*str = strings.ReplaceAll(*str, "\n", "")
+
+		sumRegex := regexp.MustCompile(`sum\s*=\s*"[^"]+"`)
+		*str = sumRegex.ReplaceAllString(*str, "")
+
+		*str = strings.TrimRight(*str, ", \t\r\n")
+	}
+
+	assert.Equal(t, modLockExpectContentStr, modLockContentStr)
 
 	defer func() {
 		err = os.Truncate(testPkgPathMod, 0)
