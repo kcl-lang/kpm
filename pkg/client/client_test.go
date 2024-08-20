@@ -264,11 +264,11 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 }
 
 func TestDependencyGraph(t *testing.T) {
-	testDir := getTestDir("test_dependency_graph")
-	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl.mod.lock")), false)
+	testWithoutPackageDir := filepath.Join(getTestDir("test_dependency_graph"), "without_package")
+	assert.Equal(t, utils.DirExists(filepath.Join(testWithoutPackageDir, "kcl.mod.lock")), false)
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
-	kclPkg, err := kpmcli.LoadPkgFromPath(testDir)
+	kclPkg, err := kpmcli.LoadPkgFromPath(testWithoutPackageDir)
 	assert.Equal(t, err, nil)
 
 	_, depGraph, err := kpmcli.InitGraphAndDownloadDeps(kclPkg)
@@ -304,6 +304,21 @@ func TestDependencyGraph(t *testing.T) {
 			m("k8s", "1.28"): {},
 		},
 	)
+
+	testWithPackageDir := filepath.Join(getTestDir("test_dependency_graph"), "with_package")
+	assert.Equal(t, utils.DirExists(filepath.Join(testWithPackageDir, "kcl.mod.lock")), false)
+
+	kpmcli, err = NewKpmClient()
+	assert.Equal(t, err, nil)
+	
+	kclPkg, err = kpmcli.LoadPkgFromPath(testWithPackageDir)
+	assert.Equal(t, err, nil)
+
+	_, depGraph, err = kpmcli.InitGraphAndDownloadDeps(kclPkg)
+	assert.Equal(t, err, nil)
+
+	_, err = depGraph.AdjacencyMap()
+	assert.Equal(t, err, nil)
 }
 
 func TestCyclicDependency(t *testing.T) {
