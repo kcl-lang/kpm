@@ -223,11 +223,9 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 		*str = strings.ReplaceAll(*str, "\r\n", "")
 		*str = strings.ReplaceAll(*str, "\n", "")
 
-		// Remove the sum field and any trailing characters
 		sumRegex := regexp.MustCompile(`sum\s*=\s*"[^"]+"`)
 		*str = sumRegex.ReplaceAllString(*str, "")
 
-		// Remove any trailing commas or whitespace
 		*str = strings.TrimRight(*str, ", \t\r\n")
 	}
 
@@ -242,7 +240,6 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 	modLockContentStr := string(modLockContent)
 	modLockExpectContentStr := string(modLockExpectContent)
 
-	// Clean and normalize both strings (same as above)
 	for _, str := range []*string{&modLockContentStr, &modLockExpectContentStr} {
 		*str = strings.ReplaceAll(*str, " ", "")
 		*str = strings.ReplaceAll(*str, "\r\n", "")
@@ -253,6 +250,8 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 
 		*str = strings.TrimRight(*str, ", \t\r\n")
 	}
+
+	fmt.Println(modLockContentStr)
 
 	assert.Equal(t, modLockExpectContentStr, modLockContentStr)
 
