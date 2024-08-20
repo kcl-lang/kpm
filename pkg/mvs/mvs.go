@@ -2,6 +2,7 @@ package mvs
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/dominikbraun/graph"
 	"github.com/elliotchance/orderedmap/v2"
@@ -9,6 +10,7 @@ import (
 	"golang.org/x/mod/module"
 	"kcl-lang.io/kpm/pkg/3rdparty/mvs"
 	"kcl-lang.io/kpm/pkg/client"
+	"kcl-lang.io/kpm/pkg/downloader"
 	errInt "kcl-lang.io/kpm/pkg/errors"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -42,6 +44,17 @@ func (r ReqsGraph) Max(path, v1, v2 string) string {
 		return v1
 	}
 	return v2
+}
+
+func getRepoNameFromURL(gitURL string) string {
+	// Remove the trailing ".git" if present
+	gitURL = strings.TrimSuffix(gitURL, ".git")
+
+	// Split the URL by the last forward slash
+	parts := strings.Split(gitURL, "/")
+
+	// The last part of the URL should be the repository name
+	return parts[len(parts)-1]
 }
 
 func (r ReqsGraph) Upgrade(m module.Version) (module.Version, error) {
@@ -82,6 +95,19 @@ func (r ReqsGraph) Upgrade(m module.Version) (module.Version, error) {
 			d.Source, err = pkg.GenSource(sourceType, uri, m.Version)
 			if err != nil {
 				return module.Version{}, err
+			}
+			if sourceType == "git" {
+				repoName := getRepoNameFromURL(uri)
+				if repoName == d.Name {
+					continue
+				}
+				source := downloader.Source{}
+				source.Git = &downloader.Git{
+					Url:     uri,
+					Tag:     m.Version,
+					Package: d.Name,
+				}
+				d.Source = source
 			}
 		}
 		mpp := orderedmap.NewOrderedMap[string, pkg.Dependency]()
