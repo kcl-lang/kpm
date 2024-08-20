@@ -752,7 +752,7 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	originalValue := os.Getenv(env.PKG_PATH)
 	defer os.Setenv(env.PKG_PATH, originalValue)
 
-	testDir := getTestDir("resolve_metadata")
+	testDir := filepath.Join(getTestDir("resolve_metadata"), "without_package")
 
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
@@ -822,6 +822,19 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 			err = fmt.Errorf("panic: %v", r)
 		}
 	}()
+
+	// Unit tests for package flag
+	testDir = filepath.Join(getTestDir("resolve_metadata"), "with_package")
+
+	kpmcli, err = NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	kclpkg, err = kpmcli.LoadPkgFromPath(testDir)
+	assert.Equal(t, err, nil)
+
+	_, err = kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
+	fmt.Printf("err: %v\n", err)
+	assert.Equal(t, err, nil)
 }
 
 func TestPkgWithInVendorMode(t *testing.T) {
