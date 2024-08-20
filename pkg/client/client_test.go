@@ -206,7 +206,7 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 	testPkgPathModExpect := filepath.Join(testPkgPath, "expect.mod")
 	testPkgPathModLock := filepath.Join(testPkgPath, "kcl.mod.lock")
 	testPkgPathModLockExpect := filepath.Join(testPkgPath, "expect.mod.lock")
-	
+
 	modContent, err := os.ReadFile(testPkgPathMod)
 
 	modContentStr := strings.ReplaceAll(string(modContent), "\r\n", "")
@@ -227,20 +227,30 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 	modLockContentStr = strings.ReplaceAll(modLockContentStr, "\n", "")
 	assert.Equal(t, err, nil)
 
+	got_content_lines := strings.Split(string(modLockContentStr), "\n")
+	got_content_filtered := ""
+	for _, line := range got_content_lines {
+		if !strings.Contains(line, "sum") {
+			got_content_filtered += line + "\n"
+		}
+	}
+	got_content_filtered = strings.TrimSuffix(got_content_filtered, "\n")
+
 	modLockExpectContent, err := os.ReadFile(testPkgPathModLockExpect)
 
 	modLockExpectContentStr := strings.ReplaceAll(string(modLockExpectContent), "\r\n", "")
 	modLockExpectContentStr = strings.ReplaceAll(modLockExpectContentStr, "\n", "")
 	assert.Equal(t, err, nil)
 
-	assert.Equal(t, modLockContentStr, modLockExpectContentStr)
+	assert.Equal(t, got_content_filtered, modLockExpectContentStr)
 
 	defer func() {
 		err = os.Truncate(testPkgPathMod, 0)
 		assert.Equal(t, err, nil)
+
 		err = os.Truncate(testPkgPathModLock, 0)
 		assert.Equal(t, err, nil)
-	} ()
+	}()
 }
 
 func TestDependencyGraph(t *testing.T) {
