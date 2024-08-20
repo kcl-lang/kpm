@@ -395,6 +395,10 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 			}
 		}
 
+		if d.GetPackage() != "" {
+			depPath, _ = utils.FindPackage(depPath, d.GetPackage())
+		}
+
 		// If the dependency exists locally, load the dependency package.
 		depPkg, err := c.LoadPkgFromPath(depPath)
 		if err != nil {
