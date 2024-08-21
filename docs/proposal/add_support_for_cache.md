@@ -131,82 +131,184 @@ kpm/oci
 │   ├── docker.io-578669463c900b87
 │   │   └── k8s_1.28
 ```
-### 1.[PRETEST 1]: Enhance git module to support clone and update bare repository
+### 1. [PRETEST 1]: Enhance git module to support bare repository clone
 
-1. **Initialize the Bare Repository**:
-   - Use Go's `os/exec` package to run Git commands to initialize a bare repository.
-   - Store these bare repositories in a dedicated directory `kpm/git/db` , similar to Cargo's `$CARGO_HOME/git/db`.
+**Completed** ✅ - [PRETEST]: [Added support for bare repo in clone function of git module](https://github.com/kcl-lang/kpm/pull/419)
 
-    ```go
-    const (
-    cacheDir    = "kpm/git/db"
-    checkoutDir = "kpm/git/checkouts"
-    )
 
-    func initBareRepo(repoName, repoURL string) error {
-        repoPath := filepath.Join(cacheDir, repoName)
-        if err := os.MkdirAll(repoPath, os.ModePerm); err != nil {
-            return err
-        }
-        cmd := exec.Command("git", "clone", "--bare", repoURL, repoPath)
-        return cmd.Run()
-    }
+### 2.[PRETEST 2]: Enhance git/oci downloader module to support new local storage path for cache bare repo
 
-    func CalculateRepoHash(repoURL string) string {
-        return fmt.Sprintf("%x", sha256.Sum256([]byte(repoURL)))
-    }
-    ```
+#### **Background**
+As part of the ongoing enhancements to the `kpm` package management tool for KCL, we have redesigned the local storage system for third-party dependencies, taking inspiration from the Rust package manager (Cargo). The new design aims to provide a unified and organized structure that supports efficient dependency management, caching, and retrieval for both Git-based and OCI-based KCL packages.
 
-2. **Fetch or Update the Bare Repository**:
-   - If the repository already exists in the cache, fetch updates. Otherwise, clone it as a bare repository.
+#### **New Storage Structure**
 
-   ```go
-   func updateBareRepo(repoName, repoURL, cacheDir string) error {
-       repoPath := filepath.Join(cacheDir, repoName)
-       if _, err := os.Stat(repoPath); os.IsNotExist(err) {
-           return initBareRepo(repoName, repoURL, cacheDir)
-       }
-       cmd := exec.Command("git", "--git-dir", repoPath, "fetch")
-       return cmd.Run()
-   }
-   ```
-### Related Work Done for PRETEST1
+The redesigned local storage structure is as follows:
 
-- [PRETEST1]: [Initial changes for adding support to clone bare repo](https://github.com/kcl-lang/kpm/pull/400)
-- [PRETEST]: [Added support for bare repo in clone function of git module](https://github.com/kcl-lang/kpm/pull/419)
+```
+└── kpm
+    ├── .kpm    # Configuration files for kpm client
+    ├── git     # All the KCL dependencies from Git repositories
+    └── oci     # All the KCL dependencies from OCI registries
+```
 
-### 2.[PRETEST 2]: Enhance git module by addding function to Create Checkouts
+### **Refactoring Approach**
 
-1. **Checkout a Specific Commit or Branch**:
-   - Create a working copy of the repository at a specific commit or branch. This is similar to Cargo’s checkouts.
+To align with this new storage design, the `GitDownloader` and `OciDownloader` functions within the `pkg/downloader/downloader.go` file need to be refactored. The goal is to ensure that third-party dependencies, whether sourced from Git repositories or OCI registries, are downloaded and stored according to the new structure. The following sections outline the refactored approach for both downloaders.
 
-    ```go
-    func checkoutCommit(repoName, commit string) (string, error) {
-        bareRepoPath := filepath.Join(cacheDir, repoName)
-        workTreePath := filepath.Join(checkoutDir, repoName+"-"+commit)
+---
 
-            if err := os.MkdirAll(workTreePath, os.ModePerm); err != nil {
-                return "", err
-            }
+### **1. GitDownloader**
 
-        // Clone from bare repository
-        cmd := exec.Command("git", "clone", bareRepoPath, workTreePath)
-            if err := cmd.Run(); err != nil {
-                return "", err
-            }
+**Functionality Overview:**
+The `GitDownloader` is responsible for downloading KCL packages from specified Git repositories. Under the new design, these packages will be stored as bare repositories in the `.kpm/git/cache` directory.
 
-        // Checkout the specific commit
-        cmd = exec.Command("git", "-C", workTreePath, "checkout", commit)
-            if err := cmd.Run(); err != nil {
-                return "", err
-            }
+**Proposed Refactored Code:**
 
-        return workTreePath, nil
-        }
-    ```
-### Related Work Done for PRETEST2
+```go
+func (d *GitDownloader) Download(opts DownloadOptions) error {
+	var msg string
+	if len(opts.Source.Git.Tag) != 0 {
+		msg = fmt.Sprintf("with tag '%s'", opts.Source.Git.Tag)
+	}
 
-- [PRETEST 2]:[Changed checkoutfrombare() by adding hash values and error handling](https://github.com/kcl-lang/kpm/pull/403)
+	if len(opts.Source.Git.Commit) != 0 {
+		msg = fmt.Sprintf("with commit '%s'", opts.Source.Git.Commit)
+	}
+
+	if len(opts.Source.Git.Branch) != 0 {
+		msg = fmt.Sprintf("with branch '%s'", opts.Source.Git.Branch)
+	}
+
+	reporter.ReportMsgTo(
+		fmt.Sprintf("cloning '%s' %s", opts.Source.Git.Url, msg),
+		opts.LogWriter,
+	)
+
+	gitSource := opts.Source.Git
+	if gitSource == nil {
+		return errors.New("git source is nil")
+	}
+
+	// Determine the cache path for the Git dependency
+	cachePath := filepath.Join(kpmBasePath, "git", "cache", gitSource.Url)
+	err := os.MkdirAll(cachePath, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to create cache directory: %v", err)
+	}
+
+	// Clone the repository as a bare repository into the cache path
+	_, err = git.CloneWithOpts(
+		git.WithCommit(gitSource.Commit),
+		git.WithBranch(gitSource.Branch),
+		git.WithTag(gitSource.Tag),
+		git.WithRepoURL(gitSource.Url),
+		git.WithLocalPath(cachePath),
+		git.WithBare(true),  // Ensure this is a bare clone
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+```
+
+**Key Changes:**
+- The `GitDownloader` now clones repositories as bare repositories into the designated cache directory under `.kpm/git/cache`.
+- This approach ensures that all Git-based KCL dependencies are stored in a consistent and organized manner, facilitating easy retrieval and management.
+
+---
+
+### **2. OciDownloader**
+
+**Functionality Overview:**
+The `OciDownloader` handles downloading KCL packages from OCI registries. With the new storage design, these packages will be stored as tarball files in the `.kpm/oci/cache` directory.
+
+**Proposed Refactored Code:**
+
+```go
+func (d *OciDownloader) Download(opts DownloadOptions) error {
+	ociSource := opts.Source.Oci
+	if ociSource == nil {
+		return errors.New("oci source is nil")
+	}
+
+	// Define the cache directory for OCI dependencies
+	cachePath := filepath.Join(kpmBasePath, "oci", "cache", ociSource.Repo)
+	err := os.MkdirAll(cachePath, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to create cache directory: %v", err)
+	}
+
+	repoPath := utils.JoinPath(ociSource.Reg, ociSource.Repo)
+
+	var cred *remoteauth.Credential
+	if opts.credsClient != nil {
+		cred, err = opts.credsClient.Credential(ociSource.Reg)
+		if err != nil {
+			return err
+		}
+	} else {
+		cred = &remoteauth.Credential{}
+	}
+
+	ociCli, err := oci.NewOciClientWithOpts(
+		oci.WithCredential(cred),
+		oci.WithRepoPath(repoPath),
+		oci.WithSettings(&opts.Settings),
+	)
+	if err != nil {
+		return err
+	}
+
+	ociCli.PullOciOptions.Platform = d.Platform
+
+	if len(ociSource.Tag) == 0 {
+		tagSelected, err := ociCli.TheLatestTag()
+		if err != nil {
+			return err
+		}
+
+		reporter.ReportMsgTo(
+			fmt.Sprintf("the latest version '%s' will be downloaded", tagSelected),
+			opts.LogWriter,
+		)
+
+		ociSource.Tag = tagSelected
+	}
+
+	reporter.ReportMsgTo(
+		fmt.Sprintf(
+			"downloading '%s:%s' from '%s/%s:%s'",
+			ociSource.Repo, ociSource.Tag, ociSource.Reg, ociSource.Repo, ociSource.Tag,
+		),
+		opts.LogWriter,
+	)
+
+	// Download the OCI package into the cache directory
+	err = ociCli.Pull(cachePath, ociSource.Tag)
+	if err != nil {
+		return err
+	}
+
+	// No need to untar since we're treating the cache as a storage of raw tarballs
+
+	return nil
+}
+```
+
+**Key Changes:**
+- The `OciDownloader` stores the downloaded OCI tarball files directly in the `.kpm/oci/cache` directory.
+- This method maintains the tarball format, simplifying storage and retrieval operations while ensuring alignment with the new storage design.
+
+---
+
+**Next Steps:**
+We seek feedback and approval from the maintainers and mentors on this proposed approach before proceeding with the implementation. Any insights or suggestions for improvement would be highly appreciated.
+
+**After the implementation is approved, we can work forward to implement it and further move to implement hash while storing.**
 
 ### 3.[PRETEST 3]: Research work for implementing a unified dependency support system in KPM
 
