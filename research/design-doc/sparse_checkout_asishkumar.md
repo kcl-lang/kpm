@@ -37,6 +37,24 @@ The user can then run `kcl mod run` to run the code:
 
 This will checkout the destination directory which contains that package within the repository. You can then use the loaded dependencies in your code.
 
+The user can also run the following commands with package in there `kcl.mod` file: 
+
+```
+kcl mod metadata
+```
+
+```
+kcl mod metadata --update
+```
+
+```
+kcl mod metadata --vendor
+```
+
+```
+kcl mod graph
+```
+
 ## Design
 
 In order to use this feature, a new field `package` will be added to the `kcl.mod` file. This field will contain the package name that the user wants to use. 
@@ -52,3 +70,5 @@ Here are the merged PRs:
 
 - https://github.com/kcl-lang/kpm/pull/453
 - https://github.com/kcl-lang/kpm/pull/457
+
+The changes made are tested by unit tests. 
