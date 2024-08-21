@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strings"
@@ -139,12 +140,135 @@ func TestDownloadLatestOci(t *testing.T) {
 	assert.Equal(t, utils.DirExists(filepath.Join(getTestDir("download"), "helloworld")), false)
 }
 
-func TestDependencyGraph(t *testing.T) {
-	testDir := getTestDir("test_dependency_graph")
-	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl.mod.lock")), false)
+func TestDownloadGitWithPackage(t *testing.T) {
+	testPath := filepath.Join(getTestDir("download"), "a_random_name")
+
+	defer func() {
+		err := os.RemoveAll(getTestDir("download"))
+		if err != nil {
+			t.Errorf("Failed to remove directory: %v", err)
+		}
+	}()
+
+	err := os.MkdirAll(testPath, 0755)
+	assert.Equal(t, err, nil)
+
+	depFromGit := pkg.Dependency{
+		Name:    "k8s",
+		Version: "",
+		Source: downloader.Source{
+			Git: &downloader.Git{
+				Url:     "https://github.com/kcl-lang/modules.git",
+				Commit:  "bdd4d00a88bc3534ae50affa8328df2927fd2171",
+				Package: "add-ndots",
+			},
+		},
+	}
+
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
-	kclPkg, err := kpmcli.LoadPkgFromPath(testDir)
+
+	dep, err := kpmcli.Download(&depFromGit, "", testPath)
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, dep.Source.Git.Package, "add-ndots")
+}
+
+func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
+	testPkgPath := getTestDir("test_mod_file_package")
+
+	if runtime.GOOS == "windows" {
+		testPkgPath = filepath.Join(testPkgPath, "test_pkg_win")
+	} else {
+		testPkgPath = filepath.Join(testPkgPath, "test_pkg")
+	}
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	kclPkg, err := kpmcli.LoadPkgFromPath(testPkgPath)
+	assert.Equal(t, err, nil)
+
+	opts := opt.AddOptions{
+		LocalPath: testPkgPath,
+		RegistryOpts: opt.RegistryOptions{
+			Git: &opt.GitOptions{
+				Url:     "https://github.com/kcl-lang/modules.git",
+				Commit:  "ee03122b5f45b09eb48694422fc99a0772f6bba8",
+				Package: "agent",
+			},
+		},
+	}
+
+	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
+	assert.Equal(t, err, nil)
+
+	testPkgPathMod := filepath.Join(testPkgPath, "kcl.mod")
+	testPkgPathModExpect := filepath.Join(testPkgPath, "expect.mod")
+	testPkgPathModLock := filepath.Join(testPkgPath, "kcl.mod.lock")
+	testPkgPathModLockExpect := filepath.Join(testPkgPath, "expect.mod.lock")
+
+	modContent, err := os.ReadFile(testPkgPathMod)
+	assert.Equal(t, err, nil)
+
+	modExpectContent, err := os.ReadFile(testPkgPathModExpect)
+	assert.Equal(t, err, nil)
+
+	modContentStr := string(modContent)
+	modExpectContentStr := string(modExpectContent)
+
+	for _, str := range []*string{&modContentStr, &modExpectContentStr} {
+		*str = strings.ReplaceAll(*str, " ", "")
+		*str = strings.ReplaceAll(*str, "\r\n", "")
+		*str = strings.ReplaceAll(*str, "\n", "")
+
+		sumRegex := regexp.MustCompile(`sum\s*=\s*"[^"]+"`)
+		*str = sumRegex.ReplaceAllString(*str, "")
+
+		*str = strings.TrimRight(*str, ", \t\r\n")
+	}
+
+	assert.Equal(t, modExpectContentStr, modContentStr)
+
+	modLockContent, err := os.ReadFile(testPkgPathModLock)
+	assert.Equal(t, err, nil)
+
+	modLockExpectContent, err := os.ReadFile(testPkgPathModLockExpect)
+	assert.Equal(t, err, nil)
+
+	modLockContentStr := string(modLockContent)
+	modLockExpectContentStr := string(modLockExpectContent)
+
+	for _, str := range []*string{&modLockContentStr, &modLockExpectContentStr} {
+		*str = strings.ReplaceAll(*str, " ", "")
+		*str = strings.ReplaceAll(*str, "\r\n", "")
+		*str = strings.ReplaceAll(*str, "\n", "")
+
+		sumRegex := regexp.MustCompile(`sum\s*=\s*"[^"]+"`)
+		*str = sumRegex.ReplaceAllString(*str, "")
+
+		*str = strings.TrimRight(*str, ", \t\r\n")
+	}
+
+	fmt.Println(modLockContentStr)
+
+	assert.Equal(t, modLockExpectContentStr, modLockContentStr)
+
+	defer func() {
+		err = os.Truncate(testPkgPathMod, 0)
+		assert.Equal(t, err, nil)
+
+		err = os.Truncate(testPkgPathModLock, 0)
+		assert.Equal(t, err, nil)
+	}()
+}
+
+func TestDependencyGraph(t *testing.T) {
+	testWithoutPackageDir := filepath.Join(getTestDir("test_dependency_graph"), "without_package")
+	assert.Equal(t, utils.DirExists(filepath.Join(testWithoutPackageDir, "kcl.mod.lock")), false)
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	kclPkg, err := kpmcli.LoadPkgFromPath(testWithoutPackageDir)
 	assert.Equal(t, err, nil)
 
 	_, depGraph, err := kpmcli.InitGraphAndDownloadDeps(kclPkg)
@@ -180,6 +304,21 @@ func TestDependencyGraph(t *testing.T) {
 			m("k8s", "1.28"): {},
 		},
 	)
+
+	testWithPackageDir := filepath.Join(getTestDir("test_dependency_graph"), "with_package")
+	assert.Equal(t, utils.DirExists(filepath.Join(testWithPackageDir, "kcl.mod.lock")), false)
+
+	kpmcli, err = NewKpmClient()
+	assert.Equal(t, err, nil)
+	
+	kclPkg, err = kpmcli.LoadPkgFromPath(testWithPackageDir)
+	assert.Equal(t, err, nil)
+
+	_, depGraph, err = kpmcli.InitGraphAndDownloadDeps(kclPkg)
+	assert.Equal(t, err, nil)
+
+	_, err = depGraph.AdjacencyMap()
+	assert.Equal(t, err, nil)
 }
 
 func TestCyclicDependency(t *testing.T) {
@@ -613,7 +752,7 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	originalValue := os.Getenv(env.PKG_PATH)
 	defer os.Setenv(env.PKG_PATH, originalValue)
 
-	testDir := getTestDir("resolve_metadata")
+	testDir := filepath.Join(getTestDir("resolve_metadata"), "without_package")
 
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
@@ -683,6 +822,19 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 			err = fmt.Errorf("panic: %v", r)
 		}
 	}()
+
+	// Unit tests for package flag
+	testDir = filepath.Join(getTestDir("resolve_metadata"), "with_package")
+
+	kpmcli, err = NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	kclpkg, err = kpmcli.LoadPkgFromPath(testDir)
+	assert.Equal(t, err, nil)
+
+	_, err = kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
+	fmt.Printf("err: %v\n", err)
+	assert.Equal(t, err, nil)
 }
 
 func TestPkgWithInVendorMode(t *testing.T) {
@@ -889,7 +1041,7 @@ func TestUpdateWithKclModlock(t *testing.T) {
 	err = kpmcli.UpdateDeps(kclPkg)
 	assert.Equal(t, err, nil)
 	got_lock_file := filepath.Join(dest_testDir, "kcl.mod.lock")
-	got_content, err := os.ReadFile(got_lock_file)
+	got_content, err := os.ReadFile(got_lock_file) // help
 	assert.Equal(t, err, nil)
 
 	expected_path := filepath.Join(dest_testDir, "expected")
@@ -1804,48 +1956,97 @@ func TestRunLocalWithArgs(t *testing.T) {
 	kpmcli.SetLogWriter(logbuf)
 
 	tests := []struct {
-		inputs     []string
-		workdir    string
-		withVendor bool
-		diagnostic string
-		expected   string
+		inputs        []string
+		settingsFiles []string
+		workdir       string
+		withVendor    bool
+		diagnostic    string
+		expected      string
 	}{
 		{
-			[]string{filepath.Join(pkgPath, "with_args", "run_0", "main.k")}, filepath.Join(pkgPath, "with_args", "run_0"),
+			[]string{filepath.Join(pkgPath, "with_args", "run_0", "main.k")}, []string{}, filepath.Join(pkgPath, "with_args", "run_0"),
 			false, "", "The_first_kcl_program: Hello World!"},
 		{
-			[]string{filepath.Join(pkgPath, "with_args", "run_1", "main.k")}, filepath.Join(pkgPath, "with_args", "run_1"),
+			[]string{filepath.Join(pkgPath, "with_args", "run_1", "main.k")}, []string{}, filepath.Join(pkgPath, "with_args", "run_1"),
 			false, "", "The_first_kcl_program: Hello World!"},
 		{[]string{
 			filepath.Join(pkgPath, "with_args", "run_2", "base.k"),
 			filepath.Join(pkgPath, "with_args", "run_2", "main.k"),
-		}, filepath.Join(pkgPath, "with_args", "run_2"), false, "", "base: Base\nThe_first_kcl_program: Hello World!"},
+		}, []string{}, filepath.Join(pkgPath, "with_args", "run_2"), false, "", "base: Base\nThe_first_kcl_program: Hello World!"},
 		{[]string{
 			filepath.Join(pkgPath, "with_args", "run_3", "main.k"),
-		}, filepath.Join(pkgPath, "with_args", "run_3"), false, "", "The_first_kcl_program: Hello World!"},
+		}, []string{}, filepath.Join(pkgPath, "with_args", "run_3"), false, "", "The_first_kcl_program: Hello World!"},
 		{[]string{
 			filepath.Join(pkgPath, "with_args", "run_4", "main.k"),
-		}, filepath.Join(pkgPath, "with_args", "run_4"), false, "", "The_first_kcl_program: Hello World!"},
+		}, []string{}, filepath.Join(pkgPath, "with_args", "run_4"), false, "", "The_first_kcl_program: Hello World!"},
 		{[]string{
 			filepath.Join(pkgPath, "with_args", "run_5"),
-		}, filepath.Join(pkgPath, "with_args", "run_5"), false, "", "The_first_kcl_program: Hello World!"},
+		}, []string{}, filepath.Join(pkgPath, "with_args", "run_5"), false, "", "The_first_kcl_program: Hello World!"},
 		{[]string{
 			filepath.Join(pkgPath, "with_args", "run_6"),
-		}, filepath.Join(pkgPath, "with_args", "run_6"), false, "", "The_first_kcl_program: Hello World!"},
+		}, []string{}, filepath.Join(pkgPath, "with_args", "run_6"), false, "", "The_first_kcl_program: Hello World!"},
 		{[]string{
 			filepath.Join(pkgPath, "with_args", "run_7"),
-		}, filepath.Join(pkgPath, "with_args", "run_7"), false, "", "base: Base\nThe_first_kcl_program: Hello World!"},
+		}, []string{}, filepath.Join(pkgPath, "with_args", "run_7"), false, "", "base: Base\nThe_first_kcl_program: Hello World!"},
 		{[]string{
 			filepath.Join(pkgPath, "with_args", "run_8"),
-		}, filepath.Join(pkgPath, "with_args", "run_8"), false, "", "The_first_kcl_program: Hello World!"},
+		}, []string{}, filepath.Join(pkgPath, "with_args", "run_8"), false, "", "sub: SUB"},
 		{[]string{
 			filepath.Join(pkgPath, "with_args", "run_9"),
-		}, filepath.Join(pkgPath, "with_args", "run_9"), false, "", "The_first_kcl_program: Hello World!"},
+		}, []string{}, filepath.Join(pkgPath, "with_args", "run_9"), false, "", "The_sub_kcl_program: Hello Sub World!"},
+		{[]string{}, []string{
+			filepath.Join(pkgPath, "with_args", "run_10", "sub", "kcl.yaml"),
+		}, filepath.Join(pkgPath, "with_args", "run_10"), false, "", "The_sub_kcl_program_1: Hello Sub World 1!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_11", "sub", "sub.k"),
+		}, []string{
+			filepath.Join(pkgPath, "with_args", "run_11", "sub", "kcl.yaml"),
+		}, filepath.Join(pkgPath, "with_args", "run_11"), false, "", "The_sub_kcl_program: Hello Sub World!"},
+		{
+			[]string{filepath.Join(pkgPath, "with_args", "run_0", "main.k")}, []string{}, filepath.Join(pkgPath, "with_args", "run_0"),
+			false, "", "The_first_kcl_program: Hello World!"},
+		{
+			[]string{filepath.Join(pkgPath, "with_args", "run_1", "main.k")}, []string{}, filepath.Join(pkgPath, "with_args", "run_1"),
+			false, "", "The_first_kcl_program: Hello World!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_2", "base.k"),
+			filepath.Join(pkgPath, "with_args", "run_2", "main.k"),
+		}, []string{}, "", false, "", "base: Base\nThe_first_kcl_program: Hello World!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_3", "main.k"),
+		}, []string{}, "", false, "", "The_first_kcl_program: Hello World!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_4", "main.k"),
+		}, []string{}, "", false, "", "The_first_kcl_program: Hello World!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_5"),
+		}, []string{}, "", false, "", "The_first_kcl_program: Hello World!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_6"),
+		}, []string{}, "", false, "", "The_first_kcl_program: Hello World!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_7"),
+		}, []string{}, "", false, "", "base: Base\nThe_first_kcl_program: Hello World!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_8"),
+		}, []string{}, "", false, "", "sub: SUB"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_9"),
+		}, []string{}, "", false, "", "The_sub_kcl_program: Hello Sub World!"},
+		{[]string{}, []string{
+			filepath.Join(pkgPath, "with_args", "run_10", "sub", "kcl.yaml"),
+		}, "", false, "", "The_sub_kcl_program_1: Hello Sub World 1!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_11", "sub", "sub.k"),
+		}, []string{
+			filepath.Join(pkgPath, "with_args", "run_11", "sub", "kcl.yaml"),
+		}, "", false, "", "The_sub_kcl_program: Hello Sub World!"},
 	}
 
 	for _, test := range tests {
 		res, err := kpmcli.Run(
 			WithRunSourceUrls(test.inputs),
+			WithSettingFiles(test.settingsFiles),
 			WithWorkDir(test.workdir),
 		)
 
@@ -1938,4 +2139,44 @@ func TestRunInVendor(t *testing.T) {
 
 	assert.Equal(t, buf.String(), "")
 	assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
+}
+
+func TestRunWithLogger(t *testing.T) {
+	pkgPath := getTestDir("test_run_with_logger")
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	logbuf := new(bytes.Buffer)
+
+	_, err = kpmcli.Run(
+		WithWorkDir(pkgPath),
+		WithLogger(logbuf),
+	)
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, logbuf.String(), "Hello, World!\n")
+}
+
+func TestVirtualPackageVisiter(t *testing.T) {
+	pkgPath := getTestDir("test_virtual_pkg_visitor")
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	pkgSource, err := downloader.NewSourceFromStr(pkgPath)
+	assert.Equal(t, err, nil)
+
+	v := NewVisitor(*pkgSource, kpmcli)
+	err = v.Visit(pkgSource, func(p *pkg.KclPkg) error {
+		assert.Contains(t, p.GetPkgName(), "vPkg_")
+		_, err = os.Stat(filepath.Join(pkgPath, "kcl.mod"))
+		assert.Equal(t, os.IsNotExist(err), true)
+		_, err = os.Stat(filepath.Join(pkgPath, "kcl.mod.lock"))
+		assert.Equal(t, os.IsNotExist(err), true)
+		return nil
+	})
+	assert.Equal(t, err, nil)
+	_, err = os.Stat(filepath.Join(pkgPath, "kcl.mod"))
+	assert.Equal(t, os.IsNotExist(err), true)
+	_, err = os.Stat(filepath.Join(pkgPath, "kcl.mod.lock"))
+	assert.Equal(t, os.IsNotExist(err), true)
 }

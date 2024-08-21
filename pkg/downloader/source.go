@@ -39,6 +39,7 @@ type Git struct {
 	Commit  string `toml:"commit,omitempty"`
 	Tag     string `toml:"git_tag,omitempty"`
 	Version string `toml:"version,omitempty"`
+	Package string `toml:"package,omitempty"`
 }
 
 type Registry struct {
@@ -209,6 +210,13 @@ func (git *Git) ToFilePath() (string, error) {
 		git.Commit,
 		git.Branch,
 	), nil
+}
+
+func (git *Git) GetPackage() string {
+	if(git == nil) {
+		return ""
+	}
+	return git.Package
 }
 
 func (oci *Oci) ToFilePath() (string, error) {

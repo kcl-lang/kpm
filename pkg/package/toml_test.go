@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/BurntSushi/toml"
@@ -223,7 +224,7 @@ func TestMarshalOciUrl(t *testing.T) {
 	modfile := ModFile{
 		Pkg: Package{
 			Name:    "marshal_0",
-			Edition: "v0.9.0",
+			Edition: "v0.10.0",
 			Version: "0.0.1",
 		},
 		Dependencies: Dependencies{
@@ -285,4 +286,64 @@ func TestMarshalOciUrlIntoFile(t *testing.T) {
 
 		assert.Equal(t, utils.RmNewline(string(expectKclModFileContents)), utils.RmNewline(writeKclModFileContents))
 	}
+}
+
+func TestInitEmptyPkg(t *testing.T) {
+	modfile := ModFile{
+		Pkg: Package{
+			Name:    "MyKcl",
+			Edition: "v0.0.1",
+			Version: "v0.0.1",
+			Include: []string{"src/", "README.md", "LICENSE"},
+			Exclude: []string{"target/", ".git/", "*.log"},
+		},
+		Dependencies: Dependencies{
+			orderedmap.NewOrderedMap[string, Dependency](),
+		},
+	}
+
+	dep := Dependency{
+		Name:     "MyKcl1",
+		FullName: "MyKcl1_v0.0.2",
+		Source: downloader.Source{
+			Git: &downloader.Git{
+				Url: "https://github.com/test/MyKcl1.git",
+				Tag: "v0.0.2",
+			},
+		},
+	}
+
+	ociDep := Dependency{
+		Name:     "MyOciKcl1",
+		FullName: "MyOciKcl1_0.0.1",
+		Version:  "0.0.1",
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
+				Tag: "0.0.1",
+			},
+		},
+	}
+
+	modfile.Dependencies.Deps.Set("MyOciKcl1_0.0.1", ociDep)
+	modfile.Dependencies.Deps.Set("MyKcl1_v0.0.2", dep)
+
+	got_data := modfile.MarshalTOML()
+
+	expected_data, _ := os.ReadFile(filepath.Join(getTestDir(testTomlDir), "expected.toml"))
+	expected_toml := string(expected_data)
+
+	expected_toml = strings.ReplaceAll(expected_toml, "\r\n", "\n")
+	got_data = strings.ReplaceAll(got_data, "\r\n", "\n")
+
+	expected_toml = strings.TrimSpace(expected_toml)
+	got_data = strings.TrimSpace(got_data)
+
+	// Ensure there's no extra newlines between sections
+	expected_toml = strings.Join(strings.Fields(expected_toml), "\n")
+	got_data = strings.Join(strings.Fields(got_data), "\n")
+
+	fmt.Printf("expected_toml: '%q'\n", expected_toml)
+
+	fmt.Printf("modfile: '%q'\n", got_data)
+	assert.Equal(t, expected_toml, got_data)
 }

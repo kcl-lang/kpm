@@ -302,3 +302,16 @@ func TestIsModRelativePath(t *testing.T) {
 	assert.Equal(t, IsModRelativePath("${helloworld:KCL_MOD}/aaa"), true)
 	assert.Equal(t, IsModRelativePath("xxx/xxx/xxx"), false)
 }
+
+
+func TestFindPackage(t *testing.T) {
+	testDir := getTestDir("test_find_package")
+	correctAddress := filepath.Join(testDir, "test_2")
+	foundAddress, _ := FindPackage(testDir, "test_find_package")
+	assert.Equal(t, foundAddress, correctAddress)
+}
+
+func TestMatchesPackageName(t *testing.T) {
+	address := filepath.Join(getTestDir("test_find_package"), "test_2", "kcl.mod")
+	assert.Equal(t, matchesPackageName(address, "test_find_package"), true)
+}

@@ -378,10 +378,11 @@ func ParseLocalPathOptions(localPath string) (*LocalOptions, *reporter.KpmEvent)
 }
 
 type GitOptions struct {
-	Url    string
-	Branch string
-	Commit string
-	Tag    string
+	Url     string
+	Branch  string
+	Commit  string
+	Tag     string
+	Package string
 }
 
 func (opts *GitOptions) Validate() error {

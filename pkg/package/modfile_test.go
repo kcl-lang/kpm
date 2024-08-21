@@ -146,6 +146,20 @@ func TestParseOpt(t *testing.T) {
 	assert.Equal(t, dep.Branch, "")
 	assert.Equal(t, dep.Commit, "")
 	assert.Equal(t, dep.Git.Tag, "test_tag")
+
+	dep, _ = ParseOpt(&opt.RegistryOptions{
+		Git: &opt.GitOptions{
+			Url:     "test.git",
+			Branch:  "",
+			Commit:  "",
+			Tag:     "test_tag",
+			Package: "k8s",
+		},
+	})
+
+	assert.Equal(t, dep.Name, "k8s")
+	assert.Equal(t, dep.FullName, "k8s_test_tag")
+	assert.Equal(t, dep.Git.Package, "k8s")
 }
 
 func TestLoadModFileNotExist(t *testing.T) {
