@@ -46,4 +46,9 @@ Earlier the download only happens, in case of git, when there is a `kcl.mod` fil
 
 # Implementation and conclusion
 
-This feature is implemented by [PR#453](https://github.com/kcl-lang/kpm/pull/453) and all the new tests are passing that check the verdict of the feature. The idea implemented in this PR was mentioned in https://github.com/kcl-lang/kpm/pull/335#issuecomment-2151338180.  
+The idea implemented in the following PR was mentioned in https://github.com/kcl-lang/kpm/pull/335#issuecomment-2151338180.  
+
+Here are the merged PRs: 
+
+- https://github.com/kcl-lang/kpm/pull/453
+- https://github.com/kcl-lang/kpm/pull/457
