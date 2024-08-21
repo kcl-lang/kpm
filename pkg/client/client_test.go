@@ -264,11 +264,11 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 }
 
 func TestDependencyGraph(t *testing.T) {
-	testDir := getTestDir("test_dependency_graph")
-	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl.mod.lock")), false)
+	testWithoutPackageDir := filepath.Join(getTestDir("test_dependency_graph"), "without_package")
+	assert.Equal(t, utils.DirExists(filepath.Join(testWithoutPackageDir, "kcl.mod.lock")), false)
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
-	kclPkg, err := kpmcli.LoadPkgFromPath(testDir)
+	kclPkg, err := kpmcli.LoadPkgFromPath(testWithoutPackageDir)
 	assert.Equal(t, err, nil)
 
 	_, depGraph, err := kpmcli.InitGraphAndDownloadDeps(kclPkg)
@@ -304,6 +304,21 @@ func TestDependencyGraph(t *testing.T) {
 			m("k8s", "1.28"): {},
 		},
 	)
+
+	testWithPackageDir := filepath.Join(getTestDir("test_dependency_graph"), "with_package")
+	assert.Equal(t, utils.DirExists(filepath.Join(testWithPackageDir, "kcl.mod.lock")), false)
+
+	kpmcli, err = NewKpmClient()
+	assert.Equal(t, err, nil)
+	
+	kclPkg, err = kpmcli.LoadPkgFromPath(testWithPackageDir)
+	assert.Equal(t, err, nil)
+
+	_, depGraph, err = kpmcli.InitGraphAndDownloadDeps(kclPkg)
+	assert.Equal(t, err, nil)
+
+	_, err = depGraph.AdjacencyMap()
+	assert.Equal(t, err, nil)
 }
 
 func TestCyclicDependency(t *testing.T) {
@@ -737,7 +752,7 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	originalValue := os.Getenv(env.PKG_PATH)
 	defer os.Setenv(env.PKG_PATH, originalValue)
 
-	testDir := getTestDir("resolve_metadata")
+	testDir := filepath.Join(getTestDir("resolve_metadata"), "without_package")
 
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
@@ -807,6 +822,19 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 			err = fmt.Errorf("panic: %v", r)
 		}
 	}()
+
+	// Unit tests for package flag
+	testDir = filepath.Join(getTestDir("resolve_metadata"), "with_package")
+
+	kpmcli, err = NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	kclpkg, err = kpmcli.LoadPkgFromPath(testDir)
+	assert.Equal(t, err, nil)
+
+	_, err = kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
+	fmt.Printf("err: %v\n", err)
+	assert.Equal(t, err, nil)
 }
 
 func TestPkgWithInVendorMode(t *testing.T) {

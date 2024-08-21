@@ -395,6 +395,10 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 			}
 		}
 
+		if d.GetPackage() != "" {
+			depPath, _ = utils.FindPackage(depPath, d.GetPackage())
+		}
+
 		// If the dependency exists locally, load the dependency package.
 		depPkg, err := c.LoadPkgFromPath(depPath)
 		if err != nil {
@@ -897,6 +901,15 @@ func (c *KpmClient) vendorDeps(kclPkg *pkg.KclPkg, vendorPath string) error {
 			continue
 		} else {
 			vendorFullPath := filepath.Join(vendorPath, d.GenPathSuffix())
+
+			if d.GetPackage() != "" {
+				tempVendorFullPath, err := utils.FindPackage(vendorFullPath, d.GetPackage())
+				if err != nil {
+					return err
+				}
+				vendorFullPath = tempVendorFullPath
+			}
+
 			// If the package already exists in the 'vendor', do nothing.
 			if utils.DirExists(vendorFullPath) {
 				d.LocalFullPath = vendorFullPath
