@@ -902,14 +902,6 @@ func (c *KpmClient) vendorDeps(kclPkg *pkg.KclPkg, vendorPath string) error {
 		} else {
 			vendorFullPath := filepath.Join(vendorPath, d.GenPathSuffix())
 
-			if d.GetPackage() != "" {
-				tempVendorFullPath, err := utils.FindPackage(vendorFullPath, d.GetPackage())
-				if err != nil {
-					return err
-				}
-				vendorFullPath = tempVendorFullPath
-			}
-
 			// If the package already exists in the 'vendor', do nothing.
 			if utils.DirExists(vendorFullPath) {
 				d.LocalFullPath = vendorFullPath
@@ -937,6 +929,14 @@ func (c *KpmClient) vendorDeps(kclPkg *pkg.KclPkg, vendorPath string) error {
 					}
 					return nil
 				}
+			}
+
+			if d.GetPackage() != "" {
+				tempVendorFullPath, err := utils.FindPackage(vendorFullPath, d.GetPackage())
+				if err != nil {
+					return err
+				}
+				vendorFullPath = tempVendorFullPath
 			}
 
 			dpkg, err := c.LoadPkgFromPath(vendorFullPath)
