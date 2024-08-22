@@ -303,7 +303,6 @@ func TestIsModRelativePath(t *testing.T) {
 	assert.Equal(t, IsModRelativePath("xxx/xxx/xxx"), false)
 }
 
-
 func TestFindPackage(t *testing.T) {
 	testDir := getTestDir("test_find_package")
 	correctAddress := filepath.Join(testDir, "test_2")

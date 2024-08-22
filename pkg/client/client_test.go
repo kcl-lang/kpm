@@ -936,7 +936,7 @@ func TestParseOciOptionFromString(t *testing.T) {
 	oci_ref_with_tag := "test_oci_repo:test_oci_tag"
 	ociOption, err := kpmcli.ParseOciOptionFromString(oci_ref_with_tag, "test_tag")
 	assert.Equal(t, err, nil)
-	assert.Equal(t, ociOption.PkgName, "")
+	assert.Equal(t, ociOption.Ref, "")
 	assert.Equal(t, ociOption.Reg, "ghcr.io")
 	assert.Equal(t, ociOption.Repo, "kcl-lang/test_oci_repo")
 	assert.Equal(t, ociOption.Tag, "test_oci_tag")
@@ -944,7 +944,7 @@ func TestParseOciOptionFromString(t *testing.T) {
 	oci_ref_without_tag := "test_oci_repo:test_oci_tag"
 	ociOption, err = kpmcli.ParseOciOptionFromString(oci_ref_without_tag, "test_tag")
 	assert.Equal(t, err, nil)
-	assert.Equal(t, ociOption.PkgName, "")
+	assert.Equal(t, ociOption.Ref, "")
 	assert.Equal(t, ociOption.Reg, "ghcr.io")
 	assert.Equal(t, ociOption.Repo, "kcl-lang/test_oci_repo")
 	assert.Equal(t, ociOption.Tag, "test_oci_tag")
@@ -952,7 +952,7 @@ func TestParseOciOptionFromString(t *testing.T) {
 	oci_url_with_tag := "oci://test_reg/test_oci_repo"
 	ociOption, err = kpmcli.ParseOciOptionFromString(oci_url_with_tag, "test_tag")
 	assert.Equal(t, err, nil)
-	assert.Equal(t, ociOption.PkgName, "")
+	assert.Equal(t, ociOption.Ref, "")
 	assert.Equal(t, ociOption.Reg, "test_reg")
 	assert.Equal(t, ociOption.Repo, "/test_oci_repo")
 	assert.Equal(t, ociOption.Tag, "test_tag")
@@ -1108,10 +1108,10 @@ func TestAddWithNoSumCheck(t *testing.T) {
 		LocalPath: pkgPath,
 		RegistryOpts: opt.RegistryOptions{
 			Oci: &opt.OciOptions{
-				Reg:     "ghcr.io",
-				Repo:    "kcl-lang/helloworld",
-				PkgName: "helloworld",
-				Tag:     "0.1.0",
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/helloworld",
+				Ref:  "helloworld",
+				Tag:  "0.1.0",
 			},
 		},
 		NoSumCheck: true,
@@ -1250,10 +1250,10 @@ func TestAddWithDiffVersionNoSumCheck(t *testing.T) {
 		LocalPath: pkgPath,
 		RegistryOpts: opt.RegistryOptions{
 			Oci: &opt.OciOptions{
-				Reg:     "ghcr.io",
-				Repo:    "kcl-lang/helloworld",
-				PkgName: "helloworld",
-				Tag:     "0.1.2",
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/helloworld",
+				Ref:  "helloworld",
+				Tag:  "0.1.2",
 			},
 		},
 		NoSumCheck: true,
@@ -1314,10 +1314,10 @@ func TestAddWithDiffVersionWithSumCheck(t *testing.T) {
 		LocalPath: pkgPath,
 		RegistryOpts: opt.RegistryOptions{
 			Oci: &opt.OciOptions{
-				Reg:     "ghcr.io",
-				Repo:    "kcl-lang/helloworld",
-				PkgName: "helloworld",
-				Tag:     "0.1.2",
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/helloworld",
+				Ref:  "helloworld",
+				Tag:  "0.1.2",
 			},
 		},
 	}
@@ -1494,10 +1494,10 @@ func TestAddWithLocalPath(t *testing.T) {
 		LocalPath: tmpPkgPath,
 		RegistryOpts: opt.RegistryOptions{
 			Oci: &opt.OciOptions{
-				Reg:     "ghcr.io",
-				Repo:    "kcl-lang/helloworld",
-				PkgName: "helloworld",
-				Tag:     "0.1.1",
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/helloworld",
+				Ref:  "helloworld",
+				Tag:  "0.1.1",
 			},
 		},
 	}
@@ -1740,10 +1740,10 @@ func testAddDefaultRegistryDep(t *testing.T) {
 			LocalPath: tc.pkgPath,
 			RegistryOpts: opt.RegistryOptions{
 				Registry: &opt.OciOptions{
-					Reg:     "ghcr.io",
-					Repo:    "kcl-lang/helloworld",
-					PkgName: "helloworld",
-					Tag:     tc.tag,
+					Reg:  "ghcr.io",
+					Repo: "kcl-lang/helloworld",
+					Ref:  "helloworld",
+					Tag:  tc.tag,
 				},
 			},
 		}

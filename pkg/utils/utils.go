@@ -72,21 +72,9 @@ func HashDir(dir string) (string, error) {
 
 // StoreToFile will store 'data' into toml file under 'filePath'.
 func StoreToFile(filePath string, dataStr string) error {
-	file, err := os.Create(filePath)
+	err := os.WriteFile(filePath, []byte(dataStr), 0644)
 	if err != nil {
-		reporter.ExitWithReport("failed to create file: ", filePath, err)
-		return err
-	}
-	defer file.Close()
-
-	file, err = os.Create(filePath)
-
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	if _, err := io.WriteString(file, dataStr); err != nil {
+		reporter.ExitWithReport("failed to write file: ", filePath, err)
 		return err
 	}
 	return nil

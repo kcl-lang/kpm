@@ -228,8 +228,8 @@ func (kclPkg *KclPkg) LockDepsVersion() error {
 	return utils.StoreToFile(fullPath, lockToml)
 }
 
-// CreateDefauleMain will create a default main.k file in the current kcl package.
-func (kclPkg *KclPkg) CreateDefauleMain() error {
+// CreateDefaultMain will create a default main.k file in the current kcl package.
+func (kclPkg *KclPkg) CreateDefaultMain() error {
 	mainKPath := filepath.Join(kclPkg.HomePath, constants.DEFAULT_KCL_FILE_NAME)
 	return utils.StoreToFile(mainKPath, constants.DEFAULT_KCL_FILE_CONTENT)
 }

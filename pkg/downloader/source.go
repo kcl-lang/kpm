@@ -118,7 +118,7 @@ func (local *Local) IsDir() bool {
 		return false
 	}
 
-	return local != nil && utils.DirExists(local.Path) && fileInfo.IsDir()
+	return utils.DirExists(local.Path) && fileInfo.IsDir()
 }
 
 func (local *Local) FindRootPath() (string, error) {
@@ -213,7 +213,7 @@ func (git *Git) ToFilePath() (string, error) {
 }
 
 func (git *Git) GetPackage() string {
-	if(git == nil) {
+	if git == nil {
 		return ""
 	}
 	return git.Package

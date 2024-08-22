@@ -738,7 +738,7 @@ func (c *KpmClient) InitEmptyPkg(kclPkg *pkg.KclPkg) error {
 		return err
 	}
 
-	err = c.createIfNotExist(filepath.Join(kclPkg.ModFile.HomePath, constants.DEFAULT_KCL_FILE_NAME), kclPkg.CreateDefauleMain)
+	err = c.createIfNotExist(filepath.Join(kclPkg.ModFile.HomePath, constants.DEFAULT_KCL_FILE_NAME), kclPkg.CreateDefaultMain)
 	if err != nil {
 		return err
 	}
