@@ -582,5 +582,8 @@ func ParseRepoFullNameFromGitSource(gitSrc downloader.Git) (string, error) {
 // ParseRepoNameFromGitSource will extract the kcl package name from the git url.
 // If the package flag is passed then it will be used
 func ParseRepoNameFromGitSource(gitSrc downloader.Git) string {
+	if gitSrc.Package != "" {
+		return gitSrc.Package
+	}
 	return utils.ParseRepoNameFromGitUrl(gitSrc.Url)
 }

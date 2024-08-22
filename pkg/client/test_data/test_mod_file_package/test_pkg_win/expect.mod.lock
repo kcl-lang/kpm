@@ -1,6 +1,6 @@
 [dependencies]
   [dependencies.agent]
-    name = "modules"
+    name = "agent"
     full_name = "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8"
     version = "0.1.0"
     url = "https://github.com/kcl-lang/modules.git"
