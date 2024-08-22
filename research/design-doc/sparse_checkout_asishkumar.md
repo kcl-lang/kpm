@@ -31,9 +31,11 @@ This will work the same way as before only thing to note is you need to have a `
 kcl mod add --git <url> --commit <hash>
 ```
 
-The user can then run `kcl mod run` to run the code: 
+The user can then run `kcl mod run` or `kcl run` to run the code: 
 
 `kcl mod run`
+
+`kcl run`
 
 This will checkout the destination directory which contains that package within the repository. You can then use the loaded dependencies in your code.
 
