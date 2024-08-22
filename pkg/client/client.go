@@ -1114,15 +1114,14 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			return nil, err
 		}
 
+		localFullPath := ""
 		if dep.GetPackage() != "" {
-			localFullPath, err := utils.FindPackage(localPath, dep.GetPackage())
+			localFullPath, err = utils.FindPackage(localPath, dep.GetPackage())
 			if err != nil {
 				return nil, err
 			}
-			dep.LocalFullPath = localFullPath
 			dep.Name = dep.GetPackage()
-		} else {
-			dep.LocalFullPath = localPath
+			dep.LocalFullPath = localFullPath
 		}
 		// Creating symbolic links in a global cache is not an optimal solution.
 		// This allows kclvm to locate the package by default.
@@ -1131,9 +1130,9 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		// if err != nil {
 		//     return nil, err
 		// }
-		dep.FullName = dep.GenDepFullName()
+		dep.FullName = filepath.Base(localPath)
 
-		modFile, err := c.LoadModFile(dep.LocalFullPath)
+		modFile, err := c.LoadModFile(localFullPath)
 		if err != nil {
 			return nil, err
 		}
