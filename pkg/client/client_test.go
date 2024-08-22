@@ -822,9 +822,23 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 			err = fmt.Errorf("panic: %v", r)
 		}
 	}()
+}
 
+func TestTestResolveMetadataInJsonStrWithPackage(t *testing.T) {
 	// Unit tests for package flag
-	testDir = filepath.Join(getTestDir("resolve_metadata"), "with_package")
+	testDir := filepath.Join(getTestDir("resolve_metadata"), "with_package")
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	kclpkg, err := kpmcli.LoadPkgFromPath(testDir)
+	assert.Equal(t, err, nil)
+
+	_, err = kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
+	fmt.Printf("err: %v\n", err)
+	assert.Equal(t, err, nil)
+
+	vendorDir := filepath.Join(testDir, "vendor")
 
 	kpmcli, err = NewKpmClient()
 	assert.Equal(t, err, nil)
@@ -832,9 +846,23 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	kclpkg, err = kpmcli.LoadPkgFromPath(testDir)
 	assert.Equal(t, err, nil)
 
+	if utils.DirExists(vendorDir) {
+		err = os.RemoveAll(vendorDir)
+		assert.Equal(t, err, nil)
+	}
+
+	kclpkg.SetVendorMode(true)
+
 	_, err = kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
-	fmt.Printf("err: %v\n", err)
 	assert.Equal(t, err, nil)
+
+	assert.Equal(t, utils.DirExists(vendorDir), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "add-capabilities_16eab4efa2af84d7d641b23f3a3d14d4d891cb9e")), true)
+	
+	defer func() {
+		err = os.RemoveAll(vendorDir)
+		assert.Equal(t, err, nil)
+	} ()	
 }
 
 func TestPkgWithInVendorMode(t *testing.T) {
