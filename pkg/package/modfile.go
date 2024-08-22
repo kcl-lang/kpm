@@ -516,8 +516,8 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 		}
 
 		return &Dependency{
-			Name:     opt.Oci.PkgName,
-			FullName: opt.Oci.PkgName + "_" + opt.Oci.Tag,
+			Name:     opt.Oci.Ref,
+			FullName: opt.Oci.Ref + "_" + opt.Oci.Tag,
 			Source: downloader.Source{
 				Oci: &ociSource,
 			},
@@ -550,8 +550,8 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 		}
 
 		return &Dependency{
-			Name:     opt.Registry.PkgName,
-			FullName: opt.Registry.PkgName + "_" + opt.Registry.Tag,
+			Name:     opt.Registry.Ref,
+			FullName: opt.Registry.Ref + "_" + opt.Registry.Tag,
 			Source: downloader.Source{
 				Registry: &downloader.Registry{
 					Oci:     &ociSource,

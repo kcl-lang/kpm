@@ -297,10 +297,10 @@ func NewOciOptionsFromUrl(parsedUrl *url.URL) *OciOptions {
 		parsedUrl.Scheme = constants.HttpsScheme
 	}
 	return &OciOptions{
-		Reg:     parsedUrl.Host,
-		Repo:    parsedUrl.Path,
-		Tag:     parsedUrl.Query().Get(constants.Tag),
-		PkgName: filepath.Base(parsedUrl.Path),
+		Reg:  parsedUrl.Host,
+		Repo: parsedUrl.Path,
+		Tag:  parsedUrl.Query().Get(constants.Tag),
+		Ref:  filepath.Base(parsedUrl.Path),
 	}
 }
 
@@ -330,10 +330,10 @@ func NewOciOptionsFromRef(refStr string, settings *settings.Settings) (*OciOptio
 	}
 
 	return &OciOptions{
-		Reg:     reg,
-		Repo:    repo,
-		Tag:     tag,
-		PkgName: filepath.Base(repo),
+		Reg:  reg,
+		Repo: repo,
+		Tag:  tag,
+		Ref:  filepath.Base(repo),
 	}, nil
 }
 
@@ -393,12 +393,28 @@ func (opts *GitOptions) Validate() error {
 }
 
 // OciOptions for download oci packages.
-// kpm will download packages from oci registry by '{Reg}/{Repo}/{PkgName}:{Tag}'.
+// kpm will download packages from oci registry by '{Reg}/{Repo}/{Ref}:{Tag}'.
 type OciOptions struct {
-	Reg         string
-	Repo        string
-	Tag         string
-	PkgName     string
+	// OCI registry in the format '{Reg}/{Repo}/{Ref}:{Tag}'.
+	// +required
+	Reg string
+	// OCI repo in the format '{Reg}/{Repo}/{Ref}:{Tag}'.
+	// +required
+	Repo string
+	// OCI tag in the format '{Reg}/{Repo}/{Ref}:{Tag}'.
+	// +optional
+	Tag string
+	// OCI package name in the format '{Reg}/{Repo}/{Ref}:{Tag}'.
+	// +required
+	Ref string
+	// Package denotes which sub package will be added as the dependency.
+	// The root path of OCI Package will be used as a dependency, and if this parameter
+	// is set, packages with matching names will be searched in the OCI package
+	// for as dependencies.
+	// +optional
+	Package string
+	// Annotations denotes the additional annotation map for the OCI manifest.
+	// +optional
 	Annotations map[string]string
 }
 
@@ -412,7 +428,8 @@ func (opts *OciOptions) Validate() error {
 // LocalOptions for local packages.
 // kpm will find packages from local path.
 type LocalOptions struct {
-	Path string
+	Path    string
+	Package string
 }
 
 func (opts *LocalOptions) Validate() error {
