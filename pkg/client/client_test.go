@@ -310,7 +310,7 @@ func TestDependencyGraph(t *testing.T) {
 
 	kpmcli, err = NewKpmClient()
 	assert.Equal(t, err, nil)
-	
+
 	kclPkg, err = kpmcli.LoadPkgFromPath(testWithPackageDir)
 	assert.Equal(t, err, nil)
 

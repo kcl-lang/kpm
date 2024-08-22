@@ -1057,11 +1057,18 @@ func (c *KpmClient) downloadPkg(options ...downloader.Option) (*pkg.KclPkg, erro
 	tmpDir = filepath.Join(tmpDir, constants.GitScheme)
 	// clean the temp dir.
 	defer os.RemoveAll(tmpDir)
+
+	credCli, err := c.GetCredsClient()
+	if err != nil {
+		return nil, err
+	}
+
 	err = c.DepDownloader.Download(*downloader.NewDownloadOptions(
 		downloader.WithLocalPath(tmpDir),
 		downloader.WithSource(opts.Source),
 		downloader.WithLogWriter(c.GetLogWriter()),
 		downloader.WithSettings(*c.GetSettings()),
+		downloader.WithCredsClient(credCli),
 	))
 
 	if err != nil {
