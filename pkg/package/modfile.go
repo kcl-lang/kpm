@@ -211,6 +211,10 @@ func (d *Dependency) GetAliasName() string {
 	return strings.ReplaceAll(d.Name, "-", "_")
 }
 
+func (d *Dependency) GetFullName() string {
+	return d.FullName
+}
+
 func (d Dependency) Equals(other Dependency) bool {
 	var sameVersion = true
 	if len(d.Version) != 0 && len(other.Version) != 0 {
@@ -254,7 +258,7 @@ func (d *Dependency) GenPathSuffix() string {
 	if d.Source.Oci != nil {
 		storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Oci.Tag)
 	} else if d.Source.Git != nil {
-		name := strings.Split(d.FullName, "_")[0]
+		name := strings.Split(d.GetFullName(), "_")[0]
 		if len(d.Source.Git.Tag) != 0 {
 			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Tag)
 		} else if len(d.Source.Git.Commit) != 0 {
