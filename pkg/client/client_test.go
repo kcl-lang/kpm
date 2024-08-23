@@ -824,7 +824,7 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	}()
 }
 
-func TestTestResolveMetadataInJsonStrWithPackage(t *testing.T) {
+func TestResolveMetadataInJsonStrWithPackage(t *testing.T) {
 	// Unit tests for package flag
 	testDir := filepath.Join(getTestDir("resolve_metadata"), "with_package")
 

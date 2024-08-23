@@ -284,6 +284,16 @@ const PKG_NAME_PATTERN = "%s_%s"
 // 3. the dependency is from the local path.
 func (c *KpmClient) getDepStorePath(search_path string, d *pkg.Dependency, isVendor bool) string {
 	storePkgName := d.GenPathSuffix()
+	if d.Source.Git != nil {
+		name := strings.Split(d.GetFullName(), "_")[0]
+		if len(d.Source.Git.Tag) != 0 {
+			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Tag)
+		} else if len(d.Source.Git.Commit) != 0 {
+			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Commit)
+		} else {
+			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Branch)
+		}
+	}
 	if d.IsFromLocal() {
 		return d.GetLocalFullPath(search_path)
 	} else {

@@ -258,13 +258,12 @@ func (d *Dependency) GenPathSuffix() string {
 	if d.Source.Oci != nil {
 		storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Oci.Tag)
 	} else if d.Source.Git != nil {
-		name := strings.Split(d.GetFullName(), "_")[0]
 		if len(d.Source.Git.Tag) != 0 {
-			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Tag)
+			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Git.Tag)
 		} else if len(d.Source.Git.Commit) != 0 {
-			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Commit)
+			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Git.Commit)
 		} else {
-			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Branch)
+			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Git.Branch)
 		}
 	} else if d.Source.Registry != nil {
 		storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Registry.Version)
