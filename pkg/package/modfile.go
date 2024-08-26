@@ -574,13 +574,7 @@ func ParseRepoFullNameFromGitSource(gitSrc downloader.Git) (string, error) {
 		return "", err
 	}
 	if len(ref) != 0 {
-		if len(gitSrc.Package) != 0 {
-			return fmt.Sprintf(PKG_NAME_PATTERN, gitSrc.Package, ref), nil
-		}
 		return fmt.Sprintf(PKG_NAME_PATTERN, utils.ParseRepoNameFromGitUrl(gitSrc.Url), ref), nil
-	}
-	if len(gitSrc.Package) != 0 {
-		return gitSrc.Package, nil
 	}
 	return utils.ParseRepoNameFromGitUrl(gitSrc.Url), nil
 }
