@@ -158,7 +158,7 @@ func TestParseOpt(t *testing.T) {
 	})
 
 	assert.Equal(t, dep.Name, "k8s")
-	assert.Equal(t, dep.FullName, "k8s_test_tag")
+	assert.Equal(t, dep.FullName, "test_test_tag")
 	assert.Equal(t, dep.Git.Package, "k8s")
 }
 
