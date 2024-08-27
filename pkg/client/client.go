@@ -1805,8 +1805,6 @@ func (c *KpmClient) DownloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependenc
 			return nil, err
 		}
 
-		fmt.Println(d.Name, d.FullName, d.LocalFullPath)
-
 		if lockedDep.Oci != nil && lockedDep.Equals(lockDeps.Deps.GetOrDefault(d.Name, pkg.TestPkgDependency)) {
 			if !c.noSumCheck && expectedSum != "" &&
 				lockedDep.Sum != "" &&
