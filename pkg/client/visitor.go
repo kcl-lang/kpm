@@ -90,6 +90,8 @@ func (vpv *VirtualPkgVisitor) Visit(s *downloader.Source, v visitFunc) error {
 // RemoteVisitor is the visitor for visiting a remote package.
 type RemoteVisitor struct {
 	*PkgVisitor
+	EnableCache bool
+	CachePath   string
 }
 
 // NewRemoteVisitor creates a new RemoteVisitor.
@@ -128,6 +130,8 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		downloader.WithLogWriter(rv.kpmcli.GetLogWriter()),
 		downloader.WithSettings(*rv.kpmcli.GetSettings()),
 		downloader.WithCredsClient(credCli),
+		downloader.WithCachePath(rv.CachePath),
+		downloader.WithEnableCache(rv.EnableCache),
 	))
 
 	if err != nil {

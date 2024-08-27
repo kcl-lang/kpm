@@ -44,6 +44,8 @@ type KpmClient struct {
 	logWriter io.Writer
 	// The downloader of the dependencies.
 	DepDownloader *downloader.DepDownloader
+	// The dependency resolver.
+	DepsResolver *DepsResolver
 	// credential store
 	credsClient *downloader.CredClient
 	// The home path of kpm for global configuration file and kcl package storage path.
