@@ -413,6 +413,18 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 		if err != nil {
 			return err
 		}
+		if d.Source.Git != nil && d.Source.Git.GetPackage() != "" {
+			if d.Source.Git != nil && d.Source.Git.GetPackage() != "" {
+				name := utils.ParseRepoNameFromGitUrl(d.Source.Git.Url)
+				if len(d.Source.Git.Tag) != 0 {
+					d.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Tag)
+				} else if len(d.Source.Git.Commit) != 0 {
+					d.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Commit)
+				} else {
+					d.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Branch)
+				}
+			}
+		}
 		kclPkg.Dependencies.Deps.Set(name, d)
 		lockDeps.Deps.Set(name, d)
 	}
