@@ -1199,6 +1199,27 @@ func TestAddWithNoSumCheck(t *testing.T) {
 	}()
 }
 
+func TestRunWithGitPackage(t *testing.T) {
+	pkgPath := getTestDir("test_run_git_package")
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	opts := opt.DefaultCompileOptions()
+	opts.SetPkgPath(pkgPath)
+
+	compileResult, err := kpmcli.CompileWithOpts(opts)
+	assert.Equal(t, err, nil)
+	expectedCompileResult := `{"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "web-app"}, "spec": {"containers": [{"image": "nginx", "name": "main-container", "ports": [{"containerPort": 80}]}]}}`
+	assert.Equal(t, expectedCompileResult, compileResult.GetRawJsonResult())
+	
+	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), true)
+
+	defer func() {
+		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
+	}()
+}
+
 func TestRunWithNoSumCheck(t *testing.T) {
 	pkgPath := getTestDir("test_run_no_sum_check")
 
