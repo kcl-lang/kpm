@@ -834,9 +834,30 @@ func TestTestResolveMetadataInJsonStrWithPackage(t *testing.T) {
 	kclpkg, err := kpmcli.LoadPkgFromPath(testDir)
 	assert.Equal(t, err, nil)
 
-	_, err = kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
+	globalPkgPath, _ := env.GetAbsPkgPath()
+
+	res, err := kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
 	fmt.Printf("err: %v\n", err)
 	assert.Equal(t, err, nil)
+
+	expectedDep := pkg.DependenciesUI{
+		Deps: make(map[string]pkg.Dependency),
+	}
+
+	localFullPath, err := utils.FindPackage(filepath.Join(globalPkgPath, "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8"), "helloworld")
+	assert.Equal(t, err, nil)
+
+	expectedDep.Deps["helloworld"] = pkg.Dependency{
+		Name:          "helloworld",
+		FullName:      "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8",
+		Version:       "ee03122b5f45b09eb48694422fc99a0772f6bba8",
+		LocalFullPath: localFullPath,
+	}
+
+	expectedDepStr, err := json.Marshal(expectedDep)
+	assert.Equal(t, err, nil)
+
+	assert.Equal(t, res, string(expectedDepStr))
 
 	vendorDir := filepath.Join(testDir, "vendor")
 
@@ -853,11 +874,30 @@ func TestTestResolveMetadataInJsonStrWithPackage(t *testing.T) {
 
 	kclpkg.SetVendorMode(true)
 
-	_, err = kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
+	res, err = kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
 	assert.Equal(t, err, nil)
 
 	assert.Equal(t, utils.DirExists(vendorDir), true)
-	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "add-capabilities_16eab4efa2af84d7d641b23f3a3d14d4d891cb9e")), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8")), true)
+
+	localFullPath, err = utils.FindPackage(filepath.Join(vendorDir, "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8"), "helloworld")
+	assert.Equal(t, err, nil)
+
+	expectedDep = pkg.DependenciesUI{
+		Deps: make(map[string]pkg.Dependency),
+	}
+
+	expectedDep.Deps["helloworld"] = pkg.Dependency{
+		Name:          "helloworld",
+		FullName:      "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8",
+		Version:       "ee03122b5f45b09eb48694422fc99a0772f6bba8",
+		LocalFullPath: localFullPath,
+	}
+
+	expectedDepStr, err = json.Marshal(expectedDep)
+	assert.Equal(t, err, nil)
+
+	assert.Equal(t, res, string(expectedDepStr))
 	
 	defer func() {
 		err = os.RemoveAll(vendorDir)
@@ -1156,6 +1196,27 @@ func TestAddWithNoSumCheck(t *testing.T) {
 	defer func() {
 		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
 		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod"))
+	}()
+}
+
+func TestRunWithGitPackage(t *testing.T) {
+	pkgPath := getTestDir("test_run_git_package")
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	opts := opt.DefaultCompileOptions()
+	opts.SetPkgPath(pkgPath)
+
+	compileResult, err := kpmcli.CompileWithOpts(opts)
+	assert.Equal(t, err, nil)
+	expectedCompileResult := `{"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "web-app"}, "spec": {"containers": [{"image": "nginx", "name": "main-container", "ports": [{"containerPort": 80}]}]}}`
+	assert.Equal(t, expectedCompileResult, compileResult.GetRawJsonResult())
+	
+	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), true)
+
+	defer func() {
+		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
 	}()
 }
 

@@ -254,12 +254,16 @@ func (d *Dependency) GenPathSuffix() string {
 	if d.Source.Oci != nil {
 		storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Oci.Tag)
 	} else if d.Source.Git != nil {
+		name := d.Name
+		if d.Source.Git.GetPackage() != "" {
+			name = strings.Split(d.FullName, "_")[0]
+		}
 		if len(d.Source.Git.Tag) != 0 {
-			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Git.Tag)
+			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Tag)
 		} else if len(d.Source.Git.Commit) != 0 {
-			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Git.Commit)
+			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Commit)
 		} else {
-			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Git.Branch)
+			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Branch)
 		}
 	} else if d.Source.Registry != nil {
 		storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Registry.Version)
@@ -293,13 +297,32 @@ func (dep *Dependency) FillDepInfo(homepath string) error {
 	if dep.Source.Local != nil {
 		dep.LocalFullPath = dep.Source.Local.Path
 	}
+	if dep.Source.Git != nil && dep.Source.Git.GetPackage() != "" {
+		name := utils.ParseRepoNameFromGitUrl(dep.Source.Git.Url)
+		if len(dep.Source.Git.Tag) != 0 {
+			dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Source.Git.Tag)
+		} else if len(dep.Source.Git.Commit) != 0 {
+			dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Source.Git.Commit)
+		} else {
+			dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Source.Git.Branch)
+		}
+	}
 	return nil
 }
 
 // GenDepFullName will generate the full name of a dependency by its name and version
 // based on the '<package_name>_<package_tag>' format.
 func (dep *Dependency) GenDepFullName() string {
-	dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, dep.Name, dep.Version)
+	name := dep.Name
+	if dep.Source.Git != nil && dep.Source.Git.GetPackage() != "" {
+		url := dep.Source.Git.Url
+		if strings.HasSuffix(url, ".git") {
+			url = strings.TrimSuffix(url, ".git")
+			dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, filepath.Base(url), dep.Version)
+			return dep.FullName
+		}
+	}
+	dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Version)
 	return dep.FullName
 }
 
@@ -574,13 +597,7 @@ func ParseRepoFullNameFromGitSource(gitSrc downloader.Git) (string, error) {
 		return "", err
 	}
 	if len(ref) != 0 {
-		if len(gitSrc.Package) != 0 {
-			return fmt.Sprintf(PKG_NAME_PATTERN, gitSrc.Package, ref), nil
-		}
 		return fmt.Sprintf(PKG_NAME_PATTERN, utils.ParseRepoNameFromGitUrl(gitSrc.Url), ref), nil
-	}
-	if len(gitSrc.Package) != 0 {
-		return gitSrc.Package, nil
 	}
 	return utils.ParseRepoNameFromGitUrl(gitSrc.Url), nil
 }

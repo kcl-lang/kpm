@@ -415,6 +415,18 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 		if err != nil {
 			return err
 		}
+		if d.Source.Git != nil && d.Source.Git.GetPackage() != "" {
+			if d.Source.Git != nil && d.Source.Git.GetPackage() != "" {
+				name := utils.ParseRepoNameFromGitUrl(d.Source.Git.Url)
+				if len(d.Source.Git.Tag) != 0 {
+					d.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Tag)
+				} else if len(d.Source.Git.Commit) != 0 {
+					d.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Commit)
+				} else {
+					d.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Branch)
+				}
+			}
+		}
 		kclPkg.Dependencies.Deps.Set(name, d)
 		lockDeps.Deps.Set(name, d)
 	}
@@ -1004,6 +1016,16 @@ func (c *KpmClient) FillDepInfo(dep *pkg.Dependency, homepath string) error {
 		}
 
 		dep.Version = dep.Source.Registry.Version
+	}	
+	if dep.Source.Git != nil && dep.Source.Git.GetPackage() != "" {
+		name := utils.ParseRepoNameFromGitUrl(dep.Source.Git.Url)
+		if len(dep.Source.Git.Tag) != 0 {
+			dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Source.Git.Tag)
+		} else if len(dep.Source.Git.Commit) != 0 {
+			dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Source.Git.Commit)
+		} else {
+			dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Source.Git.Branch)
+		}
 	}
 	return nil
 }
@@ -1123,6 +1145,8 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			return nil, err
 		}
 
+		dep.FullName = dep.GenDepFullName()
+
 		if dep.GetPackage() != "" {
 			localFullPath, err := utils.FindPackage(localPath, dep.GetPackage())
 			if err != nil {
@@ -1133,14 +1157,6 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		} else {
 			dep.LocalFullPath = localPath
 		}
-		// Creating symbolic links in a global cache is not an optimal solution.
-		// This allows kclvm to locate the package by default.
-		// This feature is unstable and will be removed soon.
-		// err = createDepRef(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
-		// if err != nil {
-		//     return nil, err
-		// }
-		dep.FullName = dep.GenDepFullName()
 
 		modFile, err := c.LoadModFile(dep.LocalFullPath)
 		if err != nil {

@@ -1,8 +1,8 @@
 [dependencies]
-  [dependencies.add-capabilities]
-    name = "add-capabilities"
-    full_name = "add-capabilities_0.1.0"
-    version = "0.1.0"
+  [dependencies.helloworld]
+    name = "helloworld"
+    full_name = "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8"
+    version = "0.1.2"
     url = "https://github.com/kcl-lang/modules.git"
-    commit = "16eab4efa2af84d7d641b23f3a3d14d4d891cb9e"
-    package = "add-capabilities"
+    commit = "ee03122b5f45b09eb48694422fc99a0772f6bba8"
+    package = "helloworld"
