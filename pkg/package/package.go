@@ -90,6 +90,18 @@ func LoadKclPkg(pkgPath string) (*KclPkg, error) {
 				modFile.Dependencies.Deps.Set(name, dep)
 			}
 		}
+		if dep.Git != nil && dep.Git.GetPackage() != "" {
+			name := utils.ParseRepoNameFromGitUrl(dep.Git.Url)
+			if len(dep.Source.Git.Tag) != 0 {
+				name = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Source.Git.Tag)
+			} else if len(dep.Source.Git.Commit) != 0 {
+				name = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Source.Git.Commit)
+			} else {
+				name = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Source.Git.Branch)
+			}
+			dep.FullName = name
+			modFile.Dependencies.Deps.Set(name, dep)
+		}
 	}
 
 	return &KclPkg{
