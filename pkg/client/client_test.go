@@ -874,11 +874,30 @@ func TestTestResolveMetadataInJsonStrWithPackage(t *testing.T) {
 
 	kclpkg.SetVendorMode(true)
 
-	_, err = kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
+	res, err = kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
 	assert.Equal(t, err, nil)
 
 	assert.Equal(t, utils.DirExists(vendorDir), true)
 	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8")), true)
+
+	localFullPath, err = utils.FindPackage(filepath.Join(vendorDir, "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8"), "helloworld")
+	assert.Equal(t, err, nil)
+
+	expectedDep = pkg.DependenciesUI{
+		Deps: make(map[string]pkg.Dependency),
+	}
+
+	expectedDep.Deps["helloworld"] = pkg.Dependency{
+		Name:          "helloworld",
+		FullName:      "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8",
+		Version:       "ee03122b5f45b09eb48694422fc99a0772f6bba8",
+		LocalFullPath: localFullPath,
+	}
+
+	expectedDepStr, err = json.Marshal(expectedDep)
+	assert.Equal(t, err, nil)
+
+	assert.Equal(t, res, string(expectedDepStr))
 	
 	defer func() {
 		err = os.RemoveAll(vendorDir)
