@@ -77,6 +77,14 @@ func (source *Source) IsPackaged() bool {
 	return source.IsLocalTarPath() || source.Git != nil || source.Oci != nil || source.Registry != nil
 }
 
+// If the source is a local path, check if it is a real local package(a directory with kcl.mod file).
+func (source *Source) IsLocalPkg() bool {
+	if source.IsLocalPath() {
+		return utils.DirExists(filepath.Join(source.Local.Path, constants.KCL_MOD))
+	}
+	return false
+}
+
 func (source *Source) FindRootPath() (string, error) {
 	if source == nil {
 		return "", fmt.Errorf("source is nil")

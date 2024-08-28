@@ -898,11 +898,11 @@ func TestTestResolveMetadataInJsonStrWithPackage(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	assert.Equal(t, res, string(expectedDepStr))
-	
+
 	defer func() {
 		err = os.RemoveAll(vendorDir)
 		assert.Equal(t, err, nil)
-	} ()	
+	}()
 }
 
 func TestPkgWithInVendorMode(t *testing.T) {
@@ -1212,7 +1212,7 @@ func TestRunWithGitPackage(t *testing.T) {
 	assert.Equal(t, err, nil)
 	expectedCompileResult := `{"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "web-app"}, "spec": {"containers": [{"image": "nginx", "name": "main-container", "ports": [{"containerPort": 80}]}]}}`
 	assert.Equal(t, expectedCompileResult, compileResult.GetRawJsonResult())
-	
+
 	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), true)
 
 	defer func() {
@@ -2130,6 +2130,10 @@ func TestRunLocalWithArgs(t *testing.T) {
 		}, []string{
 			filepath.Join(pkgPath, "with_args", "run_11", "sub", "kcl.yaml"),
 		}, "", false, "", "The_sub_kcl_program: Hello Sub World!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_12", "sub1", "main.k"),
+			filepath.Join(pkgPath, "with_args", "run_12", "sub2", "main.k"),
+		}, []string{}, "", false, "", "sub1: 1\nsub2: 2"},
 	}
 
 	for _, test := range tests {
