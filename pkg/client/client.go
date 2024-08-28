@@ -44,6 +44,8 @@ type KpmClient struct {
 	logWriter io.Writer
 	// The downloader of the dependencies.
 	DepDownloader *downloader.DepDownloader
+	// The dependency resolver.
+	DepsResolver *DepsResolver
 	// credential store
 	credsClient *downloader.CredClient
 	// The home path of kpm for global configuration file and kcl package storage path.
@@ -283,17 +285,17 @@ const PKG_NAME_PATTERN = "%s_%s"
 // 2. in the vendor subdirectory of the current package.
 // 3. the dependency is from the local path.
 func (c *KpmClient) getDepStorePath(search_path string, d *pkg.Dependency, isVendor bool) string {
-
 	storePkgName := d.GenPathSuffix()
-
 	if d.IsFromLocal() {
 		return d.GetLocalFullPath(search_path)
 	} else {
+		path := ""
 		if isVendor {
-			return filepath.Join(search_path, "vendor", storePkgName)
+			path = filepath.Join(search_path, "vendor", storePkgName)
 		} else {
-			return filepath.Join(c.homePath, storePkgName)
+			path = filepath.Join(c.homePath, storePkgName)
 		}
+		return path
 	}
 }
 
@@ -395,6 +397,10 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 			}
 		}
 
+		if d.GetPackage() != "" {
+			depPath, _ = utils.FindPackage(depPath, d.GetPackage())
+		}
+
 		// If the dependency exists locally, load the dependency package.
 		depPkg, err := c.LoadPkgFromPath(depPath)
 		if err != nil {
@@ -408,6 +414,18 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 		err = c.resolvePkgDeps(depPkg, lockDeps, update)
 		if err != nil {
 			return err
+		}
+		if d.Source.Git != nil && d.Source.Git.GetPackage() != "" {
+			if d.Source.Git != nil && d.Source.Git.GetPackage() != "" {
+				name := utils.ParseRepoNameFromGitUrl(d.Source.Git.Url)
+				if len(d.Source.Git.Tag) != 0 {
+					d.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Tag)
+				} else if len(d.Source.Git.Commit) != 0 {
+					d.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Commit)
+				} else {
+					d.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Branch)
+				}
+			}
 		}
 		kclPkg.Dependencies.Deps.Set(name, d)
 		lockDeps.Deps.Set(name, d)
@@ -734,7 +752,7 @@ func (c *KpmClient) InitEmptyPkg(kclPkg *pkg.KclPkg) error {
 		return err
 	}
 
-	err = c.createIfNotExist(filepath.Join(kclPkg.ModFile.HomePath, constants.DEFAULT_KCL_FILE_NAME), kclPkg.CreateDefauleMain)
+	err = c.createIfNotExist(filepath.Join(kclPkg.ModFile.HomePath, constants.DEFAULT_KCL_FILE_NAME), kclPkg.CreateDefaultMain)
 	if err != nil {
 		return err
 	}
@@ -747,7 +765,7 @@ func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pk
 	c.noSumCheck = opt.NoSumCheck
 	kclPkg.NoSumCheck = opt.NoSumCheck
 
-	// 1. get the name and version of the repository from the input arguments.
+	// 1. get the name and version of the repository/package from the input arguments.
 	d, err := pkg.ParseOpt(&opt.RegistryOpts)
 	if err != nil {
 		return nil, err
@@ -897,6 +915,7 @@ func (c *KpmClient) vendorDeps(kclPkg *pkg.KclPkg, vendorPath string) error {
 			continue
 		} else {
 			vendorFullPath := filepath.Join(vendorPath, d.GenPathSuffix())
+
 			// If the package already exists in the 'vendor', do nothing.
 			if utils.DirExists(vendorFullPath) {
 				d.LocalFullPath = vendorFullPath
@@ -924,6 +943,14 @@ func (c *KpmClient) vendorDeps(kclPkg *pkg.KclPkg, vendorPath string) error {
 					}
 					return nil
 				}
+			}
+
+			if d.GetPackage() != "" {
+				tempVendorFullPath, err := utils.FindPackage(vendorFullPath, d.GetPackage())
+				if err != nil {
+					return err
+				}
+				vendorFullPath = tempVendorFullPath
 			}
 
 			dpkg, err := c.LoadPkgFromPath(vendorFullPath)
@@ -989,6 +1016,16 @@ func (c *KpmClient) FillDepInfo(dep *pkg.Dependency, homepath string) error {
 		}
 
 		dep.Version = dep.Source.Registry.Version
+	}	
+	if dep.Source.Git != nil && dep.Source.Git.GetPackage() != "" {
+		name := utils.ParseRepoNameFromGitUrl(dep.Source.Git.Url)
+		if len(dep.Source.Git.Tag) != 0 {
+			dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Source.Git.Tag)
+		} else if len(dep.Source.Git.Commit) != 0 {
+			dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Source.Git.Commit)
+		} else {
+			dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Source.Git.Branch)
+		}
 	}
 	return nil
 }
@@ -1044,11 +1081,18 @@ func (c *KpmClient) downloadPkg(options ...downloader.Option) (*pkg.KclPkg, erro
 	tmpDir = filepath.Join(tmpDir, constants.GitScheme)
 	// clean the temp dir.
 	defer os.RemoveAll(tmpDir)
+
+	credCli, err := c.GetCredsClient()
+	if err != nil {
+		return nil, err
+	}
+
 	err = c.DepDownloader.Download(*downloader.NewDownloadOptions(
 		downloader.WithLocalPath(tmpDir),
 		downloader.WithSource(opts.Source),
 		downloader.WithLogWriter(c.GetLogWriter()),
 		downloader.WithSettings(*c.GetSettings()),
+		downloader.WithCredsClient(credCli),
 	))
 
 	if err != nil {
@@ -1101,17 +1145,20 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			return nil, err
 		}
 
-		dep.LocalFullPath = localPath
-		// Creating symbolic links in a global cache is not an optimal solution.
-		// This allows kclvm to locate the package by default.
-		// This feature is unstable and will be removed soon.
-		// err = createDepRef(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
-		// if err != nil {
-		//     return nil, err
-		// }
 		dep.FullName = dep.GenDepFullName()
 
-		modFile, err := c.LoadModFile(localPath)
+		if dep.GetPackage() != "" {
+			localFullPath, err := utils.FindPackage(localPath, dep.GetPackage())
+			if err != nil {
+				return nil, err
+			}
+			dep.LocalFullPath = localFullPath
+			dep.Name = dep.GetPackage()
+		} else {
+			dep.LocalFullPath = localPath
+		}
+
+		modFile, err := c.LoadModFile(dep.LocalFullPath)
 		if err != nil {
 			return nil, err
 		}

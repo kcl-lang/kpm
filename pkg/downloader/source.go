@@ -39,6 +39,7 @@ type Git struct {
 	Commit  string `toml:"commit,omitempty"`
 	Tag     string `toml:"git_tag,omitempty"`
 	Version string `toml:"version,omitempty"`
+	Package string `toml:"package,omitempty"`
 }
 
 type Registry struct {
@@ -74,6 +75,14 @@ func (source *Source) IsRemote() bool {
 
 func (source *Source) IsPackaged() bool {
 	return source.IsLocalTarPath() || source.Git != nil || source.Oci != nil || source.Registry != nil
+}
+
+// If the source is a local path, check if it is a real local package(a directory with kcl.mod file).
+func (source *Source) IsLocalPkg() bool {
+	if source.IsLocalPath() {
+		return utils.DirExists(filepath.Join(source.Local.Path, constants.KCL_MOD))
+	}
+	return false
 }
 
 func (source *Source) FindRootPath() (string, error) {
@@ -117,7 +126,7 @@ func (local *Local) IsDir() bool {
 		return false
 	}
 
-	return local != nil && utils.DirExists(local.Path) && fileInfo.IsDir()
+	return utils.DirExists(local.Path) && fileInfo.IsDir()
 }
 
 func (local *Local) FindRootPath() (string, error) {
@@ -209,6 +218,13 @@ func (git *Git) ToFilePath() (string, error) {
 		git.Commit,
 		git.Branch,
 	), nil
+}
+
+func (git *Git) GetPackage() string {
+	if git == nil {
+		return ""
+	}
+	return git.Package
 }
 
 func (oci *Oci) ToFilePath() (string, error) {

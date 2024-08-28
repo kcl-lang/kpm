@@ -59,7 +59,6 @@ func (pkg *Package) MarshalTOML() string {
 	sb.WriteString(NEWLINE)
 	var buf bytes.Buffer
 	if err := toml.NewEncoder(&buf).Encode(pkg); err != nil {
-		fmt.Println(err)
 		return ""
 	}
 	sb.WriteString(buf.String())
@@ -80,6 +79,7 @@ func (dep *Dependencies) MarshalTOML() string {
 			sb.WriteString(NEWLINE)
 			sb.WriteString(dep.MarshalTOML())
 		}
+		sb.WriteString(NEWLINE)
 	}
 	return sb.String()
 }
@@ -104,7 +104,6 @@ func (p *Profile) MarshalTOML() string {
 		sb.WriteString(NEWLINE)
 		var buf bytes.Buffer
 		if err := toml.NewEncoder(&buf).Encode(p); err != nil {
-			fmt.Println(err)
 			return ""
 		}
 		sb.WriteString(buf.String())

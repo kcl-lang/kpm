@@ -507,7 +507,8 @@ func (o *RunOptions) getPkgSource() (*downloader.Source, error) {
 					)
 				}
 
-				if !pkgSource.IsPackaged() && !source.IsPackaged() {
+				if !pkgSource.IsPackaged() && !source.IsPackaged() &&
+					pkgSource.IsLocalPkg() && source.IsLocalPkg() {
 					tmpRootPath, err := source.FindRootPath()
 					if err != nil {
 						return nil, err

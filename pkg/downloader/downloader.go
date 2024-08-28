@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+	"github.com/otiai10/copy"
+	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/oci"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -20,6 +22,11 @@ import (
 type DownloadOptions struct {
 	// LocalPath is the local path to download the package.
 	LocalPath string
+	// CachePath is the cache path to download the package.
+	CachePath string
+	// EnableCache is the flag to enable the cache.
+	// If `EnableCache` is false, this will not result in increasing disk usage.
+	EnableCache bool
 	// Source is the source of the package. including git, oci, local.
 	Source Source
 	// Settings is the default settings and authrization information.
@@ -31,6 +38,18 @@ type DownloadOptions struct {
 }
 
 type Option func(*DownloadOptions)
+
+func WithCachePath(cachePath string) Option {
+	return func(do *DownloadOptions) {
+		do.CachePath = cachePath
+	}
+}
+
+func WithEnableCache(enableCache bool) Option {
+	return func(do *DownloadOptions) {
+		do.EnableCache = enableCache
+	}
+}
 
 func WithCredsClient(credsClient *CredClient) Option {
 	return func(do *DownloadOptions) {
@@ -99,6 +118,51 @@ func NewOciDownloader(platform string) *DepDownloader {
 }
 
 func (d *DepDownloader) Download(opts DownloadOptions) error {
+
+	var localPath string
+	if opts.EnableCache {
+		// TODO: After the new local storage structure is complete,
+		// this section should be replaced with the new storage structure instead of the cache path according to the <Cache Path>/<Package Name>.
+		var pkgFullName string
+		if opts.Source.Registry != nil && len(opts.Source.Registry.Version) != 0 {
+			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(opts.Source.Registry.Oci.Repo), opts.Source.Registry.Version)
+		}
+		if opts.Source.Oci != nil && len(opts.Source.Oci.Tag) != 0 {
+			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(opts.Source.Oci.Repo), opts.Source.Oci.Tag)
+		}
+		if opts.Source.Git != nil && len(opts.Source.Git.Tag) != 0 {
+			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(opts.Source.Git.Url), opts.Source.Git.Tag)
+		}
+		if opts.Source.Git != nil && len(opts.Source.Git.Branch) != 0 {
+			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(opts.Source.Git.Url), opts.Source.Git.Branch)
+		}
+		if opts.Source.Git != nil && len(opts.Source.Git.Commit) != 0 {
+			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(opts.Source.Git.Url), opts.Source.Git.Commit)
+		}
+
+		cacheFullPath := filepath.Join(opts.CachePath, pkgFullName)
+
+		if utils.DirExists(cacheFullPath) && utils.DirExists(filepath.Join(cacheFullPath, constants.KCL_MOD)) {
+			// copy the cache to the local path
+			if cacheFullPath != opts.LocalPath {
+				err := copy.Copy(cacheFullPath, opts.LocalPath)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		} else {
+			err := os.MkdirAll(cacheFullPath, 0755)
+			if err != nil {
+				return err
+			}
+			localPath = cacheFullPath
+		}
+	} else {
+		localPath = opts.LocalPath
+	}
+
+	opts.LocalPath = localPath
 	// Dispatch the download to the specific downloader by package source.
 	if opts.Source.Oci != nil || opts.Source.Registry != nil {
 		if opts.Source.Registry != nil {

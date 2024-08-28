@@ -45,6 +45,10 @@ func NewAddCmd(kpmcli *client.KpmClient) *cli.Command {
 				Name:  "rename",
 				Usage: "rename the package name in kcl.mod.lock",
 			},
+			&cli.StringSliceFlag{
+				Name:  "package",
+				Usage: "package name to use in case of git",
+			},
 		},
 
 		Action: func(c *cli.Context) error {
@@ -198,6 +202,12 @@ func parseGitRegistryOptions(c *cli.Context) (*opt.RegistryOptions, *reporter.Kp
 		return nil, err
 	}
 
+	gitPackage, err := onlyOnceOption(c, "package")
+
+	if err != (*reporter.KpmEvent)(nil) {
+		return nil, err
+	}
+
 	if gitUrl == "" {
 		return nil, reporter.NewErrorEvent(reporter.InvalidGitUrl, fmt.Errorf("the argument 'git' is required"))
 	}
@@ -208,27 +218,10 @@ func parseGitRegistryOptions(c *cli.Context) (*opt.RegistryOptions, *reporter.Kp
 
 	return &opt.RegistryOptions{
 		Git: &opt.GitOptions{
-			Url:    gitUrl,
-			Tag:    gitTag,
-			Commit: gitCommit,
-		},
-	}, nil
-}
-
-// parseOciRegistryOptions will parse the oci registry information from user cli inputs.
-func parseRegistryOptions(c *cli.Context, kpmcli *client.KpmClient) (*opt.RegistryOptions, error) {
-	ociPkgRef := c.Args().First()
-	name, version, err := opt.ParseOciPkgNameAndVersion(ociPkgRef)
-	if err != nil {
-		return nil, err
-	}
-
-	return &opt.RegistryOptions{
-		Registry: &opt.OciOptions{
-			Reg:     kpmcli.GetSettings().DefaultOciRegistry(),
-			Repo:    kpmcli.GetSettings().DefaultOciRepo(),
-			PkgName: name,
-			Tag:     version,
+			Url:     gitUrl,
+			Tag:     gitTag,
+			Commit:  gitCommit,
+			Package: gitPackage,
 		},
 	}, nil
 }

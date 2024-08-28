@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strings"
@@ -139,12 +140,135 @@ func TestDownloadLatestOci(t *testing.T) {
 	assert.Equal(t, utils.DirExists(filepath.Join(getTestDir("download"), "helloworld")), false)
 }
 
-func TestDependencyGraph(t *testing.T) {
-	testDir := getTestDir("test_dependency_graph")
-	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl.mod.lock")), false)
+func TestDownloadGitWithPackage(t *testing.T) {
+	testPath := filepath.Join(getTestDir("download"), "a_random_name")
+
+	defer func() {
+		err := os.RemoveAll(getTestDir("download"))
+		if err != nil {
+			t.Errorf("Failed to remove directory: %v", err)
+		}
+	}()
+
+	err := os.MkdirAll(testPath, 0755)
+	assert.Equal(t, err, nil)
+
+	depFromGit := pkg.Dependency{
+		Name:    "k8s",
+		Version: "",
+		Source: downloader.Source{
+			Git: &downloader.Git{
+				Url:     "https://github.com/kcl-lang/modules.git",
+				Commit:  "bdd4d00a88bc3534ae50affa8328df2927fd2171",
+				Package: "add-ndots",
+			},
+		},
+	}
+
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
-	kclPkg, err := kpmcli.LoadPkgFromPath(testDir)
+
+	dep, err := kpmcli.Download(&depFromGit, "", testPath)
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, dep.Source.Git.Package, "add-ndots")
+}
+
+func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
+	testPkgPath := getTestDir("test_mod_file_package")
+
+	if runtime.GOOS == "windows" {
+		testPkgPath = filepath.Join(testPkgPath, "test_pkg_win")
+	} else {
+		testPkgPath = filepath.Join(testPkgPath, "test_pkg")
+	}
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	kclPkg, err := kpmcli.LoadPkgFromPath(testPkgPath)
+	assert.Equal(t, err, nil)
+
+	opts := opt.AddOptions{
+		LocalPath: testPkgPath,
+		RegistryOpts: opt.RegistryOptions{
+			Git: &opt.GitOptions{
+				Url:     "https://github.com/kcl-lang/modules.git",
+				Commit:  "ee03122b5f45b09eb48694422fc99a0772f6bba8",
+				Package: "agent",
+			},
+		},
+	}
+
+	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
+	assert.Equal(t, err, nil)
+
+	testPkgPathMod := filepath.Join(testPkgPath, "kcl.mod")
+	testPkgPathModExpect := filepath.Join(testPkgPath, "expect.mod")
+	testPkgPathModLock := filepath.Join(testPkgPath, "kcl.mod.lock")
+	testPkgPathModLockExpect := filepath.Join(testPkgPath, "expect.mod.lock")
+
+	modContent, err := os.ReadFile(testPkgPathMod)
+	assert.Equal(t, err, nil)
+
+	modExpectContent, err := os.ReadFile(testPkgPathModExpect)
+	assert.Equal(t, err, nil)
+
+	modContentStr := string(modContent)
+	modExpectContentStr := string(modExpectContent)
+
+	for _, str := range []*string{&modContentStr, &modExpectContentStr} {
+		*str = strings.ReplaceAll(*str, " ", "")
+		*str = strings.ReplaceAll(*str, "\r\n", "")
+		*str = strings.ReplaceAll(*str, "\n", "")
+
+		sumRegex := regexp.MustCompile(`sum\s*=\s*"[^"]+"`)
+		*str = sumRegex.ReplaceAllString(*str, "")
+
+		*str = strings.TrimRight(*str, ", \t\r\n")
+	}
+
+	assert.Equal(t, modExpectContentStr, modContentStr)
+
+	modLockContent, err := os.ReadFile(testPkgPathModLock)
+	assert.Equal(t, err, nil)
+
+	modLockExpectContent, err := os.ReadFile(testPkgPathModLockExpect)
+	assert.Equal(t, err, nil)
+
+	modLockContentStr := string(modLockContent)
+	modLockExpectContentStr := string(modLockExpectContent)
+
+	for _, str := range []*string{&modLockContentStr, &modLockExpectContentStr} {
+		*str = strings.ReplaceAll(*str, " ", "")
+		*str = strings.ReplaceAll(*str, "\r\n", "")
+		*str = strings.ReplaceAll(*str, "\n", "")
+
+		sumRegex := regexp.MustCompile(`sum\s*=\s*"[^"]+"`)
+		*str = sumRegex.ReplaceAllString(*str, "")
+
+		*str = strings.TrimRight(*str, ", \t\r\n")
+	}
+
+	fmt.Println(modLockContentStr)
+
+	assert.Equal(t, modLockExpectContentStr, modLockContentStr)
+
+	defer func() {
+		err = os.Truncate(testPkgPathMod, 0)
+		assert.Equal(t, err, nil)
+
+		err = os.Truncate(testPkgPathModLock, 0)
+		assert.Equal(t, err, nil)
+	}()
+}
+
+func TestDependencyGraph(t *testing.T) {
+	testWithoutPackageDir := filepath.Join(getTestDir("test_dependency_graph"), "without_package")
+	assert.Equal(t, utils.DirExists(filepath.Join(testWithoutPackageDir, "kcl.mod.lock")), false)
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	kclPkg, err := kpmcli.LoadPkgFromPath(testWithoutPackageDir)
 	assert.Equal(t, err, nil)
 
 	_, depGraph, err := kpmcli.InitGraphAndDownloadDeps(kclPkg)
@@ -180,6 +304,21 @@ func TestDependencyGraph(t *testing.T) {
 			m("k8s", "1.28"): {},
 		},
 	)
+
+	testWithPackageDir := filepath.Join(getTestDir("test_dependency_graph"), "with_package")
+	assert.Equal(t, utils.DirExists(filepath.Join(testWithPackageDir, "kcl.mod.lock")), false)
+
+	kpmcli, err = NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	kclPkg, err = kpmcli.LoadPkgFromPath(testWithPackageDir)
+	assert.Equal(t, err, nil)
+
+	_, depGraph, err = kpmcli.InitGraphAndDownloadDeps(kclPkg)
+	assert.Equal(t, err, nil)
+
+	_, err = depGraph.AdjacencyMap()
+	assert.Equal(t, err, nil)
 }
 
 func TestCyclicDependency(t *testing.T) {
@@ -613,7 +752,7 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	originalValue := os.Getenv(env.PKG_PATH)
 	defer os.Setenv(env.PKG_PATH, originalValue)
 
-	testDir := getTestDir("resolve_metadata")
+	testDir := filepath.Join(getTestDir("resolve_metadata"), "without_package")
 
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
@@ -682,6 +821,87 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 		if r := os.RemoveAll(filepath.Join("not_exist", "flask-demo-kcl-manifests_ade147b")); r != nil {
 			err = fmt.Errorf("panic: %v", r)
 		}
+	}()
+}
+
+func TestTestResolveMetadataInJsonStrWithPackage(t *testing.T) {
+	// Unit tests for package flag
+	testDir := filepath.Join(getTestDir("resolve_metadata"), "with_package")
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	kclpkg, err := kpmcli.LoadPkgFromPath(testDir)
+	assert.Equal(t, err, nil)
+
+	globalPkgPath, _ := env.GetAbsPkgPath()
+
+	res, err := kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
+	fmt.Printf("err: %v\n", err)
+	assert.Equal(t, err, nil)
+
+	expectedDep := pkg.DependenciesUI{
+		Deps: make(map[string]pkg.Dependency),
+	}
+
+	localFullPath, err := utils.FindPackage(filepath.Join(globalPkgPath, "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8"), "helloworld")
+	assert.Equal(t, err, nil)
+
+	expectedDep.Deps["helloworld"] = pkg.Dependency{
+		Name:          "helloworld",
+		FullName:      "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8",
+		Version:       "ee03122b5f45b09eb48694422fc99a0772f6bba8",
+		LocalFullPath: localFullPath,
+	}
+
+	expectedDepStr, err := json.Marshal(expectedDep)
+	assert.Equal(t, err, nil)
+
+	assert.Equal(t, res, string(expectedDepStr))
+
+	vendorDir := filepath.Join(testDir, "vendor")
+
+	kpmcli, err = NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	kclpkg, err = kpmcli.LoadPkgFromPath(testDir)
+	assert.Equal(t, err, nil)
+
+	if utils.DirExists(vendorDir) {
+		err = os.RemoveAll(vendorDir)
+		assert.Equal(t, err, nil)
+	}
+
+	kclpkg.SetVendorMode(true)
+
+	res, err = kpmcli.ResolveDepsMetadataInJsonStr(kclpkg, true)
+	assert.Equal(t, err, nil)
+
+	assert.Equal(t, utils.DirExists(vendorDir), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8")), true)
+
+	localFullPath, err = utils.FindPackage(filepath.Join(vendorDir, "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8"), "helloworld")
+	assert.Equal(t, err, nil)
+
+	expectedDep = pkg.DependenciesUI{
+		Deps: make(map[string]pkg.Dependency),
+	}
+
+	expectedDep.Deps["helloworld"] = pkg.Dependency{
+		Name:          "helloworld",
+		FullName:      "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8",
+		Version:       "ee03122b5f45b09eb48694422fc99a0772f6bba8",
+		LocalFullPath: localFullPath,
+	}
+
+	expectedDepStr, err = json.Marshal(expectedDep)
+	assert.Equal(t, err, nil)
+
+	assert.Equal(t, res, string(expectedDepStr))
+
+	defer func() {
+		err = os.RemoveAll(vendorDir)
+		assert.Equal(t, err, nil)
 	}()
 }
 
@@ -784,7 +1004,7 @@ func TestParseOciOptionFromString(t *testing.T) {
 	oci_ref_with_tag := "test_oci_repo:test_oci_tag"
 	ociOption, err := kpmcli.ParseOciOptionFromString(oci_ref_with_tag, "test_tag")
 	assert.Equal(t, err, nil)
-	assert.Equal(t, ociOption.PkgName, "")
+	assert.Equal(t, ociOption.Ref, "")
 	assert.Equal(t, ociOption.Reg, "ghcr.io")
 	assert.Equal(t, ociOption.Repo, "kcl-lang/test_oci_repo")
 	assert.Equal(t, ociOption.Tag, "test_oci_tag")
@@ -792,7 +1012,7 @@ func TestParseOciOptionFromString(t *testing.T) {
 	oci_ref_without_tag := "test_oci_repo:test_oci_tag"
 	ociOption, err = kpmcli.ParseOciOptionFromString(oci_ref_without_tag, "test_tag")
 	assert.Equal(t, err, nil)
-	assert.Equal(t, ociOption.PkgName, "")
+	assert.Equal(t, ociOption.Ref, "")
 	assert.Equal(t, ociOption.Reg, "ghcr.io")
 	assert.Equal(t, ociOption.Repo, "kcl-lang/test_oci_repo")
 	assert.Equal(t, ociOption.Tag, "test_oci_tag")
@@ -800,7 +1020,7 @@ func TestParseOciOptionFromString(t *testing.T) {
 	oci_url_with_tag := "oci://test_reg/test_oci_repo"
 	ociOption, err = kpmcli.ParseOciOptionFromString(oci_url_with_tag, "test_tag")
 	assert.Equal(t, err, nil)
-	assert.Equal(t, ociOption.PkgName, "")
+	assert.Equal(t, ociOption.Ref, "")
 	assert.Equal(t, ociOption.Reg, "test_reg")
 	assert.Equal(t, ociOption.Repo, "/test_oci_repo")
 	assert.Equal(t, ociOption.Tag, "test_tag")
@@ -889,7 +1109,7 @@ func TestUpdateWithKclModlock(t *testing.T) {
 	err = kpmcli.UpdateDeps(kclPkg)
 	assert.Equal(t, err, nil)
 	got_lock_file := filepath.Join(dest_testDir, "kcl.mod.lock")
-	got_content, err := os.ReadFile(got_lock_file)
+	got_content, err := os.ReadFile(got_lock_file) // help
 	assert.Equal(t, err, nil)
 
 	expected_path := filepath.Join(dest_testDir, "expected")
@@ -956,10 +1176,10 @@ func TestAddWithNoSumCheck(t *testing.T) {
 		LocalPath: pkgPath,
 		RegistryOpts: opt.RegistryOptions{
 			Oci: &opt.OciOptions{
-				Reg:     "ghcr.io",
-				Repo:    "kcl-lang/helloworld",
-				PkgName: "helloworld",
-				Tag:     "0.1.0",
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/helloworld",
+				Ref:  "helloworld",
+				Tag:  "0.1.0",
 			},
 		},
 		NoSumCheck: true,
@@ -976,6 +1196,27 @@ func TestAddWithNoSumCheck(t *testing.T) {
 	defer func() {
 		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
 		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod"))
+	}()
+}
+
+func TestRunWithGitPackage(t *testing.T) {
+	pkgPath := getTestDir("test_run_git_package")
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	opts := opt.DefaultCompileOptions()
+	opts.SetPkgPath(pkgPath)
+
+	compileResult, err := kpmcli.CompileWithOpts(opts)
+	assert.Equal(t, err, nil)
+	expectedCompileResult := `{"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "web-app"}, "spec": {"containers": [{"image": "nginx", "name": "main-container", "ports": [{"containerPort": 80}]}]}}`
+	assert.Equal(t, expectedCompileResult, compileResult.GetRawJsonResult())
+
+	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), true)
+
+	defer func() {
+		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
 	}()
 }
 
@@ -1098,10 +1339,10 @@ func TestAddWithDiffVersionNoSumCheck(t *testing.T) {
 		LocalPath: pkgPath,
 		RegistryOpts: opt.RegistryOptions{
 			Oci: &opt.OciOptions{
-				Reg:     "ghcr.io",
-				Repo:    "kcl-lang/helloworld",
-				PkgName: "helloworld",
-				Tag:     "0.1.2",
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/helloworld",
+				Ref:  "helloworld",
+				Tag:  "0.1.2",
 			},
 		},
 		NoSumCheck: true,
@@ -1162,10 +1403,10 @@ func TestAddWithDiffVersionWithSumCheck(t *testing.T) {
 		LocalPath: pkgPath,
 		RegistryOpts: opt.RegistryOptions{
 			Oci: &opt.OciOptions{
-				Reg:     "ghcr.io",
-				Repo:    "kcl-lang/helloworld",
-				PkgName: "helloworld",
-				Tag:     "0.1.2",
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/helloworld",
+				Ref:  "helloworld",
+				Tag:  "0.1.2",
 			},
 		},
 	}
@@ -1342,10 +1583,10 @@ func TestAddWithLocalPath(t *testing.T) {
 		LocalPath: tmpPkgPath,
 		RegistryOpts: opt.RegistryOptions{
 			Oci: &opt.OciOptions{
-				Reg:     "ghcr.io",
-				Repo:    "kcl-lang/helloworld",
-				PkgName: "helloworld",
-				Tag:     "0.1.1",
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/helloworld",
+				Ref:  "helloworld",
+				Tag:  "0.1.1",
 			},
 		},
 	}
@@ -1588,10 +1829,10 @@ func testAddDefaultRegistryDep(t *testing.T) {
 			LocalPath: tc.pkgPath,
 			RegistryOpts: opt.RegistryOptions{
 				Registry: &opt.OciOptions{
-					Reg:     "ghcr.io",
-					Repo:    "kcl-lang/helloworld",
-					PkgName: "helloworld",
-					Tag:     tc.tag,
+					Reg:  "ghcr.io",
+					Repo: "kcl-lang/helloworld",
+					Ref:  "helloworld",
+					Tag:  tc.tag,
 				},
 			},
 		}
@@ -1889,6 +2130,13 @@ func TestRunLocalWithArgs(t *testing.T) {
 		}, []string{
 			filepath.Join(pkgPath, "with_args", "run_11", "sub", "kcl.yaml"),
 		}, "", false, "", "The_sub_kcl_program: Hello Sub World!"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_12", "sub1", "main.k"),
+			filepath.Join(pkgPath, "with_args", "run_12", "sub2", "main.k"),
+		}, []string{}, "", false, "", "sub1: 1\nsub2: 2"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_13", "temp"),
+		}, []string{}, "", false, "", "temp: non-k-file"},
 	}
 
 	for _, test := range tests {
