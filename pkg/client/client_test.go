@@ -2137,6 +2137,9 @@ func TestRunLocalWithArgs(t *testing.T) {
 		{[]string{
 			filepath.Join(pkgPath, "with_args", "run_13", "temp"),
 		}, []string{}, "", false, "", "temp: non-k-file"},
+		{[]string{
+			filepath.Join(pkgPath, "with_args", "run_14", "**", "*.k"),
+		}, []string{}, "", false, "", "main: main\nmain1: main1\nsub: sub\nsub1: sub1"},
 	}
 
 	for _, test := range tests {
