@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -1618,7 +1621,7 @@ func TestRunOciWithSettingsFile(t *testing.T) {
 	opts.SetEntries([]string{})
 	opts.Merge(kcl.WithSettings(filepath.Join(".", "test_data", "test_run_oci_with_settings", "kcl.yaml")))
 	opts.SetHasSettingsYaml(true)
-	_, err = kpmcli.CompileOciPkg("oci://ghcr.io/kcl-lang/helloworld", "", opts, false)
+	_, err = kpmcli.CompileOciPkg("oci://ghcr.io/kcl-lang/helloworld", "", opts)
 	assert.Equal(t, err, nil)
 }
 
@@ -2275,4 +2278,133 @@ func TestVirtualPackageVisiter(t *testing.T) {
 	assert.Equal(t, os.IsNotExist(err), true)
 	_, err = os.Stat(filepath.Join(pkgPath, "kcl.mod.lock"))
 	assert.Equal(t, os.IsNotExist(err), true)
+}
+
+func TestRunWithInsecureSkipVerify(t *testing.T) {
+
+	var buf bytes.Buffer
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		buf.WriteString("Called Success\n")
+		fmt.Fprintln(w, "Hello, client")
+	})
+
+	mux.HandleFunc("/subpath", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello from subpath")
+	})
+
+	ts := httptest.NewTLSServer(mux)
+	defer ts.Close()
+
+	fmt.Printf("ts.URL: %v\n", ts.URL)
+	turl, err := url.Parse(ts.URL)
+	assert.Equal(t, err, nil)
+
+	turl.Scheme = "oci"
+	turl.Path = filepath.Join(turl.Path, "subpath")
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+	_, _ = kpmcli.Run(
+		WithRunSourceUrl(turl.String()),
+	)
+
+	assert.Equal(t, buf.String(), "")
+
+	kpmcli.SetInsecureSkipVerify(true)
+	_, _ = kpmcli.Run(
+		WithRunSourceUrl(turl.String()),
+	)
+
+	assert.Equal(t, buf.String(), "Called Success\n")
+}
+
+func TestAddDepsWithInsecureSkipVerify(t *testing.T) {
+
+	var buf bytes.Buffer
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		buf.WriteString("Called Success\n")
+		fmt.Fprintln(w, "Hello, client")
+	})
+
+	mux.HandleFunc("/subpath", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello from subpath")
+	})
+
+	ts := httptest.NewTLSServer(mux)
+	defer ts.Close()
+
+	fmt.Printf("ts.URL: %v\n", ts.URL)
+	turl, err := url.Parse(ts.URL)
+	assert.Equal(t, err, nil)
+
+	turl.Scheme = "oci"
+	turl.Path = filepath.Join(turl.Path, "subpath")
+
+	ociOpts := opt.NewOciOptionsFromUrl(turl)
+
+	addOpts := opt.AddOptions{
+		RegistryOpts: opt.RegistryOptions{
+			Oci: ociOpts,
+		},
+	}
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	kpkg := pkg.NewKclPkg(&opt.InitOptions{
+		Name: "test",
+	})
+
+	_, _ = kpmcli.AddDepWithOpts(
+		&kpkg, &addOpts,
+	)
+
+	assert.Equal(t, buf.String(), "")
+
+	kpmcli.SetInsecureSkipVerify(true)
+	_, _ = kpmcli.AddDepWithOpts(
+		&kpkg, &addOpts,
+	)
+
+	assert.Equal(t, buf.String(), "Called Success\n")
+}
+
+func TestPushWithInsecureSkipVerify(t *testing.T) {
+	var buf bytes.Buffer
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		buf.WriteString("Called Success\n")
+		fmt.Fprintln(w, "Hello, client")
+	})
+
+	mux.HandleFunc("/subpath", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello from subpath")
+	})
+
+	ts := httptest.NewTLSServer(mux)
+	defer ts.Close()
+
+	fmt.Printf("ts.URL: %v\n", ts.URL)
+	turl, err := url.Parse(ts.URL)
+	assert.Equal(t, err, nil)
+
+	turl.Scheme = "oci"
+	turl.Path = filepath.Join(turl.Path, "subpath")
+
+	ociOpts := opt.NewOciOptionsFromUrl(turl)
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	_ = kpmcli.PushToOci("test", ociOpts)
+
+	assert.Equal(t, buf.String(), "")
+
+	kpmcli.SetInsecureSkipVerify(true)
+	_ = kpmcli.PushToOci("test", ociOpts)
+
+	assert.Equal(t, buf.String(), "Called Success\n")
 }

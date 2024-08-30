@@ -20,10 +20,6 @@ func NewPullCmd(kpmcli *client.KpmClient) *cli.Command {
 				Name:  FLAG_TAG,
 				Usage: "the tag for oci artifact",
 			},
-			&cli.BoolFlag{
-				Name:  "insecure-skip-tls-verify",
-				Usage: "skip TLS certificate verification",
-			},
 		},
 		Action: func(c *cli.Context) error {
 			return KpmPull(c, kpmcli)
@@ -32,5 +28,5 @@ func NewPullCmd(kpmcli *client.KpmClient) *cli.Command {
 }
 
 func KpmPull(c *cli.Context, kpmcli *client.KpmClient) error {
-	return kpmcli.PullFromOci(c.Args().Get(1), c.Args().Get(0), c.String(FLAG_TAG), c.Bool("insecure-skip-tls-verify"))
+	return kpmcli.PullFromOci(c.Args().Get(1), c.Args().Get(0), c.String(FLAG_TAG))
 }

@@ -46,11 +46,6 @@ func NewRunCmd(kpmcli *client.KpmClient) *cli.Command {
 				Name:  FLAG_NO_SUM_CHECK,
 				Usage: "do not check the checksum of the package and update kcl.mod.lock",
 			},
-			// --no_tls_cert
-			&cli.BoolFlag{
-				Name:  FLAG_NO_TLS_CERT,
-				Usage: "do not verify TLS certificates while pull package image",
-			},
 
 			// KCL arg: --setting, -Y
 			&cli.StringSliceFlag{
@@ -153,7 +148,7 @@ func KpmRun(c *cli.Context, kpmcli *client.KpmClient) error {
 			compileResult, err = kpmcli.CompileGitPkg(gitOpts, kclOpts)
 		} else {
 			// 'kpm run' compile the package from the OCI reference or url.
-			compileResult, err = kpmcli.CompileOciPkg(runEntry.PackageSource(), c.String(FLAG_TAG), kclOpts, c.Bool(FLAG_NO_TLS_CERT))
+			compileResult, err = kpmcli.CompileOciPkg(runEntry.PackageSource(), c.String(FLAG_TAG), kclOpts)
 		}
 
 		if err != nil {

@@ -88,6 +88,7 @@ func (c *KpmClient) Pull(options ...PullOption) (*pkg.KclPkg, error) {
 		// kcl package from 'oci://ghcr.io/kcl-lang/kcl' will be stored in '$LOCAL_PATH/oci/ghcr.io/kcl-lang/kcl'
 		downloader.WithLocalPath(filepath.Join(opts.LocalPath, sourceFilePath)),
 		downloader.WithSource(*opts.Source),
+		downloader.WithInsecureSkipVerify(c.insecureSkipVerify),
 	)
 
 	if err != nil {

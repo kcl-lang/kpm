@@ -35,9 +35,17 @@ type DownloadOptions struct {
 	LogWriter io.Writer
 	// credsClient is the client to get the credentials.
 	credsClient *CredClient
+	// InsecureSkipVerify is the flag to skip the verification of the certificate.
+	InsecureSkipVerify bool
 }
 
 type Option func(*DownloadOptions)
+
+func WithInsecureSkipVerify(insecureSkipVerify bool) Option {
+	return func(do *DownloadOptions) {
+		do.InsecureSkipVerify = insecureSkipVerify
+	}
+}
 
 func WithCachePath(cachePath string) Option {
 	return func(do *DownloadOptions) {
@@ -215,6 +223,7 @@ func (d *OciDownloader) Download(opts DownloadOptions) error {
 		oci.WithCredential(cred),
 		oci.WithRepoPath(repoPath),
 		oci.WithSettings(&opts.Settings),
+		oci.WithInsecureSkipVerify(opts.InsecureSkipVerify),
 	)
 
 	if err != nil {

@@ -95,23 +95,23 @@ func Logout(hostname string, setting *settings.Settings) error {
 
 // OciClient is mainly responsible for interacting with OCI registry
 type OciClient struct {
-	repo           *remote.Repository
-	ctx            *context.Context
-	logWriter      io.Writer
-	settings       *settings.Settings
-	isPlainHttp    *bool
-	isTLSVerify    *bool
-	cred           *remoteauth.Credential
-	PullOciOptions *PullOciOptions
+	repo               *remote.Repository
+	ctx                *context.Context
+	logWriter          io.Writer
+	settings           *settings.Settings
+	isPlainHttp        *bool
+	insecureSkipVerify bool
+	cred               *remoteauth.Credential
+	PullOciOptions     *PullOciOptions
 }
 
 // OciClientOption configures how we set up the OciClient
 type OciClientOption func(*OciClient) error
 
-// WithSkipTLSVerify is an option to set the skip TLS verification flag.
-func WithSkipTLSVerify(skipTLSVerify bool) OciClientOption {
+// WithInsecureSkipVerify is an option to set the skip TLS verification flag.
+func WithInsecureSkipVerify(insecureSkipVerify bool) OciClientOption {
 	return func(c *OciClient) error {
-		c.isTLSVerify = &skipTLSVerify
+		c.insecureSkipVerify = insecureSkipVerify
 		return nil
 	}
 }
@@ -177,7 +177,7 @@ func NewOciClientWithOpts(opts ...OciClientOption) (*OciClient, error) {
 
 	customTransport := &http.Transport{
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: *client.isTLSVerify,
+			InsecureSkipVerify: client.insecureSkipVerify,
 		},
 	}
 

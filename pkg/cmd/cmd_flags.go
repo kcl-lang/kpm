@@ -20,4 +20,3 @@ const FLAG_SORT_KEYS = "sort_keys"
 
 const FLAG_QUIET = "quiet"
 const FLAG_NO_SUM_CHECK = "no_sum_check"
-const FLAG_NO_TLS_CERT = "no_tls_cert"
