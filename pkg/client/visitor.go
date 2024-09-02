@@ -132,6 +132,7 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		downloader.WithCredsClient(credCli),
 		downloader.WithCachePath(rv.CachePath),
 		downloader.WithEnableCache(rv.EnableCache),
+		downloader.WithInsecureSkipTLSverify(rv.kpmcli.insecureSkipTLSverify),
 	))
 
 	if err != nil {

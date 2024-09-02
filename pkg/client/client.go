@@ -54,6 +54,8 @@ type KpmClient struct {
 	settings settings.Settings
 	// The flag of whether to check the checksum of the package and update kcl.mod.lock.
 	noSumCheck bool
+	// The flag of whether to skip the verification of TLS.
+	insecureSkipTLSverify bool
 }
 
 // NewKpmClient will create a new kpm client with default settings.
@@ -75,6 +77,11 @@ func NewKpmClient() (*KpmClient, error) {
 		homePath:      homePath,
 		DepDownloader: &downloader.DepDownloader{},
 	}, nil
+}
+
+// SetInsecureSkipTLSverify will set the flag of whether to skip the verification of TLS.
+func (c *KpmClient) SetInsecureSkipTLSverify(insecureSkipTLSverify bool) {
+	c.insecureSkipTLSverify = insecureSkipTLSverify
 }
 
 // SetNoSumCheck will set the 'noSumCheck' flag.
@@ -1016,7 +1023,7 @@ func (c *KpmClient) FillDepInfo(dep *pkg.Dependency, homepath string) error {
 		}
 
 		dep.Version = dep.Source.Registry.Version
-	}	
+	}
 	if dep.Source.Git != nil && dep.Source.Git.GetPackage() != "" {
 		name := utils.ParseRepoNameFromGitUrl(dep.Source.Git.Url)
 		if len(dep.Source.Git.Tag) != 0 {
@@ -1058,6 +1065,7 @@ func (c *KpmClient) AcquireTheLatestOciVersion(ociSource downloader.Oci) (string
 		oci.WithCredential(cred),
 		oci.WithRepoPath(repoPath),
 		oci.WithSettings(c.GetSettings()),
+		oci.WithInsecureSkipTLSverify(c.insecureSkipTLSverify),
 	)
 
 	if err != nil {
@@ -1093,6 +1101,7 @@ func (c *KpmClient) downloadPkg(options ...downloader.Option) (*pkg.KclPkg, erro
 		downloader.WithLogWriter(c.GetLogWriter()),
 		downloader.WithSettings(*c.GetSettings()),
 		downloader.WithCredsClient(credCli),
+		downloader.WithInsecureSkipTLSverify(opts.InsecureSkipTLSverify),
 	))
 
 	if err != nil {
@@ -1224,6 +1233,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			downloader.WithLogWriter(c.logWriter),
 			downloader.WithSettings(c.settings),
 			downloader.WithCredsClient(credCli),
+			downloader.WithInsecureSkipTLSverify(c.insecureSkipTLSverify),
 		))
 		if err != nil {
 			return nil, err
@@ -1621,6 +1631,7 @@ func (c *KpmClient) PushToOci(localPath string, ociOpts *opt.OciOptions) error {
 		oci.WithCredential(cred),
 		oci.WithRepoPath(repoPath),
 		oci.WithSettings(c.GetSettings()),
+		oci.WithInsecureSkipTLSverify(c.insecureSkipTLSverify),
 	)
 
 	if err != nil {
@@ -1941,6 +1952,7 @@ func (c *KpmClient) pullTarFromOci(localPath string, ociOpts *opt.OciOptions) er
 		oci.WithCredential(cred),
 		oci.WithRepoPath(repoPath),
 		oci.WithSettings(c.GetSettings()),
+		oci.WithInsecureSkipTLSverify(ociOpts.InsecureSkipTLSverify),
 	)
 
 	if err != nil {

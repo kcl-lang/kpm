@@ -2,11 +2,13 @@ package oci
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -32,7 +34,6 @@ import (
 	"oras.land/oras-go/v2/content/file"
 	"oras.land/oras-go/v2/registry/remote"
 	"oras.land/oras-go/v2/registry/remote/errcode"
-	"oras.land/oras-go/v2/registry/remote/retry"
 )
 
 const OCI_SCHEME = "oci"
@@ -94,17 +95,26 @@ func Logout(hostname string, setting *settings.Settings) error {
 
 // OciClient is mainly responsible for interacting with OCI registry
 type OciClient struct {
-	repo           *remote.Repository
-	ctx            *context.Context
-	logWriter      io.Writer
-	settings       *settings.Settings
-	isPlainHttp    *bool
-	cred           *remoteauth.Credential
-	PullOciOptions *PullOciOptions
+	repo                  *remote.Repository
+	ctx                   *context.Context
+	logWriter             io.Writer
+	settings              *settings.Settings
+	isPlainHttp           *bool
+	insecureSkipTLSverify bool
+	cred                  *remoteauth.Credential
+	PullOciOptions        *PullOciOptions
 }
 
 // OciClientOption configures how we set up the OciClient
 type OciClientOption func(*OciClient) error
+
+// WithInsecureSkipTLSverify is an option to set the skip TLS verification flag.
+func WithInsecureSkipTLSverify(insecureSkipTLSverify bool) OciClientOption {
+	return func(c *OciClient) error {
+		c.insecureSkipTLSverify = insecureSkipTLSverify
+		return nil
+	}
+}
 
 // WithSettings sets the kpm settings of the OciClient
 func WithSettings(settings *settings.Settings) OciClientOption {
@@ -165,9 +175,19 @@ func NewOciClientWithOpts(opts ...OciClientOption) (*OciClient, error) {
 		}
 	}
 
+	customTransport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: client.insecureSkipTLSverify,
+		},
+	}
+
+	customClient := &http.Client{
+		Transport: customTransport,
+	}
+
 	ctx := context.Background()
 	client.repo.Client = &remoteauth.Client{
-		Client:     retry.DefaultClient,
+		Client:     customClient,
 		Cache:      remoteauth.DefaultCache,
 		Credential: remoteauth.StaticCredential(client.repo.Reference.Host(), *client.cred),
 	}

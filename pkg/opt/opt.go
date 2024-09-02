@@ -416,6 +416,9 @@ type OciOptions struct {
 	// Annotations denotes the additional annotation map for the OCI manifest.
 	// +optional
 	Annotations map[string]string
+	// InsecureSkipTLSverify denotes whether to skip the verification of the certificate.
+	// +optional
+	InsecureSkipTLSverify bool
 }
 
 func (opts *OciOptions) Validate() error {
