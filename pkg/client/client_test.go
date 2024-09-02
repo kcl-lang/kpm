@@ -2280,7 +2280,7 @@ func TestVirtualPackageVisiter(t *testing.T) {
 	assert.Equal(t, os.IsNotExist(err), true)
 }
 
-func TestRunWithInsecureSkipVerify(t *testing.T) {
+func TestRunWithInsecureSkipTLSverify(t *testing.T) {
 
 	var buf bytes.Buffer
 
@@ -2311,7 +2311,7 @@ func TestRunWithInsecureSkipVerify(t *testing.T) {
 
 	assert.Equal(t, buf.String(), "")
 
-	kpmcli.SetInsecureSkipVerify(true)
+	kpmcli.SetInsecureSkipTLSverify(true)
 	_, _ = kpmcli.Run(
 		WithRunSourceUrl(turl.String()),
 	)
@@ -2319,7 +2319,7 @@ func TestRunWithInsecureSkipVerify(t *testing.T) {
 	assert.Equal(t, buf.String(), "Called Success\n")
 }
 
-func TestAddDepsWithInsecureSkipVerify(t *testing.T) {
+func TestAddDepsWithInsecureSkipTLSverify(t *testing.T) {
 
 	var buf bytes.Buffer
 
@@ -2364,7 +2364,7 @@ func TestAddDepsWithInsecureSkipVerify(t *testing.T) {
 
 	assert.Equal(t, buf.String(), "")
 
-	kpmcli.SetInsecureSkipVerify(true)
+	kpmcli.SetInsecureSkipTLSverify(true)
 	_, _ = kpmcli.AddDepWithOpts(
 		&kpkg, &addOpts,
 	)
@@ -2372,7 +2372,7 @@ func TestAddDepsWithInsecureSkipVerify(t *testing.T) {
 	assert.Equal(t, buf.String(), "Called Success\n")
 }
 
-func TestPushWithInsecureSkipVerify(t *testing.T) {
+func TestPushWithInsecureSkipTLSverify(t *testing.T) {
 	var buf bytes.Buffer
 
 	mux := http.NewServeMux()
@@ -2403,7 +2403,7 @@ func TestPushWithInsecureSkipVerify(t *testing.T) {
 
 	assert.Equal(t, buf.String(), "")
 
-	kpmcli.SetInsecureSkipVerify(true)
+	kpmcli.SetInsecureSkipTLSverify(true)
 	_ = kpmcli.PushToOci("test", ociOpts)
 
 	assert.Equal(t, buf.String(), "Called Success\n")

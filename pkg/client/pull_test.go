@@ -56,11 +56,11 @@ func TestPull(t *testing.T) {
 	}()
 }
 
-func TestPullWithInsecureSkipVerify(t *testing.T) {
+func TestPullWithInsecureSkipTLSverify(t *testing.T) {
 	pulledPath := getTestDir("test_pull")
 
 	kpmcli, err := NewKpmClient()
-	kpmcli.SetInsecureSkipVerify(true)
+	kpmcli.SetInsecureSkipTLSverify(true)
 	assert.NilError(t, err)
 
 	var buf bytes.Buffer
@@ -82,7 +82,7 @@ func TestPullWithInsecureSkipVerify(t *testing.T) {
 	}()
 }
 
-func TestInsecureSkipVerifyOCIRegistry(t *testing.T) {
+func TestInsecureSkipTLSverifyOCIRegistry(t *testing.T) {
 	var buf bytes.Buffer
 
 	mux := http.NewServeMux()
@@ -113,7 +113,7 @@ func TestInsecureSkipVerifyOCIRegistry(t *testing.T) {
 
 	assert.Equal(t, buf.String(), "")
 
-	kpmcli.SetInsecureSkipVerify(true)
+	kpmcli.SetInsecureSkipTLSverify(true)
 	_, _ = kpmcli.Pull(
 		WithLocalPath("test"),
 		WithPullSourceUrl(turl.String()),
