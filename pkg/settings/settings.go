@@ -121,7 +121,7 @@ func (settings *Settings) ReleasePackageCacheLock() error {
 	return nil
 }
 
-// DefaultOciRepo return the default OCI registry 'ghcr.io'.
+// DefaultOciRegistry return the default OCI registry 'ghcr.io'.
 func (settings *Settings) DefaultOciRegistry() string {
 	return settings.Conf.DefaultOciRegistry
 }
