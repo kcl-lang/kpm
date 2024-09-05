@@ -31,14 +31,14 @@ func TestResolver(t *testing.T) {
 
 	kpmcli.SetLogWriter(&buf)
 	resolver := NewDepsResolver(kpmcli)
-	resolver.AddResolveFunc(func(currentPkg, parentPkg *pkg.KclPkg) error {
-		res = append(res, fmt.Sprintf("%s -> %s", parentPkg.GetPkgName(), currentPkg.GetPkgName()))
+	resolver.AddResolveFunc(func(dep *pkg.Dependency, parentPkg *pkg.KclPkg) error {
+		res = append(res, fmt.Sprintf("%s -> %s", parentPkg.GetPkgName(), dep.Name))
 		return nil
 	})
 
 	err = resolver.Resolve(
 		WithEnableCache(true),
-		WithPkgSource(pkgSource),
+		WithResolveSource(pkgSource),
 	)
 
 	if err != nil {

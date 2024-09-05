@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/otiai10/copy"
@@ -131,6 +132,7 @@ func (d *DepDownloader) Download(opts DownloadOptions) error {
 	if opts.EnableCache {
 		// TODO: After the new local storage structure is complete,
 		// this section should be replaced with the new storage structure instead of the cache path according to the <Cache Path>/<Package Name>.
+		//  https://github.com/kcl-lang/kpm/issues/384
 		var pkgFullName string
 		if opts.Source.Registry != nil && len(opts.Source.Registry.Version) != 0 {
 			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(opts.Source.Registry.Oci.Repo), opts.Source.Registry.Version)
@@ -138,14 +140,18 @@ func (d *DepDownloader) Download(opts DownloadOptions) error {
 		if opts.Source.Oci != nil && len(opts.Source.Oci.Tag) != 0 {
 			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(opts.Source.Oci.Repo), opts.Source.Oci.Tag)
 		}
+
 		if opts.Source.Git != nil && len(opts.Source.Git.Tag) != 0 {
-			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(opts.Source.Git.Url), opts.Source.Git.Tag)
+			gitUrl := strings.TrimSuffix(opts.Source.Git.Url, filepath.Ext(opts.Source.Git.Url))
+			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(gitUrl), opts.Source.Git.Tag)
 		}
 		if opts.Source.Git != nil && len(opts.Source.Git.Branch) != 0 {
-			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(opts.Source.Git.Url), opts.Source.Git.Branch)
+			gitUrl := strings.TrimSuffix(opts.Source.Git.Url, filepath.Ext(opts.Source.Git.Url))
+			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(gitUrl), opts.Source.Git.Branch)
 		}
 		if opts.Source.Git != nil && len(opts.Source.Git.Commit) != 0 {
-			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(opts.Source.Git.Url), opts.Source.Git.Commit)
+			gitUrl := strings.TrimSuffix(opts.Source.Git.Url, filepath.Ext(opts.Source.Git.Url))
+			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(gitUrl), opts.Source.Git.Commit)
 		}
 
 		cacheFullPath := filepath.Join(opts.CachePath, pkgFullName)
