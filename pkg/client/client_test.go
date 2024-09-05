@@ -196,9 +196,9 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 		LocalPath: testPkgPath,
 		RegistryOpts: opt.RegistryOptions{
 			Git: &opt.GitOptions{
-				Url:     "https://github.com/kcl-lang/modules.git",
-				Commit:  "ee03122b5f45b09eb48694422fc99a0772f6bba8",
-				Package: "agent",
+				Url:     "https://github.com/kcl-lang/flask-demo-kcl-manifests.git",
+				Commit:  "8308200",
+				Package: "cc",
 			},
 		},
 	}
@@ -256,14 +256,6 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 	fmt.Println(modLockContentStr)
 
 	assert.Equal(t, modLockExpectContentStr, modLockContentStr)
-
-	defer func() {
-		err = os.Truncate(testPkgPathMod, 0)
-		assert.Equal(t, err, nil)
-
-		err = os.Truncate(testPkgPathModLock, 0)
-		assert.Equal(t, err, nil)
-	}()
 }
 
 func TestDependencyGraph(t *testing.T) {

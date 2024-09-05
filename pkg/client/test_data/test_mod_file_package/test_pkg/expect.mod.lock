@@ -1,12 +1,8 @@
 [dependencies]
-  [dependencies.agent]
-    name = "agent"
-    full_name = "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8"
-    version = "0.1.0"
-    url = "https://github.com/kcl-lang/modules.git"
-    commit = "ee03122b5f45b09eb48694422fc99a0772f6bba8"
-    package = "agent"
-  [dependencies.k8s]
-    name = "k8s"
-    full_name = "k8s_1.28"
-    version = "1.28"
+  [dependencies.cc]
+    name = "cc"
+    full_name = "flask-demo-kcl-manifests_8308200"
+    version = "0.0.1"
+    url = "https://github.com/kcl-lang/flask-demo-kcl-manifests.git"
+    commit = "8308200"
+    package = "cc"

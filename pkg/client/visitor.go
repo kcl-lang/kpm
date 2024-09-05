@@ -138,8 +138,15 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 	if err != nil {
 		return err
 	}
+	pkgPath := tmpDir
+	if s.Git != nil && len(s.Git.Package) > 0 {
+		pkgPath, err = utils.FindPackage(tmpDir, s.Git.Package)
+		if err != nil {
+			return err
+		}
+	}
 
-	kclPkg, err := rv.kpmcli.LoadPkgFromPath(tmpDir)
+	kclPkg, err := rv.kpmcli.LoadPkgFromPath(pkgPath)
 	if err != nil {
 		return err
 	}
