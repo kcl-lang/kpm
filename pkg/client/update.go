@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	orderedmap "github.com/elliotchance/orderedmap/v2"
 	"kcl-lang.io/kpm/pkg/downloader"
 	pkg "kcl-lang.io/kpm/pkg/package"
 )
@@ -40,11 +41,11 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 
 	modDeps := kpkg.ModFile.Dependencies.Deps
 	if modDeps == nil {
-		return nil, fmt.Errorf("kcl.mod dependencies is nil")
+		return kpkg, nil
 	}
 	lockDeps := kpkg.Dependencies.Deps
 	if lockDeps == nil {
-		return nil, fmt.Errorf("kcl.mod.lock dependencies is nil")
+		lockDeps = orderedmap.NewOrderedMap[string, pkg.Dependency]()
 	}
 
 	// Create a new dependency resolver
