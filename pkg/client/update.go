@@ -34,9 +34,18 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 	}
 
 	kpkg := opts.kpkg
+	if kpkg == nil {
+		return nil, fmt.Errorf("kcl package is nil")
+	}
 
 	modDeps := kpkg.ModFile.Dependencies.Deps
+	if modDeps == nil {
+		return nil, fmt.Errorf("kcl.mod dependencies is nil")
+	}
 	lockDeps := kpkg.Dependencies.Deps
+	if lockDeps == nil {
+		return nil, fmt.Errorf("kcl.mod.lock dependencies is nil")
+	}
 
 	// Create a new dependency resolver
 	resolver := NewDepsResolver(c)
