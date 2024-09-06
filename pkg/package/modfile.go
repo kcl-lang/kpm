@@ -9,6 +9,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	orderedmap "github.com/elliotchance/orderedmap/v2"
+	"github.com/hashicorp/go-version"
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
 
@@ -200,6 +201,22 @@ type Dependency struct {
 	downloader.Source `json:"-"`
 }
 
+// VersionGreaterThan will compare the version of a dependency with another dependency.
+func (d *Dependency) VersionLessThan(other *Dependency) (bool, error) {
+
+	ver, err := version.NewVersion(d.Version)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse version %s", d.Version)
+	}
+
+	otherVer, err := version.NewVersion(other.Version)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse version %s", other.Version)
+	}
+
+	return ver.LessThan(otherVer), nil
+}
+
 func (d *Dependency) FromKclPkg(pkg *KclPkg) {
 	d.FullName = pkg.GetPkgFullName()
 	d.Version = pkg.GetPkgVersion()
@@ -252,9 +269,12 @@ func (d *Dependency) GenPathSuffix() string {
 	var storePkgName string
 
 	if d.Source.Oci != nil {
-		storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Oci.Tag)
+		name := filepath.Base(d.Source.Oci.Repo)
+		storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Oci.Tag)
 	} else if d.Source.Git != nil {
-		name := d.Name
+		// TODO: new local dependency structure will replace this
+		// issue: https://github.com/kcl-lang/kpm/issues/384
+		name := strings.TrimSuffix(filepath.Base(d.Source.Git.Url), filepath.Ext(d.Source.Git.Url))
 		if d.Source.Git.GetPackage() != "" {
 			name = strings.Split(d.FullName, "_")[0]
 		}
@@ -266,7 +286,8 @@ func (d *Dependency) GenPathSuffix() string {
 			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Branch)
 		}
 	} else if d.Source.Registry != nil {
-		storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Source.Registry.Version)
+		name := filepath.Base(d.Source.Registry.Oci.Repo)
+		storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Registry.Version)
 	} else {
 		storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Version)
 	}
@@ -579,6 +600,7 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 				Registry: &downloader.Registry{
 					Oci:     &ociSource,
 					Version: opt.Registry.Tag,
+					Name:    opt.Registry.Ref,
 				},
 			},
 			Version: opt.Registry.Tag,

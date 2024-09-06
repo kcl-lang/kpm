@@ -1,4 +1,7 @@
 [package]
+name = "test_pkg"
+edition = "v0.10.0"
+version = "0.0.1"
 
 [dependencies]
-agent = { git = "https://github.com/kcl-lang/modules.git", commit = "ee03122b5f45b09eb48694422fc99a0772f6bba8", package = "agent" }
+cc = { git = "https://github.com/kcl-lang/flask-demo-kcl-manifests.git", commit = "8308200", package = "cc" }

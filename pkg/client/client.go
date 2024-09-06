@@ -473,20 +473,11 @@ func (c *KpmClient) UpdateDeps(kclPkg *pkg.KclPkg) error {
 		return err
 	}
 
-	// update kcl.mod
-	err = kclPkg.ModFile.StoreModFile()
-	if err != nil {
-		return err
-	}
+	_, err = c.Update(
+		WithUpdatedKclPkg(kclPkg),
+	)
 
-	// Generate file kcl.mod.lock.
-	if !kclPkg.NoSumCheck {
-		err := kclPkg.LockDepsVersion()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return err
 }
 
 // ResolveDepsMetadataInJsonStr will calculate the local storage path of the external package,
@@ -813,7 +804,12 @@ func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pk
 		kclPkg.Dependencies.Deps.Delete(d.Name)
 	}
 
-	err = kclPkg.UpdateModAndLockFile()
+	// After adding the new dependency,
+	// Iterate through all the dependencies and select the version by mvs
+	_, err = c.Update(
+		WithUpdatedKclPkg(kclPkg),
+	)
+
 	if err != nil {
 		return nil, err
 	}
@@ -1191,6 +1187,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 
 			if dep.Source.Registry != nil {
 				dep.Source.Registry.Tag = latestTag
+				dep.Source.Registry.Version = latestTag
 			}
 
 			// Complete some information that the local three dependencies depend on.

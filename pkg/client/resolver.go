@@ -12,7 +12,7 @@ type ResolveOption func(*ResolveOptions) error
 
 // resolveFunc is the function for resolving each dependency when traversing the dependency graph.
 // currentPkg is the current package to be resolved and parentPkg is the parent package of the current package.
-type resolveFunc func(currentPkg, parentPkg *pkg.KclPkg) error
+type resolveFunc func(dep *pkg.Dependency, parentPkg *pkg.KclPkg) error
 
 type ResolveOptions struct {
 	// Source is the source of the package to be pulled.
@@ -40,16 +40,16 @@ func WithCachePath(cachePath string) ResolveOption {
 	}
 }
 
-// WithPkgSource sets the source of the package to be resolved.
-func WithPkgSource(source *downloader.Source) ResolveOption {
+// WithResolveSource sets the source of the package to be resolved.
+func WithResolveSource(source *downloader.Source) ResolveOption {
 	return func(opts *ResolveOptions) error {
 		opts.Source = source
 		return nil
 	}
 }
 
-// WithPkgSourceUrl sets the source of the package to be resolved by the source url.
-func WithPkgSourceUrl(sourceUrl string) ResolveOption {
+// WithResolveSourceUrl sets the source of the package to be resolved by the source url.
+func WithResolveSourceUrl(sourceUrl string) ResolveOption {
 	return func(opts *ResolveOptions) error {
 		source, err := downloader.NewSourceFromStr(sourceUrl)
 		if err != nil {
@@ -106,7 +106,7 @@ func (dr *DepsResolver) Resolve(options ...ResolveOption) error {
 			}
 			return PkgVisitor, nil
 		} else {
-			return NewVisitor(*opts.Source, dr.kpmClient), nil
+			return NewVisitor(*source, dr.kpmClient), nil
 		}
 	}
 
@@ -143,7 +143,7 @@ func (dr *DepsResolver) Resolve(options ...ResolveOption) error {
 			err = visitor.Visit(&depSource,
 				func(childPkg *pkg.KclPkg) error {
 					for _, resolveFunc := range dr.resolveFuncs {
-						err := resolveFunc(childPkg, kclPkg)
+						err := resolveFunc(&dep, kclPkg)
 						if err != nil {
 							return err
 						}
@@ -158,7 +158,7 @@ func (dr *DepsResolver) Resolve(options ...ResolveOption) error {
 
 			// Recursively resolve the dependencies of the dependency.
 			err = dr.Resolve(
-				WithPkgSource(&depSource),
+				WithResolveSource(&depSource),
 				WithEnableCache(opts.EnableCache),
 				WithCachePath(opts.CachePath),
 			)
