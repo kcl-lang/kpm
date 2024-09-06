@@ -10,8 +10,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/dominikbraun/graph"
-	"github.com/elliotchance/orderedmap/v2"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/mod/module"
 	"kcl-lang.io/kpm/pkg/client"
@@ -58,8 +56,6 @@ func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
 		}
 	}()
 
-	pkgInfos := c.Args().Slice()
-
 	pwd, err := os.Getwd()
 	if err != nil {
 		return reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it.")
@@ -78,50 +74,6 @@ func KpmUpdate(c *cli.Context, kpmcli *client.KpmClient) error {
 	err = kclPkg.ValidateKpmHome(globalPkgPath)
 	if err != (*reporter.KpmEvent)(nil) {
 		return err
-	}
-
-	var (
-		modulesToUpgrade   []module.Version
-		modulesToDowngrade []module.Version
-	)
-
-	for _, pkgInfo := range pkgInfos {
-		err = GetModulesToUpdate(kclPkg, modulesToUpgrade, modulesToDowngrade, pkgInfo)
-		if err != nil {
-			reporter.Report(err)
-		}
-	}
-
-	_, depGraph, err := kpmcli.InitGraphAndDownloadDeps(kclPkg)
-	if err != nil {
-		return err
-	}
-
-	reqs := mvs.ReqsGraph{
-		Graph:     depGraph,
-		KpmClient: kpmcli,
-		KpmPkg:    kclPkg,
-	}
-
-	target := module.Version{Path: kclPkg.GetPkgName(), Version: kclPkg.GetPkgVersion()}
-	buildList, err := mvs.UpdateBuildList(target, modulesToUpgrade, modulesToDowngrade, &reqs)
-	if err != nil {
-		return reporter.NewErrorEvent(reporter.FailedUpdatingBuildList, err, "failed to update build list")
-	}
-
-	// get all the vertices in the graph
-	modules, err := graph.TopologicalSort(depGraph)
-	if err != nil {
-		return reporter.NewErrorEvent(reporter.FailedTopologicalSort, err, "failed to sort the dependencies")
-	}
-
-	kclPkg.ModFile.Dependencies.Deps = orderedmap.NewOrderedMap[string, pkg.Dependency]()
-
-	for _, module := range modules {
-		err = InsertModuleToDeps(kclPkg, module, target, buildList, reqs)
-		if err != nil {
-			return err
-		}
 	}
 
 	err = kpmcli.UpdateDeps(kclPkg)

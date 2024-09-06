@@ -473,20 +473,11 @@ func (c *KpmClient) UpdateDeps(kclPkg *pkg.KclPkg) error {
 		return err
 	}
 
-	// update kcl.mod
-	err = kclPkg.ModFile.StoreModFile()
-	if err != nil {
-		return err
-	}
+	_, err = c.Update(
+		WithUpdatedKclPkg(kclPkg),
+	)
 
-	// Generate file kcl.mod.lock.
-	if !kclPkg.NoSumCheck {
-		err := kclPkg.LockDepsVersion()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return err
 }
 
 // ResolveDepsMetadataInJsonStr will calculate the local storage path of the external package,
