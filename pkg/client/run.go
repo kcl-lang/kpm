@@ -571,7 +571,7 @@ func (c *KpmClient) Run(options ...RunOption) (*kcl.KCLResultList, error) {
 
 	// Visit the root package source.
 	var res *kcl.KCLResultList
-	err = NewVisitor(*pkgSource, c).Visit(pkgSource, func(kclPkg *pkg.KclPkg) error {
+	visitFunc := func(kclPkg *pkg.KclPkg) error {
 		// Apply the compile options from cli, kcl.yaml or kcl.mod
 		err = opts.applyCompileOptions(*pkgSource, kclPkg, opts.WorkDir)
 		if err != nil {
@@ -602,7 +602,11 @@ func (c *KpmClient) Run(options ...RunOption) (*kcl.KCLResultList, error) {
 		}
 
 		return nil
-	})
+	}
+	err = NewVisitor(*pkgSource, c).Visit(
+		WithVisitSource(pkgSource),
+		WithVisitFunc(visitFunc),
+	)
 
 	if err != nil {
 		return nil, err

@@ -510,6 +510,13 @@ func TestVendorDeps(t *testing.T) {
 		FullName: "kcl1",
 		Version:  "0.0.1",
 		Sum:      kcl1Sum,
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/kcl1",
+				Tag:  "0.0.1",
+			},
+		},
 	}
 
 	depKcl2 := pkg.Dependency{
@@ -517,6 +524,13 @@ func TestVendorDeps(t *testing.T) {
 		FullName: "kcl2",
 		Version:  "0.0.1",
 		Sum:      kcl2Sum,
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/kcl2",
+				Tag:  "0.0.1",
+			},
+		},
 	}
 
 	mppTest := orderedmap.NewOrderedMap[string, pkg.Dependency]()
@@ -572,8 +586,8 @@ func TestResolveDepsWithOnlyKclMod(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, len(depsMap), 1)
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl.mod.lock")), true)
-	assert.Equal(t, depsMap["k8s"], filepath.Join(kpmcli.homePath, "k8s_1.17"))
-	assert.Equal(t, utils.DirExists(filepath.Join(kpmcli.homePath, "k8s_1.17")), true)
+	assert.Equal(t, depsMap["helloworld"], filepath.Join(kpmcli.homePath, "helloworld_0.1.2"))
+	assert.Equal(t, utils.DirExists(filepath.Join(kpmcli.homePath, "helloworld_0.1.2")), true)
 	defer func() {
 		err := os.Remove(filepath.Join(testDir, "kcl.mod.lock"))
 		assert.Equal(t, err, nil)
@@ -839,7 +853,7 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	assert.Equal(t, utils.DirExists(vendorDir), false)
 	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "flask-demo-kcl-manifests_ade147b")), false)
 	assert.Equal(t, err, nil)
-	expectedStr := "{\"packages\":{\"flask_demo_kcl_manifests\":{\"name\":\"flask_demo_kcl_manifests\",\"manifest_path\":\"\"}}}"
+	expectedStr := "{\"packages\":{\"flask_demo_kcl_manifests\":{\"name\":\"flask_demo_kcl_manifests\",\"manifest_path\":\"not_exist/flask-demo-kcl-manifests_ade147b\"}}}"
 	assert.Equal(t, res, expectedStr)
 	defer func() {
 		if r := os.RemoveAll(filepath.Join("not_exist", "flask-demo-kcl-manifests_ade147b")); r != nil {
@@ -1324,6 +1338,7 @@ func TestUpdateWithNoSumCheck(t *testing.T) {
 	kclPkg, err := kpmcli.LoadPkgFromPath(pkgPath)
 	assert.Equal(t, err, nil)
 
+	kclPkg.NoSumCheck = true
 	err = kpmcli.UpdateDeps(kclPkg)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), false)
@@ -2290,14 +2305,18 @@ func TestVirtualPackageVisiter(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	v := NewVisitor(*pkgSource, kpmcli)
-	err = v.Visit(pkgSource, func(p *pkg.KclPkg) error {
+	visitFunc := func(p *pkg.KclPkg) error {
 		assert.Contains(t, p.GetPkgName(), "vPkg_")
 		_, err = os.Stat(filepath.Join(pkgPath, "kcl.mod"))
 		assert.Equal(t, os.IsNotExist(err), true)
 		_, err = os.Stat(filepath.Join(pkgPath, "kcl.mod.lock"))
 		assert.Equal(t, os.IsNotExist(err), true)
 		return nil
-	})
+	}
+	err = v.Visit(
+		WithVisitSource(pkgSource),
+		WithVisitFunc(visitFunc),
+	)
 	assert.Equal(t, err, nil)
 	_, err = os.Stat(filepath.Join(pkgPath, "kcl.mod"))
 	assert.Equal(t, os.IsNotExist(err), true)

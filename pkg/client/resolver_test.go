@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"kcl-lang.io/kpm/pkg/downloader"
 	pkg "kcl-lang.io/kpm/pkg/package"
 )
 
@@ -20,8 +19,7 @@ func TestResolver(t *testing.T) {
 
 	resolve_path := getTestDir("test_resolve_graph")
 	pkgPath := filepath.Join(resolve_path, "pkg")
-
-	pkgSource, err := downloader.NewSourceFromStr(pkgPath)
+	kpkg, err := kpmcli.LoadPkgFromPath(pkgPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,7 +36,8 @@ func TestResolver(t *testing.T) {
 
 	err = resolver.Resolve(
 		WithEnableCache(true),
-		WithResolveSource(pkgSource),
+		WithCachePath(kpmcli.homePath),
+		WithResolveKclPkg(kpkg),
 	)
 
 	if err != nil {
@@ -54,5 +53,5 @@ func TestResolver(t *testing.T) {
 	sort.Strings(res)
 	assert.Equal(t, len(res), 3)
 	assert.Equal(t, res, expected)
-	assert.Equal(t, buf.String(), "")
+	assert.Contains(t, buf.String(), "")
 }

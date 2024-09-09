@@ -247,6 +247,7 @@ func run(kpmcli *client.KpmClient, opts *opt.CompileOptions) (*kcl.KCLResultList
 	}
 
 	kclPkg.SetVendorMode(opts.IsVendor())
+	kclPkg.NoSumCheck = opts.NoSumCheck()
 
 	globalPkgPath, err := env.GetAbsPkgPath()
 	if err != nil {

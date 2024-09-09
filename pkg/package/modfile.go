@@ -275,9 +275,6 @@ func (d *Dependency) GenPathSuffix() string {
 		// TODO: new local dependency structure will replace this
 		// issue: https://github.com/kcl-lang/kpm/issues/384
 		name := strings.TrimSuffix(filepath.Base(d.Source.Git.Url), filepath.Ext(d.Source.Git.Url))
-		if d.Source.Git.GetPackage() != "" {
-			name = strings.Split(d.FullName, "_")[0]
-		}
 		if len(d.Source.Git.Tag) != 0 {
 			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Tag)
 		} else if len(d.Source.Git.Commit) != 0 {

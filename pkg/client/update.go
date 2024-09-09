@@ -4,18 +4,46 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"kcl-lang.io/kpm/pkg/downloader"
+	"github.com/elliotchance/orderedmap/v2"
 	pkg "kcl-lang.io/kpm/pkg/package"
+	"kcl-lang.io/kpm/pkg/utils"
 )
 
 // UpdateOptions is the option for updating a package.
 // Updating a package means iterating all the dependencies of the package
 // and updating the dependencies and selecting the version of the dependencies by MVS.
 type UpdateOptions struct {
-	kpkg *pkg.KclPkg
+	kpkg         *pkg.KclPkg
+	enableVendor bool
+	vendorPath   string
+	offline      bool
 }
 
 type UpdateOption func(*UpdateOptions) error
+
+// WithOffline sets the flag to enable the offline mode.
+func WithUpdateOffline(offline bool) UpdateOption {
+	return func(opts *UpdateOptions) error {
+		opts.offline = offline
+		return nil
+	}
+}
+
+// WithEnableVendor sets the flag to enable the vendor.
+func WithUpdateEnableVendor(enableVendor bool) UpdateOption {
+	return func(opts *UpdateOptions) error {
+		opts.enableVendor = enableVendor
+		return nil
+	}
+}
+
+// WithVendorPath sets the path of the vendor.
+func WithUpdateVendorPath(vendorPath string) UpdateOption {
+	return func(opts *UpdateOptions) error {
+		opts.vendorPath = vendorPath
+		return nil
+	}
+}
 
 // WithUpdatedKclPkg sets the kcl package to be updated.
 func WithUpdatedKclPkg(kpkg *pkg.KclPkg) UpdateOption {
@@ -42,13 +70,40 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 	if modDeps == nil {
 		return nil, fmt.Errorf("kcl.mod dependencies is nil")
 	}
-	lockDeps := kpkg.Dependencies.Deps
-	if lockDeps == nil {
-		return nil, fmt.Errorf("kcl.mod.lock dependencies is nil")
-	}
+	lockDeps := orderedmap.NewOrderedMap[string, pkg.Dependency]()
 
 	// Create a new dependency resolver
 	resolver := NewDepsResolver(c)
+	// TODO: Update the local path of the dependency.
+	//  After the new local storage structure is complete,
+	// this section should be replaced with the new storage structure instead of the cache path according to the <Cache Path>/<Package Name>.
+	// https://github.com/kcl-lang/kpm/issues/384
+	resolvePathFunc := func(dep *pkg.Dependency, kpkg *pkg.KclPkg) error {
+		if opts.enableVendor {
+			dep.LocalFullPath = filepath.Join(opts.vendorPath, dep.GenPathSuffix())
+		} else {
+			dep.LocalFullPath = filepath.Join(c.homePath, dep.GenPathSuffix())
+		}
+
+		var err error
+		if dep.Source.Git != nil && len(dep.Source.Git.Package) > 0 {
+			dep.LocalFullPath, err = utils.FindPackage(dep.LocalFullPath, dep.Source.Git.Package)
+			if err != nil {
+				return err
+			}
+		}
+
+		if dep.Source.IsLocalPath() {
+			if !filepath.IsAbs(dep.Source.Local.Path) {
+				dep.LocalFullPath = filepath.Join(kpkg.HomePath, dep.Source.Local.Path)
+			} else {
+				dep.LocalFullPath = dep.Source.Local.Path
+			}
+		}
+
+		return nil
+	}
+
 	// ResolveFunc is the function for resolving each dependency when traversing the dependency graph.
 	resolverFunc := func(dep *pkg.Dependency, parentPkg *pkg.KclPkg) error {
 		// Check if the dependency exists in the mod file.
@@ -56,7 +111,17 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 			// if the dependency exists in the mod file,
 			// check the version and select the greater one.
 			if less, err := existDep.VersionLessThan(dep); less && err == nil {
-				kpkg.ModFile.Dependencies.Deps.Set(dep.Name, *dep)
+				err = resolvePathFunc(dep, parentPkg)
+				if err != nil {
+					return err
+				}
+				modDeps.Set(dep.Name, *dep)
+			} else {
+				err = resolvePathFunc(&existDep, parentPkg)
+				if err != nil {
+					return err
+				}
+				modDeps.Set(dep.Name, existDep)
 			}
 			// if the dependency does not exist in the mod file,
 			// the dependency is a indirect dependency.
@@ -67,48 +132,48 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 			// If the dependency exists in the lock file,
 			// check the version and select the greater one.
 			if less, err := existDep.VersionLessThan(dep); less && err == nil {
-				kpkg.Dependencies.Deps.Set(dep.Name, *dep)
+				err = resolvePathFunc(dep, parentPkg)
+				if err != nil {
+					return err
+				}
+				lockDeps.Set(dep.Name, *dep)
+			} else {
+				err = resolvePathFunc(&existDep, parentPkg)
+				if err != nil {
+					return err
+				}
+				lockDeps.Set(dep.Name, existDep)
 			}
 		} else {
 			// if the dependency does not exist in the lock file,
 			// the dependency is a new dependency and will be added to the lock file.
-			kpkg.Dependencies.Deps.Set(dep.Name, *dep)
+			err := resolvePathFunc(dep, parentPkg)
+			if err != nil {
+				return err
+			}
+			lockDeps.Set(dep.Name, *dep)
 		}
 
 		return nil
 	}
+
 	resolver.AddResolveFunc(resolverFunc)
 
-	// Iterate all the dependencies of the package in kcl.mod and resolve each dependency.
-	for _, depName := range modDeps.Keys() {
-		dep, ok := modDeps.Get(depName)
-		if !ok {
-			return nil, fmt.Errorf("failed to get dependency %s", depName)
-		}
-
-		// Check if the dependency is a local path and it is not an absolute path.
-		// If it is not an absolute path, transform the path to an absolute path.
-		var depSource *downloader.Source
-		if dep.Source.IsLocalPath() && !filepath.IsAbs(dep.Source.Local.Path) {
-			depSource = &downloader.Source{
-				Local: &downloader.Local{
-					Path: filepath.Join(kpkg.HomePath, dep.Source.Local.Path),
-				},
-			}
-		} else {
-			depSource = &dep.Source
-		}
-
-		err := resolver.Resolve(
-			WithEnableCache(true),
-			WithResolveSource(depSource),
-		)
-		if err != nil {
-			return nil, err
-		}
+	err := resolver.Resolve(
+		WithEnableCache(true),
+		WithCachePath(c.homePath),
+		WithResolveKclPkg(kpkg),
+		WithEnableVendor(opts.enableVendor),
+		WithVendorPath(opts.vendorPath),
+	)
+	if err != nil {
+		return nil, err
 	}
 
-	err := kpkg.UpdateModAndLockFile()
+	kpkg.Dependencies.Deps = lockDeps
+	kpkg.ModFile.Dependencies.Deps = modDeps
+
+	err = kpkg.UpdateModAndLockFile()
 	if err != nil {
 		return nil, err
 	}
