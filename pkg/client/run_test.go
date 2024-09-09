@@ -7,11 +7,12 @@ import (
 
 	"github.com/otiai10/copy"
 	"gotest.tools/v3/assert"
+	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
-func TestUpdateWithMvs(t *testing.T) {
-	testDir := getTestDir("test_update_with_mvs")
+func TestRunWithMvs(t *testing.T) {
+	testDir := getTestDir("test_run_with_mvs")
 	kpmcli, err := NewKpmClient()
 	if err != nil {
 		t.Fatal(err)
@@ -44,12 +45,13 @@ func TestUpdateWithMvs(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		kpkg, err := kpmcli.LoadPkgFromPath(filepath.Join(testDir, update.name, "pkg"))
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		_, err = kpmcli.Update(WithUpdatedKclPkg(kpkg))
+		_, err = kpmcli.Run(WithRunSource(
+			&downloader.Source{
+				Local: &downloader.Local{
+					Path: filepath.Join(testDir, update.name, "pkg"),
+				},
+			},
+		))
 		if err != nil {
 			t.Fatal(err)
 		}

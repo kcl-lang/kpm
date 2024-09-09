@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"kcl-lang.io/kpm/pkg/downloader"
@@ -96,6 +97,10 @@ func (dr *DepsResolver) Resolve(options ...ResolveOption) error {
 	// For remote source, it will use the RemoteVisitor and enable the cache.
 	// For local source, it will use the PkgVisitor.
 	visitorSelectorFunc := func(source *downloader.Source) (Visitor, error) {
+		if source.IsNilSource() {
+			return nil, fmt.Errorf("the dependency source is nil")
+		}
+
 		if source.IsRemote() {
 			PkgVisitor := NewRemoteVisitor(NewPkgVisitor(dr.kpmClient))
 			PkgVisitor.EnableCache = opts.EnableCache

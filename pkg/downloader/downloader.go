@@ -129,6 +129,7 @@ func NewOciDownloader(platform string) *DepDownloader {
 func (d *DepDownloader) Download(opts DownloadOptions) error {
 
 	var localPath string
+	originLocalPath := opts.LocalPath
 	if opts.EnableCache {
 		// TODO: After the new local storage structure is complete,
 		// this section should be replaced with the new storage structure instead of the cache path according to the <Cache Path>/<Package Name>.
@@ -176,7 +177,20 @@ func (d *DepDownloader) Download(opts DownloadOptions) error {
 		localPath = opts.LocalPath
 	}
 
-	opts.LocalPath = localPath
+	// Create a temporary directory to download the package.
+	// The temporary directory will be cleaned after the download.
+	tmpDir, err := os.MkdirTemp("", "")
+	if err != nil {
+		return err
+	}
+
+	if opts.Source.Git != nil {
+		tmpDir = filepath.Join(tmpDir, constants.GitScheme)
+	}
+
+	defer os.RemoveAll(tmpDir)
+
+	opts.LocalPath = tmpDir
 	// Dispatch the download to the specific downloader by package source.
 	if opts.Source.Oci != nil || opts.Source.Registry != nil {
 		if opts.Source.Registry != nil {
@@ -185,15 +199,37 @@ func (d *DepDownloader) Download(opts DownloadOptions) error {
 		if d.OciDownloader == nil {
 			d.OciDownloader = &OciDownloader{}
 		}
-		return d.OciDownloader.Download(opts)
+		err := d.OciDownloader.Download(opts)
+		if err != nil {
+			return err
+		}
 	}
 
 	if opts.Source.Git != nil {
 		if d.GitDownloader == nil {
 			d.GitDownloader = &GitDownloader{}
 		}
-		return d.GitDownloader.Download(opts)
+		err := d.GitDownloader.Download(opts)
+		if err != nil {
+			return err
+		}
 	}
+
+	// Copy the tmpDir to the local path.
+	err = copy.Copy(tmpDir, localPath)
+	if err != nil {
+		return err
+	}
+
+	// If the cache is enabled, the localpath is the cache path.
+	// Copy the cache to the origin local path user specified.
+	if opts.EnableCache {
+		err = copy.Copy(localPath, originLocalPath)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

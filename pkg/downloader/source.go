@@ -69,6 +69,10 @@ func (source *Source) IsLocalTgzPath() bool {
 	return source.Local.IsLocalTgzPath()
 }
 
+func (source *Source) IsNilSource() bool {
+	return source == nil || (source.Git == nil && source.Oci == nil && source.Local == nil && source.Registry == nil)
+}
+
 func (source *Source) IsRemote() bool {
 	return source.Git != nil || source.Oci != nil || source.Registry != nil
 }

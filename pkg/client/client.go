@@ -325,6 +325,16 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 			return err
 		}
 
+		if update {
+			// Update the dependencies and select the version by mvs.
+			kclPkg.NoSumCheck = c.noSumCheck
+			_, err := c.Update(
+				WithUpdatedKclPkg(kclPkg),
+			)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
