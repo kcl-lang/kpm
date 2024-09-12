@@ -17,6 +17,7 @@ var features = map[string]bool{
 }
 
 func init() {
+	// supports the env: export FEATURE_GATES="SupportMVS=true"
 	envVar := os.Getenv("FEATURE_GATES")
 	if envVar != "" {
 		parseFeatureGates(envVar)
