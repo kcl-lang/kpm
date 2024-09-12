@@ -1,24 +1,6 @@
-/*
-Copyright 2022 The Flux authors
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 // Package features sets the feature gates that
 // kpm uses to enable or disable certain features.
 package features
-
-import feathelper "github.com/fluxcd/pkg/runtime/features"
 
 const (
 	// SupportMVS is the feature gate for enabling the support for MVS.
@@ -41,7 +23,10 @@ func FeatureGates() map[string]bool {
 // pkg/runtime/features, so callers won't need to import
 // both packages for checking whether a feature is enabled.
 func Enabled(feature string) (bool, error) {
-	return feathelper.Enabled(feature)
+	if enabled, ok := features[feature]; ok {
+		return enabled, nil
+	}
+	return false, nil
 }
 
 // Enable enables the specified feature. If the feature is not
