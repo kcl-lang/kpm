@@ -1,10 +1,3 @@
-import k8s.api.core.v1 as k8core
+import cc
 
-k8core.Pod {
-    metadata.name = "web-app"
-    spec.containers = [{
-        name = "main-container"
-        image = "nginx"
-        ports = [{containerPort = 80}]
-    }]
-}
+b = cc.The_first_kcl_program

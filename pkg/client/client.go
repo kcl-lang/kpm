@@ -312,23 +312,19 @@ func (c *KpmClient) getDepStorePath(search_path string, d *pkg.Dependency, isVen
 // Since redownloads are not triggered if local dependencies exists,
 // indirect dependencies are also synchronized to the lock file by `lockDeps`.
 func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) error {
-	if kclPkg.IsVendorMode() {
-		// In the vendor mode, the search path is the vendor subdirectory of the current package.
-		err := c.VendorDeps(kclPkg)
-		if err != nil {
-			return err
-		}
-	} else {
-		// In the non-vendor mode, the search path is the KCL_PKG_PATH.
-		err := c.resolvePkgDeps(kclPkg, &kclPkg.Dependencies, update)
-		if err != nil {
-			return err
-		}
-
+	_, err := c.Update(
+		WithUpdatedKclPkg(kclPkg),
+		WithUpdateEnableVendor(kclPkg.IsVendorMode()),
+		WithUpdateVendorPath(kclPkg.LocalVendorPath()),
+		WithUpdateOffline(!update),
+	)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
+// Deprecated: Use `KpmClient.Update()` instead.
 func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencies, update bool) error {
 	var searchPath string
 	kclPkg.NoSumCheck = c.noSumCheck
@@ -473,10 +469,6 @@ func (c *KpmClient) UpdateDeps(kclPkg *pkg.KclPkg) error {
 		return err
 	}
 
-	_, err = c.Update(
-		WithUpdatedKclPkg(kclPkg),
-	)
-
 	return err
 }
 
@@ -538,6 +530,7 @@ func (c *KpmClient) CompileWithOpts(opts *opt.CompileOptions) (*kcl.KCLResultLis
 	}
 
 	kclPkg.SetVendorMode(opts.IsVendor())
+	kclPkg.NoSumCheck = opts.NoSumCheck()
 
 	globalPkgPath, err := env.GetAbsPkgPath()
 	if err != nil {

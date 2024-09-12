@@ -1,10 +1,3 @@
-import k8s.api.core.v1 as k8core
+import helloworld
 
-k8core.Pod {
-    metadata.name = "web-app"
-    spec.containers = [{
-        name = "main-container"
-        image = "nginx"
-        ports = [{containerPort = 80}]
-    }]
-}
+a = helloworld.The_first_kcl_program

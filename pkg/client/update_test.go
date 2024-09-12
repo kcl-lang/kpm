@@ -10,7 +10,7 @@ import (
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
-func TestUpdate(t *testing.T) {
+func TestUpdateWithMvs(t *testing.T) {
 	testDir := getTestDir("test_update_with_mvs")
 	kpmcli, err := NewKpmClient()
 	if err != nil {
