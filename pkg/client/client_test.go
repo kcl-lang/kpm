@@ -856,7 +856,7 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 
 	expectedStr := fmt.Sprintf(
 		"{\"packages\":{\"flask_demo_kcl_manifests\":{\"name\":\"flask_demo_kcl_manifests\",\"manifest_path\":\"%s\"}}}",
-		filepath.Join("not_exist", "flask-demo-kcl-manifests_ade147b"),
+		filepath.ToSlash(filepath.Join("not_exist", "flask-demo-kcl-manifests_ade147b")),
 	)
 	assert.Equal(t, res, expectedStr)
 	defer func() {
@@ -1194,7 +1194,7 @@ func TestMetadataOffline(t *testing.T) {
 	assert.Equal(t, res, "{\"packages\":{}}")
 	content_after_metadata, err := os.ReadFile(kclMod)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, string(content_after_metadata), string(uglyContent))
+	assert.Equal(t, utils.RmNewline(string(content_after_metadata)), utils.RmNewline(string(uglyContent)))
 
 	res, err = kpmcli.ResolveDepsMetadataInJsonStr(kclPkg, true)
 	assert.Equal(t, err, nil)
