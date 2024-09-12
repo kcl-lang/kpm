@@ -324,6 +324,7 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 	return nil
 }
 
+// Deprecated: Use `KpmClient.Update()` instead.
 func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencies, update bool) error {
 	var searchPath string
 	kclPkg.NoSumCheck = c.noSumCheck
@@ -436,17 +437,6 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 	// Generate file kcl.mod.lock.
 	if kclPkg.ModFile.Dependencies.Deps.Len() > 0 && !kclPkg.NoSumCheck || !update {
 		err := kclPkg.LockDepsVersion()
-		if err != nil {
-			return err
-		}
-	}
-
-	if update {
-		// Update the dependencies and select the version by mvs.
-		kclPkg.NoSumCheck = c.noSumCheck
-		_, err := c.Update(
-			WithUpdatedKclPkg(kclPkg),
-		)
 		if err != nil {
 			return err
 		}
@@ -924,13 +914,6 @@ func (c *KpmClient) vendorDeps(kclPkg *pkg.KclPkg, vendorPath string) error {
 
 			// If the package already exists in the 'vendor', do nothing.
 			if utils.DirExists(vendorFullPath) {
-				if d.GetPackage() != "" {
-					tempVendorFullPath, err := utils.FindPackage(vendorFullPath, d.GetPackage())
-					if err != nil {
-						return err
-					}
-					vendorFullPath = tempVendorFullPath
-				}
 				d.LocalFullPath = vendorFullPath
 				lockDeps[i] = d
 				continue

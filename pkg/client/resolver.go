@@ -21,7 +21,6 @@ type ResolveOption func(*ResolveOptions) error
 type resolveFunc func(dep *pkg.Dependency, parentPkg *pkg.KclPkg) error
 
 type ResolveOptions struct {
-
 	// Source is the source of the package to be resolved.
 	kpkg *pkg.KclPkg
 	// EnableCache is the flag to enable the cache during the resolving the remote package.
