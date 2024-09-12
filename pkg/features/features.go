@@ -2,6 +2,11 @@
 // kpm uses to enable or disable certain features.
 package features
 
+import (
+	"os"
+	"strings"
+)
+
 const (
 	// SupportMVS is the feature gate for enabling the support for MVS.
 	SupportMVS = "SupportMVS"
@@ -9,6 +14,13 @@ const (
 
 var features = map[string]bool{
 	SupportMVS: false,
+}
+
+func init() {
+	envVar := os.Getenv("FEATURE_GATES")
+	if envVar != "" {
+		parseFeatureGates(envVar)
+	}
 }
 
 // FeatureGates contains a list of all supported feature gates and
@@ -42,5 +54,21 @@ func Enable(feature string) {
 func Disable(feature string) {
 	if _, ok := features[feature]; ok {
 		features[feature] = false
+	}
+}
+
+// parseFeatureGates parses the feature gates from the given
+func parseFeatureGates(envVar string) {
+	pairs := strings.Split(envVar, ",")
+	for _, pair := range pairs {
+		kv := strings.Split(pair, "=")
+		if len(kv) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(kv[0])
+		value := strings.TrimSpace(kv[1]) == "true"
+		if _, ok := features[key]; ok {
+			features[key] = value
+		}
 	}
 }
