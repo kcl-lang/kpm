@@ -267,14 +267,12 @@ func (dep *Dependency) GetLocalFullPath(rootpath string) string {
 func (d *Dependency) GenPathSuffix() string {
 
 	var storePkgName string
-
+	name := d.Name
 	if d.Source.Oci != nil {
-		name := filepath.Base(d.Source.Oci.Repo)
 		storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Oci.Tag)
 	} else if d.Source.Git != nil {
 		// TODO: new local dependency structure will replace this
 		// issue: https://github.com/kcl-lang/kpm/issues/384
-		name := strings.TrimSuffix(filepath.Base(d.Source.Git.Url), filepath.Ext(d.Source.Git.Url))
 		if d.Source.Git.GetPackage() != "" {
 			name = strings.Split(d.FullName, "_")[0]
 		}
@@ -286,7 +284,6 @@ func (d *Dependency) GenPathSuffix() string {
 			storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Git.Branch)
 		}
 	} else if d.Source.Registry != nil {
-		name := filepath.Base(d.Source.Registry.Oci.Repo)
 		storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, name, d.Source.Registry.Version)
 	} else {
 		storePkgName = fmt.Sprintf(PKG_NAME_PATTERN, d.Name, d.Version)
