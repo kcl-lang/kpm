@@ -28,6 +28,7 @@ import (
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/errors"
+	"kcl-lang.io/kpm/pkg/features"
 	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/oci"
 	"kcl-lang.io/kpm/pkg/opt"
@@ -473,11 +474,30 @@ func (c *KpmClient) UpdateDeps(kclPkg *pkg.KclPkg) error {
 		return err
 	}
 
-	_, err = c.Update(
-		WithUpdatedKclPkg(kclPkg),
-	)
+	if ok, err := features.Enabled(features.SupportMVS); err != nil && ok {
+		_, err = c.Update(
+			WithUpdatedKclPkg(kclPkg),
+		)
+		if err != nil {
+			return err
+		}
+	} else {
+		// update kcl.mod
+		err = kclPkg.ModFile.StoreModFile()
+		if err != nil {
+			return err
+		}
 
-	return err
+		// Generate file kcl.mod.lock.
+		if !kclPkg.NoSumCheck {
+			err := kclPkg.LockDepsVersion()
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // ResolveDepsMetadataInJsonStr will calculate the local storage path of the external package,
@@ -804,14 +824,21 @@ func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pk
 		kclPkg.Dependencies.Deps.Delete(d.Name)
 	}
 
-	// After adding the new dependency,
-	// Iterate through all the dependencies and select the version by mvs
-	_, err = c.Update(
-		WithUpdatedKclPkg(kclPkg),
-	)
+	if ok, err := features.Enabled(features.SupportMVS); err != nil && ok {
+		// After adding the new dependency,
+		// Iterate through all the dependencies and select the version by mvs
+		_, err = c.Update(
+			WithUpdatedKclPkg(kclPkg),
+		)
 
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err = kclPkg.UpdateModAndLockFile()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	succeedMsgInfo := d.Name

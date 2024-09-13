@@ -7,10 +7,12 @@ import (
 
 	"github.com/otiai10/copy"
 	"gotest.tools/v3/assert"
+	"kcl-lang.io/kpm/pkg/features"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
 func TestUpdate(t *testing.T) {
+	features.Enable(features.SupportMVS)
 	testDir := getTestDir("test_update_with_mvs")
 	kpmcli, err := NewKpmClient()
 	if err != nil {
