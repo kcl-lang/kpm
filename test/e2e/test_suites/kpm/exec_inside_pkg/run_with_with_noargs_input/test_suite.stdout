@@ -4,7 +4,7 @@ NAME:
    kpm run - compile kcl package.
 
 USAGE:
-   kpm run command [command options] [arguments...]
+   kpm run command [command options]
 
 COMMANDS:
    help, h  Shows a list of commands or help for one command

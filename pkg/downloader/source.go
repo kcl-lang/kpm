@@ -22,6 +22,10 @@ type Source struct {
 	*Local `toml:"-"`
 }
 
+func (source *Source) IsNilSource() bool {
+	return source == nil || (source.Git == nil && source.Oci == nil && source.Local == nil && source.Registry == nil)
+}
+
 type Local struct {
 	Path string `toml:"path,omitempty"`
 }

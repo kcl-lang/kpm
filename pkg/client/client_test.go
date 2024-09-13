@@ -153,7 +153,7 @@ func TestDownloadGitWithPackage(t *testing.T) {
 		}
 	}()
 
-	err := os.MkdirAll(testPath, 0755)
+	err := os.MkdirAll(getTestDir("download"), 0755)
 	assert.Equal(t, err, nil)
 
 	depFromGit := pkg.Dependency{
@@ -161,9 +161,9 @@ func TestDownloadGitWithPackage(t *testing.T) {
 		Version: "",
 		Source: downloader.Source{
 			Git: &downloader.Git{
-				Url:     "https://github.com/kcl-lang/modules.git",
-				Commit:  "bdd4d00a88bc3534ae50affa8328df2927fd2171",
-				Package: "add-ndots",
+				Url:     "https://github.com/kcl-lang/flask-demo-kcl-manifests",
+				Commit:  "8308200",
+				Package: "cc",
 			},
 		},
 	}
@@ -174,7 +174,7 @@ func TestDownloadGitWithPackage(t *testing.T) {
 	dep, err := kpmcli.Download(&depFromGit, "", testPath)
 
 	assert.Equal(t, err, nil)
-	assert.Equal(t, dep.Source.Git.Package, "add-ndots")
+	assert.Equal(t, dep.Source.Git.Package, "cc")
 }
 
 func TestModandLockFilesWithGitPackageDownload(t *testing.T) {

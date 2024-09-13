@@ -30,6 +30,7 @@ import (
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/features"
 	"kcl-lang.io/kpm/pkg/git"
+	"kcl-lang.io/kpm/pkg/loader"
 	"kcl-lang.io/kpm/pkg/oci"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
@@ -41,6 +42,8 @@ import (
 
 // KpmClient is the client of kpm.
 type KpmClient struct {
+	// The loader of the kcl package.
+	PkgLoader loader.Loader
 	// The writer of the log.
 	logWriter io.Writer
 	// The downloader of the dependencies.
@@ -76,6 +79,7 @@ func NewKpmClient() (*KpmClient, error) {
 		logWriter:     os.Stdout,
 		settings:      *settings,
 		homePath:      homePath,
+		PkgLoader:     loader.NewFileLoader(settings),
 		DepDownloader: &downloader.DepDownloader{},
 	}, nil
 }
@@ -151,49 +155,53 @@ func (c *KpmClient) GetSettings() *settings.Settings {
 }
 
 func (c *KpmClient) LoadPkgFromPath(pkgPath string) (*pkg.KclPkg, error) {
-	modFile, err := c.LoadModFile(pkgPath)
-	if err != nil {
-		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod' in '%s'", pkgPath))
-	}
-
-	// Get dependencies from kcl.mod.lock.
-	deps, err := c.LoadLockDeps(pkgPath)
-
-	if err != nil {
-		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod.lock' in '%s'", pkgPath))
-	}
-
-	// Align the dependencies between kcl.mod and kcl.mod.lock.
-	for _, name := range modFile.Dependencies.Deps.Keys() {
-		dep, ok := modFile.Dependencies.Deps.Get(name)
-		if !ok {
-			break
+	if ok, err := features.Enabled(features.SupportPackageLoader); err != nil && ok {
+		return c.PkgLoader.Load(pkgPath)
+	} else {
+		modFile, err := c.LoadModFile(pkgPath)
+		if err != nil {
+			return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod' in '%s'", pkgPath))
 		}
-		if dep.Local != nil {
-			if ldep, ok := deps.Deps.Get(name); ok {
-				var localFullPath string
-				if filepath.IsAbs(dep.Local.Path) {
-					localFullPath = dep.Local.Path
-				} else {
-					localFullPath, err = filepath.Abs(filepath.Join(pkgPath, dep.Local.Path))
-					if err != nil {
-						return nil, reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it.")
+
+		// Get dependencies from kcl.mod.lock.
+		deps, err := c.LoadLockDeps(pkgPath)
+
+		if err != nil {
+			return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod.lock' in '%s'", pkgPath))
+		}
+
+		// Align the dependencies between kcl.mod and kcl.mod.lock.
+		for _, name := range modFile.Dependencies.Deps.Keys() {
+			dep, ok := modFile.Dependencies.Deps.Get(name)
+			if !ok {
+				break
+			}
+			if dep.Local != nil {
+				if ldep, ok := deps.Deps.Get(name); ok {
+					var localFullPath string
+					if filepath.IsAbs(dep.Local.Path) {
+						localFullPath = dep.Local.Path
+					} else {
+						localFullPath, err = filepath.Abs(filepath.Join(pkgPath, dep.Local.Path))
+						if err != nil {
+							return nil, reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it.")
+						}
 					}
+					ldep.LocalFullPath = localFullPath
+					dep.LocalFullPath = localFullPath
+					ldep.Source = dep.Source
+					deps.Deps.Set(name, ldep)
+					modFile.Dependencies.Deps.Set(name, dep)
 				}
-				ldep.LocalFullPath = localFullPath
-				dep.LocalFullPath = localFullPath
-				ldep.Source = dep.Source
-				deps.Deps.Set(name, ldep)
-				modFile.Dependencies.Deps.Set(name, dep)
 			}
 		}
-	}
 
-	return &pkg.KclPkg{
-		ModFile:      *modFile,
-		HomePath:     pkgPath,
-		Dependencies: *deps,
-	}, nil
+		return &pkg.KclPkg{
+			ModFile:      *modFile,
+			HomePath:     pkgPath,
+			Dependencies: *deps,
+		}, nil
+	}
 }
 
 func (c *KpmClient) LoadModFile(pkgPath string) (*pkg.ModFile, error) {
@@ -1177,8 +1185,6 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			return nil, err
 		}
 
-		dep.FullName = dep.GenDepFullName()
-
 		if dep.GetPackage() != "" {
 			localFullPath, err := utils.FindPackage(localPath, dep.GetPackage())
 			if err != nil {
@@ -1190,11 +1196,12 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			dep.LocalFullPath = localPath
 		}
 
-		modFile, err := c.LoadModFile(dep.LocalFullPath)
+		dpkg, err := c.LoadPkgFromPath(dep.LocalFullPath)
 		if err != nil {
 			return nil, err
 		}
-		dep.Version = modFile.Pkg.Version
+
+		dep.FromKclPkg(dpkg)
 	}
 
 	if dep.Source.Oci != nil || dep.Source.Registry != nil {
@@ -1832,7 +1839,22 @@ func (c *KpmClient) DownloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependenc
 
 		existDep, err := c.dependencyExistsLocal(pkghome, &d)
 		if existDep != nil && err == nil {
+
+			if d.GetPackage() != "" {
+				existDep.LocalFullPath, err = utils.FindPackage(existDep.LocalFullPath, d.GetPackage())
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			dpkg, err := c.LoadPkgFromPath(existDep.LocalFullPath)
+			if err != nil {
+				return nil, err
+			}
+
+			existDep.FromKclPkg(dpkg)
 			newDeps.Deps.Set(d.Name, *existDep)
+			deps.Deps.Set(d.Name, *existDep)
 			continue
 		}
 

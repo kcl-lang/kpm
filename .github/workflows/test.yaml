@@ -34,3 +34,13 @@ jobs:
         uses: shogo82148/actions-goveralls@v1
         with:
           path-to-profile: coverage.out
+      - name: Running go tests with coverage and feature gate
+        env:
+          GO111MODULE: on
+          KPM_FEATURE_GATES: "SupportPackageLoader=true"
+        run: |
+          make cover
+      - name: Send coverage
+        uses: shogo82148/actions-goveralls@v1
+        with:
+          path-to-profile: coverage.out

@@ -58,6 +58,7 @@ func NewKclPkg(opts *opt.InitOptions) KclPkg {
 	}
 }
 
+// Deprecated: Use `KpmClient.LoadPkgFromPath()` instead.
 func LoadKclPkg(pkgPath string) (*KclPkg, error) {
 	modFile, err := LoadModFile(pkgPath)
 	if err != nil {
@@ -109,6 +110,7 @@ func LoadKclPkg(pkgPath string) (*KclPkg, error) {
 		HomePath:     pkgPath,
 		Dependencies: *deps,
 	}, nil
+
 }
 
 func FindFirstKclPkgFrom(path string) (*KclPkg, error) {

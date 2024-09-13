@@ -37,3 +37,9 @@ jobs:
           GO111MODULE: on 
         run : |
           make cover
+      - name: Running go tests with coverage on Windows
+        env:
+          GO111MODULE: on 
+          KPM_FEATURE_GATES: "SupportPackageLoader=true"
+        run : |
+          make cover

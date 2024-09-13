@@ -10,10 +10,13 @@ import (
 const (
 	// SupportMVS is the feature gate for enabling the support for MVS.
 	SupportMVS = "SupportMVS"
+	// SupportPackageLoader is the feature gate for enabling the support for package loader.
+	SupportPackageLoader = "SupportPackageLoader"
 )
 
 var features = map[string]bool{
-	SupportMVS: false,
+	SupportMVS:           false,
+	SupportPackageLoader: false,
 }
 
 func init() {
