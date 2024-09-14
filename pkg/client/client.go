@@ -1895,12 +1895,16 @@ func (c *KpmClient) DownloadDeps(deps *pkg.Dependencies, lockDeps *pkg.Dependenc
 		var err error
 		var deppkg *pkg.KclPkg
 		if len(d.LocalFullPath) != 0 {
-			deppkg, err = c.LoadPkgFromPath(d.LocalFullPath)
+			if d.GetPackage() != "" {
+				d.LocalFullPath, _ = utils.FindPackage(d.LocalFullPath, d.GetPackage())
+			}
 		} else {
 			// Load kcl.mod file of the new downloaded dependencies.
-			deppkg, err = c.LoadPkgFromPath(filepath.Join(c.homePath, d.FullName))
-
+			if d.GetPackage() != "" {
+				d.LocalFullPath, _ = utils.FindPackage(filepath.Join(c.homePath, d.FullName), d.GetPackage())
+			}
 		}
+		deppkg, err = c.LoadPkgFromPath(d.LocalFullPath)
 		if err != nil {
 			if os.IsNotExist(err) {
 				continue
