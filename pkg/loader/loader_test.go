@@ -21,8 +21,10 @@ func getTestDir(subDir string) string {
 }
 
 func load(t *testing.T, pkgPath string) *pkg.KclPkg {
-	loader := NewFileLoader(settings.GetSettings())
-	pkg, err := loader.Load(pkgPath)
+	pkg, err := Load(
+		WithPkgPath(pkgPath),
+		WithSettings(settings.GetSettings()),
+	)
 	if err != nil {
 		t.Fatal(err)
 	}

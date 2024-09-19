@@ -11,39 +11,8 @@ import (
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
-// Loader is an interface that defines the method to load a package.
-type Loader interface {
-	Load(pkgPath string) (*pkg.KclPkg, error)
-}
-
-// PkgLoader is a struct that contains the settings.
-type PkgLoader struct {
-	settings *settings.Settings
-}
-
-// NewPkgLoader creates a new PkgLoader.
-func NewPkgLoader(settings *settings.Settings) *PkgLoader {
-	return &PkgLoader{
-		settings: settings,
-	}
-}
-
-// FileLoader is a struct that load a package from the file system.
-type FileLoader struct {
-	PkgLoader
-}
-
-// NewFileLoader creates a new FileLoader.
-func NewFileLoader(settings *settings.Settings) *FileLoader {
-	return &FileLoader{
-		PkgLoader: PkgLoader{
-			settings: settings,
-		},
-	}
-}
-
 // loadModFile loads the kcl.mod file from the package path.
-func (fl *FileLoader) loadModFile(pkgPath string) (*pkg.ModFile, error) {
+func loadModFile(pkgPath string) (*pkg.ModFile, error) {
 	modFile := new(pkg.ModFile)
 	err := modFile.LoadModFile(filepath.Join(pkgPath, pkg.MOD_FILE))
 	if err != nil {
@@ -59,7 +28,7 @@ func (fl *FileLoader) loadModFile(pkgPath string) (*pkg.ModFile, error) {
 // preProcess pre-processes the package loaded from kcl.mod and kcl.mod.lock
 // 1. transform the local path to the absolute path.
 // 2. fill the default oci registry.
-func (fl *FileLoader) preProcess(kpkg *pkg.KclPkg) error {
+func preProcess(kpkg *pkg.KclPkg, settings *settings.Settings) error {
 	for _, name := range kpkg.ModFile.Dependencies.Deps.Keys() {
 		dep, ok := kpkg.ModFile.Dependencies.Deps.Get(name)
 		if !ok {
@@ -83,21 +52,21 @@ func (fl *FileLoader) preProcess(kpkg *pkg.KclPkg) error {
 		// Fill the default oci registry.
 		if dep.Source.Oci != nil {
 			if len(dep.Source.Oci.Reg) == 0 {
-				dep.Source.Oci.Reg = fl.settings.DefaultOciRegistry()
+				dep.Source.Oci.Reg = settings.DefaultOciRegistry()
 			}
 
 			if len(dep.Source.Oci.Repo) == 0 {
-				urlpath := utils.JoinPath(fl.settings.DefaultOciRepo(), dep.Name)
+				urlpath := utils.JoinPath(settings.DefaultOciRepo(), dep.Name)
 				dep.Source.Oci.Repo = urlpath
 			}
 		}
 		if dep.Source.Registry != nil {
 			if len(dep.Source.Registry.Reg) == 0 {
-				dep.Source.Registry.Reg = fl.settings.DefaultOciRegistry()
+				dep.Source.Registry.Reg = settings.DefaultOciRegistry()
 			}
 
 			if len(dep.Source.Registry.Repo) == 0 {
-				urlpath := utils.JoinPath(fl.settings.DefaultOciRepo(), dep.Name)
+				urlpath := utils.JoinPath(settings.DefaultOciRepo(), dep.Name)
 				dep.Source.Registry.Repo = urlpath
 			}
 
@@ -108,8 +77,8 @@ func (fl *FileLoader) preProcess(kpkg *pkg.KclPkg) error {
 				Name:    dep.Name,
 				Version: dep.Version,
 				Oci: &downloader.Oci{
-					Reg:  fl.settings.DefaultOciRegistry(),
-					Repo: utils.JoinPath(fl.settings.DefaultOciRepo(), dep.Name),
+					Reg:  settings.DefaultOciRegistry(),
+					Repo: utils.JoinPath(settings.DefaultOciRepo(), dep.Name),
 					Tag:  dep.Version,
 				},
 			}
@@ -124,9 +93,40 @@ func (fl *FileLoader) preProcess(kpkg *pkg.KclPkg) error {
 	return nil
 }
 
+type LoadOptions struct {
+	// The package path.
+	PkgPath string
+	// The settings with default oci registry.
+	Settings *settings.Settings
+}
+
+type Option func(*LoadOptions)
+
+// WithPkgPath sets the package path.
+func WithPkgPath(pkgPath string) Option {
+	return func(opts *LoadOptions) {
+		opts.PkgPath = pkgPath
+	}
+}
+
+// WithSettings sets the settings with default oci registry.
+func WithSettings(settings *settings.Settings) Option {
+	return func(opts *LoadOptions) {
+		opts.Settings = settings
+	}
+}
+
 // Load loads a package from the file system.
-func (fl *FileLoader) Load(pkgPath string) (*pkg.KclPkg, error) {
-	modFile, err := fl.loadModFile(pkgPath)
+func Load(options ...Option) (*pkg.KclPkg, error) {
+
+	opts := &LoadOptions{}
+	for _, opt := range options {
+		opt(opts)
+	}
+
+	pkgPath := opts.PkgPath
+
+	modFile, err := loadModFile(pkgPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load the package from the path %s: %w", pkgPath, err)
 	}
@@ -145,7 +145,7 @@ func (fl *FileLoader) Load(pkgPath string) (*pkg.KclPkg, error) {
 	}
 
 	// pre-process the package.
-	err = fl.preProcess(kpkg)
+	err = preProcess(kpkg, opts.Settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load the package from the path %s: %w", pkgPath, err)
 	}

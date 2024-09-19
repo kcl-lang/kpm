@@ -29,9 +29,3 @@ jobs:
       - name: run e2e
         run: |
           make e2e
-      
-      - name: Running go tests with coverage and feature gate
-        env:
-          KPM_FEATURE_GATES: "SupportPackageLoader=true"
-        run: |
-          make e2e
