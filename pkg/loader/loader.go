@@ -47,7 +47,6 @@ func preProcess(kpkg *pkg.KclPkg, settings *settings.Settings) error {
 				}
 			}
 			dep.LocalFullPath = localFullPath
-			kpkg.ModFile.Dependencies.Deps.Set(name, dep)
 		}
 		// Fill the default oci registry.
 		if dep.Source.Oci != nil {
@@ -86,6 +85,7 @@ func preProcess(kpkg *pkg.KclPkg, settings *settings.Settings) error {
 		kpkg.ModFile.Dependencies.Deps.Set(name, dep)
 		if lockDep, ok := kpkg.Dependencies.Deps.Get(name); ok {
 			lockDep.Source = dep.Source
+			lockDep.LocalFullPath = dep.LocalFullPath
 			kpkg.Dependencies.Deps.Set(name, lockDep)
 		}
 	}
@@ -118,7 +118,6 @@ func WithSettings(settings *settings.Settings) Option {
 
 // Load loads a package from the file system.
 func Load(options ...Option) (*pkg.KclPkg, error) {
-
 	opts := &LoadOptions{}
 	for _, opt := range options {
 		opt(opts)
