@@ -315,16 +315,9 @@ func (dep *Dependency) FillDepInfo(homepath string) error {
 	if dep.Source.Local != nil {
 		dep.LocalFullPath = dep.Source.Local.Path
 	}
-	if dep.Source.Git != nil {
-		name := utils.ParseRepoNameFromGitUrl(dep.Source.Git.Url)
-		if len(dep.Source.Git.Tag) != 0 {
-			dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Source.Git.Tag)
-		} else if len(dep.Source.Git.Commit) != 0 {
-			dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Source.Git.Commit)
-		} else {
-			dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Source.Git.Branch)
-		}
-	}
+
+	dep.FullName = dep.GenDepFullName()
+
 	return nil
 }
 
