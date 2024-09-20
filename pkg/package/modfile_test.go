@@ -188,7 +188,7 @@ func TestLoadModFile(t *testing.T) {
 	assert.Equal(t, modFile.Dependencies.Deps.GetOrDefault("name", TestPkgDependency).Name, "name")
 	assert.Equal(t, modFile.Dependencies.Deps.GetOrDefault("name", TestPkgDependency).Source.Git.Url, "test_url")
 	assert.Equal(t, modFile.Dependencies.Deps.GetOrDefault("name", TestPkgDependency).Source.Git.Tag, "test_tag")
-	assert.Equal(t, modFile.Dependencies.Deps.GetOrDefault("name", TestPkgDependency).FullName, "name_test_tag")
+	assert.Equal(t, modFile.Dependencies.Deps.GetOrDefault("name", TestPkgDependency).FullName, "test_url_test_tag")
 
 	assert.Equal(t, modFile.Dependencies.Deps.GetOrDefault("oci_name", TestPkgDependency).Name, "oci_name")
 	assert.Equal(t, modFile.Dependencies.Deps.GetOrDefault("oci_name", TestPkgDependency).Version, "oci_tag")
