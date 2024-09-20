@@ -57,6 +57,10 @@ func NewSourceFromStr(sourceStr string) (*Source, error) {
 	return source, nil
 }
 
+func (source *Source) IsNilSource() bool {
+	return source == nil || (source.Git == nil && source.Oci == nil && source.Local == nil && source.Registry == nil)
+}
+
 func (source *Source) IsLocalPath() bool {
 	return source.Local != nil
 }

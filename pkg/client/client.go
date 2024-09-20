@@ -150,70 +150,18 @@ func (c *KpmClient) GetSettings() *settings.Settings {
 	return &c.settings
 }
 
-func (c *KpmClient) LoadPkgFromPath(pkgPath string) (*pkg.KclPkg, error) {
-	modFile, err := c.LoadModFile(pkgPath)
-	if err != nil {
-		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod' in '%s'", pkgPath))
-	}
-
-	// Get dependencies from kcl.mod.lock.
-	deps, err := c.LoadLockDeps(pkgPath)
-
-	if err != nil {
-		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclMod, err, fmt.Sprintf("could not load 'kcl.mod.lock' in '%s'", pkgPath))
-	}
-
-	// Align the dependencies between kcl.mod and kcl.mod.lock.
-	for _, name := range modFile.Dependencies.Deps.Keys() {
-		dep, ok := modFile.Dependencies.Deps.Get(name)
-		if !ok {
-			break
-		}
-		if dep.Local != nil {
-			if ldep, ok := deps.Deps.Get(name); ok {
-				var localFullPath string
-				if filepath.IsAbs(dep.Local.Path) {
-					localFullPath = dep.Local.Path
-				} else {
-					localFullPath, err = filepath.Abs(filepath.Join(pkgPath, dep.Local.Path))
-					if err != nil {
-						return nil, reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, please contact us to fix it.")
-					}
-				}
-				ldep.LocalFullPath = localFullPath
-				dep.LocalFullPath = localFullPath
-				ldep.Source = dep.Source
-				deps.Deps.Set(name, ldep)
-				modFile.Dependencies.Deps.Set(name, dep)
-			}
-		}
-	}
-
-	return &pkg.KclPkg{
-		ModFile:      *modFile,
-		HomePath:     pkgPath,
-		Dependencies: *deps,
-	}, nil
+func (c *KpmClient) LoadPkgFromPath(path string) (*pkg.KclPkg, error) {
+	return pkg.LoadKclPkgWithOpts(
+		pkg.WithPath(path),
+		pkg.WithSettings(&c.settings),
+	)
 }
 
-func (c *KpmClient) LoadModFile(pkgPath string) (*pkg.ModFile, error) {
-	modFile := new(pkg.ModFile)
-	err := modFile.LoadModFile(filepath.Join(pkgPath, pkg.MOD_FILE))
-	if err != nil {
-		return nil, err
-	}
-
-	modFile.HomePath = pkgPath
-
-	if modFile.Dependencies.Deps == nil {
-		modFile.Dependencies.Deps = orderedmap.NewOrderedMap[string, pkg.Dependency]()
-	}
-	err = c.FillDependenciesInfo(modFile)
-	if err != nil {
-		return nil, err
-	}
-
-	return modFile, nil
+func (c *KpmClient) LoadModFile(path string) (*pkg.ModFile, error) {
+	return pkg.LoadAndFillModFileWithOpts(
+		pkg.WithPath(path),
+		pkg.WithSettings(&c.settings),
+	)
 }
 
 // Load the kcl.mod.lock and acquire the checksum of the dependencies from OCI registry.

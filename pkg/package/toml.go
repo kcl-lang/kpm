@@ -132,16 +132,16 @@ func (mod *ModFile) UnmarshalTOML(data interface{}) error {
 		mod.Pkg = pkg
 	}
 
+	deps := Dependencies{
+		Deps: orderedmap.NewOrderedMap[string, Dependency](),
+	}
 	if v, ok := meta[DEPS_FLAG]; ok {
-		deps := Dependencies{
-			Deps: orderedmap.NewOrderedMap[string, Dependency](),
-		}
 		err := deps.UnmarshalModTOML(v)
 		if err != nil {
 			return err
 		}
-		mod.Dependencies = deps
 	}
+	mod.Dependencies = deps
 
 	if v, ok := meta[PROFILES_FLAG]; ok {
 		p := NewProfile()
