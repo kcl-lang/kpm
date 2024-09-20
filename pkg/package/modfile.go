@@ -315,7 +315,17 @@ func (dep *Dependency) FillDepInfo(homepath string) error {
 	if dep.Source.Local != nil {
 		dep.LocalFullPath = dep.Source.Local.Path
 	}
-	if dep.Source.Git != nil && dep.Source.Git.GetPackage() != "" {
+
+	dep.FullName = dep.GenDepFullName()
+
+	return nil
+}
+
+// GenDepFullName will generate the full name of a dependency by its name and version
+// based on the '<package_name>_<package_tag>' format.
+func (dep *Dependency) GenDepFullName() string {
+	name := dep.Name
+	if dep.Source.Git != nil {
 		name := utils.ParseRepoNameFromGitUrl(dep.Source.Git.Url)
 		if len(dep.Source.Git.Tag) != 0 {
 			dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Source.Git.Tag)
@@ -324,23 +334,9 @@ func (dep *Dependency) FillDepInfo(homepath string) error {
 		} else {
 			dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Source.Git.Branch)
 		}
+	} else {
+		dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Version)
 	}
-	return nil
-}
-
-// GenDepFullName will generate the full name of a dependency by its name and version
-// based on the '<package_name>_<package_tag>' format.
-func (dep *Dependency) GenDepFullName() string {
-	name := dep.Name
-	if dep.Source.Git != nil && dep.Source.Git.GetPackage() != "" {
-		url := dep.Source.Git.Url
-		if strings.HasSuffix(url, ".git") {
-			url = strings.TrimSuffix(url, ".git")
-			dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, filepath.Base(url), dep.Version)
-			return dep.FullName
-		}
-	}
-	dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, name, dep.Version)
 	return dep.FullName
 }
 
