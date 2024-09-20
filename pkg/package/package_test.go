@@ -123,9 +123,9 @@ func TestLoadKclPkgFromTar(t *testing.T) {
 
 	assert.Equal(t, kclPkg.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Name, "oci_konfig")
 	assert.Equal(t, kclPkg.Deps.GetOrDefault("oci_konfig", TestPkgDependency).FullName, "oci_konfig_0.0.1")
-	assert.Equal(t, kclPkg.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Oci.Reg, "ghcr.io")
-	assert.Equal(t, kclPkg.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Oci.Repo, "awesome-kusion/oci_konfig")
-	assert.Equal(t, kclPkg.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Oci.Tag, "0.0.1")
+	assert.Equal(t, kclPkg.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Registry.Oci.Reg, "ghcr.io")
+	assert.Equal(t, kclPkg.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Registry.Oci.Repo, "kcl-lang/oci_konfig")
+	assert.Equal(t, kclPkg.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Registry.Oci.Tag, "0.0.1")
 	assert.Equal(t, kclPkg.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Sum, "sLr3e6W4RPrXYyswdOSiKqkHes1QHX2tk6SwxAPDqqo=")
 
 	assert.Equal(t, kclPkg.GetPkgTag(), "0.0.3")

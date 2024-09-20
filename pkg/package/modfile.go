@@ -461,10 +461,12 @@ func NewModFile(opts *opt.InitOptions) *ModFile {
 	}
 }
 
-// Load the kcl.mod file.
-func (mod *ModFile) LoadModFile(filepath string) error {
+// Load the kcl.mod file, and make sure the `ModFile` is the same as the content in the kcl.mod file.
+// For the dependency like "helloworld=0.1.0", `ModFile` will lack the source information.
+// The `ModFile` will be filled with the source information loaded by `LoadAndFillModFileWithOpts`
+func (mod *ModFile) LoadModFile(modfilepath string) error {
 
-	modData, err := os.ReadFile(filepath)
+	modData, err := os.ReadFile(modfilepath)
 	if err != nil {
 		return err
 	}
@@ -475,28 +477,8 @@ func (mod *ModFile) LoadModFile(filepath string) error {
 		return err
 	}
 
+	mod.HomePath = filepath.Dir(modfilepath)
 	return nil
-}
-
-// LoadModFile load the contents of the 'kcl.mod' file in the path.
-func LoadModFile(homePath string) (*ModFile, error) {
-	modFile := new(ModFile)
-	err := modFile.LoadModFile(filepath.Join(homePath, MOD_FILE))
-	if err != nil {
-		return nil, err
-	}
-
-	modFile.HomePath = homePath
-
-	if modFile.Dependencies.Deps == nil {
-		modFile.Dependencies.Deps = orderedmap.NewOrderedMap[string, Dependency]()
-	}
-	err = modFile.FillDependenciesInfo()
-	if err != nil {
-		return nil, err
-	}
-
-	return modFile, nil
 }
 
 // Load the kcl.mod.lock file.
@@ -628,4 +610,13 @@ func ParseRepoNameFromGitSource(gitSrc downloader.Git) string {
 		return gitSrc.Package
 	}
 	return utils.ParseRepoNameFromGitUrl(gitSrc.Url)
+}
+
+// LoadModFile load the contents of the 'kcl.mod' file in the path.
+// Deprecated: Use 'LoadAndFillModFileWithOpts' instead.
+func LoadModFile(homePath string) (*ModFile, error) {
+	return LoadAndFillModFileWithOpts(
+		WithPkgPath(homePath),
+		WithSettings(settings.GetSettings()),
+	)
 }
