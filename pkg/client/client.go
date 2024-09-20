@@ -1811,6 +1811,9 @@ func (c *KpmClient) dependencyExistsLocal(searchPath string, dep *pkg.Dependency
 			return nil, err
 		}
 		dep.FromKclPkg(depPkg)
+		// TODO: new local dependency structure will replace this
+		// issue: https://github.com/kcl-lang/kpm/issues/384
+		dep.FullName = dep.GenDepFullName()
 		return dep, nil
 	}
 	return nil, nil
