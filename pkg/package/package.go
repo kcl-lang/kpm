@@ -35,18 +35,18 @@ type KclPkg struct {
 }
 
 type LoadOptions struct {
-	// The package path.
-	PkgPath string
+	// The module path.
+	Path string
 	// The settings with default oci registry.
 	Settings *settings.Settings
 }
 
 type LoadOption func(*LoadOptions)
 
-// WithPkgPath sets the package path.
-func WithPkgPath(pkgPath string) LoadOption {
+// WithPath sets the module path.
+func WithPath(path string) LoadOption {
 	return func(opts *LoadOptions) {
-		opts.PkgPath = pkgPath
+		opts.Path = path
 	}
 }
 
@@ -57,15 +57,15 @@ func WithSettings(settings *settings.Settings) LoadOption {
 	}
 }
 
-// LoadKclPkgWithOpts loads a package from the file system with options.
-// The options include the package path and the settings with default oci registry.
+// LoadKclPkgWithOpts loads a module from the file system with options.
+// The options include the module path and the settings with default oci registry.
 func LoadKclPkgWithOpts(options ...LoadOption) (*KclPkg, error) {
 	opts := &LoadOptions{}
 	for _, opt := range options {
 		opt(opts)
 	}
 
-	pkgPath := opts.PkgPath
+	pkgPath := opts.Path
 
 	modFile := new(ModFile)
 	err := modFile.LoadModFile(filepath.Join(pkgPath, MOD_FILE))
@@ -119,27 +119,27 @@ func LoadAndFillModFileWithOpts(options ...LoadOption) (*ModFile, error) {
 		opt(opts)
 	}
 
-	pkgPath := opts.PkgPath
+	path := opts.Path
 
 	// Load the mod file.
 	// The content of the `ModFile` is the same as the content in kcl.mod
 	// The `ModFile` lacks some information of the dependencies.
 	modFile := new(ModFile)
-	err := modFile.LoadModFile(filepath.Join(pkgPath, MOD_FILE))
+	err := modFile.LoadModFile(filepath.Join(path, MOD_FILE))
 	if err != nil {
-		return nil, fmt.Errorf("could not load 'kcl.mod' in '%s'\n%w", pkgPath, err)
+		return nil, fmt.Errorf("could not load 'kcl.mod' in '%s'\n%w", path, err)
 	}
 
 	// pre-process the package.
 	// 1. Transform the local path to the absolute path.
-	err = convertDepsLocalPathToAbsPath(&modFile.Dependencies, pkgPath)
+	err = convertDepsLocalPathToAbsPath(&modFile.Dependencies, path)
 	if err != nil {
-		return nil, fmt.Errorf("could not load 'kcl.mod' in '%s'\n%w", pkgPath, err)
+		return nil, fmt.Errorf("could not load 'kcl.mod' in '%s'\n%w", path, err)
 	}
 	// 2. Fill the default oci registry, the default oci registry is in the settings.
 	err = fillDepsInfoWithSettings(&modFile.Dependencies, opts.Settings)
 	if err != nil {
-		return nil, fmt.Errorf("could not load 'kcl.mod' in '%s'\n%w", pkgPath, err)
+		return nil, fmt.Errorf("could not load 'kcl.mod' in '%s'\n%w", path, err)
 	}
 
 	return modFile, nil
@@ -248,8 +248,8 @@ func NewKclPkg(opts *opt.InitOptions) KclPkg {
 
 // LoadKclPkg will load a package from the 'pkgPath'
 // The default oci registry in '$KCL_PKG_PATH/.kpm/config/kpm.json' will be used.
-func LoadKclPkg(pkgPath string) (*KclPkg, error) {
-	return LoadKclPkgWithOpts(WithPkgPath(pkgPath), WithSettings(settings.GetSettings()))
+func LoadKclPkg(path string) (*KclPkg, error) {
+	return LoadKclPkgWithOpts(WithPath(path), WithSettings(settings.GetSettings()))
 }
 
 // FindFirstKclPkgFrom will find the first kcl package from the 'path'

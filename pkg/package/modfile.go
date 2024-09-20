@@ -464,9 +464,9 @@ func NewModFile(opts *opt.InitOptions) *ModFile {
 // Load the kcl.mod file, and make sure the `ModFile` is the same as the content in the kcl.mod file.
 // For the dependency like "helloworld=0.1.0", `ModFile` will lack the source information.
 // The `ModFile` will be filled with the source information loaded by `LoadAndFillModFileWithOpts`
-func (mod *ModFile) LoadModFile(modfilepath string) error {
+func (mod *ModFile) LoadModFile(name string) error {
 
-	modData, err := os.ReadFile(modfilepath)
+	modData, err := os.ReadFile(name)
 	if err != nil {
 		return err
 	}
@@ -477,7 +477,7 @@ func (mod *ModFile) LoadModFile(modfilepath string) error {
 		return err
 	}
 
-	mod.HomePath = filepath.Dir(modfilepath)
+	mod.HomePath = filepath.Dir(name)
 	return nil
 }
 
@@ -614,9 +614,9 @@ func ParseRepoNameFromGitSource(gitSrc downloader.Git) string {
 
 // LoadModFile load the contents of the 'kcl.mod' file in the path.
 // Deprecated: Use 'LoadAndFillModFileWithOpts' instead.
-func LoadModFile(homePath string) (*ModFile, error) {
+func LoadModFile(path string) (*ModFile, error) {
 	return LoadAndFillModFileWithOpts(
-		WithPkgPath(homePath),
+		WithPath(path),
 		WithSettings(settings.GetSettings()),
 	)
 }

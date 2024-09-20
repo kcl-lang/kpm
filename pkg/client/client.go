@@ -150,16 +150,16 @@ func (c *KpmClient) GetSettings() *settings.Settings {
 	return &c.settings
 }
 
-func (c *KpmClient) LoadPkgFromPath(pkgPath string) (*pkg.KclPkg, error) {
+func (c *KpmClient) LoadPkgFromPath(path string) (*pkg.KclPkg, error) {
 	return pkg.LoadKclPkgWithOpts(
-		pkg.WithPkgPath(pkgPath),
+		pkg.WithPath(path),
 		pkg.WithSettings(&c.settings),
 	)
 }
 
-func (c *KpmClient) LoadModFile(pkgPath string) (*pkg.ModFile, error) {
+func (c *KpmClient) LoadModFile(path string) (*pkg.ModFile, error) {
 	return pkg.LoadAndFillModFileWithOpts(
-		pkg.WithPkgPath(pkgPath),
+		pkg.WithPath(path),
 		pkg.WithSettings(&c.settings),
 	)
 }
