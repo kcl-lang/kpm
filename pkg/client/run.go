@@ -89,6 +89,14 @@ type RunOptions struct {
 
 type RunOption func(*RunOptions) error
 
+// Use the another RunOptions to override the current RunOptions.
+func WithRunOptions(runOpts *RunOptions) RunOption {
+	return func(ro *RunOptions) error {
+		*ro = *runOpts
+		return nil
+	}
+}
+
 func WithLogger(l io.Writer) RunOption {
 	return func(ro *RunOptions) error {
 		if ro.Option == nil {
@@ -383,6 +391,11 @@ func (o *RunOptions) applyCompileOptions(source downloader.Source, kclPkg *pkg.K
 		if !pkgSource.IsLocalPath() {
 			return false
 		}
+
+		if source.IsLocalTarPath() || source.IsLocalTgzPath() {
+			return true
+		}
+
 		sourcePath := pkgSource.Path
 		if !filepath.IsAbs(sourcePath) && !utils.IsModRelativePath(sourcePath) {
 			sourcePath = filepath.Join(workDir, sourcePath)
@@ -499,7 +512,7 @@ func (o *RunOptions) getPkgSource() (*downloader.Source, error) {
 					return nil, err
 				}
 
-				if pkgSource.IsPackaged() || source.IsPackaged() {
+				if pkgSource.IsPackaged() && source.IsPackaged() {
 					return nil, reporter.NewErrorEvent(
 						reporter.CompileFailed,
 						fmt.Errorf("cannot compile multiple packages %s at the same time", []string{rootSourceStr, sourceStr}),

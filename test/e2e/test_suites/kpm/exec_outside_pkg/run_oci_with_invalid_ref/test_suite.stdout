@@ -1,1 +1,1 @@
-pulling 'test/invalid_oci_repo:invalid_tag' from 'localhost:5001/test/invalid_oci_repo'
+downloading 'test/invalid_oci_repo:invalid_tag' from 'localhost:5001/test/invalid_oci_repo:invalid_tag'

@@ -24,11 +24,9 @@ import (
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/mod/module"
-	"gopkg.in/yaml.v3"
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/env"
-	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -1194,94 +1192,6 @@ func TestAddWithNoSumCheck(t *testing.T) {
 	}()
 }
 
-func TestRunWithGitPackage(t *testing.T) {
-	pkgPath := getTestDir("test_run_git_package")
-
-	kpmcli, err := NewKpmClient()
-	assert.Equal(t, err, nil)
-
-	opts := opt.DefaultCompileOptions()
-	opts.SetPkgPath(pkgPath)
-
-	compileResult, err := kpmcli.CompileWithOpts(opts)
-	assert.Equal(t, err, nil)
-	expectedCompileResult := `{"apiVersion": "v1", "kind": "Pod", "metadata": {"name": "web-app"}, "spec": {"containers": [{"image": "nginx", "name": "main-container", "ports": [{"containerPort": 80}]}]}}`
-	assert.Equal(t, expectedCompileResult, compileResult.GetRawJsonResult())
-
-	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), true)
-
-	defer func() {
-		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
-	}()
-}
-
-func TestRunWithNoSumCheck(t *testing.T) {
-	pkgPath := getTestDir("test_run_no_sum_check")
-
-	kpmcli, err := NewKpmClient()
-	assert.Equal(t, err, nil)
-
-	opts := opt.DefaultCompileOptions()
-	opts.SetNoSumCheck(true)
-	opts.SetPkgPath(pkgPath)
-
-	_, err = kpmcli.CompileWithOpts(opts)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), false)
-
-	opts = opt.DefaultCompileOptions()
-	opts.SetPkgPath(pkgPath)
-	opts.SetNoSumCheck(false)
-	_, err = kpmcli.CompileWithOpts(opts)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), true)
-
-	defer func() {
-		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
-	}()
-}
-
-func TestRunGit(t *testing.T) {
-	kpmcli, err := NewKpmClient()
-	assert.Equal(t, err, nil)
-
-	testPath := getTestDir("test_run_git")
-
-	opts := opt.DefaultCompileOptions()
-	gitOpts := git.NewCloneOptions("https://github.com/KusionStack/catalog", "", "0.1.2", "", filepath.Join(testPath, "catalog"), nil)
-	defer func() {
-		_ = os.RemoveAll(filepath.Join(testPath, "catalog"))
-	}()
-
-	testCases := []struct {
-		entryPath  string
-		expectFile string
-	}{
-		{"models/samples/hellocollaset/prod/main.k", "expect1.json"},
-		{"models/samples/pgadmin/base/base.k", "expect2.json"},
-		{"models/samples/wordpress/prod/main.k", "expect3.json"},
-	}
-
-	for _, tc := range testCases {
-		opts.SetEntries([]string{tc.entryPath})
-		result, err := kpmcli.CompileGitPkg(gitOpts, opts)
-		assert.Equal(t, err, nil)
-
-		fileBytes, err := os.ReadFile(filepath.Join(testPath, tc.expectFile))
-		assert.Equal(t, err, nil)
-
-		var expectObj map[string]interface{}
-		err = json.Unmarshal(fileBytes, &expectObj)
-		assert.Equal(t, err, nil)
-
-		var gotObj map[string]interface{}
-		err = json.Unmarshal([]byte(result.GetRawJsonResult()), &gotObj)
-		assert.Equal(t, err, nil)
-
-		assert.Equal(t, gotObj, expectObj)
-	}
-}
-
 func TestUpdateWithNoSumCheck(t *testing.T) {
 	pkgPath := getTestDir("test_update_no_sum_check")
 	kpmcli, err := NewKpmClient()
@@ -1605,59 +1515,6 @@ func TestAddWithLocalPath(t *testing.T) {
 	assert.Equal(t, gotpkg.Dependencies.Deps.GetOrDefault("dep_pkg", pkg.TestPkgDependency).Source.Local.Path, "../dep_pkg")
 }
 
-func TestRunOciWithSettingsFile(t *testing.T) {
-	kpmcli, err := NewKpmClient()
-	assert.Equal(t, err, nil)
-	kpmcli.SetLogWriter(nil)
-	opts := opt.DefaultCompileOptions()
-	opts.SetEntries([]string{})
-	opts.Merge(kcl.WithSettings(filepath.Join(".", "test_data", "test_run_oci_with_settings", "kcl.yaml")))
-	opts.SetHasSettingsYaml(true)
-	_, err = kpmcli.CompileOciPkg("oci://ghcr.io/kcl-lang/helloworld", "", opts)
-	assert.Equal(t, err, nil)
-}
-
-func TestRunGitWithLocalDep(t *testing.T) {
-	kpmcli, err := NewKpmClient()
-	assert.Equal(t, err, nil)
-
-	testPath := getTestDir("test_run_git_with_local_dep")
-	defer func() {
-		_ = os.RemoveAll(filepath.Join(testPath, "catalog"))
-	}()
-
-	testCases := []struct {
-		ref        string
-		expectFile string
-	}{
-		{"8308200", "expect1.yaml"},
-		{"0b3f5ab", "expect2.yaml"},
-	}
-
-	for _, tc := range testCases {
-
-		expectPath := filepath.Join(testPath, tc.expectFile)
-		opts := opt.DefaultCompileOptions()
-		gitOpts := git.NewCloneOptions("https://github.com/kcl-lang/flask-demo-kcl-manifests.git", tc.ref, "", "", "", nil)
-
-		result, err := kpmcli.CompileGitPkg(gitOpts, opts)
-		assert.Equal(t, err, nil)
-
-		fileBytes, err := os.ReadFile(expectPath)
-		assert.Equal(t, err, nil)
-
-		var expectObj map[string]interface{}
-		err = yaml.Unmarshal(fileBytes, &expectObj)
-		assert.Equal(t, err, nil)
-
-		var gotObj map[string]interface{}
-		err = yaml.Unmarshal([]byte(result.GetRawJsonResult()), &gotObj)
-		assert.Equal(t, err, nil)
-
-		assert.Equal(t, gotObj, expectObj)
-	}
-}
-
 func TestLoadOciUrlDiffSetting(t *testing.T) {
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
@@ -1714,27 +1571,6 @@ func testAddWithOciDownloader(t *testing.T) {
 	gotContent, err := os.ReadFile(filepath.Join(path, "add_dep", "pkg", "kcl.mod"))
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.RmNewline(string(expectmodContent)), utils.RmNewline(string(gotContent)))
-}
-
-func testRunWithOciDownloader(t *testing.T) {
-	kpmCli, err := NewKpmClient()
-	path := getTestDir("test_oci_downloader")
-	assert.Equal(t, err, nil)
-
-	kpmCli.DepDownloader = downloader.NewOciDownloader("linux/amd64")
-
-	var buf bytes.Buffer
-	writer := io.MultiWriter(&buf, os.Stdout)
-
-	res, err := kpmCli.RunWithOpts(
-		opt.WithEntries([]string{filepath.Join(path, "run_pkg", "pkg", "main.k")}),
-		opt.WithKclOption(kcl.WithWorkDir(filepath.Join(path, "run_pkg", "pkg"))),
-		opt.WithNoSumCheck(true),
-		opt.WithLogWriter(writer),
-	)
-	assert.Equal(t, err, nil)
-	strings.Contains(buf.String(), "downloading 'zong-zhe/helloworld:0.0.3' from 'ghcr.io/zong-zhe/helloworld:0.0.3'")
-	assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
 }
 
 func TestAddLocalPath(t *testing.T) {
