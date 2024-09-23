@@ -1,69 +1,50 @@
 package checker
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/elliotchance/orderedmap/v2"
 	"gotest.tools/v3/assert"
+
+	"kcl-lang.io/kpm/pkg/downloader"
+	"kcl-lang.io/kpm/pkg/mock"
 	pkg "kcl-lang.io/kpm/pkg/package"
+	"kcl-lang.io/kpm/pkg/reporter"
+	"kcl-lang.io/kpm/pkg/settings"
 )
 
 func TestDepCheckerCheck(t *testing.T) {
-	depChecker := NewDepChecker(
-		&IdentChecker{},
-		&VersionChecker{},
-		&SumChecker{},
-	)
+	depChecker := NewDepChecker(WithCheckers(NewIdentChecker(), NewVersionChecker(), NewSumChecker()))
+
 	deps1 := orderedmap.NewOrderedMap[string, pkg.Dependency]()
 	deps1.Set("kcl1", pkg.Dependency{
 		Name:     "kcl1",
 		FullName: "kcl1",
 		Version:  "0.0.1",
-		Sum:      "",
+		Sum:      "no-sum-check-enabled",
 	})
 	deps1.Set("kcl2", pkg.Dependency{
 		Name:     "kcl2",
 		FullName: "kcl2",
 		Version:  "0.2.1",
-		Sum:      "",
+		Sum:      "no-sum-check-enabled",
 	})
 
 	deps2 := orderedmap.NewOrderedMap[string, pkg.Dependency]()
 	deps2.Set("kcl1", pkg.Dependency{
-		Name:     "kcl1",
-		FullName: "kcl1",
-		Version:  "0.0.1",
-		Sum:      "no-sum-check-enabled",
-	})
-	deps2.Set("kcl2", pkg.Dependency{
-		Name:     "kcl2",
-		FullName: "kcl2",
-		Version:  "0.2.1",
-		Sum:      "no-sum-check-enabled",
-	})
-
-	deps3 := orderedmap.NewOrderedMap[string, pkg.Dependency]()
-	deps3.Set("kcl1", pkg.Dependency{
 		Name:     ".kcl1",
 		FullName: "kcl1",
 		Version:  "0.0.1",
 		Sum:      "",
 	})
 
-	deps4 := orderedmap.NewOrderedMap[string, pkg.Dependency]()
-	deps4.Set("kcl1", pkg.Dependency{
+	deps3 := orderedmap.NewOrderedMap[string, pkg.Dependency]()
+	deps3.Set("kcl1", pkg.Dependency{
 		Name:     "kcl1",
 		FullName: "kcl1",
 		Version:  "1.0.0-alpha#",
 		Sum:      "",
-	})
-
-	deps5 := orderedmap.NewOrderedMap[string, pkg.Dependency]()
-	deps5.Set("kcl1", pkg.Dependency{
-		Name:     "kcl1",
-		FullName: "kcl1",
-		Version:  "0.0.1",
-		Sum:      "invalid-no-sum-check-disabled",
 	})
 
 	tests := []struct {
@@ -72,20 +53,6 @@ func TestDepCheckerCheck(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "valid kcl package - with sum check",
-			KclPkg: pkg.KclPkg{
-				ModFile: pkg.ModFile{
-					HomePath: "path/to/modfile",
-				},
-				HomePath: "path/to/kcl/pkg",
-				Dependencies: pkg.Dependencies{
-					Deps: deps1,
-				},
-				NoSumCheck: false,
-			},
-			wantErr: false,
-		},
-		{
 			name: "valid kcl package - with no sum check enabled",
 			KclPkg: pkg.KclPkg{
 				ModFile: pkg.ModFile{
@@ -93,7 +60,7 @@ func TestDepCheckerCheck(t *testing.T) {
 				},
 				HomePath: "path/to/kcl/pkg",
 				Dependencies: pkg.Dependencies{
-					Deps: deps2,
+					Deps: deps1,
 				},
 				NoSumCheck: true,
 			},
@@ -107,7 +74,7 @@ func TestDepCheckerCheck(t *testing.T) {
 				},
 				HomePath: "path/to/kcl/pkg",
 				Dependencies: pkg.Dependencies{
-					Deps: deps3,
+					Deps: deps2,
 				},
 				NoSumCheck: false,
 			},
@@ -121,21 +88,7 @@ func TestDepCheckerCheck(t *testing.T) {
 				},
 				HomePath: "path/to/kcl/pkg",
 				Dependencies: pkg.Dependencies{
-					Deps: deps4,
-				},
-				NoSumCheck: false,
-			},
-			wantErr: true,
-		},
-		{
-			name: "Invalid kcl package - with no sum check disabled - checksum mismatches",
-			KclPkg: pkg.KclPkg{
-				ModFile: pkg.ModFile{
-					HomePath: "path/to/modfile",
-				},
-				HomePath: "path/to/kcl/pkg",
-				Dependencies: pkg.Dependencies{
-					Deps: deps5,
+					Deps: deps3,
 				},
 				NoSumCheck: false,
 			},
@@ -220,4 +173,126 @@ func TestIsValidDependencyVersion(t *testing.T) {
 			assert.Equal(t, got, tt.want, tt.version)
 		})
 	}
+}
+
+func getTestSettings() (*settings.Settings, error) {
+	settings := settings.GetSettings()
+
+	if settings.ErrorEvent != (*reporter.KpmEvent)(nil) {
+		return nil, settings.ErrorEvent
+	}
+	return settings, nil
+}
+
+func TestDepCheckerCheck_WithTrustedSum(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping TestDepCheckerCheck_WithTrustedSum test on Windows")
+	}
+
+	// Start the local Docker registry required for testing
+	err := mock.StartDockerRegistry()
+	assert.Equal(t, err, nil)
+
+	// Push the test package to the local OCI registry
+	err = mock.PushTestPkgToRegistry()
+	assert.Equal(t, err, nil)
+
+	// Initialize settings for use with the DepChecker
+	settings, err := getTestSettings()
+	assert.Equal(t, err, nil)
+
+	// Initialize the DepChecker with required checkers
+	depChecker := NewDepChecker(WithCheckers(NewIdentChecker(), NewVersionChecker(), NewSumChecker(WithSettings(*settings))))
+
+	deps1 := orderedmap.NewOrderedMap[string, pkg.Dependency]()
+	deps1.Set("kcl1", pkg.Dependency{
+		Name:     "test_data",
+		FullName: "test_data",
+		Version:  "0.0.1",
+		Sum:      "RpZZIvrXwfn5dpt6LqBR8+FlPE9Y+BEou47L3qaCCqk=",
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
+				Reg:  "localhost:5001",
+				Repo: "test",
+				Tag:  "0.0.1",
+			},
+		},
+	})
+
+	deps2 := orderedmap.NewOrderedMap[string, pkg.Dependency]()
+	deps2.Set("kcl1", pkg.Dependency{
+		Name:     "test_data",
+		FullName: "test_data",
+		Version:  "0.0.1",
+		Sum:      "Invalid-sum",
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
+				Reg:  "localhost:5001",
+				Repo: "test",
+				Tag:  "0.0.1",
+			},
+		},
+	})
+
+	tests := []struct {
+		name    string
+		KclPkg  pkg.KclPkg
+		wantErr bool
+	}{
+		{
+			name: "valid kcl package - with sum check",
+			KclPkg: pkg.KclPkg{
+				ModFile: pkg.ModFile{
+					HomePath: "path/to/modfile",
+				},
+				HomePath: "path/to/kcl/pkg",
+				Dependencies: pkg.Dependencies{
+					Deps: deps1,
+				},
+				NoSumCheck: false,
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid kcl package - with no sum check enabled",
+			KclPkg: pkg.KclPkg{
+				ModFile: pkg.ModFile{
+					HomePath: "path/to/modfile",
+				},
+				HomePath: "path/to/kcl/pkg",
+				Dependencies: pkg.Dependencies{
+					Deps: deps2,
+				},
+				NoSumCheck: true,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Invalid kcl package - with no sum check disabled - checksum mismatches",
+			KclPkg: pkg.KclPkg{
+				ModFile: pkg.ModFile{
+					HomePath: "path/to/modfile",
+				},
+				HomePath: "path/to/kcl/pkg",
+				Dependencies: pkg.Dependencies{
+					Deps: deps2,
+				},
+				NoSumCheck: false,
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotErr := depChecker.Check(tt.KclPkg)
+			if (gotErr != nil) != tt.wantErr {
+				t.Errorf("depChecker.Check(%v) = %v, want error %v", tt.KclPkg, gotErr, tt.wantErr)
+			}
+		})
+	}
+
+	// Clean the environment after all tests have been run
+	err = mock.CleanTestEnv()
+	assert.Equal(t, err, nil)
 }
