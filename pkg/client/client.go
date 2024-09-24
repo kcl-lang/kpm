@@ -37,6 +37,7 @@ import (
 	"kcl-lang.io/kpm/pkg/runner"
 	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/utils"
+	"kcl-lang.io/kpm/pkg/visitor"
 )
 
 // KpmClient is the client of kpm.
@@ -1718,6 +1719,37 @@ func (c *KpmClient) FetchOciManifestIntoJsonStr(opts opt.OciFetchOptions) (strin
 		return "", err
 	}
 	return manifestJson, nil
+}
+
+// NewVisitor is a factory function to create a new Visitor.
+func NewVisitor(source downloader.Source, kpmcli *KpmClient) visitor.Visitor {
+	PkgVisitor := &visitor.PkgVisitor{
+		Settings:  kpmcli.GetSettings(),
+		LogWriter: kpmcli.logWriter,
+	}
+
+	if source.IsRemote() {
+		return &visitor.RemoteVisitor{
+			PkgVisitor:            PkgVisitor,
+			Downloader:            kpmcli.DepDownloader,
+			InsecureSkipTLSverify: kpmcli.insecureSkipTLSverify,
+		}
+	} else if source.IsLocalTarPath() || source.IsLocalTgzPath() {
+		return visitor.NewArchiveVisitor(PkgVisitor)
+	} else if source.IsLocalPath() {
+		rootPath, err := source.FindRootPath()
+		if err != nil {
+			return nil
+		}
+		kclmodpath := filepath.Join(rootPath, constants.KCL_MOD)
+		if utils.DirExists(kclmodpath) {
+			return PkgVisitor
+		} else {
+			return visitor.NewVirtualPkgVisitor(PkgVisitor)
+		}
+	} else {
+		return nil
+	}
 }
 
 // createDepRef will create a dependency reference for the dependency saved on the local filesystem.
