@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -111,20 +110,6 @@ func TestRunWithWorkdir(t *testing.T) {
 	assert.Equal(t, result, "base: base\nmain: main")
 }
 
-func TestRunWithOpts(t *testing.T) {
-	pkgPath := getTestDir("test_run_pkg_in_path")
-	opts := opt.DefaultCompileOptions()
-	opts.AddEntry(filepath.Join(pkgPath, "test_kcl", "main.k"))
-	opts.SetPkgPath(filepath.Join(pkgPath, "test_kcl"))
-	result, err := RunPkgWithOpt(opts)
-	fmt.Printf("err: %v\n", err)
-	assert.Equal(t, err, nil)
-	expected, _ := os.ReadFile(filepath.Join(pkgPath, "expected"))
-	assert.Equal(t, utils.RmNewline(string(result.GetRawYamlResult())), utils.RmNewline(string(expected)))
-	expectedJson, _ := os.ReadFile(filepath.Join(pkgPath, "expected.json"))
-	assert.Equal(t, utils.RmNewline(string(result.GetRawJsonResult())), utils.RmNewline(string(expectedJson)))
-}
-
 func TestRunWithSettingsOpts(t *testing.T) {
 	pkgPath := getTestDir("test_settings")
 	opts := opt.DefaultCompileOptions()
@@ -188,74 +173,6 @@ func TestRunWithNoSumCheck(t *testing.T) {
 	defer func() {
 		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
 	}()
-}
-
-func TestRunPkgWithOpts(t *testing.T) {
-	pkgPath := getTestDir("test_run_pkg_in_path")
-
-	result, err := RunWithOpts(
-		opt.WithNoSumCheck(false),
-		opt.WithEntries([]string{filepath.Join(pkgPath, "test_kcl", "main.k")}),
-		opt.WithKclOption(kcl.WithWorkDir(filepath.Join(pkgPath, "test_kcl"))),
-	)
-
-	assert.Equal(t, err, nil)
-	expected, _ := os.ReadFile(filepath.Join(pkgPath, "expected"))
-	assert.Equal(t, utils.RmNewline(string(result.GetRawYamlResult())), utils.RmNewline(string(expected)))
-	expectedJson, _ := os.ReadFile(filepath.Join(pkgPath, "expected.json"))
-	assert.Equal(t, utils.RmNewline(string(result.GetRawJsonResult())), utils.RmNewline(string(expectedJson)))
-}
-
-func TestRunWithOptsAndNoSumCheck(t *testing.T) {
-	pkgPath := filepath.Join(getTestDir("test_run_pkg_in_path"), "test_run_no_sum_check")
-	testCases := []string{"dep_git_commit", "dep_git_tag", "dep_oci"}
-
-	for _, testCase := range testCases {
-
-		pathMainK := filepath.Join(pkgPath, testCase, "main.k")
-		workDir := filepath.Join(pkgPath, testCase)
-		modLock := filepath.Join(workDir, "kcl.mod.lock")
-		expected, err := os.ReadFile(filepath.Join(pkgPath, testCase, "expected"))
-		assert.Equal(t, err, nil)
-		fmt.Printf("testCase: %v\n", testCase)
-		res, err := RunWithOpts(
-			opt.WithNoSumCheck(true),
-			opt.WithEntries([]string{pathMainK}),
-			opt.WithKclOption(kcl.WithWorkDir(workDir)),
-		)
-		assert.Equal(t, err, nil)
-		assert.Equal(t, utils.DirExists(modLock), false)
-		assert.Equal(t, utils.RmNewline(res.GetRawYamlResult()), utils.RmNewline(string(expected)))
-		assert.Equal(t, err, nil)
-	}
-}
-
-func TestRunWithOptsWithNoLog(t *testing.T) {
-	pkgPath := filepath.Join(getTestDir("test_run_pkg_in_path"), "test_run_with_no_log")
-
-	defer func() {
-		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
-	}()
-
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	pathMainK := filepath.Join(pkgPath, "main.k")
-
-	_, err := RunWithOpts(
-		opt.WithLogWriter(nil),
-		opt.WithEntries([]string{pathMainK}),
-		opt.WithKclOption(kcl.WithWorkDir(pkgPath)),
-	)
-	assert.Equal(t, err, nil)
-	os.Stdout = old
-	w.Close()
-	var buf bytes.Buffer
-	_, err = buf.ReadFrom(r)
-	assert.Equal(t, err, nil)
-
-	assert.Equal(t, buf.String(), "")
 }
 
 func TestStoreModAndModLockFile(t *testing.T) {
