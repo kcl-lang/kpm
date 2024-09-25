@@ -6,6 +6,7 @@ import (
 
 	"kcl-lang.io/kpm/pkg/downloader"
 	pkg "kcl-lang.io/kpm/pkg/package"
+	"kcl-lang.io/kpm/pkg/resolver"
 )
 
 // UpdateOptions is the option for updating a package.
@@ -48,7 +49,13 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 	}
 
 	// Create a new dependency resolver
-	resolver := NewDepsResolver(c)
+	depResolver := resolver.DepsResolver{
+		DefaultCachePath:      c.homePath,
+		InsecureSkipTLSverify: c.insecureSkipTLSverify,
+		Downloader:            c.DepDownloader,
+		Settings:              &c.settings,
+		LogWriter:             c.logWriter,
+	}
 	// ResolveFunc is the function for resolving each dependency when traversing the dependency graph.
 	resolverFunc := func(dep *pkg.Dependency, parentPkg *pkg.KclPkg) error {
 		// Check if the dependency exists in the mod file.
@@ -77,7 +84,7 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 
 		return nil
 	}
-	resolver.AddResolveFunc(resolverFunc)
+	depResolver.ResolveFuncs = append(depResolver.ResolveFuncs, resolverFunc)
 
 	// Iterate all the dependencies of the package in kcl.mod and resolve each dependency.
 	for _, depName := range modDeps.Keys() {
@@ -99,9 +106,9 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 			depSource = &dep.Source
 		}
 
-		err := resolver.Resolve(
-			WithEnableCache(true),
-			WithResolveSource(depSource),
+		err := depResolver.Resolve(
+			resolver.WithEnableCache(true),
+			resolver.WithSource(depSource),
 		)
 		if err != nil {
 			return nil, err
