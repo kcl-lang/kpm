@@ -1,7 +1,8 @@
-package client
+package visitor
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -10,6 +11,7 @@ import (
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
+	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -22,14 +24,8 @@ type Visitor interface {
 
 // PkgVisitor is the visitor for visiting a local package.
 type PkgVisitor struct {
-	kpmcli *KpmClient
-}
-
-// NewPkgVisitor creates a new PkgVisitor.
-func NewPkgVisitor(kpmcli *KpmClient) *PkgVisitor {
-	return &PkgVisitor{
-		kpmcli: kpmcli,
-	}
+	Settings  *settings.Settings
+	LogWriter io.Writer
 }
 
 // Visit visits a local package.
@@ -39,12 +35,15 @@ func (pv *PkgVisitor) Visit(s *downloader.Source, v visitFunc) error {
 	}
 	// Find the root path of the source.
 	// There must be a kcl.mod file in the root path.
-	rootPath, err := s.FindRootPath()
+	modPath, err := s.FindRootPath()
 	if err != nil {
 		return err
 	}
 
-	kclPkg, err := pv.kpmcli.LoadPkgFromPath(rootPath)
+	kclPkg, err := pkg.LoadKclPkgWithOpts(
+		pkg.WithPath(modPath),
+		pkg.WithSettings(pv.Settings),
+	)
 	if err != nil {
 		return err
 	}
@@ -90,8 +89,10 @@ func (vpv *VirtualPkgVisitor) Visit(s *downloader.Source, v visitFunc) error {
 // RemoteVisitor is the visitor for visiting a remote package.
 type RemoteVisitor struct {
 	*PkgVisitor
-	EnableCache bool
-	CachePath   string
+	EnableCache           bool
+	CachePath             string
+	Downloader            downloader.Downloader
+	InsecureSkipTLSverify bool
 }
 
 // NewRemoteVisitor creates a new RemoteVisitor.
@@ -118,21 +119,21 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		tmpDir = filepath.Join(tmpDir, constants.GitScheme)
 	}
 
-	credCli, err := rv.kpmcli.GetCredsClient()
+	credCli, err := downloader.LoadCredentialFile(rv.Settings.CredentialsFile)
 	if err != nil {
 		return err
 	}
 
 	defer os.RemoveAll(tmpDir)
-	err = rv.kpmcli.DepDownloader.Download(*downloader.NewDownloadOptions(
+	err = rv.Downloader.Download(*downloader.NewDownloadOptions(
 		downloader.WithLocalPath(tmpDir),
 		downloader.WithSource(*s),
-		downloader.WithLogWriter(rv.kpmcli.GetLogWriter()),
-		downloader.WithSettings(*rv.kpmcli.GetSettings()),
+		downloader.WithLogWriter(rv.LogWriter),
+		downloader.WithSettings(*rv.Settings),
 		downloader.WithCredsClient(credCli),
 		downloader.WithCachePath(rv.CachePath),
 		downloader.WithEnableCache(rv.EnableCache),
-		downloader.WithInsecureSkipTLSverify(rv.kpmcli.insecureSkipTLSverify),
+		downloader.WithInsecureSkipTLSverify(rv.InsecureSkipTLSverify),
 	))
 
 	if err != nil {
@@ -146,7 +147,10 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		}
 	}
 
-	kclPkg, err := rv.kpmcli.LoadPkgFromPath(pkgPath)
+	kclPkg, err := pkg.LoadKclPkgWithOpts(
+		pkg.WithPath(pkgPath),
+		pkg.WithSettings(rv.Settings),
+	)
 	if err != nil {
 		return err
 	}
@@ -212,33 +216,14 @@ func (av *ArchiveVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		return err
 	}
 
-	kclPkg, err := av.kpmcli.LoadPkgFromPath(tmpDir)
+	kclPkg, err := pkg.LoadKclPkgWithOpts(
+		pkg.WithPath(tmpDir),
+		pkg.WithSettings(av.Settings),
+	)
 
 	if err != nil {
 		return err
 	}
 
 	return v(kclPkg)
-}
-
-// NewVisitor is a factory function to create a new Visitor.
-func NewVisitor(source downloader.Source, kpmcli *KpmClient) Visitor {
-	if source.IsRemote() {
-		return NewRemoteVisitor(NewPkgVisitor(kpmcli))
-	} else if source.IsLocalTarPath() || source.IsLocalTgzPath() {
-		return NewArchiveVisitor(NewPkgVisitor(kpmcli))
-	} else if source.IsLocalPath() {
-		rootPath, err := source.FindRootPath()
-		if err != nil {
-			return nil
-		}
-		kclmodpath := filepath.Join(rootPath, constants.KCL_MOD)
-		if utils.DirExists(kclmodpath) {
-			return NewPkgVisitor(kpmcli)
-		} else {
-			return NewVirtualPkgVisitor(NewPkgVisitor(kpmcli))
-		}
-	} else {
-		return nil
-	}
 }

@@ -5,6 +5,7 @@ import (
 
 	"kcl-lang.io/kpm/pkg/downloader"
 	pkg "kcl-lang.io/kpm/pkg/package"
+	"kcl-lang.io/kpm/pkg/visitor"
 )
 
 // ResolveOption is the option for resolving dependencies.
@@ -95,16 +96,24 @@ func (dr *DepsResolver) Resolve(options ...ResolveOption) error {
 	// visitorSelectorFunc selects the visitor for the source.
 	// For remote source, it will use the RemoteVisitor and enable the cache.
 	// For local source, it will use the PkgVisitor.
-	visitorSelectorFunc := func(source *downloader.Source) (Visitor, error) {
+	visitorSelectorFunc := func(source *downloader.Source) (visitor.Visitor, error) {
 		if source.IsRemote() {
-			PkgVisitor := NewRemoteVisitor(NewPkgVisitor(dr.kpmClient))
-			PkgVisitor.EnableCache = opts.EnableCache
-			if opts.CachePath == "" {
-				PkgVisitor.CachePath = dr.kpmClient.homePath
+			var cachePath string
+			if opts.CachePath != "" {
+				cachePath = opts.CachePath
 			} else {
-				PkgVisitor.CachePath = opts.CachePath
+				cachePath = dr.kpmClient.homePath
 			}
-			return PkgVisitor, nil
+			return &visitor.RemoteVisitor{
+				PkgVisitor: &visitor.PkgVisitor{
+					Settings:  &dr.kpmClient.settings,
+					LogWriter: dr.kpmClient.logWriter,
+				},
+				Downloader:            dr.kpmClient.DepDownloader,
+				InsecureSkipTLSverify: dr.kpmClient.insecureSkipTLSverify,
+				EnableCache:           opts.EnableCache,
+				CachePath:             cachePath,
+			}, nil
 		} else {
 			return NewVisitor(*source, dr.kpmClient), nil
 		}
