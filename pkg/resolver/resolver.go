@@ -1,10 +1,15 @@
-package client
+package resolver
 
 import (
+	"fmt"
+	"io"
 	"path/filepath"
 
+	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/downloader"
 	pkg "kcl-lang.io/kpm/pkg/package"
+	"kcl-lang.io/kpm/pkg/settings"
+	"kcl-lang.io/kpm/pkg/utils"
 	"kcl-lang.io/kpm/pkg/visitor"
 )
 
@@ -41,8 +46,8 @@ func WithCachePath(cachePath string) ResolveOption {
 	}
 }
 
-// WithResolveSource sets the source of the package to be resolved.
-func WithResolveSource(source *downloader.Source) ResolveOption {
+// WithSource sets the source of the package to be resolved.
+func WithSource(source *downloader.Source) ResolveOption {
 	return func(opts *ResolveOptions) error {
 		opts.Source = source
 		return nil
@@ -50,7 +55,7 @@ func WithResolveSource(source *downloader.Source) ResolveOption {
 }
 
 // WithResolveSourceUrl sets the source of the package to be resolved by the source url.
-func WithResolveSourceUrl(sourceUrl string) ResolveOption {
+func WithSourceUrl(sourceUrl string) ResolveOption {
 	return func(opts *ResolveOptions) error {
 		source, err := downloader.NewSourceFromStr(sourceUrl)
 		if err != nil {
@@ -63,25 +68,12 @@ func WithResolveSourceUrl(sourceUrl string) ResolveOption {
 
 // DepsResolver is the resolver for resolving dependencies.
 type DepsResolver struct {
-	kpmClient    *KpmClient
-	resolveFuncs []resolveFunc
-}
-
-// NewDepsResolver creates a new DepsResolver.
-func NewDepsResolver(kpmClient *KpmClient) *DepsResolver {
-	return &DepsResolver{
-		kpmClient:    kpmClient,
-		resolveFuncs: []resolveFunc{},
-	}
-}
-
-// AddResolveFunc adds a resolve function to the DepsResolver.
-func (dr *DepsResolver) AddResolveFunc(rf resolveFunc) {
-	if dr.resolveFuncs == nil {
-		dr.resolveFuncs = []resolveFunc{}
-	}
-
-	dr.resolveFuncs = append(dr.resolveFuncs, rf)
+	DefaultCachePath      string
+	InsecureSkipTLSverify bool
+	Downloader            downloader.Downloader
+	Settings              *settings.Settings
+	LogWriter             io.Writer
+	ResolveFuncs          []resolveFunc
 }
 
 // Resolve resolves the dependencies of the package.
@@ -97,25 +89,41 @@ func (dr *DepsResolver) Resolve(options ...ResolveOption) error {
 	// For remote source, it will use the RemoteVisitor and enable the cache.
 	// For local source, it will use the PkgVisitor.
 	visitorSelectorFunc := func(source *downloader.Source) (visitor.Visitor, error) {
+		pkgVisitor := &visitor.PkgVisitor{
+			Settings:  dr.Settings,
+			LogWriter: dr.LogWriter,
+		}
+
 		if source.IsRemote() {
 			var cachePath string
 			if opts.CachePath != "" {
 				cachePath = opts.CachePath
 			} else {
-				cachePath = dr.kpmClient.homePath
+				cachePath = dr.DefaultCachePath
 			}
+
 			return &visitor.RemoteVisitor{
-				PkgVisitor: &visitor.PkgVisitor{
-					Settings:  &dr.kpmClient.settings,
-					LogWriter: dr.kpmClient.logWriter,
-				},
-				Downloader:            dr.kpmClient.DepDownloader,
-				InsecureSkipTLSverify: dr.kpmClient.insecureSkipTLSverify,
+				PkgVisitor:            pkgVisitor,
+				Downloader:            dr.Downloader,
+				InsecureSkipTLSverify: dr.InsecureSkipTLSverify,
 				EnableCache:           opts.EnableCache,
 				CachePath:             cachePath,
 			}, nil
+		} else if source.IsLocalTarPath() || source.IsLocalTgzPath() {
+			return visitor.NewArchiveVisitor(pkgVisitor), nil
+		} else if source.IsLocalPath() {
+			rootPath, err := source.FindRootPath()
+			if err != nil {
+				return nil, err
+			}
+			kclmodpath := filepath.Join(rootPath, constants.KCL_MOD)
+			if utils.DirExists(kclmodpath) {
+				return pkgVisitor, nil
+			} else {
+				return visitor.NewVirtualPkgVisitor(pkgVisitor), nil
+			}
 		} else {
-			return NewVisitor(*source, dr.kpmClient), nil
+			return nil, fmt.Errorf("unsupported source")
 		}
 	}
 
@@ -151,7 +159,7 @@ func (dr *DepsResolver) Resolve(options ...ResolveOption) error {
 			// Visit this dependency and current package as the parent package.
 			err = visitor.Visit(&depSource,
 				func(childPkg *pkg.KclPkg) error {
-					for _, resolveFunc := range dr.resolveFuncs {
+					for _, resolveFunc := range dr.ResolveFuncs {
 						err := resolveFunc(&dep, kclPkg)
 						if err != nil {
 							return err
@@ -167,7 +175,7 @@ func (dr *DepsResolver) Resolve(options ...ResolveOption) error {
 
 			// Recursively resolve the dependencies of the dependency.
 			err = dr.Resolve(
-				WithResolveSource(&depSource),
+				WithSource(&depSource),
 				WithEnableCache(opts.EnableCache),
 				WithCachePath(opts.CachePath),
 			)
