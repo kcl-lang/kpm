@@ -6,7 +6,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"syscall"
 
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/otiai10/copy"
@@ -128,6 +130,17 @@ func NewOciDownloader(platform string) *DepDownloader {
 
 func (d *DepDownloader) Download(opts DownloadOptions) error {
 
+	// create a tmp dir to download the oci package.
+	tmpDir, err := os.MkdirTemp("", "")
+	if err != nil {
+		return fmt.Errorf("failed to create a temp dir: %w", err)
+	}
+	if opts.Source.Git != nil {
+		tmpDir = filepath.Join(tmpDir, constants.GitScheme)
+	}
+	// clean the temp dir.
+	defer os.RemoveAll(tmpDir)
+
 	var localPath string
 	if opts.EnableCache {
 		// TODO: After the new local storage structure is complete,
@@ -176,7 +189,7 @@ func (d *DepDownloader) Download(opts DownloadOptions) error {
 		localPath = opts.LocalPath
 	}
 
-	opts.LocalPath = localPath
+	opts.LocalPath = tmpDir
 	// Dispatch the download to the specific downloader by package source.
 	if opts.Source.Oci != nil || opts.Source.Registry != nil {
 		if opts.Source.Registry != nil {
@@ -185,14 +198,49 @@ func (d *DepDownloader) Download(opts DownloadOptions) error {
 		if d.OciDownloader == nil {
 			d.OciDownloader = &OciDownloader{}
 		}
-		return d.OciDownloader.Download(opts)
+		err := d.OciDownloader.Download(opts)
+		if err != nil {
+			return err
+		}
 	}
 
 	if opts.Source.Git != nil {
 		if d.GitDownloader == nil {
 			d.GitDownloader = &GitDownloader{}
 		}
-		return d.GitDownloader.Download(opts)
+		err := d.GitDownloader.Download(opts)
+		if err != nil {
+			return err
+		}
+	}
+
+	// rename the tmp dir to the local path.
+	if utils.DirExists(localPath) {
+		err := os.RemoveAll(localPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	if runtime.GOOS != "windows" {
+		err = os.Rename(tmpDir, localPath)
+		if err != nil {
+			// check the error is caused by moving the file across file systems.
+			if errors.Is(err, syscall.EXDEV) {
+				// If it is, use copy as a fallback.
+				err = copy.Copy(tmpDir, localPath)
+				if err != nil {
+					return err
+				}
+			} else {
+				return err
+			}
+		}
+	} else {
+		err = copy.Copy(tmpDir, localPath)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
