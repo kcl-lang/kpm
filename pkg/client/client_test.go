@@ -622,6 +622,13 @@ func testResolveDepsVendorMode(t *testing.T) {
 		FullName: "kcl1_0.0.1",
 		Version:  "0.0.1",
 		Sum:      kcl1Sum,
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/kcl1",
+				Tag:  "0.0.1",
+			},
+		},
 	}
 
 	depKcl2 := pkg.Dependency{
@@ -629,6 +636,13 @@ func testResolveDepsVendorMode(t *testing.T) {
 		FullName: "kcl2_0.0.1",
 		Version:  "0.0.1",
 		Sum:      kcl2Sum,
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/kcl2",
+				Tag:  "0.0.1",
+			},
+		},
 	}
 
 	mppTest := orderedmap.NewOrderedMap[string, pkg.Dependency]()
@@ -687,6 +701,13 @@ func testCompileWithEntryFile(t *testing.T) {
 		FullName: "kcl1_0.0.1",
 		Version:  "0.0.1",
 		Sum:      kcl1Sum,
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/kcl2",
+				Tag:  "0.0.1",
+			},
+		},
 	}
 	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
 	depKcl2 := pkg.Dependency{
@@ -694,6 +715,13 @@ func testCompileWithEntryFile(t *testing.T) {
 		FullName: "kcl2_0.0.1",
 		Version:  "0.0.1",
 		Sum:      kcl2Sum,
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/kcl2",
+				Tag:  "0.0.1",
+			},
+		},
 	}
 
 	mppTest := orderedmap.NewOrderedMap[string, pkg.Dependency]()
@@ -796,7 +824,7 @@ func testResolveMetadataInJsonStr(t *testing.T) {
 	expectedDep.Deps["flask_demo_kcl_manifests"] = pkg.Dependency{
 		Name:          "flask_demo_kcl_manifests",
 		FullName:      "flask-demo-kcl-manifests_ade147b",
-		Version:       "ade147b",
+		Version:       "0.1.0",
 		LocalFullPath: filepath.Join(globalPkgPath, "flask-demo-kcl-manifests_ade147b"),
 	}
 
@@ -819,7 +847,7 @@ func testResolveMetadataInJsonStr(t *testing.T) {
 	expectedDep.Deps["flask_demo_kcl_manifests"] = pkg.Dependency{
 		Name:          "flask_demo_kcl_manifests",
 		FullName:      "flask-demo-kcl-manifests_ade147b",
-		Version:       "ade147b",
+		Version:       "0.1.0",
 		LocalFullPath: filepath.Join(vendorDir, "flask-demo-kcl-manifests_ade147b"),
 	}
 
@@ -869,13 +897,13 @@ func testResolveMetadataInJsonStrWithPackage(t *testing.T) {
 		Deps: make(map[string]pkg.Dependency),
 	}
 
-	localFullPath, err := utils.FindPackage(filepath.Join(globalPkgPath, "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8"), "helloworld")
+	localFullPath, err := utils.FindPackage(filepath.Join(globalPkgPath, "flask-demo-kcl-manifests_8308200"), "cc")
 	assert.Equal(t, err, nil)
 
-	expectedDep.Deps["helloworld"] = pkg.Dependency{
-		Name:          "helloworld",
-		FullName:      "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8",
-		Version:       "ee03122b5f45b09eb48694422fc99a0772f6bba8",
+	expectedDep.Deps["cc"] = pkg.Dependency{
+		Name:          "cc",
+		FullName:      "flask-demo-kcl-manifests_8308200",
+		Version:       "8308200",
 		LocalFullPath: localFullPath,
 	}
 
@@ -903,19 +931,19 @@ func testResolveMetadataInJsonStrWithPackage(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	assert.Equal(t, utils.DirExists(vendorDir), true)
-	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8")), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "flask-demo-kcl-manifests_8308200")), true)
 
-	localFullPath, err = utils.FindPackage(filepath.Join(vendorDir, "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8"), "helloworld")
+	localFullPath, err = utils.FindPackage(filepath.Join(vendorDir, "flask-demo-kcl-manifests_8308200"), "cc")
 	assert.Equal(t, err, nil)
 
 	expectedDep = pkg.DependenciesUI{
 		Deps: make(map[string]pkg.Dependency),
 	}
 
-	expectedDep.Deps["helloworld"] = pkg.Dependency{
-		Name:          "helloworld",
-		FullName:      "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8",
-		Version:       "ee03122b5f45b09eb48694422fc99a0772f6bba8",
+	expectedDep.Deps["cc"] = pkg.Dependency{
+		Name:          "cc",
+		FullName:      "flask-demo-kcl-manifests_8308200",
+		Version:       "8308200",
 		LocalFullPath: localFullPath,
 	}
 
