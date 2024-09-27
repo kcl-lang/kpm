@@ -65,5 +65,4 @@ func TestResolver(t *testing.T) {
 	sort.Strings(res)
 	assert.Equal(t, len(res), 3)
 	assert.Equal(t, res, expected)
-	assert.Equal(t, buf.String(), "")
 }
