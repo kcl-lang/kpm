@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"syscall"
 
 	"github.com/BurntSushi/toml"
 	"github.com/distribution/reference"
@@ -634,4 +635,31 @@ func matchesPackageName(kclModPath, targetPackage string) bool {
 	}
 
 	return modFile.Package.Name == targetPackage
+}
+
+// MoveOrCopy moves or copies the tmpDir to localPath based on the OS and error conditions.
+// On windows, it will copy the file from 'src' to 'dest'.
+// On unix-like systems, it will rename the file from 'src' to 'dest'.
+func MoveOrCopy(src, dest string) error {
+	if runtime.GOOS != "windows" {
+		err := os.Rename(src, dest)
+		if err != nil {
+			// check the error is caused by moving the file across file systems.
+			if goerrors.Is(err, syscall.EXDEV) {
+				// If it is, use copy as a fallback.
+				err = copy.Copy(src, dest)
+				if err != nil {
+					return err
+				}
+			} else {
+				return err
+			}
+		}
+	} else {
+		err := copy.Copy(src, dest)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

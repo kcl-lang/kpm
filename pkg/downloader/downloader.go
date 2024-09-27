@@ -6,9 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
-	"syscall"
 
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/otiai10/copy"
@@ -141,7 +139,8 @@ func (d *DepDownloader) Download(opts DownloadOptions) error {
 	// clean the temp dir.
 	defer os.RemoveAll(tmpDir)
 
-	var localPath string
+	localPath := opts.LocalPath
+	cacheFullPath := opts.CachePath
 	if opts.EnableCache {
 		// TODO: After the new local storage structure is complete,
 		// this section should be replaced with the new storage structure instead of the cache path according to the <Cache Path>/<Package Name>.
@@ -183,10 +182,7 @@ func (d *DepDownloader) Download(opts DownloadOptions) error {
 			if err != nil {
 				return err
 			}
-			localPath = cacheFullPath
 		}
-	} else {
-		localPath = opts.LocalPath
 	}
 
 	opts.LocalPath = tmpDir
@@ -222,26 +218,19 @@ func (d *DepDownloader) Download(opts DownloadOptions) error {
 		}
 	}
 
-	if runtime.GOOS != "windows" {
-		err = os.Rename(tmpDir, localPath)
-		if err != nil {
-			// check the error is caused by moving the file across file systems.
-			if errors.Is(err, syscall.EXDEV) {
-				// If it is, use copy as a fallback.
-				err = copy.Copy(tmpDir, localPath)
-				if err != nil {
-					return err
-				}
-			} else {
-				return err
-			}
-		}
-	} else {
-		err = copy.Copy(tmpDir, localPath)
+	err = utils.MoveOrCopy(tmpDir, localPath)
+	if err != nil {
+		return err
+	}
+
+	if opts.EnableCache {
+		// Enable the cache, update the dependency package to the cache path.
+		err := copy.Copy(tmpDir, cacheFullPath)
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
