@@ -1,0 +1,9 @@
+[dependencies]
+  [dependencies.dep1]
+    name = "dep1"
+    full_name = "dep1_0.0.1"
+    version = "0.0.1"
+  [dependencies.dep2]
+    name = "dep2"
+    full_name = "dep2_0.0.1"
+    version = "0.0.1"

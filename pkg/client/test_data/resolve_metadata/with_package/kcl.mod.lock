@@ -1,8 +1,8 @@
 [dependencies]
-  [dependencies.helloworld]
-    name = "helloworld"
-    full_name = "modules_ee03122b5f45b09eb48694422fc99a0772f6bba8"
-    version = "0.1.2"
-    url = "https://github.com/kcl-lang/modules.git"
-    commit = "ee03122b5f45b09eb48694422fc99a0772f6bba8"
-    package = "helloworld"
+  [dependencies.cc]
+    name = "cc"
+    full_name = "flask-demo-kcl-manifests_8308200"
+    version = "0.0.1"
+    url = "https://github.com/kcl-lang/flask-demo-kcl-manifests.git"
+    commit = "8308200"
+    package = "cc"
