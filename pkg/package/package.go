@@ -92,16 +92,28 @@ func LoadKclPkgWithOpts(options ...LoadOption) (*KclPkg, error) {
 		return nil, fmt.Errorf("could not load 'kcl.mod' in '%s'\n%w", pkgPath, err)
 	}
 	// 3. Sync the dependencies information in kcl.mod.lock with the dependencies in kcl.mod.
-	for _, name := range modFile.Dependencies.Deps.Keys() {
-		modDep, ok := modFile.Dependencies.Deps.Get(name)
+	for _, name := range deps.Deps.Keys() {
+		lockDep, ok := deps.Deps.Get(name)
 		if !ok {
 			return nil, fmt.Errorf("could not load 'kcl.mod' in '%s'\n%w", pkgPath, err)
 		}
-		if lockDep, ok := deps.Deps.Get(name); ok {
+		if modDep, ok := modFile.Dependencies.Deps.Get(name); ok {
 			lockDep.Source = modDep.Source
 			lockDep.LocalFullPath = modDep.LocalFullPath
-			deps.Deps.Set(name, lockDep)
+		} else {
+			// If there is no source in the lock file, fill the default oci registry.
+			if lockDep.Source.IsNilSource() {
+				lockDep.Source.Registry = &downloader.Registry{
+					Name: lockDep.Name,
+					Oci: &downloader.Oci{
+						Reg:  opts.Settings.DefaultOciRegistry(),
+						Repo: utils.JoinPath(opts.Settings.DefaultOciRepo(), lockDep.Name),
+						Tag:  lockDep.Version,
+					},
+				}
+			}
 		}
+		deps.Deps.Set(name, lockDep)
 	}
 
 	return &KclPkg{

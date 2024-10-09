@@ -10,6 +10,7 @@ import (
 	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/runner"
+	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -136,4 +137,21 @@ func TestLoadKclPkgFromTar(t *testing.T) {
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl1-v0.0.3")), true)
 	err = os.RemoveAll(filepath.Join(testDir, "kcl1-v0.0.3"))
 	assert.Equal(t, err, nil)
+}
+
+// Test load package whose dependencies in kcl.mod and kcl.mod.lock is different
+func TestLoadPkgFromLock(t *testing.T) {
+	pkgPath := getTestDir("load_from_lock")
+	kpkg, err := LoadKclPkgWithOpts(
+		WithPath(pkgPath),
+		WithSettings(settings.GetSettings()),
+	)
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, kpkg.Dependencies.Deps.Len(), 1)
+	assert.Equal(t, kpkg.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Name, "helloworld")
+	assert.Equal(t, kpkg.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).FullName, "helloworld_0.1.2")
+	assert.Equal(t, kpkg.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Source.Registry.Oci.Reg, "ghcr.io")
+	assert.Equal(t, kpkg.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Source.Registry.Oci.Repo, "kcl-lang/helloworld")
+	assert.Equal(t, kpkg.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Source.Registry.Oci.Tag, "0.1.2")
 }
