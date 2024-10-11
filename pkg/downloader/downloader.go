@@ -356,16 +356,63 @@ func (d *GitDownloader) Download(opts DownloadOptions) error {
 		return errors.New("git source is nil")
 	}
 
-	_, err := git.CloneWithOpts(
-		git.WithCommit(gitSource.Commit),
-		git.WithBranch(gitSource.Branch),
-		git.WithTag(gitSource.Tag),
-		git.WithRepoURL(gitSource.Url),
-		git.WithLocalPath(opts.LocalPath),
-	)
+	// If caching is enabled, clone the repo as a bare repository to the cache.
+	if opts.EnableCache {
+		// Check if the bare repository already exists in the cache.
+		if utils.DirExists(opts.CachePath) {
+			reporter.ReportMsgTo(
+				fmt.Sprintf("Using cached bare repository at '%s'", opts.CachePath),
+				opts.LogWriter,
+			)
+		} else {
+			reporter.ReportMsgTo(
+				fmt.Sprintf("Caching bare repository to '%s'", opts.CachePath),
+				opts.LogWriter,
+			)
+			// Clone the repository as a bare repo into the cache.
+			_, err := git.CloneWithOpts(
+				git.WithRepoURL(gitSource.Url),
+				git.WithLocalPath(opts.CachePath),
+				git.WithBare(true), // Perform a bare clone.
+			)
+			if err != nil {
+				return err
+			}
+		}
 
-	if err != nil {
-		return err
+		// Now checkout the specific version (commit/tag/branch) from the bare repository.
+		checkoutPath := filepath.Join(opts.LocalPath, "git", "checkouts", fmt.Sprintf("%s-%s", filepath.Base(gitSource.Url), utils.GenerateHash(gitSource.Url)))
+		err := os.MkdirAll(checkoutPath, 0755)
+		if err != nil {
+			return err
+		}
+
+		_, err = git.CloneWithOpts(
+			git.WithRepoURL(opts.CachePath), // Use the cached bare repo as the source.
+			git.WithLocalPath(checkoutPath),
+			git.WithCommit(gitSource.Commit),
+			git.WithBranch(gitSource.Branch),
+			git.WithTag(gitSource.Tag),
+			git.WithBare(false), // Perform a non-bare clone (checkout).
+		)
+		if err != nil {
+			return err
+		}
+
+		opts.LocalPath = checkoutPath // Set the local path to the checkout path.
+	} else {
+		// If caching is not enabled, clone directly to the local path without caching.
+		_, err := git.CloneWithOpts(
+			git.WithRepoURL(gitSource.Url),
+			git.WithLocalPath(opts.LocalPath),
+			git.WithCommit(gitSource.Commit),
+			git.WithBranch(gitSource.Branch),
+			git.WithTag(gitSource.Tag),
+			git.WithBare(false), // Normal clone.
+		)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
