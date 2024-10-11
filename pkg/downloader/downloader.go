@@ -218,6 +218,8 @@ func (d *DepDownloader) Download(opts DownloadOptions) error {
 		}
 	}
 
+	// Move the downloaded package to the local path.
+	// On unix, after the move, the tmp dir will be removed.
 	err = utils.MoveOrCopy(tmpDir, localPath)
 	if err != nil {
 		return err
@@ -225,7 +227,7 @@ func (d *DepDownloader) Download(opts DownloadOptions) error {
 
 	if opts.EnableCache {
 		// Enable the cache, update the dependency package to the cache path.
-		err := copy.Copy(tmpDir, cacheFullPath)
+		err := copy.Copy(localPath, cacheFullPath)
 		if err != nil {
 			return err
 		}
