@@ -13,6 +13,7 @@ import (
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
+	"kcl-lang.io/kpm/pkg/test"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -155,7 +156,7 @@ func TestRunTarPkg(t *testing.T) {
 	}
 }
 
-func TestRunWithNoSumCheck(t *testing.T) {
+func testRunWithNoSumCheck(t *testing.T) {
 	pkgPath := getTestDir("test_run_with_nosumcheck")
 	opts := opt.DefaultCompileOptions()
 	opts.SetPkgPath(pkgPath)
@@ -223,4 +224,8 @@ func TestStoreModAndModLockFile(t *testing.T) {
 
 	err = testPackage.StoreModLockFile()
 	assert.Equal(t, err, nil)
+}
+
+func TestRunWithLock(t *testing.T) {
+	test.RunTestWithGlobalLock(t, "TestRunWithNoSumCheck", testRunWithNoSumCheck)
 }

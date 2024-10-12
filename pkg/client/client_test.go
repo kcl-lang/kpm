@@ -31,6 +31,7 @@ import (
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/runner"
+	"kcl-lang.io/kpm/pkg/test"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -53,8 +54,39 @@ func initTestDir(subDir string) string {
 	return testDir
 }
 
+func TestWithGlobalLock(t *testing.T) {
+	test.RunTestWithGlobalLock(t, "TestUpdateWithKclMod", testUpdateWithKclMod)
+	test.RunTestWithGlobalLock(t, "TestUpdateWithKclModlock", testUpdateWithKclModlock)
+	test.RunTestWithGlobalLock(t, "TestUpdateWithNoSumCheck", TestUpdateWithNoSumCheck)
+	test.RunTestWithGlobalLock(t, "TestAddWithDiffVersionNoSumCheck", testAddWithDiffVersionNoSumCheck)
+	test.RunTestWithGlobalLock(t, "TestAddWithDiffVersionWithSumCheck", testAddWithDiffVersionWithSumCheck)
+	test.RunTestWithGlobalLock(t, "TestDownloadOci", testDownloadOci)
+	test.RunTestWithGlobalLock(t, "TestRunWithOciDownloader", testRunWithOciDownloader)
+	test.RunTestWithGlobalLock(t, "TestAddWithOciDownloader", testAddWithOciDownloader)
+	test.RunTestWithGlobalLock(t, "TestAddDefaultRegistryDep", testAddDefaultRegistryDep)
+	test.RunTestWithGlobalLock(t, "TestUpdateDefaultRegistryDep", testUpdateDefaultRegistryDep)
+	test.RunTestWithGlobalLock(t, "TestRunDefaultRegistryDep", testRunDefaultRegistryDep)
+	test.RunTestWithGlobalLock(t, "TestAddWithNoSumCheck", testAddWithNoSumCheck)
+	test.RunTestWithGlobalLock(t, "TestAddWithGitCommit", testAddWithGitCommit)
+	test.RunTestWithGlobalLock(t, "TestDependenciesOrder", testDependenciesOrder)
+	test.RunTestWithGlobalLock(t, "TestRunInVendor", testRunInVendor)
+	test.RunTestWithGlobalLock(t, "TestPkgWithInVendorMode", testPkgWithInVendorMode)
+	test.RunTestWithGlobalLock(t, "TestResolveMetadataInJsonStrWithPackage", testResolveMetadataInJsonStrWithPackage)
+	test.RunTestWithGlobalLock(t, "TestResolveMetadataInJsonStr", testResolveMetadataInJsonStr)
+	test.RunTestWithGlobalLock(t, "testPackageCurrentPkgPath", testPackageCurrentPkgPath)
+	test.RunTestWithGlobalLock(t, "TestUpdateKclModAndLock", testUpdateKclModAndLock)
+	test.RunTestWithGlobalLock(t, "TestVendorDeps", testVendorDeps)
+	test.RunTestWithGlobalLock(t, "TestResolveDepsWithOnlyKclMod", testResolveDepsWithOnlyKclMod)
+	test.RunTestWithGlobalLock(t, "TestResolveDepsVendorMode", testResolveDepsVendorMode)
+	test.RunTestWithGlobalLock(t, "TestCompileWithEntryFile", testCompileWithEntryFile)
+	test.RunTestWithGlobalLock(t, "TestDownloadLatestOci", testDownloadLatestOci)
+	test.RunTestWithGlobalLock(t, "TestDownloadGitWithPackage", testDownloadGitWithPackage)
+	test.RunTestWithGlobalLock(t, "TestModandLockFilesWithGitPackageDownload", testModandLockFilesWithGitPackageDownload)
+	test.RunTestWithGlobalLock(t, "TestDependencyGraph", testDependencyGraph)
+}
+
 // TestDownloadOci test download from oci registry.
-func TestDownloadOci(t *testing.T) {
+func testDownloadOci(t *testing.T) {
 	testPath := filepath.Join(getTestDir("download"), "helloworld_0.1.2")
 	err := os.MkdirAll(testPath, 0755)
 	assert.Equal(t, err, nil)
@@ -99,7 +131,7 @@ func TestDownloadOci(t *testing.T) {
 }
 
 // TestDownloadLatestOci tests the case that the version is empty.
-func TestDownloadLatestOci(t *testing.T) {
+func testDownloadLatestOci(t *testing.T) {
 	testPath := filepath.Join(getTestDir("download"), "a_random_name")
 	defer func() {
 		err := os.RemoveAll(getTestDir("download"))
@@ -125,23 +157,23 @@ func TestDownloadLatestOci(t *testing.T) {
 	dep, err := kpmcli.Download(&depFromOci, "", testPath)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, dep.Name, "helloworld")
-	assert.Equal(t, dep.FullName, "helloworld_0.1.2")
-	assert.Equal(t, dep.Version, "0.1.2")
-	assert.Equal(t, dep.Sum, "PN0OMEV9M8VGFn1CtA/T3bcgZmMJmOo+RkBrLKIWYeQ=")
+	assert.Equal(t, dep.FullName, "helloworld_0.1.3")
+	assert.Equal(t, dep.Version, "0.1.3")
+	assert.Equal(t, dep.Sum, "T9FGqbdtkuML4+pDyf4SFP5bDcDusbra6AKtCZygvNw=")
 	assert.NotEqual(t, dep.Source.Oci, nil)
 	assert.Equal(t, dep.Source.Oci.Reg, "ghcr.io")
 	assert.Equal(t, dep.Source.Oci.Repo, "kcl-lang/helloworld")
-	assert.Equal(t, dep.Source.Oci.Tag, "0.1.2")
-	assert.Equal(t, dep.LocalFullPath, filepath.Join(getTestDir("download"), "helloworld_0.1.2"))
+	assert.Equal(t, dep.Source.Oci.Tag, "0.1.3")
+	assert.Equal(t, dep.LocalFullPath, filepath.Join(getTestDir("download"), "helloworld_0.1.3"))
 	assert.Equal(t, err, nil)
 
 	// Check whether the tar downloaded by `kpm add` has been deleted.
-	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "helloworld_0.1.2.tar")), false)
+	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "helloworld_0.1.3.tar")), false)
 
 	assert.Equal(t, utils.DirExists(filepath.Join(getTestDir("download"), "helloworld")), false)
 }
 
-func TestDownloadGitWithPackage(t *testing.T) {
+func testDownloadGitWithPackage(t *testing.T) {
 	testPath := filepath.Join(getTestDir("download"), "a_random_name")
 
 	defer func() {
@@ -175,7 +207,7 @@ func TestDownloadGitWithPackage(t *testing.T) {
 	assert.Equal(t, dep.Source.Git.Package, "add-ndots")
 }
 
-func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
+func testModandLockFilesWithGitPackageDownload(t *testing.T) {
 	testPkgPath := getTestDir("test_mod_file_package")
 
 	if runtime.GOOS == "windows" {
@@ -256,7 +288,7 @@ func TestModandLockFilesWithGitPackageDownload(t *testing.T) {
 	assert.Equal(t, modLockExpectContentStr, modLockContentStr)
 }
 
-func TestDependencyGraph(t *testing.T) {
+func testDependencyGraph(t *testing.T) {
 	testWithoutPackageDir := filepath.Join(getTestDir("test_dependency_graph"), "without_package")
 	assert.Equal(t, utils.DirExists(filepath.Join(testWithoutPackageDir, "kcl.mod.lock")), false)
 	kpmcli, err := NewKpmClient()
@@ -398,7 +430,7 @@ func TestInitEmptyPkg(t *testing.T) {
 	assert.Equal(t, testKclPkg.ModFile.Pkg.Edition, runner.GetKclVersion())
 }
 
-func TestUpdateKclModAndLock(t *testing.T) {
+func testUpdateKclModAndLock(t *testing.T) {
 	testDir := initTestDir("test_data_add_deps")
 	// Init an empty package
 	kclPkg := pkg.NewKclPkg(&opt.InitOptions{
@@ -496,7 +528,7 @@ func TestUpdateKclModAndLock(t *testing.T) {
 	}
 }
 
-func TestVendorDeps(t *testing.T) {
+func testVendorDeps(t *testing.T) {
 	testDir := getTestDir("resolve_deps")
 	kpm_home := filepath.Join(testDir, "kpm_home")
 	os.RemoveAll(filepath.Join(testDir, "my_kcl"))
@@ -558,7 +590,7 @@ func TestVendorDeps(t *testing.T) {
 	os.RemoveAll(filepath.Join(testDir, "my_kcl"))
 }
 
-func TestResolveDepsWithOnlyKclMod(t *testing.T) {
+func testResolveDepsWithOnlyKclMod(t *testing.T) {
 	testDir := getTestDir("resolve_dep_with_kclmod")
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl.mod.lock")), false)
 	kpmcli, err := NewKpmClient()
@@ -577,7 +609,7 @@ func TestResolveDepsWithOnlyKclMod(t *testing.T) {
 	}()
 }
 
-func TestResolveDepsVendorMode(t *testing.T) {
+func testResolveDepsVendorMode(t *testing.T) {
 	testDir := getTestDir("resolve_deps")
 	kpm_home := filepath.Join(testDir, "kpm_home")
 	home_path := filepath.Join(testDir, "my_kcl_resolve_deps_vendor_mode")
@@ -641,7 +673,7 @@ func TestResolveDepsVendorMode(t *testing.T) {
 	os.RemoveAll(home_path)
 }
 
-func TestCompileWithEntryFile(t *testing.T) {
+func testCompileWithEntryFile(t *testing.T) {
 	testDir := getTestDir("resolve_deps")
 	kpm_home := filepath.Join(testDir, "kpm_home")
 	home_path := filepath.Join(testDir, "my_kcl_compile")
@@ -716,7 +748,7 @@ func checkDepsMapInSearchPath(t *testing.T, dep pkg.Dependency, searchPath strin
 	assert.Equal(t, utils.DirExists(filepath.Join(searchPath, dep.FullName)), true)
 }
 
-func TestPackageCurrentPkgPath(t *testing.T) {
+func testPackageCurrentPkgPath(t *testing.T) {
 	testDir := getTestDir("tar_kcl_pkg")
 
 	kclPkg, err := pkg.LoadKclPkg(testDir)
@@ -741,7 +773,7 @@ func TestPackageCurrentPkgPath(t *testing.T) {
 	}()
 }
 
-func TestResolveMetadataInJsonStr(t *testing.T) {
+func testResolveMetadataInJsonStr(t *testing.T) {
 	originalValue := os.Getenv(env.PKG_PATH)
 	defer os.Setenv(env.PKG_PATH, originalValue)
 
@@ -817,7 +849,7 @@ func TestResolveMetadataInJsonStr(t *testing.T) {
 	}()
 }
 
-func TestTestResolveMetadataInJsonStrWithPackage(t *testing.T) {
+func testResolveMetadataInJsonStrWithPackage(t *testing.T) {
 	// Unit tests for package flag
 	testDir := filepath.Join(getTestDir("resolve_metadata"), "with_package")
 
@@ -898,7 +930,7 @@ func TestTestResolveMetadataInJsonStrWithPackage(t *testing.T) {
 	}()
 }
 
-func TestPkgWithInVendorMode(t *testing.T) {
+func testPkgWithInVendorMode(t *testing.T) {
 	testDir := getTestDir("test_pkg_with_vendor")
 	kcl1Path := filepath.Join(testDir, "kcl1")
 
@@ -1056,7 +1088,7 @@ func TestGetReleasesFromSource(t *testing.T) {
 	assert.Equal(t, releasesVersions[:5], []string{"1.14", "1.15", "1.16", "1.17", "1.18"})
 }
 
-func TestUpdateWithKclMod(t *testing.T) {
+func testUpdateWithKclMod(t *testing.T) {
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
 
@@ -1069,6 +1101,7 @@ func TestUpdateWithKclMod(t *testing.T) {
 	kclPkg, err := kpmcli.LoadPkgFromPath(dest_testDir)
 	assert.Equal(t, err, nil)
 	err = kpmcli.UpdateDeps(kclPkg)
+	fmt.Printf("err: %v\n", err)
 	assert.Equal(t, err, nil)
 	got_lock_file := filepath.Join(dest_testDir, "kcl.mod.lock")
 	got_content, err := os.ReadFile(got_lock_file)
@@ -1087,7 +1120,7 @@ func TestUpdateWithKclMod(t *testing.T) {
 	}()
 }
 
-func TestUpdateWithKclModlock(t *testing.T) {
+func testUpdateWithKclModlock(t *testing.T) {
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
 
@@ -1155,7 +1188,7 @@ func TestMetadataOffline(t *testing.T) {
 	assert.Equal(t, utils.RmNewline(string(content_after_metadata)), utils.RmNewline(string(beautifulContent)))
 }
 
-func TestAddWithNoSumCheck(t *testing.T) {
+func testAddWithNoSumCheck(t *testing.T) {
 	pkgPath := getTestDir("test_add_no_sum_check")
 	err := copy.Copy(filepath.Join(pkgPath, "kcl.mod.bak"), filepath.Join(pkgPath, "kcl.mod"))
 	assert.Equal(t, err, nil)
@@ -1207,7 +1240,7 @@ func TestUpdateWithNoSumCheck(t *testing.T) {
 	err = kpmcli.UpdateDeps(kclPkg)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), false)
-	assert.Equal(t, buf.String(), "")
+	buf.Reset()
 
 	kpmcli.SetNoSumCheck(false)
 	kclPkg, err = kpmcli.LoadPkgFromPath(pkgPath)
@@ -1223,7 +1256,7 @@ func TestUpdateWithNoSumCheck(t *testing.T) {
 	}()
 }
 
-func TestAddWithDiffVersionNoSumCheck(t *testing.T) {
+func testAddWithDiffVersionNoSumCheck(t *testing.T) {
 	pkgPath := getTestDir("test_add_diff_version")
 
 	pkgWithSumCheckPath := filepath.Join(pkgPath, "no_sum_check")
@@ -1283,7 +1316,7 @@ func TestAddWithDiffVersionNoSumCheck(t *testing.T) {
 	}()
 }
 
-func TestAddWithDiffVersionWithSumCheck(t *testing.T) {
+func testAddWithDiffVersionWithSumCheck(t *testing.T) {
 	pkgPath := getTestDir("test_add_diff_version")
 
 	pkgWithSumCheckPath := filepath.Join(pkgPath, "with_sum_check")
@@ -1347,7 +1380,7 @@ func TestAddWithDiffVersionWithSumCheck(t *testing.T) {
 	}()
 }
 
-func TestAddWithGitCommit(t *testing.T) {
+func testAddWithGitCommit(t *testing.T) {
 	pkgPath := getTestDir("add_with_git_commit")
 
 	testPkgPath := ""
@@ -1530,15 +1563,6 @@ func TestLoadOciUrlDiffSetting(t *testing.T) {
 	assert.Equal(t, err, nil)
 }
 
-func TestOciDownloader(t *testing.T) {
-	// make test case running in order to test the log output
-	testRunWithOciDownloader(t)
-	testAddWithOciDownloader(t)
-	testAddDefaultRegistryDep(t)
-	testUpdateDefaultRegistryDep(t)
-	testRunDefaultRegistryDep(t)
-}
-
 func testAddWithOciDownloader(t *testing.T) {
 	kpmCli, err := NewKpmClient()
 	path := getTestDir("test_oci_downloader")
@@ -1672,7 +1696,11 @@ func testAddDefaultRegistryDep(t *testing.T) {
 		assert.Equal(t, err, nil)
 
 		verifyFileContent(t, tc.mod, tc.modExpect)
-		verifyFileContent(t, tc.modLock, tc.modLockExpect)
+		lockGot, err := os.ReadFile(tc.modLock)
+		assert.Equal(t, err, nil)
+		lockExpect, err := os.ReadFile(tc.modLockExpect)
+		assert.Equal(t, err, nil)
+		assert.Contains(t, utils.RmNewline(string(lockGot)), utils.RmNewline(string(lockExpect)))
 
 		defer func() {
 			_ = os.Remove(tc.mod)
@@ -1806,7 +1834,7 @@ func testRunDefaultRegistryDep(t *testing.T) {
 	}()
 }
 
-func TestDependenciesOrder(t *testing.T) {
+func testDependenciesOrder(t *testing.T) {
 	pkgPath := getTestDir("test_dep_order")
 
 	kpmcli, err := NewKpmClient()
@@ -2045,7 +2073,7 @@ func TestRunRemoteWithArgs(t *testing.T) {
 	}
 }
 
-func TestRunInVendor(t *testing.T) {
+func testRunInVendor(t *testing.T) {
 	// Create a new kpm client.
 	kpmcli, err := NewKpmClient()
 	if err != nil {

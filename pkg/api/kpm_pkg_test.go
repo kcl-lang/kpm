@@ -9,7 +9,24 @@ import (
 	"kcl-lang.io/kpm/pkg/client"
 )
 
-func TestPackageApi(t *testing.T) {
+func TestAllSchemaTypeMappings(t *testing.T) {
+	t.Run("TestPackageApi", func(t *testing.T) {
+		testPackageApi(t)
+		fmt.Println("TestPackageApi completed")
+	})
+
+	t.Run("TestGetAllSchemaTypesMappingNamed", func(t *testing.T) {
+		testGetAllSchemaTypesMappingNamed(t)
+		fmt.Println("TestGetAllSchemaTypesMappingNamed completed")
+	})
+
+	t.Run("TestGetSchemaTypeMappingWithFilters", func(t *testing.T) {
+		testGetSchemaTypeMappingWithFilters(t)
+		fmt.Println("TestGetSchemaTypeMappingWithFilters completed")
+	})
+}
+
+func testPackageApi(t *testing.T) {
 	pkg_path := filepath.Join(getTestDir("test_kpm_package"), "kcl_pkg")
 	kcl_pkg_path, err := GetKclPkgPath()
 	assert.Equal(t, err, nil)
@@ -24,15 +41,15 @@ func TestPackageApi(t *testing.T) {
 	assert.Equal(t, pkg.GetEdition(), "0.0.1")
 	assert.Equal(t, pkg.GetDependencies().Deps.Len(), 1)
 
-	dep, _ := pkg.GetDependencies().Deps.Get("k8s")
-	assert.Equal(t, dep.Name, "k8s")
-	assert.Equal(t, dep.FullName, "k8s_1.27")
-	assert.Equal(t, dep.Version, "1.27")
+	dep, _ := pkg.GetDependencies().Deps.Get("helloworld")
+	assert.Equal(t, dep.Name, "helloworld")
+	assert.Equal(t, dep.FullName, "helloworld_0.1.3")
+	assert.Equal(t, dep.Version, "0.1.3")
 	assert.Equal(t, dep.Source.Registry.Oci.Reg, "ghcr.io")
-	assert.Equal(t, dep.Source.Registry.Oci.Repo, "kcl-lang/k8s")
-	assert.Equal(t, dep.Source.Registry.Oci.Tag, "1.27")
+	assert.Equal(t, dep.Source.Registry.Oci.Repo, "kcl-lang/helloworld")
+	assert.Equal(t, dep.Source.Registry.Oci.Tag, "0.1.3")
 
-	assert.Equal(t, dep.GetLocalFullPath(""), filepath.Join(kcl_pkg_path, "k8s_1.27"))
+	assert.Equal(t, dep.GetLocalFullPath(""), filepath.Join(kcl_pkg_path, "helloworld_0.1.3"))
 
 	schemas, err := pkg.GetAllSchemaTypeMapping()
 	assert.Equal(t, err, nil)
@@ -71,7 +88,7 @@ func TestApiGetDependenciesInModFile(t *testing.T) {
 	assert.Equal(t, dep.Source.Registry.Oci.Tag, "1.27")
 }
 
-func TestGetAllSchemaTypesMappingNamed(t *testing.T) {
+func testGetAllSchemaTypesMappingNamed(t *testing.T) {
 	pkg_path := filepath.Join(getTestDir("test_kpm_package"), "kcl_pkg")
 	pkg, err := GetKclPackage(pkg_path)
 	assert.Equal(t, err, nil)
@@ -96,7 +113,7 @@ func TestGetAllSchemaTypesMappingNamed(t *testing.T) {
 	assert.Equal(t, schemas[filepath.Join("sub", "sub1")]["SchemaWithSameName"].SchemaName, "SchemaWithSameName")
 }
 
-func TestGetSchemaTypeMappingWithFilters(t *testing.T) {
+func testGetSchemaTypeMappingWithFilters(t *testing.T) {
 	pkg_path := filepath.Join(getTestDir("test_kpm_package"), "kcl_pkg")
 	pkg, err := GetKclPackage(pkg_path)
 	assert.Equal(t, err, nil)
