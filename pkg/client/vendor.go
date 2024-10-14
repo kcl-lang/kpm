@@ -10,6 +10,8 @@ import (
 	"github.com/otiai10/copy"
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/downloader"
+	"kcl-lang.io/kpm/pkg/errors"
+	"kcl-lang.io/kpm/pkg/features"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/utils"
 	"kcl-lang.io/kpm/pkg/visitor"
@@ -28,46 +30,133 @@ func (c *KpmClient) VendorDeps(kclPkg *pkg.KclPkg) error {
 }
 
 func (c *KpmClient) vendorDeps(kclPkg *pkg.KclPkg, vendorPath string) error {
-	// Select all the vendored dependencies
-	// and fill the vendored dependencies into kclPkg.Dependencies.Deps
-	err := c.selectVendoredDeps(kclPkg, vendorPath, kclPkg.Dependencies.Deps)
-	if err != nil {
-		return err
-	}
-
-	// Move all the selected vendored dependencies to the vendor directory.
-	for _, depName := range kclPkg.Dependencies.Deps.Keys() {
-		dep, ok := kclPkg.Dependencies.Deps.Get(depName)
-		if !ok {
-			return fmt.Errorf("failed to get dependency %s", depName)
-		}
-
-		// Check if the dependency is already vendored in the vendor directory.
-		existLocalDep, err := c.dependencyExistsLocal(filepath.Dir(vendorPath), &dep, true)
+	if ok, err := features.Enabled(features.SupportMVS); err != nil && ok {
+		// Select all the vendored dependencies
+		// and fill the vendored dependencies into kclPkg.Dependencies.Deps
+		err := c.selectVendoredDeps(kclPkg, vendorPath, kclPkg.Dependencies.Deps)
 		if err != nil {
 			return err
 		}
 
-		if existLocalDep == nil {
-			vendorFullPath := filepath.Join(vendorPath, dep.GenDepFullName())
-			cacheFullPath := filepath.Join(c.homePath, dep.GenDepFullName())
-			if !utils.DirExists(vendorFullPath) {
-				err := copy.Copy(cacheFullPath, vendorFullPath)
-				if err != nil {
-					return err
-				}
+		// Move all the selected vendored dependencies to the vendor directory.
+		for _, depName := range kclPkg.Dependencies.Deps.Keys() {
+			dep, ok := kclPkg.Dependencies.Deps.Get(depName)
+			if !ok {
+				return fmt.Errorf("failed to get dependency %s", depName)
 			}
-			// Load the vendored dependency
-			existLocalDep, err = c.dependencyExistsLocal(filepath.Dir(vendorPath), &dep, true)
+
+			// Check if the dependency is already vendored in the vendor directory.
+			existLocalDep, err := c.dependencyExistsLocal(filepath.Dir(vendorPath), &dep, true)
 			if err != nil {
 				return err
 			}
 
 			if existLocalDep == nil {
-				return fmt.Errorf("failed to find the vendored dependency %s", depName)
+				vendorFullPath := filepath.Join(vendorPath, dep.GenDepFullName())
+				cacheFullPath := filepath.Join(c.homePath, dep.GenDepFullName())
+				if !utils.DirExists(vendorFullPath) {
+					err := copy.Copy(cacheFullPath, vendorFullPath)
+					if err != nil {
+						return err
+					}
+				}
+				// Load the vendored dependency
+				existLocalDep, err = c.dependencyExistsLocal(filepath.Dir(vendorPath), &dep, true)
+				if err != nil {
+					return err
+				}
+
+				if existLocalDep == nil {
+					return fmt.Errorf("failed to find the vendored dependency %s", depName)
+				}
+			}
+			kclPkg.Dependencies.Deps.Set(depName, *existLocalDep)
+		}
+	} else {
+		lockDeps := make([]pkg.Dependency, 0, kclPkg.Dependencies.Deps.Len())
+		for _, k := range kclPkg.Dependencies.Deps.Keys() {
+			d, _ := kclPkg.Dependencies.Deps.Get(k)
+			lockDeps = append(lockDeps, d)
+		}
+
+		// Traverse all dependencies in kcl.mod.lock.
+		for i := 0; i < len(lockDeps); i++ {
+			d := lockDeps[i]
+			if len(d.Name) == 0 {
+				return errors.InvalidDependency
+			}
+			// If the dependency is from the local path, do not vendor it, vendor its dependencies.
+			if d.IsFromLocal() {
+				dpkg, err := c.LoadPkgFromPath(d.GetLocalFullPath(kclPkg.HomePath))
+				if err != nil {
+					return err
+				}
+				err = c.vendorDeps(dpkg, vendorPath)
+				if err != nil {
+					return err
+				}
+				continue
+			} else {
+				vendorFullPath := filepath.Join(vendorPath, d.GenPathSuffix())
+
+				// If the package already exists in the 'vendor', do nothing.
+				if utils.DirExists(vendorFullPath) {
+					d.LocalFullPath = vendorFullPath
+					lockDeps[i] = d
+					continue
+				} else {
+					// If not in the 'vendor', check the global cache.
+					cacheFullPath := c.getDepStorePath(c.homePath, &d, false)
+					if utils.DirExists(cacheFullPath) {
+						// If there is, copy it into the 'vendor' directory.
+						err := copy.Copy(cacheFullPath, vendorFullPath)
+						if err != nil {
+							return err
+						}
+					} else {
+						// re-download if not.
+						err := c.AddDepToPkg(kclPkg, &d)
+						if err != nil {
+							return err
+						}
+						// re-vendor again with new kcl.mod and kcl.mod.lock
+						err = c.vendorDeps(kclPkg, vendorPath)
+						if err != nil {
+							return err
+						}
+						return nil
+					}
+				}
+
+				if d.GetPackage() != "" {
+					tempVendorFullPath, err := utils.FindPackage(vendorFullPath, d.GetPackage())
+					if err != nil {
+						return err
+					}
+					vendorFullPath = tempVendorFullPath
+				}
+
+				dpkg, err := c.LoadPkgFromPath(vendorFullPath)
+				if err != nil {
+					return err
+				}
+
+				// Vendor the dependencies of the current dependency.
+				err = c.vendorDeps(dpkg, vendorPath)
+				if err != nil {
+					return err
+				}
+				d.LocalFullPath = vendorFullPath
+				lockDeps[i] = d
 			}
 		}
-		kclPkg.Dependencies.Deps.Set(depName, *existLocalDep)
+
+		// Update the dependencies in kcl.mod.lock.
+		for _, d := range lockDeps {
+			kclPkg.Dependencies.Deps.Set(d.Name, d)
+		}
+
+		return nil
 	}
 	return nil
 }
