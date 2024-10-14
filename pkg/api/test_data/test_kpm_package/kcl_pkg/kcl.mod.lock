@@ -1,6 +1,5 @@
 [dependencies]
-  [dependencies.k8s]
-    name = "k8s"
-    full_name = "k8s_1.27"
-    version = "1.27"
-    sum = "xnYM1FWHAy3m+KcQMQb2rjZouTxumqYt6FGZpu2T4yM="
+  [dependencies.helloworld]
+    name = "helloworld"
+    full_name = "helloworld_0.1.3"
+    version = "0.1.3"

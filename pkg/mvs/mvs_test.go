@@ -10,6 +10,7 @@ import (
 	"golang.org/x/mod/module"
 	"kcl-lang.io/kpm/pkg/3rdparty/mvs"
 	"kcl-lang.io/kpm/pkg/client"
+	"kcl-lang.io/kpm/pkg/test"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -23,7 +24,7 @@ func getTestDir(subDir string) string {
 	return testDir
 }
 
-func TestMax(t *testing.T) {
+func testMax(t *testing.T) {
 	reqs := ReqsGraph{}
 	assert.Equal(t, reqs.Max("", "1.0.0", "2.0.0"), "2.0.0")
 	assert.Equal(t, reqs.Max("", "1.2", "2.0"), "2.0")
@@ -31,7 +32,7 @@ func TestMax(t *testing.T) {
 	assert.Equal(t, reqs.Max("", "2.0.0", "v3.0"), "v3.0")
 }
 
-func TestRequired(t *testing.T) {
+func testRequired(t *testing.T) {
 	pkg_path := filepath.Join(getTestDir("test_with_internal_deps"), "aaa")
 	assert.Equal(t, utils.DirExists(filepath.Join(pkg_path, "kcl.mod")), true)
 	kpmcli, err := client.NewKpmClient()
@@ -62,7 +63,7 @@ func TestRequired(t *testing.T) {
 	assert.Equal(t, req, expectedReqs)
 }
 
-func TestUpgrade(t *testing.T) {
+func testUpgrade(t *testing.T) {
 	pkg_path := getTestDir("test_with_external_deps")
 	assert.Equal(t, utils.DirExists(filepath.Join(pkg_path, "kcl.mod")), true)
 	kpmcli, err := client.NewKpmClient()
@@ -98,7 +99,7 @@ func TestUpgrade(t *testing.T) {
 	assert.Equal(t, upgrade, expectedReqs)
 }
 
-func TestUpgradeToLatest(t *testing.T) {
+func testUpgradeToLatest(t *testing.T) {
 	pkg_path := getTestDir("test_with_external_deps")
 	assert.Equal(t, utils.DirExists(filepath.Join(pkg_path, "kcl.mod")), true)
 	kpmcli, err := client.NewKpmClient()
@@ -120,7 +121,7 @@ func TestUpgradeToLatest(t *testing.T) {
 	assert.Equal(t, upgrade, module.Version{Path: "k8s", Version: "1.31.1"})
 }
 
-func TestUpgradeAllToLatest(t *testing.T) {
+func testUpgradeAllToLatest(t *testing.T) {
 	pkg_path := getTestDir("test_with_external_deps")
 	assert.Equal(t, utils.DirExists(filepath.Join(pkg_path, "kcl.mod")), true)
 	kpmcli, err := client.NewKpmClient()
@@ -145,7 +146,7 @@ func TestUpgradeAllToLatest(t *testing.T) {
 	expectedReqs := []module.Version{
 		{Path: "test_with_external_deps", Version: "0.0.1"},
 		{Path: "argo-cd-order", Version: "0.2.0"},
-		{Path: "helloworld", Version: "0.1.2"},
+		{Path: "helloworld", Version: "0.1.3"},
 		{Path: "json_merge_patch", Version: "0.1.1"},
 		{Path: "k8s", Version: "1.31.1"},
 		{Path: "podinfo", Version: "0.1.1"},
@@ -153,7 +154,7 @@ func TestUpgradeAllToLatest(t *testing.T) {
 	assert.Equal(t, upgrade, expectedReqs)
 }
 
-func TestPrevious(t *testing.T) {
+func testPrevious(t *testing.T) {
 	pkg_path := getTestDir("test_with_external_deps")
 	assert.Equal(t, utils.DirExists(filepath.Join(pkg_path, "kcl.mod")), true)
 	kpmcli, err := client.NewKpmClient()
@@ -175,7 +176,7 @@ func TestPrevious(t *testing.T) {
 	assert.Equal(t, downgrade, module.Version{Path: "k8s", Version: "1.14"})
 }
 
-func TestUpgradePreviousOfLocalDependency(t *testing.T) {
+func testUpgradePreviousOfLocalDependency(t *testing.T) {
 	pkg_path := filepath.Join(getTestDir("test_with_internal_deps"), "aaa")
 	assert.Equal(t, utils.DirExists(filepath.Join(pkg_path, "kcl.mod")), true)
 	kpmcli, err := client.NewKpmClient()
@@ -201,7 +202,7 @@ func TestUpgradePreviousOfLocalDependency(t *testing.T) {
 	assert.Equal(t, downgrade, module.Version{Path: "bbb", Version: "0.0.1"})
 }
 
-func TestDowngrade(t *testing.T) {
+func testDowngrade(t *testing.T) {
 	pkg_path := getTestDir("test_with_external_deps")
 	assert.Equal(t, utils.DirExists(filepath.Join(pkg_path, "kcl.mod")), true)
 	kpmcli, err := client.NewKpmClient()
@@ -233,4 +234,15 @@ func TestDowngrade(t *testing.T) {
 		{Path: "k8s", Version: "1.17"},
 	}
 	assert.Equal(t, downgrade, expectedReqs)
+}
+
+func TestMvsWithGloablLock(t *testing.T) {
+	test.RunTestWithGlobalLock(t, "TestMax", testMax)
+	test.RunTestWithGlobalLock(t, "TestRequired", testRequired)
+	test.RunTestWithGlobalLock(t, "TestUpgrade", testUpgrade)
+	test.RunTestWithGlobalLock(t, "TestUpgradeToLatest", testUpgradeToLatest)
+	test.RunTestWithGlobalLock(t, "TestUpgradeAllToLatest", testUpgradeAllToLatest)
+	test.RunTestWithGlobalLock(t, "TestPrevious", testPrevious)
+	test.RunTestWithGlobalLock(t, "TestUpgradePreviousOfLocalDependency", testUpgradePreviousOfLocalDependency)
+	test.RunTestWithGlobalLock(t, "TestDowngrade", testDowngrade)
 }
