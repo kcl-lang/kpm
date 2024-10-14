@@ -10,10 +10,11 @@ import (
 	"kcl-lang.io/kpm/pkg/downloader"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/settings"
+	"kcl-lang.io/kpm/pkg/test"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
-func TestVendorDeps(t *testing.T) {
+func testVendorDeps(t *testing.T) {
 	testDir := getTestDir("resolve_deps")
 	kpm_home := filepath.Join(testDir, "kpm_home")
 	os.RemoveAll(filepath.Join(testDir, "my_kcl"))
@@ -89,7 +90,7 @@ func TestVendorDeps(t *testing.T) {
 	os.RemoveAll(filepath.Join(testDir, "my_kcl"))
 }
 
-func TestVendorWithMVS(t *testing.T) {
+func testVendorWithMVS(t *testing.T) {
 	testDir := getTestDir("test_vendor")
 	pkgPath := filepath.Join(testDir, "pkg")
 	kPkg, err := pkg.LoadKclPkgWithOpts(
@@ -106,4 +107,9 @@ func TestVendorWithMVS(t *testing.T) {
 	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "vendor")), true)
 	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "vendor", "helloworld_0.1.2")), true)
 	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "vendor", "helloworld_0.1.1")), false)
+}
+
+func TestVendorWithGlobalLock(t *testing.T) {
+	test.RunTestWithGlobalLock(t, "TestVendorDeps", testVendorDeps)
+	test.RunTestWithGlobalLock(t, "TestVendorWithMVS", testVendorWithMVS)
 }
