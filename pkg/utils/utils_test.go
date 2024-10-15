@@ -314,3 +314,11 @@ func TestMatchesPackageName(t *testing.T) {
 	address := filepath.Join(getTestDir("test_find_package"), "test_2", "kcl.mod")
 	assert.Equal(t, matchesPackageName(address, "test_find_package"), true)
 }
+
+func TestShortHash(t *testing.T) {
+	hash, err := ShortHash(filepath.Join("ghcr.io", "kcl-lang"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, hash, "9ebd0ad063dba405")
+}

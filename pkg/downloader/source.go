@@ -548,3 +548,35 @@ func ParseSourceUrlFrom(sourceStr string, settings *settings.Settings) (*url.URL
 	}
 	return nil, fmt.Errorf("invalid source url: %s", sourceStr)
 }
+
+func (s *Source) Hash() (string, error) {
+	if s.Git != nil {
+		return s.Git.Hash()
+	}
+	if s.Oci != nil {
+		return s.Oci.Hash()
+	}
+	if s.Local != nil {
+		return s.Local.Hash()
+	}
+	if s.Registry != nil {
+		return s.Registry.Hash()
+	}
+	return "", nil
+}
+
+func (g *Git) Hash() (string, error) {
+	return utils.ShortHash(g.Url)
+}
+
+func (o *Oci) Hash() (string, error) {
+	return utils.ShortHash(filepath.Join(o.Reg, filepath.Dir(o.Repo)))
+}
+
+func (l *Local) Hash() (string, error) {
+	return utils.ShortHash(l.Path)
+}
+
+func (r *Registry) Hash() (string, error) {
+	return utils.ShortHash(filepath.Join(r.Reg, filepath.Dir(r.Repo)))
+}
