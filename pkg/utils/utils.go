@@ -4,8 +4,10 @@ import (
 	"archive/tar"
 	"bufio"
 	"compress/gzip"
+	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	goerrors "errors"
 	"fmt"
 	"io"
@@ -662,4 +664,11 @@ func MoveOrCopy(src, dest string) error {
 		}
 	}
 	return nil
+}
+
+// generateHash takes a string (in this case, the Git URL) and returns a SHA-1 hash.
+func GenerateHash(input string) string {
+	hash := sha1.New()
+	hash.Write([]byte(input))
+	return hex.EncodeToString(hash.Sum(nil))
 }
