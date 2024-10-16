@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -320,5 +321,10 @@ func TestShortHash(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, hash, "9ebd0ad063dba405")
+
+	if runtime.GOOS == "windows" {
+		assert.Equal(t, hash, "d3669b52002fa327")
+	} else {
+		assert.Equal(t, hash, "9ebd0ad063dba405")
+	}
 }
