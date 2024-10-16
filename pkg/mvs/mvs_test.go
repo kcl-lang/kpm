@@ -118,7 +118,7 @@ func testUpgradeToLatest(t *testing.T) {
 
 	upgrade, err := reqs.Upgrade(module.Version{Path: "k8s", Version: "1.27"})
 	assert.Equal(t, err, nil)
-	assert.Equal(t, upgrade, module.Version{Path: "k8s", Version: "1.31.1"})
+	assert.Equal(t, upgrade, module.Version{Path: "k8s", Version: "1.31.2"})
 }
 
 func testUpgradeAllToLatest(t *testing.T) {
@@ -148,8 +148,8 @@ func testUpgradeAllToLatest(t *testing.T) {
 		{Path: "argo-cd-order", Version: "0.2.0"},
 		{Path: "helloworld", Version: "0.1.3"},
 		{Path: "json_merge_patch", Version: "0.1.1"},
-		{Path: "k8s", Version: "1.31.1"},
-		{Path: "podinfo", Version: "0.1.1"},
+		{Path: "k8s", Version: "1.31.2"},
+		{Path: "podinfo", Version: "0.2.1"},
 	}
 	assert.Equal(t, upgrade, expectedReqs)
 }

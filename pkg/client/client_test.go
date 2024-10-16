@@ -1050,7 +1050,7 @@ func TestGetReleasesFromSource(t *testing.T) {
 	assert.True(t, length >= 5)
 	releasesVersions, err = sortVersions(releases)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, releasesVersions[:5], []string{"1.14", "1.15", "1.16", "1.17", "1.18"})
+	assert.Equal(t, releasesVersions[:5], []string{"1.14", "1.14.1", "1.15", "1.15.1", "1.16"})
 }
 
 func testUpdateWithKclMod(t *testing.T) {
