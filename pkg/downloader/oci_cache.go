@@ -6,16 +6,21 @@ import (
 	"path/filepath"
 )
 
+// OciCache is the cache for the oci package.
 type OciCache struct {
 	*PkgCache
 }
 
+// NewOciCacheWithCachePath creates a new OciCache with the cache path.
 func NewOciCacheWithCachePath(path string) *OciCache {
 	return &OciCache{
 		PkgCache: &PkgCache{cacheDir: path},
 	}
 }
 
+// cachePath returns the cache path for the source.
+// cachePath is 'cacheDir/<hash>/<last_element_of_oci_repo>_<tag>'.
+// <hash> is the hash of the oci registry host.
 func (o *OciCache) cachePath(s *Oci) (string, error) {
 	var packageFilename string
 	if s.Tag == "" {
@@ -30,6 +35,7 @@ func (o *OciCache) cachePath(s *Oci) (string, error) {
 	return filepath.Join(o.cacheDir, hash, packageFilename), nil
 }
 
+// Update updates the cache with the source.
 func (o *OciCache) Update(source Source, updateFunc func(cachePath string) error) error {
 	if source.Oci == nil {
 		return fmt.Errorf("oci source is nil")
@@ -49,6 +55,7 @@ func (o *OciCache) Update(source Source, updateFunc func(cachePath string) error
 
 var PkgCacheNotFound = fmt.Errorf("package cache not found")
 
+// Find finds the cache path for the source.
 func (o *OciCache) Find(source Source) (string, error) {
 	if source.Oci == nil {
 		return "", fmt.Errorf("oci source is nil")
@@ -71,6 +78,7 @@ func (o *OciCache) Find(source Source) (string, error) {
 	return matches[0], nil
 }
 
+// Remove removes the source from the cache.
 func (o *OciCache) Remove(source Source) error {
 	cachePath, err := o.cachePath(source.Oci)
 	if err != nil {
@@ -83,6 +91,7 @@ func (o *OciCache) Remove(source Source) error {
 	return nil
 }
 
+// RemoveAll removes all the cache.
 func (o *OciCache) RemoveAll() error {
 	return o.PkgCache.RemoveAll()
 }
