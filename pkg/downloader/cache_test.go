@@ -12,9 +12,15 @@ import (
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
-func TestOciCache(t *testing.T) {
-	testDir := filepath.Join(getTestDir("test_oci_cache"), "cache")
-	ociCache := NewOciCacheWithCachePath(testDir)
+func TestCache(t *testing.T) {
+	testDir := getTestDir("test_cache")
+	defer func() {
+		err := os.RemoveAll(filepath.Join(testDir, "oci"))
+		assert.Equal(t, err, nil)
+	}()
+	ociCache := PkgCache{
+		cacheDir: testDir,
+	}
 
 	oci := &Oci{
 		Reg:  "ghcr.io",
@@ -22,23 +28,24 @@ func TestOciCache(t *testing.T) {
 		Tag:  "0.1.3",
 	}
 
-	cachePath, err := ociCache.cachePath(oci)
+	cachePath, err := oci.GenCachePath()
 	if err != nil {
 		t.Fatal(err)
 	}
+	cachePath = filepath.Join(testDir, cachePath)
 
 	hash, err := utils.ShortHash(utils.JoinPath("ghcr.io", "kcl-lang"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, cachePath, filepath.Join(testDir, hash, "helloworld_0.1.3"))
+	assert.Equal(t, cachePath, filepath.Join(testDir, "oci", "cache", hash, "helloworld_0.1.3"))
 
 	cachepath, err := ociCache.Find(Source{Oci: oci})
 	assert.Equal(t, cachepath, "")
 	assert.Equal(t, errors.Is(err, PkgCacheNotFound), true)
 
 	ociCache.Update(Source{Oci: oci}, func(cachePath string) error {
-		tarPath := filepath.Join(filepath.Dir(testDir), "helloworld_0.1.3.tar")
+		tarPath := filepath.Join(testDir, "helloworld_0.1.3.tar")
 		destPath := filepath.Join(cachePath, "helloworld_0.1.3.tar")
 		if !utils.DirExists(destPath) {
 			if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
@@ -49,6 +56,23 @@ func TestOciCache(t *testing.T) {
 			return fmt.Errorf("failed to copy tar file to directory: %w", err)
 		}
 
+		srcPath, err := oci.GenSrcCachePath()
+		if err != nil {
+			return err
+		}
+
+		srcFullPath := filepath.Join(testDir, srcPath)
+		if !utils.DirExists(srcFullPath) {
+			if err := os.MkdirAll(srcFullPath, 0755); err != nil {
+				return fmt.Errorf("failed to create directory: %w", err)
+			}
+		}
+
+		err = utils.UnTarDir(destPath, srcFullPath)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 
@@ -57,10 +81,5 @@ func TestOciCache(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, cachepath, filepath.Join(testDir, hash, "helloworld_0.1.3", "helloworld_0.1.3.tar"))
-
-	defer func() {
-		err := os.RemoveAll(cachepath)
-		assert.Equal(t, err, nil)
-	}()
+	assert.Equal(t, cachepath, filepath.Join(testDir, "oci", "src", hash, "helloworld_0.1.3"))
 }

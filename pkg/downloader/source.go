@@ -580,3 +580,108 @@ func (l *Local) Hash() (string, error) {
 func (r *Registry) Hash() (string, error) {
 	return utils.ShortHash(utils.JoinPath(r.Reg, filepath.Dir(r.Repo)))
 }
+
+func (s *Source) GenCachePath() (string, error) {
+	if s.Git != nil {
+		return s.Git.GenCachePath()
+	}
+	if s.Oci != nil {
+		return s.Oci.GenCachePath()
+	}
+	if s.Local != nil {
+		return s.Local.GenCachePath()
+	}
+	if s.Registry != nil {
+		return s.Registry.GenCachePath()
+	}
+	return "", nil
+}
+
+func (g *Git) GenCachePath() (string, error) {
+	lastElement := filepath.Base(strings.TrimSuffix(g.Url, filepath.Ext(g.Url)))
+
+	hash, err := g.Hash()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join("git", "db", lastElement+"_"+hash), nil
+}
+
+func (o *Oci) GenCachePath() (string, error) {
+	var packageFilename string
+	if o.Tag == "" {
+		packageFilename = filepath.Base(o.Repo)
+	} else {
+		packageFilename = fmt.Sprintf("%s_%s", filepath.Base(o.Repo), o.Tag)
+	}
+	hash, err := o.Hash()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join("oci", "cache", hash, packageFilename), nil
+}
+
+func (l *Local) GenCachePath() (string, error) {
+	return l.Path, nil
+}
+
+func (r *Registry) GenCachePath() (string, error) {
+	return r.Oci.GenCachePath()
+}
+
+func (s *Source) GenSrcCachePath() (string, error) {
+	if s.Git != nil {
+		return s.Git.GenSrcCachePath()
+	}
+	if s.Oci != nil {
+		return s.Oci.GenSrcCachePath()
+	}
+	if s.Local != nil {
+		return s.Local.GenSrcCachePath()
+	}
+	if s.Registry != nil {
+		return s.Registry.GenSrcCachePath()
+	}
+	return "", nil
+}
+
+func (g *Git) GenSrcCachePath() (string, error) {
+	lastElement := filepath.Base(strings.TrimSuffix(g.Url, filepath.Ext(g.Url)))
+
+	var flag string
+	if g.Tag != "" {
+		flag = g.Tag
+	} else if g.Commit != "" {
+		flag = g.Commit
+	} else if g.Branch != "" {
+		flag = g.Branch
+	}
+
+	hash, err := g.Hash()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join("git", "checkout", lastElement+"_"+hash, flag), nil
+}
+
+func (o *Oci) GenSrcCachePath() (string, error) {
+	var packageFilename string
+	if o.Tag == "" {
+		packageFilename = filepath.Base(o.Repo)
+	} else {
+		packageFilename = fmt.Sprintf("%s_%s", filepath.Base(o.Repo), o.Tag)
+	}
+	hash, err := o.Hash()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join("oci", "src", hash, packageFilename), nil
+}
+
+func (l *Local) GenSrcCachePath() (string, error) {
+	return l.Path, nil
+}
+
+func (r *Registry) GenSrcCachePath() (string, error) {
+	return r.Oci.GenSrcCachePath()
+}
