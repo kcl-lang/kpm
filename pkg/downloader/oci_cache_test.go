@@ -27,7 +27,7 @@ func TestOciCache(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	hash, err := utils.ShortHash(filepath.Join("ghcr.io", "kcl-lang"))
+	hash, err := utils.ShortHash(utils.JoinPath("ghcr.io", "kcl-lang"))
 	if err != nil {
 		t.Fatal(err)
 	}

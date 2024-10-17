@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
@@ -317,14 +316,9 @@ func TestMatchesPackageName(t *testing.T) {
 }
 
 func TestShortHash(t *testing.T) {
-	hash, err := ShortHash(filepath.Join("ghcr.io", "kcl-lang"))
+	hash, err := ShortHash(JoinPath("ghcr.io", "kcl-lang"))
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	if runtime.GOOS == "windows" {
-		assert.Equal(t, hash, "d3669b52002fa327")
-	} else {
-		assert.Equal(t, hash, "9ebd0ad063dba405")
-	}
+	assert.Equal(t, hash, "9ebd0ad063dba405")
 }

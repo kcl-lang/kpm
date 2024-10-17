@@ -570,7 +570,7 @@ func (g *Git) Hash() (string, error) {
 }
 
 func (o *Oci) Hash() (string, error) {
-	return utils.ShortHash(filepath.Join(o.Reg, filepath.Dir(o.Repo)))
+	return utils.ShortHash(utils.JoinPath(o.Reg, filepath.Dir(o.Repo)))
 }
 
 func (l *Local) Hash() (string, error) {
@@ -578,5 +578,5 @@ func (l *Local) Hash() (string, error) {
 }
 
 func (r *Registry) Hash() (string, error) {
-	return utils.ShortHash(filepath.Join(r.Reg, filepath.Dir(r.Repo)))
+	return utils.ShortHash(utils.JoinPath(r.Reg, filepath.Dir(r.Repo)))
 }
