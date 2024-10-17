@@ -29,12 +29,12 @@ type PkgCache struct {
 
 // Update updates the cache with the source.
 func (p *PkgCache) Update(source Source, updateFunc func(cachePath string) error) error {
-	hashedPath, err := source.GenCachePath()
+	cachePath, err := source.GenCachePath()
 	if err != nil {
 		return err
 	}
 
-	if err := updateFunc(filepath.Join(p.cacheDir, hashedPath)); err != nil {
+	if err := updateFunc(filepath.Join(p.cacheDir, cachePath)); err != nil {
 		return err
 	}
 
@@ -61,11 +61,19 @@ func (p *PkgCache) Find(source Source) (string, error) {
 
 // Remove removes the source from the cache.
 func (p *PkgCache) Remove(source Source) error {
-	hashedPath, err := source.GenCachePath()
+	cachePath, err := source.GenCachePath()
 	if err != nil {
 		return err
 	}
-	if err := os.RemoveAll(filepath.Join(p.cacheDir, hashedPath)); err != nil {
+	if err := os.RemoveAll(filepath.Join(p.cacheDir, cachePath)); err != nil {
+		return err
+	}
+
+	srcCachePath, err := source.GenSrcCachePath()
+	if err != nil {
+		return err
+	}
+	if err := os.RemoveAll(filepath.Join(p.cacheDir, srcCachePath)); err != nil {
 		return err
 	}
 
