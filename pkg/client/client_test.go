@@ -156,18 +156,18 @@ func testDownloadLatestOci(t *testing.T) {
 	dep, err := kpmcli.Download(&depFromOci, "", testPath)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, dep.Name, "helloworld")
-	assert.Equal(t, dep.FullName, "helloworld_0.1.3")
-	assert.Equal(t, dep.Version, "0.1.3")
-	assert.Equal(t, dep.Sum, "T9FGqbdtkuML4+pDyf4SFP5bDcDusbra6AKtCZygvNw=")
+	assert.Equal(t, dep.FullName, "helloworld_0.1.4")
+	assert.Equal(t, dep.Version, "0.1.4")
+	assert.Equal(t, dep.Sum, "9J9HOMhdypaDYf0J7PqtpGTdlkbxkN0HFEYhosHhf4U=")
 	assert.NotEqual(t, dep.Source.Oci, nil)
 	assert.Equal(t, dep.Source.Oci.Reg, "ghcr.io")
 	assert.Equal(t, dep.Source.Oci.Repo, "kcl-lang/helloworld")
-	assert.Equal(t, dep.Source.Oci.Tag, "0.1.3")
-	assert.Equal(t, dep.LocalFullPath, filepath.Join(getTestDir("download"), "helloworld_0.1.3"))
+	assert.Equal(t, dep.Source.Oci.Tag, "0.1.4")
+	assert.Equal(t, dep.LocalFullPath, filepath.Join(getTestDir("download"), "helloworld_0.1.4"))
 	assert.Equal(t, err, nil)
 
 	// Check whether the tar downloaded by `kpm add` has been deleted.
-	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "helloworld_0.1.3.tar")), false)
+	assert.Equal(t, utils.DirExists(filepath.Join(testPath, "helloworld_0.1.4.tar")), false)
 
 	assert.Equal(t, utils.DirExists(filepath.Join(getTestDir("download"), "helloworld")), false)
 }
