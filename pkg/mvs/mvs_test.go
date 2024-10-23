@@ -146,7 +146,7 @@ func testUpgradeAllToLatest(t *testing.T) {
 	expectedReqs := []module.Version{
 		{Path: "test_with_external_deps", Version: "0.0.1"},
 		{Path: "argo-cd-order", Version: "0.2.0"},
-		{Path: "helloworld", Version: "0.1.3"},
+		{Path: "helloworld", Version: "0.1.4"},
 		{Path: "json_merge_patch", Version: "0.1.1"},
 		{Path: "k8s", Version: "1.31.2"},
 		{Path: "podinfo", Version: "0.2.1"},
