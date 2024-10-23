@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	goerrors "errors"
 	"fmt"
 	"io"
@@ -17,6 +18,8 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
+
+	"github.com/dchest/siphash"
 
 	"github.com/BurntSushi/toml"
 	"github.com/distribution/reference"
@@ -662,4 +665,32 @@ func MoveOrCopy(src, dest string) error {
 		}
 	}
 	return nil
+}
+
+// ShortHash takes a string (in this case, the Git URL) and returns a siphash.
+// The method name references `cargo` which means performs a simple and quick hash
+func ShortHash(input string) (string, error) {
+	// siphash is quick and simple to hash for simple scenarios
+	hasher := siphash.New(make([]byte, 16))
+	_, err := hasher.Write([]byte(input))
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hasher.Sum(nil)), nil
+}
+
+var PkgArchiveNotFound = goerrors.New("failed to find the downloaded kcl package tar file")
+
+// FindPkgArchive will find the full path of the KCL package archive in the 'path' directory.
+func FindPkgArchive(path string) (string, error) {
+	matches, _ := filepath.Glob(filepath.Join(path, "*.tar"))
+	if matches == nil || len(matches) != 1 {
+		// then try to glob tgz file
+		matches, _ = filepath.Glob(filepath.Join(path, "*.tgz"))
+		if matches == nil || len(matches) != 1 {
+			return "", fmt.Errorf("failed to find the downloaded kcl package tar file in '%s': %w", path, PkgArchiveNotFound)
+		}
+	}
+
+	return matches[0], nil
 }
