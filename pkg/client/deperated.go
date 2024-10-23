@@ -217,20 +217,10 @@ func (c *KpmClient) DownloadFromOci(dep *downloader.Oci, localPath string) (stri
 		return "", err
 	}
 
-	matches, _ := filepath.Glob(filepath.Join(localPath, "*.tar"))
-	if matches == nil || len(matches) != 1 {
-		// then try to glob tgz file
-		matches, _ = filepath.Glob(filepath.Join(localPath, "*.tgz"))
-		if matches == nil || len(matches) != 1 {
-			return "", reporter.NewErrorEvent(
-				reporter.InvalidKclPkg,
-				err,
-				fmt.Sprintf("failed to find the kcl package from '%s'.", localPath),
-			)
-		}
+	tarPath, err := utils.FindPkgArchive(localPath)
+	if err != nil {
+		return "", err
 	}
-
-	tarPath := matches[0]
 	if utils.IsTar(tarPath) {
 		err = utils.UnTarDir(tarPath, localPath)
 	} else {

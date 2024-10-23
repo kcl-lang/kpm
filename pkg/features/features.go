@@ -10,10 +10,13 @@ import (
 const (
 	// SupportMVS is the feature gate for enabling the support for MVS.
 	SupportMVS = "SupportMVS"
+	// SupportNewStorage is the feature gate for enabling the support for the new storage structure.
+	SupportNewStorage = "SupportNewStorage"
 )
 
 var features = map[string]bool{
-	SupportMVS: false,
+	SupportMVS:        false,
+	SupportNewStorage: false,
 }
 
 func init() {

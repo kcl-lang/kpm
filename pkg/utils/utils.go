@@ -678,3 +678,19 @@ func ShortHash(input string) (string, error) {
 	}
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
+
+var PkgArchiveNotFound = goerrors.New("failed to find the downloaded kcl package tar file")
+
+// FindPkgArchive will find the full path of the KCL package archive in the 'path' directory.
+func FindPkgArchive(path string) (string, error) {
+	matches, _ := filepath.Glob(filepath.Join(path, "*.tar"))
+	if matches == nil || len(matches) != 1 {
+		// then try to glob tgz file
+		matches, _ = filepath.Glob(filepath.Join(path, "*.tgz"))
+		if matches == nil || len(matches) != 1 {
+			return "", fmt.Errorf("failed to find the downloaded kcl package tar file in '%s': %w", path, PkgArchiveNotFound)
+		}
+	}
+
+	return matches[0], nil
+}
