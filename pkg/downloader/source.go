@@ -8,15 +8,32 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/hashicorp/go-version"
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
-// Source is the package source from registry.
+// The KCL module.
+type ModSpec struct {
+	Name    string
+	Version string
+}
+
+// IsNil returns true if the ModSpec is nil.
+func (p *ModSpec) IsNil() bool {
+	return p == nil || (p.Name == "" && p.Version == "")
+}
+
+// Source is the module source.
+// It can be from git, oci, local path.
+// `ModSpec` is used to represent the module in the source.
+// If there are more than one module from the source, use `ModSpec` to specify the module.
+// If the `ModSpec` is nil, it means the source is one module.
 type Source struct {
-	*Registry
+	ModSpec  *ModSpec `toml:"-"`
+	SpecOnly bool     `toml:"-"`
 	*Git
 	*Oci
 	*Local `toml:"-"`
@@ -42,12 +59,6 @@ type Git struct {
 	Package string `toml:"package,omitempty"`
 }
 
-type Registry struct {
-	*Oci    `toml:"-"`
-	Name    string `toml:"-"`
-	Version string `toml:"-"`
-}
-
 func NewSourceFromStr(sourceStr string) (*Source, error) {
 	source := &Source{}
 	err := source.FromString(sourceStr)
@@ -58,7 +69,7 @@ func NewSourceFromStr(sourceStr string) (*Source, error) {
 }
 
 func (source *Source) IsNilSource() bool {
-	return source == nil || (source.Git == nil && source.Oci == nil && source.Local == nil && source.Registry == nil)
+	return source == nil || (source.Git == nil && source.Oci == nil && source.Local == nil && source.ModSpec.IsNil())
 }
 
 func (source *Source) IsLocalPath() bool {
@@ -74,11 +85,11 @@ func (source *Source) IsLocalTgzPath() bool {
 }
 
 func (source *Source) IsRemote() bool {
-	return source.Git != nil || source.Oci != nil || source.Registry != nil
+	return source.Git != nil || source.Oci != nil || !source.ModSpec.IsNil()
 }
 
 func (source *Source) IsPackaged() bool {
-	return source.IsLocalTarPath() || source.Git != nil || source.Oci != nil || source.Registry != nil
+	return source.IsLocalTarPath() || source.Git != nil || source.Oci != nil || !source.ModSpec.IsNil()
 }
 
 // If the source is a local path, check if it is a real local package(a directory with kcl.mod file).
@@ -101,9 +112,6 @@ func (source *Source) FindRootPath() (string, error) {
 	}
 	if source.Local != nil {
 		return source.Local.FindRootPath()
-	}
-	if source.Registry != nil {
-		return source.Registry.ToFilePath()
 	}
 	return "", fmt.Errorf("source is nil")
 
@@ -198,9 +206,6 @@ func (source *Source) ToFilePath() (string, error) {
 	if source.Local != nil {
 		return source.Local.ToFilePath()
 	}
-	if source.Registry != nil {
-		return source.Registry.ToFilePath()
-	}
 	return "", fmt.Errorf("source is nil")
 }
 
@@ -252,18 +257,6 @@ func (local *Local) ToFilePath() (string, error) {
 	return local.ToString()
 }
 
-func (registry *Registry) ToFilePath() (string, error) {
-	if registry == nil {
-		return "", fmt.Errorf("registry is nil")
-	}
-
-	ociPath, err := registry.Oci.ToFilePath()
-	if err != nil {
-		return "", err
-	}
-	return ociPath, nil
-}
-
 func (source *Source) ToString() (string, error) {
 	if source == nil {
 		return "", fmt.Errorf("source is nil")
@@ -276,9 +269,6 @@ func (source *Source) ToString() (string, error) {
 	}
 	if source.Local != nil {
 		return source.Local.ToString()
-	}
-	if source.Registry != nil {
-		return source.Registry.ToString()
 	}
 	return "", fmt.Errorf("source is nil")
 }
@@ -343,15 +333,6 @@ func (local *Local) ToString() (string, error) {
 	return pathUrl.String(), nil
 }
 
-func (registry *Registry) ToString() (string, error) {
-	ociStr, err := registry.Oci.ToString()
-	if err != nil {
-		return "", err
-	}
-
-	return ociStr, nil
-}
-
 func (source *Source) FromString(sourceStr string) error {
 	if source == nil {
 		return fmt.Errorf("source is nil")
@@ -369,8 +350,8 @@ func (source *Source) FromString(sourceStr string) error {
 		source.Oci = &Oci{}
 		source.Oci.FromString(sourceStr)
 	} else if sourceUrl.Scheme == constants.DefaultOciScheme {
-		source.Registry = &Registry{}
-		source.Registry.FromString(sourceStr)
+		source.ModSpec = &ModSpec{}
+		source.ModSpec.FromString(sourceStr)
 	} else {
 		source.Local = &Local{}
 		source.Local.FromString(sourceStr)
@@ -435,31 +416,30 @@ func (local *Local) FromString(localStr string) error {
 	return nil
 }
 
-// default::oci://ghcr.io/kcl-lang/k8s?name=k8s?version=0.1.1
-func (registry *Registry) FromString(registryStr string) error {
-	if registry == nil {
+func (ps *ModSpec) FromString(registryStr string) error {
+	if ps == nil {
 		return fmt.Errorf("registry is nil")
 	}
+	parts := strings.Split(registryStr, ":")
+	if len(parts) == 1 {
+		return nil
+	}
 
-	registryUrl, err := url.Parse(registryStr)
+	if len(parts) > 2 {
+		return errors.New("invalid package reference")
+	}
+
+	if parts[1] == "" {
+		return errors.New("invalid package reference")
+	}
+
+	ps.Name = parts[0]
+	ps.Version = parts[1]
+
+	_, err := version.NewVersion(ps.Version)
 	if err != nil {
 		return err
 	}
-
-	if registryUrl.Scheme != constants.DefaultOciScheme {
-		return fmt.Errorf("invalid registry url with schema: %s", registryUrl.Scheme)
-	}
-
-	oci := &Oci{}
-	registryUrl.Scheme = constants.OciScheme
-	err = oci.FromString(registryUrl.String())
-	if err != nil {
-		return err
-	}
-
-	registry.Name = registryUrl.Query().Get("name")
-	registry.Version = registryUrl.Query().Get("version")
-	registry.Oci = oci
 
 	return nil
 }
@@ -559,9 +539,6 @@ func (s *Source) Hash() (string, error) {
 	if s.Local != nil {
 		return s.Local.Hash()
 	}
-	if s.Registry != nil {
-		return s.Registry.Hash()
-	}
 	return "", nil
 }
 
@@ -604,8 +581,4 @@ func (o *Oci) Hash() (string, error) {
 
 func (l *Local) Hash() (string, error) {
 	return utils.ShortHash(l.Path)
-}
-
-func (r *Registry) Hash() (string, error) {
-	return r.Oci.Hash()
 }

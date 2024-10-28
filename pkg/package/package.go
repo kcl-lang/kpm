@@ -103,8 +103,11 @@ func LoadKclPkgWithOpts(options ...LoadOption) (*KclPkg, error) {
 		} else {
 			// If there is no source in the lock file, fill the default oci registry.
 			if lockDep.Source.IsNilSource() {
-				lockDep.Source.Registry = &downloader.Registry{
-					Name: lockDep.Name,
+				lockDep.Source = downloader.Source{
+					ModSpec: &downloader.ModSpec{
+						Name:    lockDep.Name,
+						Version: lockDep.Version,
+					},
 					Oci: &downloader.Oci{
 						Reg:  opts.Settings.DefaultOciRegistry(),
 						Repo: utils.JoinPath(opts.Settings.DefaultOciRepo(), lockDep.Name),
@@ -202,27 +205,11 @@ func fillDepsInfoWithSettings(deps *Dependencies, settings *settings.Settings) e
 				dep.Source.Oci.Repo = urlpath
 			}
 		}
-		if dep.Source.Registry != nil {
-			if len(dep.Source.Registry.Reg) == 0 {
-				dep.Source.Registry.Reg = settings.DefaultOciRegistry()
-			}
-
-			if len(dep.Source.Registry.Repo) == 0 {
-				urlpath := utils.JoinPath(settings.DefaultOciRepo(), dep.Name)
-				dep.Source.Registry.Repo = urlpath
-			}
-
-			dep.Version = dep.Source.Registry.Version
-		}
-		if dep.Source.IsNilSource() {
-			dep.Source.Registry = &downloader.Registry{
-				Name:    dep.Name,
-				Version: dep.Version,
-				Oci: &downloader.Oci{
-					Reg:  settings.DefaultOciRegistry(),
-					Repo: utils.JoinPath(settings.DefaultOciRepo(), dep.Name),
-					Tag:  dep.Version,
-				},
+		if dep.Source.SpecOnly {
+			dep.Source.Oci = &downloader.Oci{
+				Reg:  settings.DefaultOciRegistry(),
+				Repo: utils.JoinPath(settings.DefaultOciRepo(), dep.ModSpec.Name),
+				Tag:  dep.ModSpec.Version,
 			}
 		}
 		dep.FullName = dep.GenDepFullName()

@@ -57,7 +57,7 @@ func initTestDir(subDir string) string {
 func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestUpdateWithKclMod", testUpdateWithKclMod)
 	test.RunTestWithGlobalLock(t, "TestUpdateWithKclModlock", testUpdateWithKclModlock)
-	test.RunTestWithGlobalLock(t, "TestUpdateWithNoSumCheck", TestUpdateWithNoSumCheck)
+	test.RunTestWithGlobalLock(t, "TestUpdateWithNoSumCheck", testUpdateWithNoSumCheck)
 	test.RunTestWithGlobalLock(t, "TestAddWithDiffVersionNoSumCheck", testAddWithDiffVersionNoSumCheck)
 	test.RunTestWithGlobalLock(t, "TestAddWithDiffVersionWithSumCheck", testAddWithDiffVersionWithSumCheck)
 	test.RunTestWithGlobalLock(t, "TestDownloadOci", testDownloadOci)
@@ -1190,7 +1190,7 @@ func testAddWithNoSumCheck(t *testing.T) {
 	}()
 }
 
-func TestUpdateWithNoSumCheck(t *testing.T) {
+func testUpdateWithNoSumCheck(t *testing.T) {
 	pkgPath := getTestDir("test_update_no_sum_check")
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
