@@ -377,40 +377,102 @@ func (d *OciDownloader) Download(opts DownloadOptions) error {
 }
 
 func (d *GitDownloader) Download(opts DownloadOptions) error {
-	var msg string
-	if len(opts.Source.Git.Tag) != 0 {
-		msg = fmt.Sprintf("with tag '%s'", opts.Source.Git.Tag)
-	}
-
-	if len(opts.Source.Git.Commit) != 0 {
-		msg = fmt.Sprintf("with commit '%s'", opts.Source.Git.Commit)
-	}
-
-	if len(opts.Source.Git.Branch) != 0 {
-		msg = fmt.Sprintf("with branch '%s'", opts.Source.Git.Branch)
-	}
-
-	reporter.ReportMsgTo(
-		fmt.Sprintf("cloning '%s' %s", opts.Source.Git.Url, msg),
-		opts.LogWriter,
-	)
-	// download the package from the git repo
 	gitSource := opts.Source.Git
 	if gitSource == nil {
 		return errors.New("git source is nil")
 	}
-
-	_, err := git.CloneWithOpts(
+	cloneOpts := []git.CloneOption{
 		git.WithCommit(gitSource.Commit),
 		git.WithBranch(gitSource.Branch),
 		git.WithTag(gitSource.Tag),
-		git.WithRepoURL(gitSource.Url),
-		git.WithLocalPath(opts.LocalPath),
-	)
-
-	if err != nil {
-		return err
 	}
 
+	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && ok {
+		if opts.EnableCache {
+			hash, err := gitSource.Hash()
+			if err != nil {
+				return err
+			}
+
+			cacheFullPath := filepath.Join(opts.CachePath, hash)
+			localFullPath := filepath.Join(opts.LocalPath, hash)
+			// Check if the package is already downloaded, if so, skip the download.
+			if utils.DirExists(localFullPath) &&
+				utils.DirExists(filepath.Join(localFullPath, constants.KCL_MOD)) {
+				return nil
+			} else {
+				// Try to clone the bare repository from the cache path.
+				_, err := git.CloneWithOpts(
+					append(
+						cloneOpts,
+						git.WithRepoURL(cacheFullPath),
+						git.WithLocalPath(localFullPath),
+					)...,
+				)
+				// If failed to clone the bare repository from the cache path,
+				// clone the bare repository from the remote git repository, update the cache.
+				if err != nil {
+					_, err := git.CloneWithOpts(
+						append(
+							cloneOpts,
+							git.WithRepoURL(gitSource.Url),
+							git.WithLocalPath(cacheFullPath),
+							git.WithBare(true),
+						)...,
+					)
+					if err != nil {
+						return err
+					}
+				}
+				// After cloning the bare repository,
+				// Clone the repository from the cache path to the local path.
+				_, err = git.CloneWithOpts(
+					append(
+						cloneOpts,
+						git.WithRepoURL(cacheFullPath),
+						git.WithLocalPath(localFullPath),
+					)...,
+				)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	} else {
+		var msg string
+		if len(opts.Source.Git.Tag) != 0 {
+			msg = fmt.Sprintf("with tag '%s'", opts.Source.Git.Tag)
+		}
+
+		if len(opts.Source.Git.Commit) != 0 {
+			msg = fmt.Sprintf("with commit '%s'", opts.Source.Git.Commit)
+		}
+
+		if len(opts.Source.Git.Branch) != 0 {
+			msg = fmt.Sprintf("with branch '%s'", opts.Source.Git.Branch)
+		}
+
+		reporter.ReportMsgTo(
+			fmt.Sprintf("cloning '%s' %s", opts.Source.Git.Url, msg),
+			opts.LogWriter,
+		)
+		// download the package from the git repo
+		gitSource := opts.Source.Git
+		if gitSource == nil {
+			return errors.New("git source is nil")
+		}
+
+		_, err := git.CloneWithOpts(
+			git.WithCommit(gitSource.Commit),
+			git.WithBranch(gitSource.Branch),
+			git.WithTag(gitSource.Tag),
+			git.WithRepoURL(gitSource.Url),
+			git.WithLocalPath(opts.LocalPath),
+		)
+
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
