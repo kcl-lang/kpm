@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os/exec"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -300,4 +301,14 @@ func GetAllGithubReleases(url string) ([]string, error) {
 	}
 
 	return releaseTags, nil
+}
+
+// IsGitBareRepo checks if a directory is a bare git repository
+func IsGitBareRepo(dir string) bool {
+	cmd := exec.Command("git", "-C", dir, "rev-parse", "--is-bare-repository")
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(string(output)) == "true"
 }

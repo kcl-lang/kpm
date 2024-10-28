@@ -1,11 +1,16 @@
 package downloader
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"gotest.tools/v3/assert"
+	"kcl-lang.io/kpm/pkg/features"
+	"kcl-lang.io/kpm/pkg/git"
+	"kcl-lang.io/kpm/pkg/test"
+	"kcl-lang.io/kpm/pkg/utils"
 )
 
 const testDataDir = "test_data"
@@ -18,7 +23,7 @@ func getTestDir(subDir string) string {
 	return testDir
 }
 
-func TestOciDownloader(t *testing.T) {
+func testOciDownloader(t *testing.T) {
 	path_oci := getTestDir("test_oci")
 	if err := os.MkdirAll(path_oci, os.ModePerm); err != nil {
 		t.Fatal(err)
@@ -44,9 +49,12 @@ func TestOciDownloader(t *testing.T) {
 	))
 
 	assert.Equal(t, err, nil)
+}
 
-	path_git := getTestDir("test_git")
-	if err := os.MkdirAll(path_oci, os.ModePerm); err != nil {
+func testGitDownloader(t *testing.T) {
+	features.Enable(features.SupportNewStorage)
+	path_git := getTestDir("test_git_bare_repo")
+	if err := os.MkdirAll(path_git, os.ModePerm); err != nil {
 		t.Fatal(err)
 	}
 
@@ -55,16 +63,30 @@ func TestOciDownloader(t *testing.T) {
 	}()
 
 	gitDownloader := GitDownloader{}
+	gitSource := Source{
+		Git: &Git{
+			Url:    "https://github.com/kcl-lang/flask-demo-kcl-manifests.git",
+			Commit: "ade147b",
+		},
+	}
 
-	err = gitDownloader.Download(*NewDownloadOptions(
-		WithSource(Source{
-			Git: &Git{
-				Url:    "https://github.com/kcl-lang/flask-demo-kcl-manifests.git",
-				Commit: "ade147b",
-			},
-		}),
-		WithLocalPath(path_git),
+	err := gitDownloader.Download(*NewDownloadOptions(
+		WithSource(gitSource),
+		WithLocalPath(filepath.Join(path_git, "git", "checkout")),
+		WithCachePath(filepath.Join(path_git, "git", "db")),
+		WithEnableCache(true),
 	))
 
+	fmt.Printf("err: %v\n", err)
 	assert.Equal(t, err, nil)
+	gitHash, err := gitSource.Hash()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, git.IsGitBareRepo(filepath.Join(path_git, "git", "db", gitHash)), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(path_git, "git", "checkout", gitHash)), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(path_git, "git", "checkout", gitHash, "kcl.mod")), true)
+}
+
+func TestWithGlobalLock(t *testing.T) {
+	test.RunTestWithGlobalLock(t, "TestOciDownloader", testOciDownloader)
+	test.RunTestWithGlobalLock(t, "TestGitDownloader", testGitDownloader)
 }

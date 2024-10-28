@@ -566,7 +566,24 @@ func (s *Source) Hash() (string, error) {
 }
 
 func (g *Git) Hash() (string, error) {
-	return utils.ShortHash(g.Url)
+	gitURL := strings.TrimSuffix(g.Url, filepath.Ext(g.Url))
+	packageFilename := filepath.Base(gitURL)
+	filenamePattern := "%s_%s"
+
+	if g.Tag != "" {
+		packageFilename = fmt.Sprintf(filenamePattern, packageFilename, g.Tag)
+	} else if g.Commit != "" {
+		packageFilename = fmt.Sprintf(filenamePattern, packageFilename, g.Commit)
+	} else if g.Branch != "" {
+		packageFilename = fmt.Sprintf(filenamePattern, packageFilename, g.Branch)
+	}
+
+	hash, err := utils.ShortHash(filepath.Dir(gitURL))
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(hash, packageFilename), nil
 }
 
 func (o *Oci) Hash() (string, error) {

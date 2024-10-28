@@ -3,6 +3,7 @@ package git
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/hashicorp/go-getter"
 	"kcl-lang.io/kpm/pkg/constants"
@@ -26,6 +27,19 @@ func (cloneOpts *CloneOptions) ForceGitUrl() (string, error) {
 	if err := cloneOpts.Validate(); err != nil {
 		return "", nil
 	}
+
+	repoUrl, err := url.Parse(cloneOpts.RepoURL)
+	if err != nil {
+		return "", err
+	}
+
+	// If the Git URL is a file path, which is a local bare repo,
+	// we need to force the protocol to "file://"
+	if repoUrl.Scheme == "" {
+		repoUrl.Scheme = "file"
+	}
+
+	cloneOpts.RepoURL = repoUrl.String()
 
 	var attributes = []string{cloneOpts.Branch, cloneOpts.Commit, cloneOpts.Tag}
 	for _, attr := range attributes {
