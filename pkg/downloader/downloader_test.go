@@ -51,7 +51,7 @@ func testOciDownloader(t *testing.T) {
 	assert.Equal(t, err, nil)
 }
 
-func TestGitDownloader(t *testing.T) {
+func testGitDownloader(t *testing.T) {
 	features.Enable(features.SupportNewStorage)
 	path_git := getTestDir("test_git_bare_repo")
 	if err := os.MkdirAll(path_git, os.ModePerm); err != nil {
@@ -88,5 +88,5 @@ func TestGitDownloader(t *testing.T) {
 
 func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestOciDownloader", testOciDownloader)
-	test.RunTestWithGlobalLock(t, "TestGitDownloader", TestGitDownloader)
+	test.RunTestWithGlobalLock(t, "TestGitDownloader", testGitDownloader)
 }

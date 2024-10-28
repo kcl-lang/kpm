@@ -28,16 +28,6 @@ func (cloneOpts *CloneOptions) ForceGitUrl() (string, error) {
 		return "", nil
 	}
 
-	var attributes = []string{cloneOpts.Branch, cloneOpts.Commit, cloneOpts.Tag}
-	for _, attr := range attributes {
-		if attr != "" {
-			return ForceProtocol(
-				cloneOpts.RepoURL+fmt.Sprintf(constants.GIT_PROTOCOL_URL_PATTERN, attr),
-				GIT_PROTOCOL,
-			), nil
-		}
-	}
-
 	repoUrl, err := url.Parse(cloneOpts.RepoURL)
 	if err != nil {
 		return "", err
@@ -49,5 +39,17 @@ func (cloneOpts *CloneOptions) ForceGitUrl() (string, error) {
 		repoUrl.Scheme = "file"
 	}
 
-	return ForceProtocol(repoUrl.String(), GIT_PROTOCOL), nil
+	cloneOpts.RepoURL = repoUrl.String()
+
+	var attributes = []string{cloneOpts.Branch, cloneOpts.Commit, cloneOpts.Tag}
+	for _, attr := range attributes {
+		if attr != "" {
+			return ForceProtocol(
+				cloneOpts.RepoURL+fmt.Sprintf(constants.GIT_PROTOCOL_URL_PATTERN, attr),
+				GIT_PROTOCOL,
+			), nil
+		}
+	}
+
+	return ForceProtocol(cloneOpts.RepoURL, GIT_PROTOCOL), nil
 }
