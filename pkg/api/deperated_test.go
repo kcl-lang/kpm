@@ -82,7 +82,6 @@ func TestRunWithOptsAndNoSumCheck(t *testing.T) {
 			opt.WithEntries([]string{pathMainK}),
 			opt.WithKclOption(kcl.WithWorkDir(workDir)),
 		)
-		fmt.Printf("err: %v\n", err)
 		assert.Equal(t, err, nil)
 		assert.Equal(t, utils.DirExists(modLock), false)
 		assert.Equal(t, utils.RmNewline(res.GetRawYamlResult()), utils.RmNewline(string(expected)))
