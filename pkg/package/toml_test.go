@@ -54,7 +54,6 @@ func TestMarshalTOML(t *testing.T) {
 				Name:    "MyOciKcl1",
 				Version: "0.0.1",
 			},
-			SpecOnly: true,
 		},
 	}
 
@@ -336,7 +335,6 @@ func TestInitEmptyPkg(t *testing.T) {
 				Name:    "MyOciKcl1",
 				Version: "0.0.1",
 			},
-			SpecOnly: true,
 		},
 	}
 

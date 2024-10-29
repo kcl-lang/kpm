@@ -25,7 +25,7 @@ func (ps *ModSpec) MarshalTOML() string {
 
 func (source *Source) MarshalTOML() string {
 	var sb strings.Builder
-	if source.SpecOnly {
+	if source.SpecOnly() {
 		return source.ModSpec.MarshalTOML()
 	} else {
 		var pkgVersion string
@@ -178,13 +178,6 @@ func (source *Source) UnmarshalModTOML(data interface{}) error {
 			return err
 		}
 		source.ModSpec = &pSpec
-	}
-
-	if source.Git == nil &&
-		source.Oci == nil &&
-		source.Local == nil &&
-		source.ModSpec != nil {
-		source.SpecOnly = true
 	}
 
 	return nil

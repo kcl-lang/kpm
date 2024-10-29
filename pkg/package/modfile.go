@@ -572,7 +572,6 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 					Name:    opt.Registry.Ref,
 				},
 				Oci:      &ociSource,
-				SpecOnly: true,
 			},
 			Version: opt.Registry.Tag,
 		}, nil

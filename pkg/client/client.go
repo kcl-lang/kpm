@@ -425,17 +425,9 @@ func (c *KpmClient) UpdateDeps(kclPkg *pkg.KclPkg) error {
 		}
 	} else {
 		// update kcl.mod
-		err = kclPkg.ModFile.StoreModFile()
+		err = kclPkg.UpdateModAndLockFile()
 		if err != nil {
 			return err
-		}
-
-		// Generate file kcl.mod.lock.
-		if !kclPkg.NoSumCheck {
-			err := kclPkg.LockDepsVersion()
-			if err != nil {
-				return err
-			}
 		}
 	}
 
@@ -535,6 +527,20 @@ func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pk
 	d, err := pkg.ParseOpt(&opt.RegistryOpts)
 	if err != nil {
 		return nil, err
+	}
+
+	// Backup the dependency used in kcl.mod
+	if opt.RegistryOpts.Registry != nil {
+		kclPkg.BackupDepUI(d.Name, &pkg.Dependency{
+			Name:    d.Name,
+			Version: d.Version,
+			Source: downloader.Source{
+				ModSpec: &downloader.ModSpec{
+					Name:    d.Name,
+					Version: d.Version,
+				},
+			},
+		})
 	}
 
 	reporter.ReportMsgTo(

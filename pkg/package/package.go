@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	orderedmap "github.com/elliotchance/orderedmap/v2"
+	"github.com/jinzhu/copier"
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/downloader"
@@ -32,6 +33,13 @@ type KclPkg struct {
 	Dependencies
 	// The flag 'NoSumCheck' is true if the checksum of the current kcl package is not checked.
 	NoSumCheck bool
+	// A snapshot of the dependencies in kcl.mod
+	// readonly and user can't modify it.
+	depUI DependenciesUI
+}
+
+func (p *KclPkg) BackupDepUI(name string, dep *Dependency) {
+	p.depUI.Deps[name] = *dep
 }
 
 type LoadOptions struct {
@@ -80,6 +88,25 @@ func LoadKclPkgWithOpts(options ...LoadOption) (*KclPkg, error) {
 		return nil, fmt.Errorf("could not load 'kcl.mod' in '%s'\n%w", pkgPath, err)
 	}
 
+	// Save snapshot of the dependencies in kcl.mod.
+	depsUI := DependenciesUI{
+		Deps: make(map[string]Dependency),
+	}
+
+	for _, name := range modFile.Deps.Keys() {
+		dep, ok := modFile.Deps.Get(name)
+		if !ok {
+			return nil, fmt.Errorf("could not load 'kcl.mod' in '%s'\n%w", pkgPath, err)
+		}
+		depSnap := Dependency{}
+		err := copier.Copy(&depSnap, &dep)
+		if err != nil {
+			fmt.Printf("failed to copy dependency: %v\n", err)
+			continue
+		}
+		depsUI.Deps[name] = depSnap
+	}
+
 	// pre-process the package.
 	// 1. Transform the local path to the absolute path.
 	err = convertDepsLocalPathToAbsPath(&modFile.Dependencies, pkgPath)
@@ -123,6 +150,7 @@ func LoadKclPkgWithOpts(options ...LoadOption) (*KclPkg, error) {
 		ModFile:      *modFile,
 		HomePath:     pkgPath,
 		Dependencies: *deps,
+		depUI:        depsUI,
 	}, nil
 }
 
@@ -205,7 +233,7 @@ func fillDepsInfoWithSettings(deps *Dependencies, settings *settings.Settings) e
 				dep.Source.Oci.Repo = urlpath
 			}
 		}
-		if dep.Source.SpecOnly {
+		if dep.Source.SpecOnly() {
 			dep.Source.Oci = &downloader.Oci{
 				Reg:  settings.DefaultOciRegistry(),
 				Repo: utils.JoinPath(settings.DefaultOciRepo(), dep.ModSpec.Name),
@@ -356,6 +384,26 @@ func (kclPkg *KclPkg) LocalVendorPath() string {
 
 // updateModAndLockFile will update kcl.mod and kcl.mod.lock
 func (kclPkg *KclPkg) UpdateModAndLockFile() error {
+
+	// Load kcl.mod SnapShot.
+	depSnapShot := kclPkg.depUI
+
+	for _, name := range kclPkg.ModFile.Deps.Keys() {
+		modDep, ok := kclPkg.ModFile.Deps.Get(name)
+		if !ok {
+			return fmt.Errorf("failed to get dependency %s", name)
+		}
+
+		if existDep, ok := depSnapShot.Deps[name]; ok {
+			if existDep.Source.SpecOnly() {
+				existDep.Source.ModSpec = modDep.ModSpec
+			} else {
+				existDep.Source = modDep.Source
+			}
+			kclPkg.ModFile.Deps.Set(name, existDep)
+		}
+	}
+
 	// Generate file kcl.mod.
 	err := kclPkg.ModFile.StoreModFile()
 	if err != nil {

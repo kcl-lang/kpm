@@ -32,11 +32,14 @@ func (p *ModSpec) IsNil() bool {
 // If there are more than one module from the source, use `ModSpec` to specify the module.
 // If the `ModSpec` is nil, it means the source is one module.
 type Source struct {
-	ModSpec  *ModSpec `toml:"-"`
-	SpecOnly bool     `toml:"-"`
+	ModSpec *ModSpec `toml:"-"`
 	*Git
 	*Oci
 	*Local `toml:"-"`
+}
+
+func (s *Source) SpecOnly() bool {
+	return !s.ModSpec.IsNil() && s.Git == nil && s.Oci == nil && s.Local == nil
 }
 
 type Local struct {
