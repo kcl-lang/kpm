@@ -15,7 +15,7 @@ require (
 	github.com/urfave/cli/v2 v2.25.0
 	golang.org/x/mod v0.21.0
 	gotest.tools/v3 v3.5.1
-	kcl-lang.io/kcl-go v0.10.3
+	kcl-lang.io/kcl-go v0.10.7
 )
 
 require (
@@ -115,7 +115,7 @@ require (
 	github.com/ulikunitz/xz v0.5.12 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
-	github.com/yuin/goldmark v1.7.4 // indirect
+	github.com/yuin/goldmark v1.7.8 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
@@ -145,7 +145,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
-	kcl-lang.io/lib v0.10.3 // indirect
+	kcl-lang.io/lib v0.10.7 // indirect
 )
 
 require (
