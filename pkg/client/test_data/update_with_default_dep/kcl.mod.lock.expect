@@ -3,3 +3,7 @@
     name = "helloworld"
     full_name = "helloworld_0.1.2"
     version = "0.1.2"
+    reg = "ghcr.io"
+    repo = "kcl-lang/helloworld"
+    oci_tag = "0.1.2"
+

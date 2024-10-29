@@ -142,14 +142,11 @@ func (d *DepDownloader) Download(opts DownloadOptions) error {
 
 	localPath := opts.LocalPath
 	cacheFullPath := opts.CachePath
-	if opts.EnableCache {
+	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok && opts.EnableCache {
 		// TODO: After the new local storage structure is complete,
 		// this section should be replaced with the new storage structure instead of the cache path according to the <Cache Path>/<Package Name>.
 		//  https://github.com/kcl-lang/kpm/issues/384
 		var pkgFullName string
-		if opts.Source.Registry != nil && len(opts.Source.Registry.Version) != 0 {
-			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(opts.Source.Registry.Oci.Repo), opts.Source.Registry.Version)
-		}
 		if opts.Source.Oci != nil && len(opts.Source.Oci.Tag) != 0 {
 			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(opts.Source.Oci.Repo), opts.Source.Oci.Tag)
 		}
@@ -167,7 +164,7 @@ func (d *DepDownloader) Download(opts DownloadOptions) error {
 			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(gitUrl), opts.Source.Git.Commit)
 		}
 
-		cacheFullPath := filepath.Join(opts.CachePath, pkgFullName)
+		cacheFullPath = filepath.Join(opts.CachePath, pkgFullName)
 
 		if utils.DirExists(cacheFullPath) && utils.DirExists(filepath.Join(cacheFullPath, constants.KCL_MOD)) {
 			// copy the cache to the local path
@@ -188,10 +185,7 @@ func (d *DepDownloader) Download(opts DownloadOptions) error {
 
 	opts.LocalPath = tmpDir
 	// Dispatch the download to the specific downloader by package source.
-	if opts.Source.Oci != nil || opts.Source.Registry != nil {
-		if opts.Source.Registry != nil {
-			opts.Source.Oci = opts.Source.Registry.Oci
-		}
+	if opts.Source.Oci != nil {
 		if d.OciDownloader == nil {
 			d.OciDownloader = &OciDownloader{}
 		}

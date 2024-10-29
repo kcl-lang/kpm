@@ -34,6 +34,10 @@ func TestMarshalTOML(t *testing.T) {
 		Name:     "MyKcl1",
 		FullName: "MyKcl1_v0.0.2",
 		Source: downloader.Source{
+			ModSpec: &downloader.ModSpec{
+				Name:    "MyKcl1",
+				Version: "0.0.2",
+			},
 			Git: &downloader.Git{
 				Url: "https://github.com/test/MyKcl1.git",
 				Tag: "v0.0.2",
@@ -46,8 +50,9 @@ func TestMarshalTOML(t *testing.T) {
 		FullName: "MyOciKcl1_0.0.1",
 		Version:  "0.0.1",
 		Source: downloader.Source{
-			Oci: &downloader.Oci{
-				Tag: "0.0.1",
+			ModSpec: &downloader.ModSpec{
+				Name:    "MyOciKcl1",
+				Version: "0.0.1",
 			},
 		},
 	}
@@ -81,7 +86,7 @@ func TestUnMarshalTOML(t *testing.T) {
 	assert.Equal(t, modfile.Dependencies.Deps.Len(), 2)
 	assert.NotEqual(t, modfile.Dependencies.Deps.GetOrDefault("MyKcl1", TestPkgDependency), nil)
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyKcl1", TestPkgDependency).Name, "MyKcl1")
-	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyKcl1", TestPkgDependency).FullName, "MyKcl1_v0.0.2")
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyKcl1", TestPkgDependency).FullName, "MyKcl1_0.0.2")
 	assert.NotEqual(t, modfile.Dependencies.Deps.GetOrDefault("MyKcl1", TestPkgDependency).Source.Git, nil)
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyKcl1", TestPkgDependency).Source.Git.Url, "https://github.com/test/MyKcl1.git")
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyKcl1", TestPkgDependency).Source.Git.Tag, "v0.0.2")
@@ -89,8 +94,8 @@ func TestUnMarshalTOML(t *testing.T) {
 	assert.NotEqual(t, modfile.Dependencies.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency), nil)
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).Name, "MyOciKcl1")
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).FullName, "MyOciKcl1_0.0.1")
-	assert.NotEqual(t, modfile.Dependencies.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).Source.Registry, nil)
-	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).Source.Registry.Tag, "0.0.1")
+	assert.NotEqual(t, modfile.Dependencies.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).Source.ModSpec, nil)
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("MyOciKcl1", TestPkgDependency).Source.ModSpec.Version, "0.0.1")
 }
 
 func TestMarshalLockTOML(t *testing.T) {
@@ -237,6 +242,10 @@ func TestMarshalOciUrl(t *testing.T) {
 		FullName: "oci_pkg_0.0.1",
 		Version:  "0.0.1",
 		Source: downloader.Source{
+			ModSpec: &downloader.ModSpec{
+				Name:    "oci_pkg",
+				Version: "0.0.1",
+			},
 			Oci: &downloader.Oci{
 				Reg:  "ghcr.io",
 				Repo: "kcl-lang/oci_pkg",
@@ -306,6 +315,10 @@ func TestInitEmptyPkg(t *testing.T) {
 		Name:     "MyKcl1",
 		FullName: "MyKcl1_v0.0.2",
 		Source: downloader.Source{
+			ModSpec: &downloader.ModSpec{
+				Name:    "MyKcl1",
+				Version: "0.0.2",
+			},
 			Git: &downloader.Git{
 				Url: "https://github.com/test/MyKcl1.git",
 				Tag: "v0.0.2",
@@ -318,8 +331,9 @@ func TestInitEmptyPkg(t *testing.T) {
 		FullName: "MyOciKcl1_0.0.1",
 		Version:  "0.0.1",
 		Source: downloader.Source{
-			Oci: &downloader.Oci{
-				Tag: "0.0.1",
+			ModSpec: &downloader.ModSpec{
+				Name:    "MyOciKcl1",
+				Version: "0.0.1",
 			},
 		},
 	}

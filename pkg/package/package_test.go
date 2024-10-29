@@ -113,7 +113,7 @@ func TestLoadKclPkgFromTar(t *testing.T) {
 
 	assert.Equal(t, kclPkg.ModFile.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Name, "oci_konfig")
 	assert.Equal(t, kclPkg.ModFile.Deps.GetOrDefault("oci_konfig", TestPkgDependency).FullName, "oci_konfig_0.0.1")
-	assert.Equal(t, kclPkg.ModFile.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Registry.Tag, "0.0.1")
+	assert.Equal(t, kclPkg.ModFile.Deps.GetOrDefault("oci_konfig", TestPkgDependency).ModSpec.Version, "0.0.1")
 
 	assert.Equal(t, kclPkg.Deps.Len(), 2)
 	assert.Equal(t, kclPkg.Deps.GetOrDefault("konfig", TestPkgDependency).Name, "konfig")
@@ -124,9 +124,9 @@ func TestLoadKclPkgFromTar(t *testing.T) {
 
 	assert.Equal(t, kclPkg.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Name, "oci_konfig")
 	assert.Equal(t, kclPkg.Deps.GetOrDefault("oci_konfig", TestPkgDependency).FullName, "oci_konfig_0.0.1")
-	assert.Equal(t, kclPkg.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Registry.Oci.Reg, "ghcr.io")
-	assert.Equal(t, kclPkg.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Registry.Oci.Repo, "kcl-lang/oci_konfig")
-	assert.Equal(t, kclPkg.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Registry.Oci.Tag, "0.0.1")
+	assert.Equal(t, kclPkg.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Oci.Reg, "ghcr.io")
+	assert.Equal(t, kclPkg.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Oci.Repo, "kcl-lang/oci_konfig")
+	assert.Equal(t, kclPkg.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Oci.Tag, "0.0.1")
 	assert.Equal(t, kclPkg.Deps.GetOrDefault("oci_konfig", TestPkgDependency).Sum, "sLr3e6W4RPrXYyswdOSiKqkHes1QHX2tk6SwxAPDqqo=")
 
 	assert.Equal(t, kclPkg.GetPkgTag(), "0.0.3")
@@ -151,7 +151,7 @@ func TestLoadPkgFromLock(t *testing.T) {
 	assert.Equal(t, kpkg.Dependencies.Deps.Len(), 1)
 	assert.Equal(t, kpkg.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Name, "helloworld")
 	assert.Equal(t, kpkg.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).FullName, "helloworld_0.1.2")
-	assert.Equal(t, kpkg.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Source.Registry.Oci.Reg, "ghcr.io")
-	assert.Equal(t, kpkg.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Source.Registry.Oci.Repo, "kcl-lang/helloworld")
-	assert.Equal(t, kpkg.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Source.Registry.Oci.Tag, "0.1.2")
+	assert.Equal(t, kpkg.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Source.Oci.Reg, "ghcr.io")
+	assert.Equal(t, kpkg.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Source.Oci.Repo, "kcl-lang/helloworld")
+	assert.Equal(t, kpkg.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Source.Oci.Tag, "0.1.2")
 }

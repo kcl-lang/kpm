@@ -87,11 +87,14 @@ func (dep *Dependencies) MarshalTOML() string {
 const DEP_PATTERN = "%s = %s"
 
 func (dep *Dependency) MarshalTOML() string {
-	source := dep.Source.MarshalTOML()
 	var sb strings.Builder
-	if len(source) != 0 {
-		sb.WriteString(fmt.Sprintf(DEP_PATTERN, dep.Name, source))
+
+	if dep.Source.ModSpec != nil && dep.Source.ModSpec.Version != "" && dep.Source.ModSpec.Name != "" {
+		sb.WriteString(dep.Source.MarshalTOML())
+	} else {
+		sb.WriteString(fmt.Sprintf(DEP_PATTERN, dep.Name, dep.Source.MarshalTOML()))
 	}
+
 	return sb.String()
 }
 
@@ -252,12 +255,16 @@ func (dep *Dependency) UnmarshalModTOML(data interface{}) error {
 	if source.Oci != nil {
 		version = source.Oci.Tag
 	}
-	if source.Registry != nil {
-		version = source.Registry.Version
+
+	if source.ModSpec != nil {
+		version = source.ModSpec.Version
 	}
 
 	dep.FullName = fmt.Sprintf(PKG_NAME_PATTERN, dep.Name, version)
 	dep.Version = version
+	if dep.Source.ModSpec != nil && dep.Source.ModSpec.Name == "" {
+		dep.Source.ModSpec.Name = dep.Name
+	}
 	return nil
 }
 

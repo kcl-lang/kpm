@@ -10,55 +10,58 @@ import (
 
 const NEWLINE = "\n"
 const SOURCE_PATTERN = "{ %s }"
+const DEP_PATTERN = "%s = %s"
+const SPEC_PATTERN = "%s = %q"
 
-func (source *Source) MarshalTOML() string {
+func (ps *ModSpec) MarshalTOML() string {
 	var sb strings.Builder
-
-	if source.Registry != nil {
-		registryToml := source.Registry.MarshalTOML()
-		if len(registryToml) != 0 {
-			sb.WriteString(fmt.Sprintf("%q", registryToml))
-		}
-	}
-
-	if source.Git != nil {
-		gitToml := source.Git.MarshalTOML()
-		if len(gitToml) != 0 {
-			sb.WriteString(fmt.Sprintf(SOURCE_PATTERN, gitToml))
-		}
-	}
-
-	if source.Oci != nil {
-		ociToml := source.Oci.MarshalTOML()
-		if len(ociToml) != 0 {
-			if len(source.Oci.Reg) != 0 && len(source.Oci.Repo) != 0 {
-				sb.WriteString(fmt.Sprintf(SOURCE_PATTERN, ociToml))
-			} else {
-				sb.WriteString(ociToml)
-			}
-		}
-	}
-
-	if source.Local != nil {
-		localPathToml := source.Local.MarshalTOML()
-		if len(localPathToml) != 0 {
-			sb.WriteString(fmt.Sprintf(SOURCE_PATTERN, localPathToml))
-		}
+	if ps != nil && len(ps.Version) != 0 && len(ps.Name) != 0 {
+		sb.WriteString(fmt.Sprintf(SPEC_PATTERN, ps.Name, ps.Version))
+		return sb.String()
 	}
 
 	return sb.String()
 }
 
-func (registry *Registry) MarshalTOML() string {
+func (source *Source) MarshalTOML() string {
 	var sb strings.Builder
-	if len(registry.Version) != 0 {
-		sb.WriteString(registry.Version)
-		return sb.String()
-	}
+	if source.SpecOnly() {
+		return source.ModSpec.MarshalTOML()
+	} else {
+		var pkgVersion string
+		var tomlStr string
+		if source.ModSpec != nil && len(source.ModSpec.Version) > 0 {
+			pkgVersion = fmt.Sprintf(", version = %q", source.ModSpec.Version)
+		}
 
-	if len(registry.Oci.Tag) != 0 {
-		sb.WriteString(registry.Oci.Tag)
-		return sb.String()
+		if source.Git != nil {
+			tomlStr = source.Git.MarshalTOML()
+			if len(tomlStr) != 0 {
+				tomlStr = fmt.Sprintf(SOURCE_PATTERN, tomlStr+pkgVersion)
+			}
+		}
+
+		if source.Oci != nil {
+			tomlStr = source.Oci.MarshalTOML()
+			if len(tomlStr) != 0 {
+				if len(source.Oci.Reg) != 0 && len(source.Oci.Repo) != 0 {
+					tomlStr = fmt.Sprintf(SOURCE_PATTERN, tomlStr+pkgVersion)
+				}
+			}
+		}
+
+		if source.Local != nil {
+			tomlStr = source.Local.MarshalTOML()
+			if len(tomlStr) != 0 {
+				tomlStr = fmt.Sprintf(SOURCE_PATTERN, tomlStr+pkgVersion)
+			}
+		}
+
+		if source.ModSpec != nil && len(source.ModSpec.Name) != 0 {
+			sb.WriteString(fmt.Sprintf(DEP_PATTERN, source.ModSpec.Name, tomlStr))
+		} else {
+			sb.WriteString(tomlStr)
+		}
 	}
 
 	return sb.String()
@@ -155,24 +158,35 @@ func (source *Source) UnmarshalModTOML(data interface{}) error {
 				return err
 			}
 			source.Oci = &oci
-		} else {
-			reg := Registry{}
-			err := reg.UnmarshalModTOML(data)
+		}
+
+		if v, ok := meta["version"].(string); ok {
+			pSpec := ModSpec{}
+			err := pSpec.UnmarshalModTOML(v)
 			if err != nil {
 				return err
 			}
-			source.Registry = &reg
+			source.ModSpec = &pSpec
 		}
 	}
 
 	_, ok = data.(string)
 	if ok {
-		registry := Registry{}
-		err := registry.UnmarshalModTOML(data)
+		pSpec := ModSpec{}
+		err := pSpec.UnmarshalModTOML(data)
 		if err != nil {
 			return err
 		}
-		source.Registry = &registry
+		source.ModSpec = &pSpec
+	}
+
+	return nil
+}
+
+func (ps *ModSpec) UnmarshalModTOML(data interface{}) error {
+	version, ok := data.(string)
+	if ok {
+		ps.Version = version
 	}
 
 	return nil
@@ -240,17 +254,6 @@ func (local *Local) UnmarshalModTOML(data interface{}) error {
 
 	if v, ok := meta[LOCAL_PATH_FLAG].(string); ok {
 		local.Path = v
-	}
-
-	return nil
-}
-
-func (reg *Registry) UnmarshalModTOML(data interface{}) error {
-	version, ok := data.(string)
-	if ok {
-		reg.Version = version
-		reg.Oci = &Oci{}
-		reg.Oci.Tag = version
 	}
 
 	return nil
