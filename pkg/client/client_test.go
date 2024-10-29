@@ -58,7 +58,7 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestUpdateWithKclMod", testUpdateWithKclMod)
 	test.RunTestWithGlobalLock(t, "TestUpdateWithKclModlock", testUpdateWithKclModlock)
 	test.RunTestWithGlobalLock(t, "TestUpdateWithNoSumCheck", testUpdateWithNoSumCheck)
-	test.RunTestWithGlobalLock(t, "TestAddWithDiffVersionNoSumCheck", TestAddWithDiffVersionNoSumCheck)
+	test.RunTestWithGlobalLock(t, "TestAddWithDiffVersionNoSumCheck", testAddWithDiffVersionNoSumCheck)
 	test.RunTestWithGlobalLock(t, "TestAddWithDiffVersionWithSumCheck", testAddWithDiffVersionWithSumCheck)
 	test.RunTestWithGlobalLock(t, "TestDownloadOci", testDownloadOci)
 	test.RunTestWithGlobalLock(t, "TestRunWithOciDownloader", testRunWithOciDownloader)
@@ -1221,7 +1221,7 @@ func testUpdateWithNoSumCheck(t *testing.T) {
 	}()
 }
 
-func TestAddWithDiffVersionNoSumCheck(t *testing.T) {
+func testAddWithDiffVersionNoSumCheck(t *testing.T) {
 	pkgPath := getTestDir("test_add_diff_version")
 
 	pkgWithSumCheckPath := filepath.Join(pkgPath, "no_sum_check")
