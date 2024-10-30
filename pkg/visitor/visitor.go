@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/google/uuid"
 	"kcl-lang.io/kpm/pkg/downloader"
@@ -36,6 +37,13 @@ func (pv *PkgVisitor) Visit(s *downloader.Source, v visitFunc) error {
 	modPath, err := s.FindRootPath()
 	if err != nil {
 		return err
+	}
+
+	if !s.ModSpec.IsNil() {
+		modPath, err = utils.FindPackage(modPath, s.ModSpec.Name)
+		if err != nil {
+			return err
+		}
 	}
 
 	kclPkg, err := pkg.LoadKclPkgWithOpts(
@@ -109,22 +117,22 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		return fmt.Errorf("source is not remote")
 	}
 
-	var visitedSpace string
+	var modPath string
 	var err error
 	if len(rv.VisitedSpace) != 0 {
-		visitedSpace = rv.VisitedSpace
+		modPath = filepath.Join(rv.VisitedSpace, s.LocalPath())
 	} else {
 		tmpDir, err := os.MkdirTemp("", "")
 		if err != nil {
 			return err
 		}
 
-		visitedSpace = tmpDir
+		modPath = tmpDir
 		defer os.RemoveAll(tmpDir)
 	}
 
-	if !utils.DirExists(visitedSpace) {
-		err := os.MkdirAll(visitedSpace, 0755)
+	if !utils.DirExists(modPath) {
+		err := os.MkdirAll(modPath, 0755)
 		if err != nil {
 			return err
 		}
@@ -136,7 +144,7 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 	}
 
 	err = rv.Downloader.Download(*downloader.NewDownloadOptions(
-		downloader.WithLocalPath(visitedSpace),
+		downloader.WithLocalPath(modPath),
 		downloader.WithSource(*s),
 		downloader.WithLogWriter(rv.LogWriter),
 		downloader.WithSettings(*rv.Settings),
@@ -149,16 +157,15 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 	if err != nil {
 		return err
 	}
-	pkgPath := visitedSpace
 	if !s.ModSpec.IsNil() {
-		pkgPath, err = utils.FindPackage(visitedSpace, s.ModSpec.Name)
+		modPath, err = utils.FindPackage(modPath, s.ModSpec.Name)
 		if err != nil {
 			return err
 		}
 	}
 
 	kclPkg, err := pkg.LoadKclPkgWithOpts(
-		pkg.WithPath(pkgPath),
+		pkg.WithPath(modPath),
 		pkg.WithSettings(rv.Settings),
 	)
 	if err != nil {

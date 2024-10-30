@@ -106,7 +106,12 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 			depSource = &dep.Source
 		}
 
-		err := depResolver.Resolve(
+		err := resolverFunc(&dep, kpkg)
+		if err != nil {
+			return nil, err
+		}
+
+		err = depResolver.Resolve(
 			resolver.WithEnableCache(true),
 			resolver.WithSource(depSource),
 		)

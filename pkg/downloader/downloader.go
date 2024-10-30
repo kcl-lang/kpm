@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/otiai10/copy"
@@ -143,29 +142,7 @@ func (d *DepDownloader) Download(opts DownloadOptions) error {
 	localPath := opts.LocalPath
 	cacheFullPath := opts.CachePath
 	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok && opts.EnableCache {
-		// TODO: After the new local storage structure is complete,
-		// this section should be replaced with the new storage structure instead of the cache path according to the <Cache Path>/<Package Name>.
-		//  https://github.com/kcl-lang/kpm/issues/384
-		var pkgFullName string
-		if opts.Source.Oci != nil && len(opts.Source.Oci.Tag) != 0 {
-			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(opts.Source.Oci.Repo), opts.Source.Oci.Tag)
-		}
-
-		if opts.Source.Git != nil && len(opts.Source.Git.Tag) != 0 {
-			gitUrl := strings.TrimSuffix(opts.Source.Git.Url, filepath.Ext(opts.Source.Git.Url))
-			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(gitUrl), opts.Source.Git.Tag)
-		}
-		if opts.Source.Git != nil && len(opts.Source.Git.Branch) != 0 {
-			gitUrl := strings.TrimSuffix(opts.Source.Git.Url, filepath.Ext(opts.Source.Git.Url))
-			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(gitUrl), opts.Source.Git.Branch)
-		}
-		if opts.Source.Git != nil && len(opts.Source.Git.Commit) != 0 {
-			gitUrl := strings.TrimSuffix(opts.Source.Git.Url, filepath.Ext(opts.Source.Git.Url))
-			pkgFullName = fmt.Sprintf("%s_%s", filepath.Base(gitUrl), opts.Source.Git.Commit)
-		}
-
-		cacheFullPath = filepath.Join(opts.CachePath, pkgFullName)
-
+		cacheFullPath = filepath.Join(opts.CachePath, opts.Source.LocalPath())
 		if utils.DirExists(cacheFullPath) && utils.DirExists(filepath.Join(cacheFullPath, constants.KCL_MOD)) {
 			// copy the cache to the local path
 			if cacheFullPath != opts.LocalPath {
@@ -220,11 +197,13 @@ func (d *DepDownloader) Download(opts DownloadOptions) error {
 		return err
 	}
 
-	if opts.EnableCache {
+	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok && opts.EnableCache {
 		// Enable the cache, update the dependency package to the cache path.
-		err := copy.Copy(localPath, cacheFullPath)
-		if err != nil {
-			return err
+		if cacheFullPath != localPath {
+			err := copy.Copy(localPath, cacheFullPath)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

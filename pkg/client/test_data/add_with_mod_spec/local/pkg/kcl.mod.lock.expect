@@ -1,0 +1,5 @@
+[dependencies]
+  [dependencies.sub]
+    name = "sub"
+    full_name = "sub_0.0.1"
+    version = "0.0.1"
