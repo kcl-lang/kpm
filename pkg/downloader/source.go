@@ -197,19 +197,38 @@ func (local *Local) FindRootPath() (string, error) {
 }
 
 func (source *Source) ToFilePath() (string, error) {
+	var path string
+	var err error
 	if source == nil {
 		return "", fmt.Errorf("source is nil")
 	}
 	if source.Git != nil {
-		return source.Git.ToFilePath()
+		path, err = source.Git.ToFilePath()
+		if err != nil {
+			return "", err
+		}
 	}
 	if source.Oci != nil {
-		return source.Oci.ToFilePath()
+		path, err = source.Oci.ToFilePath()
+		if err != nil {
+			return "", err
+		}
 	}
 	if source.Local != nil {
-		return source.Local.ToFilePath()
+		path, err = source.Local.ToFilePath()
+		if err != nil {
+			return "", err
+		}
 	}
-	return "", fmt.Errorf("source is nil")
+
+	if !source.ModSpec.IsNil() {
+		path = filepath.Join(path, source.ModSpec.Name, source.ModSpec.Version)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return path, err
 }
 
 func (git *Git) ToFilePath() (string, error) {
