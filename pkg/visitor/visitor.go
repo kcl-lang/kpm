@@ -140,8 +140,8 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		return err
 	}
 	pkgPath := tmpDir
-	if s.Git != nil && len(s.Git.Package) > 0 {
-		pkgPath, err = utils.FindPackage(tmpDir, s.Git.Package)
+	if !s.ModSpec.IsNil() {
+		pkgPath, err = utils.FindPackage(tmpDir, s.ModSpec.Name)
 		if err != nil {
 			return err
 		}
@@ -153,6 +153,15 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	if !s.ModSpec.IsNil() {
+		if kclPkg.ModFile.Pkg.Version != s.ModSpec.Version {
+			return fmt.Errorf(
+				"version mismatch: %s != %s, version %s not found",
+				kclPkg.ModFile.Pkg.Version, s.ModSpec.Version, s.ModSpec.Version,
+			)
+		}
 	}
 
 	return v(kclPkg)

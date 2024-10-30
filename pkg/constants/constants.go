@@ -23,6 +23,7 @@ const (
 	GitCommit = "commit"
 
 	Tag = "tag"
+	Mod = "mod"
 
 	KCL_MOD                              = "kcl.mod"
 	KCL_MOD_LOCK                         = "kcl.mod.lock"
