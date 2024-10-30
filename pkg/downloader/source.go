@@ -261,19 +261,40 @@ func (local *Local) ToFilePath() (string, error) {
 }
 
 func (source *Source) ToString() (string, error) {
+	var sourceStr string
+	var err error
 	if source == nil {
 		return "", fmt.Errorf("source is nil")
 	}
 	if source.Git != nil {
-		return source.Git.ToString()
+		sourceStr, err = source.Git.ToString()
+		if err != nil {
+			return "", err
+		}
+	} else if source.Oci != nil {
+		sourceStr, err = source.Oci.ToString()
+		if err != nil {
+			return "", err
+		}
+	} else if source.Local != nil {
+		sourceStr, err = source.Local.ToString()
+		if err != nil {
+			return "", err
+		}
 	}
-	if source.Oci != nil {
-		return source.Oci.ToString()
+	if source.ModSpec != nil {
+		url, err := url.Parse(sourceStr)
+		if err != nil {
+			return "", err
+		}
+
+		q := url.Query()
+		q.Set(constants.Mod, source.ModSpec.ToString())
+		url.RawQuery = q.Encode()
+		sourceStr = url.String()
 	}
-	if source.Local != nil {
-		return source.Local.ToString()
-	}
-	return "", fmt.Errorf("source is nil")
+
+	return sourceStr, nil
 }
 
 func (git *Git) ToString() (string, error) {
@@ -336,6 +357,13 @@ func (local *Local) ToString() (string, error) {
 	return pathUrl.String(), nil
 }
 
+func (mod *ModSpec) ToString() string {
+	if mod == nil {
+		return ""
+	}
+	return fmt.Sprintf("%s:%s", mod.Name, mod.Version)
+}
+
 func (source *Source) FromString(sourceStr string) error {
 	if source == nil {
 		return fmt.Errorf("source is nil")
@@ -344,6 +372,15 @@ func (source *Source) FromString(sourceStr string) error {
 	sourceUrl, err := url.Parse(sourceStr)
 	if err != nil {
 		return err
+	}
+
+	modSpec := sourceUrl.Query().Get(constants.Mod)
+	if len(modSpec) != 0 {
+		source.ModSpec = &ModSpec{}
+		err := source.ModSpec.FromString(modSpec)
+		if err != nil {
+			return err
+		}
 	}
 
 	if sourceUrl.Scheme == constants.GitScheme || sourceUrl.Scheme == constants.SshScheme {

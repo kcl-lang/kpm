@@ -1980,6 +1980,35 @@ func TestRunLocalWithArgs(t *testing.T) {
 	}
 }
 
+func TestRunRemoteWithArgsInvalid(t *testing.T) {
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	logbuf := new(bytes.Buffer)
+	kpmcli.SetLogWriter(logbuf)
+
+	type testCase struct {
+		sourceURL      string
+		expectedLog    string
+		expectedErrMsg string
+	}
+
+	testCases := []testCase{
+		{
+			sourceURL:      "git://github.com/kcl-lang/flask-demo-kcl-manifests?commit=8308200&mod=cc:0.0.2",
+			expectedLog:    "cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests' with commit '8308200'\n",
+			expectedErrMsg: "version mismatch: 0.0.1 != 0.0.2, version 0.0.2 not found",
+		},
+	}
+
+	for _, tc := range testCases {
+		_, err := kpmcli.Run(WithRunSourceUrl(tc.sourceURL))
+		assert.Equal(t, err.Error(), tc.expectedErrMsg)
+		assert.Equal(t, logbuf.String(), tc.expectedLog)
+		logbuf.Reset()
+	}
+}
+
 func TestRunRemoteWithArgs(t *testing.T) {
 	pkgPath := getTestDir("test_run_options")
 	kpmcli, err := NewKpmClient()
@@ -2014,6 +2043,14 @@ func TestRunRemoteWithArgs(t *testing.T) {
 			expectedLog: "cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests' with commit 'ade147b'\n",
 			expectedYamlFn: func(pkgPath string) (string, error) {
 				expected, err := os.ReadFile(filepath.Join(pkgPath, "remote", "expect_2.yaml"))
+				return string(expected), err
+			},
+		},
+		{
+			sourceURL:   "git://github.com/kcl-lang/flask-demo-kcl-manifests?commit=8308200&mod=cc:0.0.1",
+			expectedLog: "cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests' with commit '8308200'\n",
+			expectedYamlFn: func(pkgPath string) (string, error) {
+				expected, err := os.ReadFile(filepath.Join(pkgPath, "remote", "expect_3.yaml"))
 				return string(expected), err
 			},
 		},
