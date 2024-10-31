@@ -16,6 +16,10 @@ import (
 
 func TestPull(t *testing.T) {
 	pulledPath := getTestDir("test_pull")
+	defer func() {
+		err := os.RemoveAll(filepath.Join(pulledPath, "oci"))
+		assert.NilError(t, err)
+	}()
 
 	kpmcli, err := NewKpmClient()
 	assert.NilError(t, err)
@@ -39,6 +43,8 @@ func TestPull(t *testing.T) {
 	assert.Equal(t, kPkg.GetPkgName(), "helloworld")
 	assert.Equal(t, kPkg.GetPkgVersion(), "0.0.1")
 	assert.Equal(t, kPkg.HomePath, pkgPath)
+	err = os.RemoveAll(filepath.Join(pulledPath, "oci"))
+	assert.NilError(t, err)
 
 	kPkg, err = kpmcli.Pull(
 		WithLocalPath(pulledPath),
@@ -120,4 +126,59 @@ func TestInsecureSkipTLSverifyOCIRegistry(t *testing.T) {
 	)
 
 	assert.Equal(t, buf.String(), "Called Success\n")
+}
+
+func TestPullWithModSpec(t *testing.T) {
+	pulledPath := getTestDir("test_pull_with_modspec")
+	defer func() {
+		err := os.RemoveAll(filepath.Join(pulledPath, "oci"))
+		assert.NilError(t, err)
+	}()
+
+	kpmcli, err := NewKpmClient()
+	assert.NilError(t, err)
+
+	var buf bytes.Buffer
+	kpmcli.SetLogWriter(&buf)
+
+	kPkg, err := kpmcli.Pull(
+		WithLocalPath(pulledPath),
+		WithPullSource(&downloader.Source{
+			ModSpec: &downloader.ModSpec{
+				Name:    "subhelloworld",
+				Version: "0.0.1",
+			},
+			Oci: &downloader.Oci{
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/helloworld",
+				Tag:  "0.1.4",
+			},
+		}),
+	)
+
+	pkgPath := filepath.Join(pulledPath, "oci", "ghcr.io", "kcl-lang", "helloworld", "0.1.4", "subhelloworld", "0.0.1")
+	assert.NilError(t, err)
+	assert.Equal(t, kPkg.GetPkgName(), "subhelloworld")
+	assert.Equal(t, kPkg.GetPkgVersion(), "0.0.1")
+	assert.Equal(t, kPkg.HomePath, pkgPath)
+	err = os.RemoveAll(filepath.Join(pulledPath, "oci"))
+	assert.NilError(t, err)
+
+	kPkg, err = kpmcli.Pull(
+		WithLocalPath(pulledPath),
+		WithPullSourceUrl("oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4&mod=subhelloworld:0.0.1"),
+	)
+	pkgPath = filepath.Join(pulledPath, "oci", "ghcr.io", "kcl-lang", "helloworld", "0.1.4", "subhelloworld", "0.0.1")
+	assert.NilError(t, err)
+	assert.Equal(t, kPkg.GetPkgName(), "subhelloworld")
+	assert.Equal(t, kPkg.GetPkgVersion(), "0.0.1")
+	assert.Equal(t, kPkg.HomePath, pkgPath)
+	err = os.RemoveAll(filepath.Join(pulledPath, "oci"))
+	assert.NilError(t, err)
+
+	_, err = kpmcli.Pull(
+		WithLocalPath(pulledPath),
+		WithPullSourceUrl("oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4&mod=subhelloworld:0.0.2"),
+	)
+	assert.Equal(t, err.Error(), "version mismatch: 0.0.1 != 0.0.2, version 0.0.2 not found")
 }
