@@ -88,7 +88,7 @@ func (source *Source) IsLocalTgzPath() bool {
 }
 
 func (source *Source) IsRemote() bool {
-	return source.Git != nil || source.Oci != nil || !source.ModSpec.IsNil()
+	return source.Local == nil && (source.Git != nil || source.Oci != nil || !source.ModSpec.IsNil())
 }
 
 func (source *Source) IsPackaged() bool {
@@ -400,20 +400,23 @@ func (source *Source) FromString(sourceStr string) error {
 		if err != nil {
 			return err
 		}
+		queryParams := sourceUrl.Query()
+		queryParams.Del(constants.Mod)
+		sourceUrl.RawQuery = queryParams.Encode()
 	}
 
 	if sourceUrl.Scheme == constants.GitScheme || sourceUrl.Scheme == constants.SshScheme {
 		source.Git = &Git{}
-		source.Git.FromString(sourceStr)
+		source.Git.FromString(sourceUrl.String())
 	} else if sourceUrl.Scheme == constants.OciScheme {
 		source.Oci = &Oci{}
-		source.Oci.FromString(sourceStr)
+		source.Oci.FromString(sourceUrl.String())
 	} else if sourceUrl.Scheme == constants.DefaultOciScheme {
 		source.ModSpec = &ModSpec{}
-		source.ModSpec.FromString(sourceStr)
+		source.ModSpec.FromString(sourceUrl.String())
 	} else {
 		source.Local = &Local{}
-		source.Local.FromString(sourceStr)
+		source.Local.FromString(sourceUrl.String())
 	}
 
 	return nil
@@ -640,4 +643,29 @@ func (o *Oci) Hash() (string, error) {
 
 func (l *Local) Hash() (string, error) {
 	return utils.ShortHash(l.Path)
+}
+
+func (s *Source) LocalPath() string {
+	// TODO: After the new local storage structure is complete,
+	// this section should be replaced with the new storage structure instead of the cache path according to the <Cache Path>/<Package Name>.
+	//  https://github.com/kcl-lang/kpm/issues/384
+	var path string
+	if s.Oci != nil && len(s.Oci.Tag) != 0 {
+		path = fmt.Sprintf("%s_%s", filepath.Base(s.Oci.Repo), s.Oci.Tag)
+	}
+
+	if s.Git != nil && len(s.Git.Tag) != 0 {
+		gitUrl := strings.TrimSuffix(s.Git.Url, filepath.Ext(s.Git.Url))
+		path = fmt.Sprintf("%s_%s", filepath.Base(gitUrl), s.Git.Tag)
+	}
+	if s.Git != nil && len(s.Git.Branch) != 0 {
+		gitUrl := strings.TrimSuffix(s.Git.Url, filepath.Ext(s.Git.Url))
+		path = fmt.Sprintf("%s_%s", filepath.Base(gitUrl), s.Git.Branch)
+	}
+	if s.Git != nil && len(s.Git.Commit) != 0 {
+		gitUrl := strings.TrimSuffix(s.Git.Url, filepath.Ext(s.Git.Url))
+		path = fmt.Sprintf("%s_%s", filepath.Base(gitUrl), s.Git.Commit)
+	}
+
+	return path
 }

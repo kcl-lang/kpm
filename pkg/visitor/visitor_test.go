@@ -120,7 +120,7 @@ func TestVisitedSpace(t *testing.T) {
 	err = remotePkgVisitor.Visit(source, func(pkg *pkg.KclPkg) error {
 		assert.Equal(t, pkg.GetPkgName(), "helloworld")
 		assert.Equal(t, pkg.GetPkgVersion(), "0.1.2")
-		assert.Equal(t, pkg.HomePath, filepath.Join(remotePkgVisitor.VisitedSpace))
+		assert.Equal(t, pkg.HomePath, filepath.Join(remotePkgVisitor.VisitedSpace, source.LocalPath()))
 		return nil
 	})
 	assert.NilError(t, err)
