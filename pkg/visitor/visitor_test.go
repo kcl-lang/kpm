@@ -100,3 +100,28 @@ func TestVisitPkgRemote(t *testing.T) {
 		assert.NilError(t, err)
 	}
 }
+
+func TestVisitedSpace(t *testing.T) {
+	var buf bytes.Buffer
+	remotePkgVisitor := RemoteVisitor{
+		PkgVisitor: &PkgVisitor{
+			LogWriter: &buf,
+			Settings:  settings.GetSettings(),
+		},
+		VisitedSpace: getTestDir("test_visited_space"),
+		Downloader:   &downloader.DepDownloader{},
+	}
+
+	source, err := downloader.NewSourceFromStr("oci://ghcr.io/kcl-lang/helloworld?tag=0.1.2")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = remotePkgVisitor.Visit(source, func(pkg *pkg.KclPkg) error {
+		assert.Equal(t, pkg.GetPkgName(), "helloworld")
+		assert.Equal(t, pkg.GetPkgVersion(), "0.1.2")
+		assert.Equal(t, pkg.HomePath, filepath.Join(remotePkgVisitor.VisitedSpace))
+		return nil
+	})
+	assert.NilError(t, err)
+}

@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 
 	"github.com/google/uuid"
-	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
@@ -91,6 +89,7 @@ type RemoteVisitor struct {
 	*PkgVisitor
 	EnableCache           bool
 	CachePath             string
+	VisitedSpace          string
 	Downloader            downloader.Downloader
 	InsecureSkipTLSverify bool
 }
@@ -110,13 +109,25 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		return fmt.Errorf("source is not remote")
 	}
 
-	tmpDir, err := os.MkdirTemp("", "")
-	if err != nil {
-		return err
+	var visitedSpace string
+	var err error
+	if len(rv.VisitedSpace) != 0 {
+		visitedSpace = rv.VisitedSpace
+	} else {
+		tmpDir, err := os.MkdirTemp("", "")
+		if err != nil {
+			return err
+		}
+
+		visitedSpace = tmpDir
+		defer os.RemoveAll(tmpDir)
 	}
 
-	if s.Git != nil {
-		tmpDir = filepath.Join(tmpDir, constants.GitScheme)
+	if !utils.DirExists(visitedSpace) {
+		err := os.MkdirAll(visitedSpace, 0755)
+		if err != nil {
+			return err
+		}
 	}
 
 	credCli, err := downloader.LoadCredentialFile(rv.Settings.CredentialsFile)
@@ -124,9 +135,8 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		return err
 	}
 
-	defer os.RemoveAll(tmpDir)
 	err = rv.Downloader.Download(*downloader.NewDownloadOptions(
-		downloader.WithLocalPath(tmpDir),
+		downloader.WithLocalPath(visitedSpace),
 		downloader.WithSource(*s),
 		downloader.WithLogWriter(rv.LogWriter),
 		downloader.WithSettings(*rv.Settings),
@@ -139,9 +149,9 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 	if err != nil {
 		return err
 	}
-	pkgPath := tmpDir
+	pkgPath := visitedSpace
 	if !s.ModSpec.IsNil() {
-		pkgPath, err = utils.FindPackage(tmpDir, s.ModSpec.Name)
+		pkgPath, err = utils.FindPackage(visitedSpace, s.ModSpec.Name)
 		if err != nil {
 			return err
 		}
