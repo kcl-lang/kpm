@@ -1,6 +1,7 @@
 package git
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -311,4 +312,18 @@ func IsGitBareRepo(dir string) bool {
 		return false
 	}
 	return strings.TrimSpace(string(output)) == "true"
+}
+
+// Fetch fetches the latest changes from a remote repository
+func Fetch(dir string, args ...string) error {
+	cmdArgs := append([]string{"-C", dir, "fetch", "origin"}, args...)
+	cmd := exec.Command("git", cmdArgs...)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &out
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to fetch latest changes: %v, output: %s", err, out.String())
+	}
+	return nil
 }

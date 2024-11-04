@@ -112,7 +112,7 @@ func testVendorWithMVS(t *testing.T) {
 	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "vendor", "helloworld_0.1.1")), false)
 }
 
-func TestVendorWithGlobalLock(t *testing.T) {
+func testVendorWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestVendorDeps", testVendorDeps)
 	test.RunTestWithGlobalLock(t, "TestVendorWithMVS", testVendorWithMVS)
 }

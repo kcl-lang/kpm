@@ -27,6 +27,7 @@ import (
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/env"
+	"kcl-lang.io/kpm/pkg/features"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -82,6 +83,18 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestDownloadGitWithPackage", testDownloadGitWithPackage)
 	test.RunTestWithGlobalLock(t, "TestModandLockFilesWithGitPackageDownload", testModandLockFilesWithGitPackageDownload)
 	test.RunTestWithGlobalLock(t, "TestDependencyGraph", testDependencyGraph)
+	test.RunTestWithGlobalLock(t, "TestAddWithModSpec", testAddWithModSpec)
+	test.RunTestWithGlobalLock(t, "TestRunRemoteWithArgsInvalid", testRunRemoteWithArgsInvalid)
+	test.RunTestWithGlobalLock(t, "TestRunRemoteWithArgs", testRunRemoteWithArgs)
+	test.RunTestWithGlobalLock(t, "TestRunWithNoSumCheck", testRunWithGitPackage)
+	test.RunTestWithGlobalLock(t, "TestRunGit", testRunGit)
+	test.RunTestWithGlobalLock(t, "TestRunOciWithSettingsFile", testRunOciWithSettingsFile)
+	test.RunTestWithGlobalLock(t, "TestVendorWithGlobalLock", testVendorWithGlobalLock)
+	test.RunTestWithGlobalLock(t, "TestPull", testPull)
+	test.RunTestWithGlobalLock(t, "TestPullWithInsecureSkipTLSverify", testPullWithInsecureSkipTLSverify)
+	test.RunTestWithGlobalLock(t, "TestPullWithModSpec", testPullWithModSpec)
+
+	features.Enable(features.SupportNewStorage)
 	test.RunTestWithGlobalLock(t, "testAddWithModSpec", testAddWithModSpec)
 }
 
@@ -2004,7 +2017,7 @@ func TestRunLocalWithArgs(t *testing.T) {
 	}
 }
 
-func TestRunRemoteWithArgsInvalid(t *testing.T) {
+func testRunRemoteWithArgsInvalid(t *testing.T) {
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
 
@@ -2033,7 +2046,7 @@ func TestRunRemoteWithArgsInvalid(t *testing.T) {
 	}
 }
 
-func TestRunRemoteWithArgs(t *testing.T) {
+func testRunRemoteWithArgs(t *testing.T) {
 	pkgPath := getTestDir("test_run_options")
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)

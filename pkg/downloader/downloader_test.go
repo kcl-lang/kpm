@@ -69,21 +69,21 @@ func testGitDownloader(t *testing.T) {
 			Commit: "ade147b",
 		},
 	}
+	gitHash, err := gitSource.Hash()
+	assert.Equal(t, err, nil)
 
-	err := gitDownloader.Download(NewDownloadOptions(
+	err = gitDownloader.Download(NewDownloadOptions(
 		WithSource(gitSource),
-		WithLocalPath(filepath.Join(path_git, "git", "checkout")),
-		WithCachePath(filepath.Join(path_git, "git", "db")),
+		WithLocalPath(filepath.Join(path_git, "git", "src", gitHash)),
+		WithCachePath(filepath.Join(path_git, "git", "cache", gitHash)),
 		WithEnableCache(true),
 	))
 
 	fmt.Printf("err: %v\n", err)
 	assert.Equal(t, err, nil)
-	gitHash, err := gitSource.Hash()
-	assert.Equal(t, err, nil)
-	assert.Equal(t, git.IsGitBareRepo(filepath.Join(path_git, "git", "db", gitHash)), true)
-	assert.Equal(t, utils.DirExists(filepath.Join(path_git, "git", "checkout", gitHash)), true)
-	assert.Equal(t, utils.DirExists(filepath.Join(path_git, "git", "checkout", gitHash, "kcl.mod")), true)
+	assert.Equal(t, git.IsGitBareRepo(filepath.Join(path_git, "git", "cache", gitHash)), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(path_git, "git", "src", gitHash)), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(path_git, "git", "src", gitHash, "kcl.mod")), true)
 }
 
 func TestWithGlobalLock(t *testing.T) {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"kcl-lang.io/kpm/pkg/constants"
+	"kcl-lang.io/kpm/pkg/features"
 	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/utils"
@@ -58,6 +59,10 @@ func (o *Oci) NoRef() bool {
 	return o.Tag == ""
 }
 
+func (o *Oci) GetRef() string {
+	return o.Tag
+}
+
 // Git is the package source from git registry.
 type Git struct {
 	Url     string `toml:"url,omitempty"`
@@ -71,6 +76,19 @@ type Git struct {
 // If the git source has no reference, return true.
 func (g *Git) NoRef() bool {
 	return g.Version == "" && g.Tag == "" && g.Branch == "" && g.Commit == ""
+}
+
+func (g *Git) GetRef() string {
+	if g.Tag != "" {
+		return g.Tag
+	}
+	if g.Branch != "" {
+		return g.Branch
+	}
+	if g.Commit != "" {
+		return g.Commit
+	}
+	return ""
 }
 
 func NewSourceFromStr(sourceStr string) (*Source, error) {
@@ -618,66 +636,83 @@ func (s *Source) Hash() (string, error) {
 
 func (g *Git) Hash() (string, error) {
 	gitURL := strings.TrimSuffix(g.Url, filepath.Ext(g.Url))
-	packageFilename := filepath.Base(gitURL)
-	filenamePattern := "%s_%s"
-
-	if g.Tag != "" {
-		packageFilename = fmt.Sprintf(filenamePattern, packageFilename, g.Tag)
-	} else if g.Commit != "" {
-		packageFilename = fmt.Sprintf(filenamePattern, packageFilename, g.Commit)
-	} else if g.Branch != "" {
-		packageFilename = fmt.Sprintf(filenamePattern, packageFilename, g.Branch)
-	}
-
 	hash, err := utils.ShortHash(filepath.Dir(gitURL))
 	if err != nil {
 		return "", err
 	}
 
-	return filepath.Join(hash, packageFilename), nil
+	return filepath.Join(hash, filepath.Base(gitURL), g.GetRef()), nil
 }
 
 func (o *Oci) Hash() (string, error) {
-	var packageFilename string
-	if o.Tag == "" {
-		packageFilename = filepath.Base(o.Repo)
-	} else {
-		packageFilename = fmt.Sprintf("%s_%s", filepath.Base(o.Repo), o.Tag)
-	}
-
 	hash, err := utils.ShortHash(utils.JoinPath(o.Reg, filepath.Dir(o.Repo)))
 	if err != nil {
 		return "", err
 	}
 
-	return filepath.Join(hash, packageFilename), nil
+	return filepath.Join(hash, filepath.Base(o.Repo), o.GetRef()), nil
 }
 
 func (l *Local) Hash() (string, error) {
 	return utils.ShortHash(l.Path)
 }
 
-func (s *Source) LocalPath() string {
+func (s *Source) LocalPath(root string) string {
 	// TODO: After the new local storage structure is complete,
 	// this section should be replaced with the new storage structure instead of the cache path according to the <Cache Path>/<Package Name>.
 	//  https://github.com/kcl-lang/kpm/issues/384
-	var path string
-	if s.Oci != nil && len(s.Oci.Tag) != 0 {
-		path = fmt.Sprintf("%s_%s", filepath.Base(s.Oci.Repo), s.Oci.Tag)
-	}
 
-	if s.Git != nil && len(s.Git.Tag) != 0 {
-		gitUrl := strings.TrimSuffix(s.Git.Url, filepath.Ext(s.Git.Url))
-		path = fmt.Sprintf("%s_%s", filepath.Base(gitUrl), s.Git.Tag)
+	var path string
+	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok {
+		if s.Oci != nil && len(s.Oci.Tag) != 0 {
+			path = fmt.Sprintf("%s_%s", filepath.Base(s.Oci.Repo), s.Oci.Tag)
+		}
+
+		if s.Git != nil && len(s.Git.Tag) != 0 {
+			gitUrl := strings.TrimSuffix(s.Git.Url, filepath.Ext(s.Git.Url))
+			path = fmt.Sprintf("%s_%s", filepath.Base(gitUrl), s.Git.Tag)
+		}
+		if s.Git != nil && len(s.Git.Branch) != 0 {
+			gitUrl := strings.TrimSuffix(s.Git.Url, filepath.Ext(s.Git.Url))
+			path = fmt.Sprintf("%s_%s", filepath.Base(gitUrl), s.Git.Branch)
+		}
+		if s.Git != nil && len(s.Git.Commit) != 0 {
+			gitUrl := strings.TrimSuffix(s.Git.Url, filepath.Ext(s.Git.Url))
+			path = fmt.Sprintf("%s_%s", filepath.Base(gitUrl), s.Git.Commit)
+		}
+	} else {
+		path, err = s.Hash()
+		if err != nil {
+			return ""
+		}
 	}
-	if s.Git != nil && len(s.Git.Branch) != 0 {
-		gitUrl := strings.TrimSuffix(s.Git.Url, filepath.Ext(s.Git.Url))
-		path = fmt.Sprintf("%s_%s", filepath.Base(gitUrl), s.Git.Branch)
-	}
-	if s.Git != nil && len(s.Git.Commit) != 0 {
-		gitUrl := strings.TrimSuffix(s.Git.Url, filepath.Ext(s.Git.Url))
-		path = fmt.Sprintf("%s_%s", filepath.Base(gitUrl), s.Git.Commit)
+	return filepath.Join(root, path)
+}
+
+func (s *Source) CachePath(root string) string {
+	// TODO: After the new local storage structure is complete,
+	// this section should be replaced with the new storage structure instead of the cache path according to the <Cache Path>/<Package Name>.
+	//  https://github.com/kcl-lang/kpm/issues/384
+
+	path := s.LocalPath(root)
+	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && ok {
+		if s.Git != nil && len(s.Git.GetRef()) > 0 {
+			return filepath.Dir(path)
+		}
 	}
 
 	return path
+}
+
+func (s *Source) Type() string {
+	if s.Git != nil {
+		return "git"
+	}
+	if s.Oci != nil {
+		return "oci"
+	}
+	if s.Local != nil {
+		return "local"
+	}
+	return ""
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"kcl-lang.io/kpm/pkg/downloader"
+	"kcl-lang.io/kpm/pkg/features"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -119,6 +120,20 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		return fmt.Errorf("source is not remote")
 	}
 
+	var cacheFullPath string
+	var modFullPath string
+
+	// Generate the cache path first, for the cache path is needed to get the latest version.
+	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok {
+		if rv.EnableCache {
+			cacheFullPath = s.CachePath(rv.CachePath)
+		}
+	} else {
+		if rv.EnableCache {
+			cacheFullPath = s.CachePath(filepath.Join(rv.CachePath, s.Type(), "cache"))
+		}
+	}
+
 	// 1. Load the credential file.
 	credCli, err := downloader.LoadCredentialFile(rv.Settings.CredentialsFile)
 	if err != nil {
@@ -135,6 +150,8 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 			downloader.WithSettings(*rv.Settings),
 			downloader.WithCredsClient(credCli),
 			downloader.WithInsecureSkipTLSverify(rv.InsecureSkipTLSverify),
+			downloader.WithCachePath(cacheFullPath),
+			downloader.WithEnableCache(rv.EnableCache),
 		))
 
 		if err != nil {
@@ -157,21 +174,30 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 			s.Git.Commit = latest
 		}
 	}
-	var modPath string
-	if len(rv.VisitedSpace) != 0 {
-		modPath = filepath.Join(rv.VisitedSpace, s.LocalPath())
+
+	// Generate the local path for the remote package after the version is specified.
+	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok {
+		if len(rv.VisitedSpace) != 0 {
+			modFullPath = s.LocalPath(rv.VisitedSpace)
+		}
 	} else {
+		if len(rv.VisitedSpace) != 0 {
+			modFullPath = s.LocalPath(filepath.Join(rv.VisitedSpace, s.Type(), "src"))
+		}
+	}
+
+	if len(rv.VisitedSpace) == 0 {
 		tmpDir, err := os.MkdirTemp("", "")
 		if err != nil {
 			return err
 		}
 
-		modPath = tmpDir
+		modFullPath = tmpDir
 		defer os.RemoveAll(tmpDir)
 	}
 
-	if !utils.DirExists(modPath) {
-		err := os.MkdirAll(modPath, 0755)
+	if !utils.DirExists(modFullPath) {
+		err := os.MkdirAll(modFullPath, 0755)
 		if err != nil {
 			return err
 		}
@@ -183,12 +209,12 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 	}
 
 	err = rv.Downloader.Download(downloader.NewDownloadOptions(
-		downloader.WithLocalPath(modPath),
+		downloader.WithLocalPath(modFullPath),
 		downloader.WithSource(*s),
 		downloader.WithLogWriter(rv.LogWriter),
 		downloader.WithSettings(*rv.Settings),
 		downloader.WithCredsClient(credCli),
-		downloader.WithCachePath(rv.CachePath),
+		downloader.WithCachePath(cacheFullPath),
 		downloader.WithEnableCache(rv.EnableCache),
 		downloader.WithInsecureSkipTLSverify(rv.InsecureSkipTLSverify),
 	))
@@ -197,14 +223,14 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		return err
 	}
 	if !s.ModSpec.IsNil() {
-		modPath, err = utils.FindPackage(modPath, s.ModSpec.Name)
+		modFullPath, err = utils.FindPackage(modFullPath, s.ModSpec.Name)
 		if err != nil {
 			return err
 		}
 	}
 
 	kclPkg, err := pkg.LoadKclPkgWithOpts(
-		pkg.WithPath(modPath),
+		pkg.WithPath(modFullPath),
 		pkg.WithSettings(rv.Settings),
 	)
 	if err != nil {

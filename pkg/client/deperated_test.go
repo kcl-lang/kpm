@@ -42,7 +42,7 @@ func TestRunWithNoSumCheck(t *testing.T) {
 	}()
 }
 
-func TestRunWithGitPackage(t *testing.T) {
+func testRunWithGitPackage(t *testing.T) {
 	pkgPath := getTestDir("test_run_git_package")
 
 	kpmcli, err := NewKpmClient()
@@ -84,7 +84,7 @@ func testRunWithOciDownloader(t *testing.T) {
 	assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
 }
 
-func TestRunGit(t *testing.T) {
+func testRunGit(t *testing.T) {
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
 
@@ -107,7 +107,7 @@ func TestRunGit(t *testing.T) {
 	assert.Equal(t, utils.RmNewline(string(bytes)), utils.RmNewline(string(resultStr)))
 }
 
-func TestRunOciWithSettingsFile(t *testing.T) {
+func testRunOciWithSettingsFile(t *testing.T) {
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
 	kpmcli.SetLogWriter(nil)
