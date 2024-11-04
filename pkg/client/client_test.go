@@ -55,7 +55,7 @@ func initTestDir(subDir string) string {
 }
 
 func TestWithGlobalLock(t *testing.T) {
-	test.RunTestWithGlobalLock(t, "TestUpdateWithKclMod", TestUpdateWithKclMod)
+	test.RunTestWithGlobalLock(t, "TestUpdateWithKclMod", testUpdateWithKclMod)
 	test.RunTestWithGlobalLock(t, "TestUpdateWithKclModlock", testUpdateWithKclModlock)
 	test.RunTestWithGlobalLock(t, "TestUpdateWithNoSumCheck", testUpdateWithNoSumCheck)
 	test.RunTestWithGlobalLock(t, "TestAddWithDiffVersionNoSumCheck", testAddWithDiffVersionNoSumCheck)
@@ -1077,7 +1077,7 @@ func TestGetReleasesFromSource(t *testing.T) {
 	assert.Equal(t, releasesVersions[:5], []string{"1.14", "1.14.1", "1.15", "1.15.1", "1.16"})
 }
 
-func TestUpdateWithKclMod(t *testing.T) {
+func testUpdateWithKclMod(t *testing.T) {
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
 
