@@ -82,7 +82,7 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestDownloadGitWithPackage", testDownloadGitWithPackage)
 	test.RunTestWithGlobalLock(t, "TestModandLockFilesWithGitPackageDownload", testModandLockFilesWithGitPackageDownload)
 	test.RunTestWithGlobalLock(t, "TestDependencyGraph", testDependencyGraph)
-	test.RunTestWithGlobalLock(t, "testAddWithModSpec", TestAddWithModSpec)
+	test.RunTestWithGlobalLock(t, "testAddWithModSpec", testAddWithModSpec)
 }
 
 // TestDownloadOci test download from oci registry.
