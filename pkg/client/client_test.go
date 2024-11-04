@@ -216,6 +216,34 @@ func testModandLockFilesWithGitPackageDownload(t *testing.T) {
 		testPkgPath = filepath.Join(testPkgPath, "test_pkg")
 	}
 
+	testPkgPathMod := filepath.Join(testPkgPath, "kcl.mod")
+	testPkgPathModBk := filepath.Join(testPkgPath, "kcl.mod.bk")
+	testPkgPathModExpect := filepath.Join(testPkgPath, "expect.mod")
+	testPkgPathModLock := filepath.Join(testPkgPath, "kcl.mod.lock")
+	testPkgPathModLockBk := filepath.Join(testPkgPath, "kcl.mod.lock.bk")
+	testPkgPathModLockExpect := filepath.Join(testPkgPath, "expect.mod.lock")
+
+	if !utils.DirExists(testPkgPathMod) {
+		err := copy.Copy(testPkgPathModBk, testPkgPathMod)
+		assert.Equal(t, err, nil)
+	}
+
+	if !utils.DirExists(testPkgPathModLock) {
+		err := copy.Copy(testPkgPathModLockBk, testPkgPathModLock)
+		assert.Equal(t, err, nil)
+	}
+
+	defer func() {
+		err := os.RemoveAll(testPkgPathMod)
+		if err != nil {
+			t.Errorf("Failed to remove directory: %v", err)
+		}
+		err = os.RemoveAll(testPkgPathModLock)
+		if err != nil {
+			t.Errorf("Failed to remove directory: %v", err)
+		}
+	}()
+
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
 
@@ -235,11 +263,6 @@ func testModandLockFilesWithGitPackageDownload(t *testing.T) {
 
 	_, err = kpmcli.AddDepWithOpts(kclPkg, &opts)
 	assert.Equal(t, err, nil)
-
-	testPkgPathMod := filepath.Join(testPkgPath, "kcl.mod")
-	testPkgPathModExpect := filepath.Join(testPkgPath, "expect.mod")
-	testPkgPathModLock := filepath.Join(testPkgPath, "kcl.mod.lock")
-	testPkgPathModLockExpect := filepath.Join(testPkgPath, "expect.mod.lock")
 
 	modContent, err := os.ReadFile(testPkgPathMod)
 	assert.Equal(t, err, nil)
