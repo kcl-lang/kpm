@@ -129,7 +129,7 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 	// For Oci, the latest tag
 	// For Git, the main branch
 	if (s.Oci != nil && s.Oci.NoRef()) || (s.Git != nil && s.Git.NoRef()) {
-		latest, err := rv.Downloader.LatestVersion(*downloader.NewDownloadOptions(
+		latest, err := rv.Downloader.LatestVersion(downloader.NewDownloadOptions(
 			downloader.WithSource(*s),
 			downloader.WithLogWriter(rv.LogWriter),
 			downloader.WithSettings(*rv.Settings),
@@ -182,7 +182,7 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		return err
 	}
 
-	err = rv.Downloader.Download(*downloader.NewDownloadOptions(
+	err = rv.Downloader.Download(downloader.NewDownloadOptions(
 		downloader.WithLocalPath(modPath),
 		downloader.WithSource(*s),
 		downloader.WithLogWriter(rv.LogWriter),

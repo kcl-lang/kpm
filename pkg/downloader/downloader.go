@@ -100,14 +100,14 @@ func NewDownloadOptions(opts ...Option) *DownloadOptions {
 
 // Downloader is the interface for downloading a package.
 type Downloader interface {
-	Download(opts DownloadOptions) error
+	Download(opts *DownloadOptions) error
 	// Get the latest version of the remote source
 	// For the git source, it will return the latest commit
 	// For the OCI source, it will return the latest tag
-	LatestVersion(opts DownloadOptions) (string, error)
+	LatestVersion(opts *DownloadOptions) (string, error)
 }
 
-func (d *DepDownloader) LatestVersion(opts DownloadOptions) (string, error) {
+func (d *DepDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
 	if opts.Source.Oci != nil {
 		if d.OciDownloader == nil {
 			d.OciDownloader = &OciDownloader{}
@@ -135,7 +135,7 @@ type DepDownloader struct {
 // GitDownloader is the downloader for the git source.
 type GitDownloader struct{}
 
-func (d *GitDownloader) LatestVersion(opts DownloadOptions) (string, error) {
+func (d *GitDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
 	// TODO：supports fetch the latest commit from the git bare repo,
 	// after totally transfer to the new storage.
 	return "main", nil
@@ -146,7 +146,7 @@ type OciDownloader struct {
 	Platform string
 }
 
-func (d *OciDownloader) LatestVersion(opts DownloadOptions) (string, error) {
+func (d *OciDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
 	// download the package from the OCI registry
 	ociSource := opts.Source.Oci
 	if ociSource == nil {
@@ -190,7 +190,7 @@ func NewOciDownloader(platform string) *DepDownloader {
 	}
 }
 
-func (d *DepDownloader) Download(opts DownloadOptions) error {
+func (d *DepDownloader) Download(opts *DownloadOptions) error {
 
 	// create a tmp dir to download the oci package.
 	tmpDir, err := os.MkdirTemp("", "")
@@ -283,7 +283,7 @@ type Platform struct {
 	Platform     *v1.Platform
 }
 
-func (d *OciDownloader) Download(opts DownloadOptions) error {
+func (d *OciDownloader) Download(opts *DownloadOptions) error {
 	// download the package from the OCI registry
 	ociSource := opts.Source.Oci
 	if ociSource == nil {
@@ -416,7 +416,7 @@ func (d *OciDownloader) Download(opts DownloadOptions) error {
 	return err
 }
 
-func (d *GitDownloader) Download(opts DownloadOptions) error {
+func (d *GitDownloader) Download(opts *DownloadOptions) error {
 	gitSource := opts.Source.Git
 	if gitSource == nil {
 		return errors.New("git source is nil")
