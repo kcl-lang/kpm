@@ -145,6 +145,15 @@ func (c *KpmClient) Add(options ...AddOption) error {
 		// If the dependency is remote, the visitor will download it to the local.
 		// If the dependency is already in local cache, the visitor will not download it again.
 		err = visitor.Visit(fullSouce, func(depPkg *pkg.KclPkg) error {
+			var modSpec *downloader.ModSpec
+			if depSource.ModSpec.IsNil() {
+				modSpec = &downloader.ModSpec{
+					Name:    depPkg.ModFile.Pkg.Name,
+					Version: depPkg.ModFile.Pkg.Version,
+				}
+				depSource.ModSpec = modSpec
+			}
+
 			dep := pkg.Dependency{
 				Name:          depPkg.ModFile.Pkg.Name,
 				FullName:      depPkg.GetPkgFullName(),

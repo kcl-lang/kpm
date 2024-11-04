@@ -761,7 +761,7 @@ func (c *KpmClient) downloadPkg(options ...downloader.Option) (*pkg.KclPkg, erro
 		return nil, err
 	}
 
-	err = c.DepDownloader.Download(*downloader.NewDownloadOptions(
+	err = c.DepDownloader.Download(downloader.NewDownloadOptions(
 		downloader.WithLocalPath(tmpDir),
 		downloader.WithSource(opts.Source),
 		downloader.WithLogWriter(c.GetLogWriter()),
@@ -810,7 +810,7 @@ func (c *KpmClient) downloadPkg(options ...downloader.Option) (*pkg.KclPkg, erro
 // Download will download the dependency to the local path.
 func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*pkg.Dependency, error) {
 	if dep.Source.Git != nil {
-		err := c.DepDownloader.Download(*downloader.NewDownloadOptions(
+		err := c.DepDownloader.Download(downloader.NewDownloadOptions(
 			downloader.WithLocalPath(localPath),
 			downloader.WithSource(dep.Source),
 			downloader.WithLogWriter(c.logWriter),
@@ -882,7 +882,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		if err != nil {
 			return nil, err
 		}
-		err = c.DepDownloader.Download(*downloader.NewDownloadOptions(
+		err = c.DepDownloader.Download(downloader.NewDownloadOptions(
 			downloader.WithLocalPath(localPath),
 			downloader.WithSource(dep.Source),
 			downloader.WithLogWriter(c.logWriter),

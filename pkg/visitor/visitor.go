@@ -10,6 +10,7 @@ import (
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
+	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/utils"
 )
@@ -113,12 +114,50 @@ func NewRemoteVisitor(pv *PkgVisitor) *RemoteVisitor {
 // It will download the remote package to a temporary directory.
 // And the tmp directory will be cleaned after the visitFunc is executed.
 func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
+	var err error
 	if !s.IsRemote() {
 		return fmt.Errorf("source is not remote")
 	}
 
+	// 1. Load the credential file.
+	credCli, err := downloader.LoadCredentialFile(rv.Settings.CredentialsFile)
+	if err != nil {
+		return err
+	}
+
+	// 2. If the version is not specified, get the latest version.
+	// For Oci, the latest tag
+	// For Git, the main branch
+	if (s.Oci != nil && s.Oci.NoRef()) || (s.Git != nil && s.Git.NoRef()) {
+		latest, err := rv.Downloader.LatestVersion(downloader.NewDownloadOptions(
+			downloader.WithSource(*s),
+			downloader.WithLogWriter(rv.LogWriter),
+			downloader.WithSettings(*rv.Settings),
+			downloader.WithCredsClient(credCli),
+			downloader.WithInsecureSkipTLSverify(rv.InsecureSkipTLSverify),
+		))
+
+		if err != nil {
+			return err
+		}
+
+		reporter.ReportMsgTo(
+			fmt.Sprintf("the lastest version '%s' will be downloaded", latest),
+			rv.LogWriter,
+		)
+
+		if !s.ModSpec.IsNil() && s.ModSpec.Version == "" {
+			s.ModSpec.Version = latest
+		}
+
+		if s.Oci != nil {
+			s.Oci.Tag = latest
+		}
+		if s.Git != nil {
+			s.Git.Commit = latest
+		}
+	}
 	var modPath string
-	var err error
 	if len(rv.VisitedSpace) != 0 {
 		modPath = filepath.Join(rv.VisitedSpace, s.LocalPath())
 	} else {
@@ -138,12 +177,12 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		}
 	}
 
-	credCli, err := downloader.LoadCredentialFile(rv.Settings.CredentialsFile)
+	credCli, err = downloader.LoadCredentialFile(rv.Settings.CredentialsFile)
 	if err != nil {
 		return err
 	}
 
-	err = rv.Downloader.Download(*downloader.NewDownloadOptions(
+	err = rv.Downloader.Download(downloader.NewDownloadOptions(
 		downloader.WithLocalPath(modPath),
 		downloader.WithSource(*s),
 		downloader.WithLogWriter(rv.LogWriter),
@@ -173,7 +212,9 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 	}
 
 	if !s.ModSpec.IsNil() {
-		if kclPkg.ModFile.Pkg.Version != s.ModSpec.Version {
+		if s.ModSpec.Version == "" {
+			s.ModSpec.Version = kclPkg.ModFile.Pkg.Version
+		} else if kclPkg.ModFile.Pkg.Version != s.ModSpec.Version {
 			return fmt.Errorf(
 				"version mismatch: %s != %s, version %s not found",
 				kclPkg.ModFile.Pkg.Version, s.ModSpec.Version, s.ModSpec.Version,

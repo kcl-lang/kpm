@@ -32,6 +32,26 @@ func testAddWithModSpec(t *testing.T) {
 			pkgSubPath: filepath.Join("local", "pkg"),
 			sourceUrl:  "../dep?mod=sub:0.0.1",
 		},
+		{
+			name:       "TestAddOciWithEmptyVersion",
+			pkgSubPath: "empty_version",
+			sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4&mod=subhelloworld",
+		},
+		{
+			name:       "TestAddOciWithNoSpec",
+			pkgSubPath: "no_spec",
+			sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4",
+		},
+		{
+			name:       "TestAddOciWithNoTag",
+			pkgSubPath: "no_oci_ref",
+			sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld",
+		},
+		{
+			name:       "TestAddGitWithNoTag",
+			pkgSubPath: "no_git_ref",
+			sourceUrl:  "git://github.com/kcl-lang/flask-demo-kcl-manifests.git",
+		},
 	}
 
 	for _, tt := range tests {

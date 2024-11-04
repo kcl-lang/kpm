@@ -37,7 +37,7 @@ func testOciDownloader(t *testing.T) {
 		Platform: "linux/amd64",
 	}
 
-	err := ociDownloader.Download(*NewDownloadOptions(
+	err := ociDownloader.Download(NewDownloadOptions(
 		WithSource(Source{
 			Oci: &Oci{
 				Reg:  "ghcr.io",
@@ -70,7 +70,7 @@ func testGitDownloader(t *testing.T) {
 		},
 	}
 
-	err := gitDownloader.Download(*NewDownloadOptions(
+	err := gitDownloader.Download(NewDownloadOptions(
 		WithSource(gitSource),
 		WithLocalPath(filepath.Join(path_git, "git", "checkout")),
 		WithCachePath(filepath.Join(path_git, "git", "db")),
