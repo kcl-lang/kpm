@@ -24,8 +24,14 @@ $current_dir/bin/kpm push
 
 cd "$current_dir"
 
-# Push the package k8s/1.17 to the registry
+# Push the package k8s/1.27 to the registry
 cd ./scripts/pkg_in_reg/ghcr.io/kcl-lang/k8s/1.27
+$current_dir/bin/kpm push
+
+cd "$current_dir"
+
+# Push the package k8s/1.31.2 to the registry
+cd ./scripts/pkg_in_reg/ghcr.io/kcl-lang/k8s/1.31.2
 $current_dir/bin/kpm push
 
 cd "$current_dir"
