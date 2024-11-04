@@ -11,7 +11,7 @@ import (
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
-func testAddWithModSpec(t *testing.T) {
+func TestAddWithModSpec(t *testing.T) {
 	tests := []struct {
 		name       string
 		pkgSubPath string
@@ -31,6 +31,21 @@ func testAddWithModSpec(t *testing.T) {
 			name:       "TestAddLocalWithModSpec",
 			pkgSubPath: filepath.Join("local", "pkg"),
 			sourceUrl:  "../dep?mod=sub:0.0.1",
+		},
+		{
+			name:       "TestAddOciWithEmptyVersion",
+			pkgSubPath: "empty_version",
+			sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4&mod=subhelloworld",
+		},
+		{
+			name:       "TestAddOciWithNoSpec",
+			pkgSubPath: "no_spec",
+			sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4",
+		},
+		{
+			name:       "TestAddOciWithNoTag",
+			pkgSubPath: "no_tag",
+			sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld",
 		},
 	}
 

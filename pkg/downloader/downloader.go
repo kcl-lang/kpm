@@ -101,6 +101,28 @@ func NewDownloadOptions(opts ...Option) *DownloadOptions {
 // Downloader is the interface for downloading a package.
 type Downloader interface {
 	Download(opts DownloadOptions) error
+	// Get the latest version of the remote source
+	// For the git source, it will return the latest commit
+	// For the OCI source, it will return the latest tag
+	LatestVersion(opts DownloadOptions) (string, error)
+}
+
+func (d *DepDownloader) LatestVersion(opts DownloadOptions) (string, error) {
+	if opts.Source.Oci != nil {
+		if d.OciDownloader == nil {
+			d.OciDownloader = &OciDownloader{}
+		}
+		return d.OciDownloader.LatestVersion(opts)
+	}
+
+	if opts.Source.Git != nil {
+		if d.GitDownloader == nil {
+			d.GitDownloader = &GitDownloader{}
+		}
+		return d.GitDownloader.LatestVersion(opts)
+	}
+
+	return "", errors.New("source is nil")
 }
 
 // DepDownloader is the downloader for the package.
@@ -113,9 +135,51 @@ type DepDownloader struct {
 // GitDownloader is the downloader for the git source.
 type GitDownloader struct{}
 
+func (d *GitDownloader) LatestVersion(opts DownloadOptions) (string, error) {
+	// TODO：supports fetch the latest commit from the git bare repo,
+	// after totally transfer to the new storage.
+	return "main", nil
+}
+
 // OciDownloader is the downloader for the OCI source.
 type OciDownloader struct {
 	Platform string
+}
+
+func (d *OciDownloader) LatestVersion(opts DownloadOptions) (string, error) {
+	// download the package from the OCI registry
+	ociSource := opts.Source.Oci
+	if ociSource == nil {
+		return "", errors.New("oci source is nil")
+	}
+
+	repoPath := utils.JoinPath(ociSource.Reg, ociSource.Repo)
+
+	var cred *remoteauth.Credential
+	var err error
+	if opts.credsClient != nil {
+		cred, err = opts.credsClient.Credential(ociSource.Reg)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		cred = &remoteauth.Credential{}
+	}
+
+	ociCli, err := oci.NewOciClientWithOpts(
+		oci.WithCredential(cred),
+		oci.WithRepoPath(repoPath),
+		oci.WithSettings(&opts.Settings),
+		oci.WithInsecureSkipTLSverify(opts.InsecureSkipTLSverify),
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	ociCli.PullOciOptions.Platform = d.Platform
+
+	return ociCli.TheLatestTag()
 }
 
 func NewOciDownloader(platform string) *DepDownloader {
@@ -143,7 +207,10 @@ func (d *DepDownloader) Download(opts DownloadOptions) error {
 	cacheFullPath := opts.CachePath
 	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok && opts.EnableCache {
 		cacheFullPath = filepath.Join(opts.CachePath, opts.Source.LocalPath())
-		if utils.DirExists(cacheFullPath) && utils.DirExists(filepath.Join(cacheFullPath, constants.KCL_MOD)) {
+		if utils.DirExists(cacheFullPath) && utils.DirExists(filepath.Join(cacheFullPath, constants.KCL_MOD)) &&
+			// If the version in modspec is empty, meanings the latest version is needed.
+			// The latest version should be requested first and the cache should be updated.
+			((opts.Source.ModSpec != nil && opts.Source.ModSpec.Version != "") || opts.Source.ModSpec == nil) {
 			// copy the cache to the local path
 			if cacheFullPath != opts.LocalPath {
 				err := copy.Copy(cacheFullPath, opts.LocalPath)

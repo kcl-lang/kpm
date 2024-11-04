@@ -108,6 +108,7 @@ func (dr *DepsResolver) Resolve(options ...ResolveOption) error {
 				InsecureSkipTLSverify: dr.InsecureSkipTLSverify,
 				EnableCache:           opts.EnableCache,
 				CachePath:             cachePath,
+				VisitedSpace:          cachePath,
 			}, nil
 		} else if source.IsLocalTarPath() || source.IsLocalTgzPath() {
 			return visitor.NewArchiveVisitor(pkgVisitor), nil

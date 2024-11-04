@@ -55,7 +55,7 @@ func initTestDir(subDir string) string {
 }
 
 func TestWithGlobalLock(t *testing.T) {
-	test.RunTestWithGlobalLock(t, "TestUpdateWithKclMod", testUpdateWithKclMod)
+	test.RunTestWithGlobalLock(t, "TestUpdateWithKclMod", TestUpdateWithKclMod)
 	test.RunTestWithGlobalLock(t, "TestUpdateWithKclModlock", testUpdateWithKclModlock)
 	test.RunTestWithGlobalLock(t, "TestUpdateWithNoSumCheck", testUpdateWithNoSumCheck)
 	test.RunTestWithGlobalLock(t, "TestAddWithDiffVersionNoSumCheck", testAddWithDiffVersionNoSumCheck)
@@ -82,7 +82,7 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestDownloadGitWithPackage", testDownloadGitWithPackage)
 	test.RunTestWithGlobalLock(t, "TestModandLockFilesWithGitPackageDownload", testModandLockFilesWithGitPackageDownload)
 	test.RunTestWithGlobalLock(t, "TestDependencyGraph", testDependencyGraph)
-	test.RunTestWithGlobalLock(t, "testAddWithModSpec", testAddWithModSpec)
+	test.RunTestWithGlobalLock(t, "testAddWithModSpec", TestAddWithModSpec)
 }
 
 // TestDownloadOci test download from oci registry.
@@ -1077,7 +1077,7 @@ func TestGetReleasesFromSource(t *testing.T) {
 	assert.Equal(t, releasesVersions[:5], []string{"1.14", "1.14.1", "1.15", "1.15.1", "1.16"})
 }
 
-func testUpdateWithKclMod(t *testing.T) {
+func TestUpdateWithKclMod(t *testing.T) {
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
 
