@@ -11,7 +11,7 @@ import (
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
-func testAddWithModSpec(t *testing.T) {
+func TestAddWithModSpec(t *testing.T) {
 	tests := []struct {
 		name       string
 		pkgSubPath string
@@ -44,8 +44,13 @@ func testAddWithModSpec(t *testing.T) {
 		},
 		{
 			name:       "TestAddOciWithNoTag",
-			pkgSubPath: "no_tag",
+			pkgSubPath: "no_oci_ref",
 			sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld",
+		},
+		{
+			name:       "TestAddGitWithNoTag",
+			pkgSubPath: "no_git_ref",
+			sourceUrl:  "git://github.com/kcl-lang/flask-demo-kcl-manifests.git",
 		},
 	}
 

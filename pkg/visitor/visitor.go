@@ -154,7 +154,7 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 			s.Oci.Tag = latest
 		}
 		if s.Git != nil {
-			s.Git.Branch = latest
+			s.Git.Commit = latest
 		}
 	}
 	var modPath string

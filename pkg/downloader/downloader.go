@@ -138,7 +138,41 @@ type GitDownloader struct{}
 func (d *GitDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
 	// TODO：supports fetch the latest commit from the git bare repo,
 	// after totally transfer to the new storage.
-	return "main", nil
+	// refer to cargo: https://github.com/rust-lang/cargo/blob/3dedb85a25604bdbbb8d3bf4b03162961a4facd0/crates/cargo-util-schemas/src/core/source_kind.rs#L133
+	var err error
+	tmp, err := os.MkdirTemp("", "")
+	if err != nil {
+		return "", err
+	}
+	tmp = filepath.Join(tmp, constants.GitScheme)
+
+	defer func() {
+		err = os.RemoveAll(tmp)
+	}()
+
+	repo, err := git.CloneWithOpts(
+		git.WithCommit(opts.Source.Commit),
+		git.WithBranch(opts.Source.Branch),
+		git.WithTag(opts.Source.Git.Tag),
+		git.WithRepoURL(opts.Source.Git.Url),
+		git.WithLocalPath(tmp),
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	ref, err := repo.Head()
+	if err != nil {
+		return "", err
+	}
+
+	commit, err := repo.CommitObject(ref.Hash())
+	if err != nil {
+		return "", err
+	}
+
+	return commit.Hash.String()[:7], nil
 }
 
 // OciDownloader is the downloader for the OCI source.
