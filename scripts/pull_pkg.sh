@@ -27,6 +27,10 @@ if [ ! -d "./ghcr.io/kcl-lang/k8s/1.27" ]; then
   $current_dir/bin/kpm pull k8s:1.27
 fi
 
+if [ ! -d "./ghcr.io/kcl-lang/k8s/1.31.2" ]; then
+  $current_dir/bin/kpm pull k8s:1.31.2
+fi
+
 if [ ! -d "./ghcr.io/kcl-lang/helloworld/0.1.1" ]; then
   $current_dir/bin/kpm pull helloworld:0.1.1
 fi
