@@ -205,9 +205,6 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 +			Oci: dep.Source.Oci,
 +		},
 +	}
-+	if tmpDep.Source.Oci == nil {
-+		tmpDep.Source.Oci = dep.Source.Registry.Oci
-+	}
 +
 +	tmpKclPkg := pkg.KclPkg{
 +		HomePath: dep.LocalFullPath,
@@ -220,7 +217,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 +	}
 +
 +	if err := c.DepChecker.Check(tmpKclPkg); err != nil {
-+		return reporter.NewErrorEvent(reporter.InvalidKclPkg, err, fmt.Sprintf("%s package does not match the original kcl package", tmpKclPkg.GetPkgFullName()))
++		return reporter.NewErrorEvent(reporter.InvalidKclPkg, err, fmt.Sprintf("%s package does not match the original kcl package", dep.FullName))
 +	}
 +
 +	return nil
