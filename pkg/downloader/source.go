@@ -522,7 +522,8 @@ func (ps *ModSpec) FromString(registryStr string) error {
 	}
 
 	if parts[1] == "" {
-		return errors.New("invalid package reference")
+		ps.Name = parts[0]
+		return nil
 	}
 
 	ps.Name = parts[0]
