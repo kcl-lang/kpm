@@ -19,6 +19,7 @@ import (
 	"oras.land/oras-go/v2"
 	remoteauth "oras.land/oras-go/v2/registry/remote/auth"
 
+	"kcl-lang.io/kpm/pkg/checker"
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/env"
@@ -47,6 +48,8 @@ type KpmClient struct {
 	homePath string
 	// The settings of kpm loaded from the global configuration file.
 	settings settings.Settings
+	// The checker to validate dependencies
+	DepChecker *checker.DepChecker
 	// The flag of whether to check the checksum of the package and update kcl.mod.lock.
 	noSumCheck bool
 	// The flag of whether to skip the verification of TLS.
@@ -66,10 +69,16 @@ func NewKpmClient() (*KpmClient, error) {
 		return nil, err
 	}
 
+	depChecker := checker.NewDepChecker(
+		checker.WithCheckers(checker.NewIdentChecker(), checker.NewVersionChecker(), checker.NewSumChecker(
+			checker.WithSettings(*settings))),
+	)
+
 	return &KpmClient{
 		logWriter:     os.Stdout,
 		settings:      *settings,
 		homePath:      homePath,
+		DepChecker:    depChecker,
 		DepDownloader: &downloader.DepDownloader{},
 	}, nil
 }
@@ -897,15 +906,10 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		}
 
 		dep.FromKclPkg(dpkg)
-		dep.Sum, err = c.AcquireDepSum(*dep)
+
+		dep.Sum, err = utils.HashDir(localPath)
 		if err != nil {
 			return nil, err
-		}
-		if dep.Sum == "" {
-			dep.Sum, err = utils.HashDir(localPath)
-			if err != nil {
-				return nil, err
-			}
 		}
 
 		if dep.LocalFullPath == "" {
@@ -926,6 +930,9 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		// if err != nil {
 		//     return nil, err
 		// }
+		if err := c.ValidateDependency(dep); err != nil {
+			return nil, err
+		}
 	}
 
 	if dep.Source.Local != nil {
@@ -937,6 +944,24 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 	}
 
 	return dep, nil
+}
+
+func (c *KpmClient) ValidateDependency(dep *pkg.Dependency) error {
+	tmpKclPkg := pkg.KclPkg{
+		HomePath: dep.LocalFullPath,
+		Dependencies: pkg.Dependencies{Deps: func() *orderedmap.OrderedMap[string, pkg.Dependency] {
+			m := orderedmap.NewOrderedMap[string, pkg.Dependency]()
+			m.Set(dep.Name, *dep)
+			return m
+		}()},
+		NoSumCheck: c.GetNoSumCheck(),
+	}
+
+	if err := c.DepChecker.Check(tmpKclPkg); err != nil {
+		return reporter.NewErrorEvent(reporter.InvalidKclPkg, err, fmt.Sprintf("%s package does not match the original kcl package", dep.FullName))
+	}
+
+	return nil
 }
 
 // DownloadFromGit will download the dependency from the git repository.
@@ -1148,10 +1173,54 @@ func (c *KpmClient) PullFromOci(localPath, source, tag string) error {
 		)
 	}
 
+	if err := c.ValidatePkgPullFromOci(ociOpts, storagePath); err != nil {
+		return reporter.NewErrorEvent(
+			reporter.InvalidKclPkg,
+			err,
+			fmt.Sprintf("failed to validate kclPkg at %s", storagePath),
+		)
+	}
+
 	reporter.ReportMsgTo(
 		fmt.Sprintf("pulled '%s' in '%s' successfully", source, storagePath),
 		c.logWriter,
 	)
+	return nil
+}
+
+func (c *KpmClient) ValidatePkgPullFromOci(ociOpts *opt.OciOptions, storagePath string) error {
+	kclPkg, err := c.LoadPkgFromPath(storagePath)
+	if err != nil {
+		return reporter.NewErrorEvent(
+			reporter.FailedGetPkg,
+			err,
+			fmt.Sprintf("failed to load kclPkg at %v", storagePath),
+		)
+	}
+
+	dep := &pkg.Dependency{
+		Name: kclPkg.GetPkgName(),
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
+				Reg:  ociOpts.Reg,
+				Repo: ociOpts.Repo,
+				Tag:  ociOpts.Tag,
+			},
+		},
+	}
+
+	dep.FromKclPkg(kclPkg)
+	dep.Sum, err = utils.HashDir(storagePath)
+	if err != nil {
+		return reporter.NewErrorEvent(
+			reporter.FailedHashPkg,
+			err,
+			fmt.Sprintf("failed to hash kclPkg - %s", dep.Name),
+		)
+	}
+	if err := c.ValidateDependency(dep); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -1524,6 +1593,8 @@ func (c *KpmClient) pullTarFromOci(localPath string, ociOpts *opt.OciOptions) er
 	} else {
 		tagSelected = ociOpts.Tag
 	}
+
+	ociOpts.Tag = tagSelected
 
 	full_repo := utils.JoinPath(ociOpts.Reg, ociOpts.Repo)
 	reporter.ReportMsgTo(
