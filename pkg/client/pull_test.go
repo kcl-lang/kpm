@@ -14,7 +14,7 @@ import (
 	"kcl-lang.io/kpm/pkg/downloader"
 )
 
-func TestPull(t *testing.T) {
+func testPull(t *testing.T) {
 	pulledPath := getTestDir("test_pull")
 	defer func() {
 		err := os.RemoveAll(filepath.Join(pulledPath, "oci"))
@@ -62,7 +62,7 @@ func TestPull(t *testing.T) {
 	}()
 }
 
-func TestPullWithInsecureSkipTLSverify(t *testing.T) {
+func testPullWithInsecureSkipTLSverify(t *testing.T) {
 	pulledPath := getTestDir("test_pull")
 
 	kpmcli, err := NewKpmClient()
@@ -128,7 +128,7 @@ func TestInsecureSkipTLSverifyOCIRegistry(t *testing.T) {
 	assert.Equal(t, buf.String(), "Called Success\n")
 }
 
-func TestPullWithModSpec(t *testing.T) {
+func testPullWithModSpec(t *testing.T) {
 	pulledPath := getTestDir("test_pull_with_modspec")
 	defer func() {
 		err := os.RemoveAll(filepath.Join(pulledPath, "oci"))

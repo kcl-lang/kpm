@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	gogit "github.com/go-git/go-git/v5"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/otiai10/copy"
 	"kcl-lang.io/kpm/pkg/constants"
@@ -139,34 +140,68 @@ func (d *GitDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
 	// TODO：supports fetch the latest commit from the git bare repo,
 	// after totally transfer to the new storage.
 	// refer to cargo: https://github.com/rust-lang/cargo/blob/3dedb85a25604bdbbb8d3bf4b03162961a4facd0/crates/cargo-util-schemas/src/core/source_kind.rs#L133
-	var err error
-	tmp, err := os.MkdirTemp("", "")
-	if err != nil {
-		return "", err
+	var repo *gogit.Repository
+	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok && opts.EnableCache {
+		var err error
+		tmp, err := os.MkdirTemp("", "")
+		if err != nil {
+			return "", err
+		}
+		tmp = filepath.Join(tmp, constants.GitScheme)
+
+		defer func() {
+			err = os.RemoveAll(tmp)
+		}()
+
+		repo, err = git.CloneWithOpts(
+			git.WithCommit(opts.Source.Commit),
+			git.WithBranch(opts.Source.Branch),
+			git.WithTag(opts.Source.Git.Tag),
+			git.WithRepoURL(opts.Source.Git.Url),
+			git.WithLocalPath(tmp),
+		)
+
+		if err != nil {
+			return "", err
+		}
+	} else {
+		// Get the latest commit from the git repository cache
+		cacheFullPath := opts.CachePath
+		// If the cache bare git repository exists, fetch the latest commit from the cache.
+		if git.IsGitBareRepo(cacheFullPath) {
+			err := git.Fetch(cacheFullPath)
+			if err != nil {
+				return "", err
+			}
+			repo, err = gogit.PlainOpen(cacheFullPath)
+			if err != nil {
+				return "", err
+			}
+		} else {
+			// If not, clone the bare repository from the remote git repository, update the cache.
+			cloneOpts := []git.CloneOption{
+				git.WithCommit(opts.Source.Git.Commit),
+				git.WithBranch(opts.Source.Git.Branch),
+				git.WithTag(opts.Source.Git.Tag),
+			}
+
+			repo, err = git.CloneWithOpts(
+				append(
+					cloneOpts,
+					git.WithRepoURL(opts.Source.Git.Url),
+					git.WithLocalPath(cacheFullPath),
+					git.WithBare(true),
+				)...,
+			)
+			if err != nil {
+				return "", err
+			}
+		}
 	}
-	tmp = filepath.Join(tmp, constants.GitScheme)
-
-	defer func() {
-		err = os.RemoveAll(tmp)
-	}()
-
-	repo, err := git.CloneWithOpts(
-		git.WithCommit(opts.Source.Commit),
-		git.WithBranch(opts.Source.Branch),
-		git.WithTag(opts.Source.Git.Tag),
-		git.WithRepoURL(opts.Source.Git.Url),
-		git.WithLocalPath(tmp),
-	)
-
-	if err != nil {
-		return "", err
-	}
-
 	ref, err := repo.Head()
 	if err != nil {
 		return "", err
 	}
-
 	commit, err := repo.CommitObject(ref.Hash())
 	if err != nil {
 		return "", err
@@ -240,7 +275,6 @@ func (d *DepDownloader) Download(opts *DownloadOptions) error {
 	localPath := opts.LocalPath
 	cacheFullPath := opts.CachePath
 	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok && opts.EnableCache {
-		cacheFullPath = filepath.Join(opts.CachePath, opts.Source.LocalPath())
 		if utils.DirExists(cacheFullPath) && utils.DirExists(filepath.Join(cacheFullPath, constants.KCL_MOD)) &&
 			// If the version in modspec is empty, meanings the latest version is needed.
 			// The latest version should be requested first and the cache should be updated.
@@ -261,49 +295,56 @@ func (d *DepDownloader) Download(opts *DownloadOptions) error {
 		}
 	}
 
-	opts.LocalPath = tmpDir
-	// Dispatch the download to the specific downloader by package source.
-	if opts.Source.Oci != nil {
-		if d.OciDownloader == nil {
-			d.OciDownloader = &OciDownloader{}
-		}
-		err := d.OciDownloader.Download(opts)
-		if err != nil {
-			return err
-		}
-	}
-
-	if opts.Source.Git != nil {
-		if d.GitDownloader == nil {
-			d.GitDownloader = &GitDownloader{}
-		}
-		err := d.GitDownloader.Download(opts)
-		if err != nil {
-			return err
-		}
-	}
-
-	// rename the tmp dir to the local path.
-	if utils.DirExists(localPath) {
-		err := os.RemoveAll(localPath)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Move the downloaded package to the local path.
-	// On unix, after the move, the tmp dir will be removed.
-	err = utils.MoveOrCopy(tmpDir, localPath)
-	if err != nil {
-		return err
-	}
-
-	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok && opts.EnableCache {
-		// Enable the cache, update the dependency package to the cache path.
-		if cacheFullPath != localPath {
-			err := copy.Copy(localPath, cacheFullPath)
+	// If the dependency package is already exist,
+	// Skip the download process.
+	if utils.DirExists(localPath) &&
+		utils.DirExists(filepath.Join(localPath, constants.KCL_MOD)) {
+		return nil
+	} else {
+		opts.LocalPath = tmpDir
+		// Dispatch the download to the specific downloader by package source.
+		if opts.Source.Oci != nil {
+			if d.OciDownloader == nil {
+				d.OciDownloader = &OciDownloader{}
+			}
+			err := d.OciDownloader.Download(opts)
 			if err != nil {
 				return err
+			}
+		}
+
+		if opts.Source.Git != nil {
+			if d.GitDownloader == nil {
+				d.GitDownloader = &GitDownloader{}
+			}
+			err := d.GitDownloader.Download(opts)
+			if err != nil {
+				return err
+			}
+		}
+
+		// rename the tmp dir to the local path.
+		if utils.DirExists(localPath) {
+			err := os.RemoveAll(localPath)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Move the downloaded package to the local path.
+		// On unix, after the move, the tmp dir will be removed.
+		err = utils.MoveOrCopy(tmpDir, localPath)
+		if err != nil {
+			return err
+		}
+
+		if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok && opts.EnableCache {
+			// Enable the cache, update the dependency package to the cache path.
+			if cacheFullPath != localPath {
+				err := copy.Copy(localPath, cacheFullPath)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -368,12 +409,8 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 
 	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && ok {
 		if opts.EnableCache {
-			hash, err := ociSource.Hash()
-			if err != nil {
-				return err
-			}
-			cacheFullPath := filepath.Join(opts.CachePath, hash)
-			localFullPath := filepath.Join(opts.LocalPath, hash)
+			cacheFullPath := opts.CachePath
+			localFullPath := opts.LocalPath
 
 			if utils.DirExists(localFullPath) &&
 				utils.DirExists(filepath.Join(localFullPath, constants.KCL_MOD)) {
@@ -463,13 +500,8 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 
 	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && ok {
 		if opts.EnableCache {
-			hash, err := gitSource.Hash()
-			if err != nil {
-				return err
-			}
-
-			cacheFullPath := filepath.Join(opts.CachePath, hash)
-			localFullPath := filepath.Join(opts.LocalPath, hash)
+			cacheFullPath := opts.CachePath
+			localFullPath := opts.LocalPath
 			// Check if the package is already downloaded, if so, skip the download.
 			if utils.DirExists(localFullPath) &&
 				utils.DirExists(filepath.Join(localFullPath, constants.KCL_MOD)) {
@@ -486,29 +518,44 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 				// If failed to clone the bare repository from the cache path,
 				// clone the bare repository from the remote git repository, update the cache.
 				if err != nil {
-					_, err := git.CloneWithOpts(
+					// If the bare repository cache exists, fetch the latest commit from the cache.
+					if utils.DirExists(cacheFullPath) && git.IsGitBareRepo(cacheFullPath) {
+						err := git.Fetch(cacheFullPath)
+						if err != nil {
+							return err
+						}
+					} else {
+						// If not, clone the bare repository from the remote git repository, update the cache.
+						if utils.DirExists(cacheFullPath) {
+							err = os.Remove(cacheFullPath)
+							if err != nil {
+								return err
+							}
+						}
+						_, err := git.CloneWithOpts(
+							append(
+								cloneOpts,
+								git.WithRepoURL(gitSource.Url),
+								git.WithLocalPath(cacheFullPath),
+								git.WithBare(true),
+							)...,
+						)
+						if err != nil {
+							return err
+						}
+					}
+					// After cloning the bare repository,
+					// Clone the repository from the cache path to the local path.
+					_, err = git.CloneWithOpts(
 						append(
 							cloneOpts,
-							git.WithRepoURL(gitSource.Url),
-							git.WithLocalPath(cacheFullPath),
-							git.WithBare(true),
+							git.WithRepoURL(cacheFullPath),
+							git.WithLocalPath(localFullPath),
 						)...,
 					)
 					if err != nil {
 						return err
 					}
-				}
-				// After cloning the bare repository,
-				// Clone the repository from the cache path to the local path.
-				_, err = git.CloneWithOpts(
-					append(
-						cloneOpts,
-						git.WithRepoURL(cacheFullPath),
-						git.WithLocalPath(localFullPath),
-					)...,
-				)
-				if err != nil {
-					return err
 				}
 			}
 		}
