@@ -557,7 +557,8 @@ func (git *Git) GetValidGitReference() (string, error) {
 		nonEmptyRef = git.Branch
 	}
 
-	if nonEmptyFields != 1 {
+	// The latest commit id for git repo is supported.
+	if nonEmptyFields > 1 {
 		return "", errors.New("only one of branch, tag or commit is allowed")
 	}
 
