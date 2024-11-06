@@ -401,6 +401,14 @@ func (o *RunOptions) applyCompileOptions(source downloader.Source, kclPkg *pkg.K
 			sourcePath = filepath.Join(workDir, sourcePath)
 		}
 
+		var err error
+		if pkgSource.ModSpec != nil && pkgSource.ModSpec.Name != "" {
+			sourcePath, err = utils.FindPackage(sourcePath, pkgSource.ModSpec.Name)
+			if err != nil {
+				return false
+			}
+		}
+
 		pkgHome := kclPkg.HomePath
 
 		if !filepath.IsAbs(pkgHome) && !utils.IsModRelativePath(sourcePath) {
@@ -479,6 +487,7 @@ func (o *RunOptions) getPkgSource() (*downloader.Source, error) {
 	workDir := o.WorkDir
 
 	var pkgSource *downloader.Source
+	var modSpec *downloader.ModSpec
 	if len(o.Sources) == 0 {
 		workDir, err := filepath.Abs(workDir)
 		if err != nil {
@@ -497,6 +506,7 @@ func (o *RunOptions) getPkgSource() (*downloader.Source, error) {
 		for _, source := range o.Sources {
 			if pkgSource == nil {
 				pkgSource = source
+				modSpec = source.ModSpec
 				rootPath, err = source.FindRootPath()
 				if err != nil {
 					return nil, err
@@ -548,6 +558,7 @@ func (o *RunOptions) getPkgSource() (*downloader.Source, error) {
 			if err != nil {
 				return nil, err
 			}
+			pkgSource.ModSpec = modSpec
 		}
 	}
 

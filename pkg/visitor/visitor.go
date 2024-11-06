@@ -41,7 +41,7 @@ func (pv *PkgVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		return err
 	}
 
-	if !s.ModSpec.IsNil() {
+	if s.ModSpec != nil && s.ModSpec.Name != "" {
 		modPath, err = utils.FindPackage(modPath, s.ModSpec.Name)
 		if err != nil {
 			return err
@@ -120,6 +120,14 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		return fmt.Errorf("source is not remote")
 	}
 
+	if s.SpecOnly() {
+		s.Oci = &downloader.Oci{
+			Reg:  rv.Settings.DefaultOciRegistry(),
+			Repo: utils.JoinPath(rv.Settings.DefaultOciRepo(), s.ModSpec.Name),
+			Tag:  s.ModSpec.Version,
+		}
+	}
+
 	var cacheFullPath string
 	var modFullPath string
 
@@ -132,6 +140,15 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		if rv.EnableCache {
 			cacheFullPath = s.CachePath(filepath.Join(rv.CachePath, s.Type(), "cache"))
 		}
+	}
+
+	if !rv.EnableCache {
+		cacheFullPath, err = os.MkdirTemp("", "")
+		if err != nil {
+			return err
+		}
+
+		defer os.RemoveAll(cacheFullPath)
 	}
 
 	// 1. Load the credential file.

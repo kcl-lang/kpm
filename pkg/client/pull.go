@@ -3,9 +3,11 @@ package client
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 
+	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/downloader"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -76,8 +78,17 @@ func (c *KpmClient) Pull(options ...PullOption) (*pkg.KclPkg, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	sourceUrl, err := url.Parse(sourceStr)
+	if err != nil {
+		return nil, err
+	}
+	queryParams := sourceUrl.Query()
+	queryParams.Del(constants.Mod)
+	sourceUrl.RawQuery = queryParams.Encode()
+
 	reporter.ReportMsgTo(
-		fmt.Sprintf("start to pull %s", sourceStr),
+		fmt.Sprintf("start to pull %s", sourceUrl.String()),
 		c.GetLogWriter(),
 	)
 

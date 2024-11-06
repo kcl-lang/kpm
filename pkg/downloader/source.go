@@ -443,7 +443,7 @@ func (source *Source) FromString(sourceStr string) error {
 	} else if sourceUrl.Scheme == constants.DefaultOciScheme {
 		source.ModSpec = &ModSpec{}
 		source.ModSpec.FromString(sourceUrl.String())
-	} else {
+	} else if sourceUrl.Path != "" {
 		source.Local = &Local{}
 		source.Local.FromString(sourceUrl.String())
 	}
