@@ -120,6 +120,7 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		return fmt.Errorf("source is not remote")
 	}
 
+	// For some sources with only the spec, the default registry and repo will be used.
 	if s.SpecOnly() {
 		s.Oci = &downloader.Oci{
 			Reg:  rv.Settings.DefaultOciRegistry(),
@@ -142,6 +143,8 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		}
 	}
 
+	// If the cache is not enabled,
+	// create a temporary directory to get the latest commit of git repo
 	if !rv.EnableCache {
 		cacheFullPath, err = os.MkdirTemp("", "")
 		if err != nil {

@@ -401,6 +401,8 @@ func (o *RunOptions) applyCompileOptions(source downloader.Source, kclPkg *pkg.K
 			sourcePath = filepath.Join(workDir, sourcePath)
 		}
 
+		// When determining whether the path in 'Source' is the same as homepath of 'KclPkg',
+		// use the subdirectories specified by 'ModSpec'
 		var err error
 		if pkgSource.ModSpec != nil && pkgSource.ModSpec.Name != "" {
 			sourcePath, err = utils.FindPackage(sourcePath, pkgSource.ModSpec.Name)
@@ -506,6 +508,8 @@ func (o *RunOptions) getPkgSource() (*downloader.Source, error) {
 		for _, source := range o.Sources {
 			if pkgSource == nil {
 				pkgSource = source
+				// If the root source is found,
+				// update the modSpec and rootPath.
 				modSpec = source.ModSpec
 				rootPath, err = source.FindRootPath()
 				if err != nil {

@@ -79,6 +79,8 @@ func (c *KpmClient) Pull(options ...PullOption) (*pkg.KclPkg, error) {
 		return nil, err
 	}
 
+	// Remove information about modspec from message
+	// to avoid escape symbols ':' in modspec.
 	sourceUrl, err := url.Parse(sourceStr)
 	if err != nil {
 		return nil, err
