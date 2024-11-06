@@ -23,21 +23,26 @@ func (ps *ModSpec) MarshalTOML() string {
 	return sb.String()
 }
 
-func (source *Source) MarshalTOML() string {
+func (source *Source) MarshalTOML(rename bool) string {
 	var sb strings.Builder
 	if source.SpecOnly() {
 		return source.ModSpec.MarshalTOML()
 	} else {
-		var pkgVersion string
+		var pkgSpec string
 		var tomlStr string
+
 		if source.ModSpec != nil && len(source.ModSpec.Version) > 0 {
-			pkgVersion = fmt.Sprintf(", version = %q", source.ModSpec.Version)
+			if rename {
+				pkgSpec = fmt.Sprintf(", package = %q, version = %q", source.ModSpec.Name, source.ModSpec.Version)
+			} else {
+				pkgSpec = fmt.Sprintf(", version = %q", source.ModSpec.Version)
+			}
 		}
 
 		if source.Git != nil {
 			tomlStr = source.Git.MarshalTOML()
 			if len(tomlStr) != 0 {
-				tomlStr = fmt.Sprintf(SOURCE_PATTERN, tomlStr+pkgVersion)
+				tomlStr = fmt.Sprintf(SOURCE_PATTERN, tomlStr+pkgSpec)
 			}
 		}
 
@@ -45,7 +50,7 @@ func (source *Source) MarshalTOML() string {
 			tomlStr = source.Oci.MarshalTOML()
 			if len(tomlStr) != 0 {
 				if len(source.Oci.Reg) != 0 && len(source.Oci.Repo) != 0 {
-					tomlStr = fmt.Sprintf(SOURCE_PATTERN, tomlStr+pkgVersion)
+					tomlStr = fmt.Sprintf(SOURCE_PATTERN, tomlStr+pkgSpec)
 				}
 			}
 		}
@@ -53,11 +58,11 @@ func (source *Source) MarshalTOML() string {
 		if source.Local != nil {
 			tomlStr = source.Local.MarshalTOML()
 			if len(tomlStr) != 0 {
-				tomlStr = fmt.Sprintf(SOURCE_PATTERN, tomlStr+pkgVersion)
+				tomlStr = fmt.Sprintf(SOURCE_PATTERN, tomlStr+pkgSpec)
 			}
 		}
 
-		if source.ModSpec != nil && len(source.ModSpec.Name) != 0 {
+		if source.ModSpec != nil && len(source.ModSpec.Name) != 0 && !rename {
 			sb.WriteString(fmt.Sprintf(DEP_PATTERN, source.ModSpec.Name, tomlStr))
 		} else {
 			sb.WriteString(tomlStr)
@@ -160,12 +165,17 @@ func (source *Source) UnmarshalModTOML(data interface{}) error {
 			source.Oci = &oci
 		}
 
+		pSpec := ModSpec{}
 		if v, ok := meta["version"].(string); ok {
-			pSpec := ModSpec{}
 			err := pSpec.UnmarshalModTOML(v)
 			if err != nil {
 				return err
 			}
+			source.ModSpec = &pSpec
+		}
+
+		if v, ok := meta["package"].(string); ok {
+			pSpec.Name = v
 			source.ModSpec = &pSpec
 		}
 	}

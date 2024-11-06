@@ -90,9 +90,13 @@ func (dep *Dependency) MarshalTOML() string {
 	var sb strings.Builder
 
 	if dep.Source.ModSpec != nil && dep.Source.ModSpec.Version != "" && dep.Source.ModSpec.Name != "" {
-		sb.WriteString(dep.Source.MarshalTOML())
+		if dep.Source.ModSpec.Name == dep.Name {
+			sb.WriteString(dep.Source.MarshalTOML(false))
+		} else {
+			sb.WriteString(fmt.Sprintf(DEP_PATTERN, dep.Name, dep.Source.MarshalTOML(true)))
+		}
 	} else {
-		sb.WriteString(fmt.Sprintf(DEP_PATTERN, dep.Name, dep.Source.MarshalTOML()))
+		sb.WriteString(fmt.Sprintf(DEP_PATTERN, dep.Name, dep.Source.MarshalTOML(false)))
 	}
 
 	return sb.String()
