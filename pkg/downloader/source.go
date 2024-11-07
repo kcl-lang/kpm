@@ -444,7 +444,9 @@ func (source *Source) FromString(sourceStr string) error {
 		source.ModSpec = &ModSpec{}
 		source.ModSpec.FromString(sourceUrl.String())
 		// There is a case where there is only 'ModSpec'
-	} else if sourceUrl.Path != "" {
+		// On winodws, the path url will be parsed as 'Opaque'
+		// On linux, the path url will be parsed as 'Path'
+	} else if sourceUrl.Path != "" || sourceUrl.Opaque != "" {
 		source.Local = &Local{}
 		source.Local.FromString(sourceUrl.String())
 	}
