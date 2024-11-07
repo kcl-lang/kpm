@@ -32,6 +32,23 @@ func WithAddPkgNameAlias(nameAlias string) AddOption {
 	}
 }
 
+func WithAddModSpec(modSpec *downloader.ModSpec) AddOption {
+	return func(opts *AddOptions) error {
+		if modSpec == nil {
+			return fmt.Errorf("modSpec cannot be nil")
+		}
+		if opts.Source == nil {
+			opts.Source = &downloader.Source{
+				ModSpec: modSpec,
+			}
+		} else {
+			opts.Source.ModSpec = modSpec
+		}
+
+		return nil
+	}
+}
+
 func WithAddSource(source *downloader.Source) AddOption {
 	return func(opts *AddOptions) error {
 		if source == nil {
