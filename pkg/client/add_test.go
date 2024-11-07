@@ -7,6 +7,7 @@ import (
 
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
+	"kcl-lang.io/kpm/pkg/downloader"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/utils"
 )
@@ -185,7 +186,11 @@ func TestAddRenameWithModSpec(t *testing.T) {
 
 	err = kpmcli.Add(
 		WithAddKclPkg(kpkg),
-		WithAddSourceUrl("oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4&mod=subhelloworld:0.0.1"),
+		WithAddSourceUrl("oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4"),
+		WithAddModSpec(&downloader.ModSpec{
+			Name:    "subhelloworld",
+			Version: "0.0.1",
+		}),
 		WithAlias("newpkg"),
 	)
 
