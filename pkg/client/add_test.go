@@ -186,7 +186,7 @@ func TestAddRenameWithModSpec(t *testing.T) {
 	err = kpmcli.Add(
 		WithAddKclPkg(kpkg),
 		WithAddSourceUrl("oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4&mod=subhelloworld:0.0.1"),
-		WithAddPkgNameAlias("newpkg"),
+		WithAlias("newpkg"),
 	)
 
 	if err != nil {
