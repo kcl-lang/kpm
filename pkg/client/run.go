@@ -89,6 +89,29 @@ type RunOptions struct {
 
 type RunOption func(*RunOptions) error
 
+func WithRunModSpec(modSpec *downloader.ModSpec) RunOption {
+	return func(ro *RunOptions) error {
+		if modSpec == nil {
+			return errors.New("modSpec cannot be nil")
+		}
+		if ro.Sources == nil {
+			ro.Sources = make([]*downloader.Source, 0)
+		}
+		if len(ro.Sources) > 1 {
+			return errors.New("only allows one package to be compiled at a time")
+		}
+		if len(ro.Sources) == 0 {
+			ro.Sources = append(ro.Sources, &downloader.Source{
+				ModSpec: modSpec,
+			})
+		} else {
+			ro.Sources[0].ModSpec = modSpec
+		}
+
+		return nil
+	}
+}
+
 // Use the another RunOptions to override the current RunOptions.
 func WithRunOptions(runOpts *RunOptions) RunOption {
 	return func(ro *RunOptions) error {

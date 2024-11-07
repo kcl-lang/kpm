@@ -3,11 +3,9 @@ package client
 import (
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 
-	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/downloader"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -24,6 +22,23 @@ type PullOptions struct {
 }
 
 type PullOption func(*PullOptions) error
+
+func WithPullModSpec(modSpec *downloader.ModSpec) PullOption {
+	return func(opts *PullOptions) error {
+		if modSpec == nil {
+			return errors.New("modSpec cannot be nil")
+		}
+		if opts.Source == nil {
+			opts.Source = &downloader.Source{
+				ModSpec: modSpec,
+			}
+		} else {
+			opts.Source.ModSpec = modSpec
+		}
+
+		return nil
+	}
+}
 
 func WithPullSourceUrl(sourceUrl string) PullOption {
 	return func(opts *PullOptions) error {
@@ -79,18 +94,8 @@ func (c *KpmClient) Pull(options ...PullOption) (*pkg.KclPkg, error) {
 		return nil, err
 	}
 
-	// Remove information about modspec from message
-	// to avoid escape symbols ':' in modspec.
-	sourceUrl, err := url.Parse(sourceStr)
-	if err != nil {
-		return nil, err
-	}
-	queryParams := sourceUrl.Query()
-	queryParams.Del(constants.Mod)
-	sourceUrl.RawQuery = queryParams.Encode()
-
 	reporter.ReportMsgTo(
-		fmt.Sprintf("start to pull %s", sourceUrl.String()),
+		fmt.Sprintf("start to pull %s", sourceStr),
 		c.GetLogWriter(),
 	)
 
