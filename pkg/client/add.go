@@ -19,7 +19,7 @@ type AddOptions struct {
 
 type AddOption func(*AddOptions) error
 
-func WithAddPkgNameAlias(nameAlias string) AddOption {
+func WithAlias(alias string) AddOption {
 	return func(opts *AddOptions) error {
 		if opts.Source == nil {
 			return fmt.Errorf("source cannot be nil")
@@ -27,7 +27,7 @@ func WithAddPkgNameAlias(nameAlias string) AddOption {
 		if opts.Source.ModSpec.IsNil() {
 			return fmt.Errorf("modSpec cannot be nil")
 		}
-		opts.Source.ModSpec.Alias = nameAlias
+		opts.Source.ModSpec.Alias = alias
 		return nil
 	}
 }
