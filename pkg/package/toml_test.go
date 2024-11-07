@@ -361,3 +361,21 @@ func TestInitEmptyPkg(t *testing.T) {
 	fmt.Printf("modfile: '%q'\n", got_data)
 	assert.Equal(t, expected_toml, got_data)
 }
+
+func TestUnMarshalRename(t *testing.T) {
+	modfile := ModFile{}
+	modfile.LoadModFile(filepath.Join(getTestDir("test_rename_pkg"), "kcl.mod"))
+	assert.Equal(t, modfile.Pkg.Name, "rename")
+	assert.Equal(t, modfile.Pkg.Version, "0.0.1")
+	assert.Equal(t, modfile.Pkg.Edition, "v0.10.0")
+	assert.Equal(t, modfile.Dependencies.Deps.Len(), 1)
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Name, "newpkg")
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).FullName, "newpkg_0.0.1")
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Version, "0.0.1")
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Source.ModSpec.Name, "subhelloworld")
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Source.ModSpec.Version, "0.0.1")
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Source.ModSpec.Alias, "newpkg")
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Oci.Reg, "ghcr.io")
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Oci.Repo, "kcl-lang/helloworld")
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Oci.Tag, "0.1.4")
+}

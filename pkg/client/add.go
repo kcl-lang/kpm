@@ -19,6 +19,19 @@ type AddOptions struct {
 
 type AddOption func(*AddOptions) error
 
+func WithAlias(alias string) AddOption {
+	return func(opts *AddOptions) error {
+		if opts.Source == nil {
+			return fmt.Errorf("source cannot be nil")
+		}
+		if opts.Source.ModSpec.IsNil() {
+			return fmt.Errorf("modSpec cannot be nil")
+		}
+		opts.Source.ModSpec.Alias = alias
+		return nil
+	}
+}
+
 func WithAddModSpec(modSpec *downloader.ModSpec) AddOption {
 	return func(opts *AddOptions) error {
 		if modSpec == nil {
@@ -146,8 +159,15 @@ func (c *KpmClient) Add(options ...AddOption) error {
 			depSource.ModSpec = modSpec
 		}
 
+		var depName string
+		if opts.Source.ModSpec.Alias != "" {
+			depName = opts.Source.ModSpec.Alias
+		} else {
+			depName = depPkg.ModFile.Pkg.Name
+		}
+
 		dep := pkg.Dependency{
-			Name:          depPkg.ModFile.Pkg.Name,
+			Name:          depName,
 			FullName:      depPkg.GetPkgFullName(),
 			Version:       depPkg.ModFile.Pkg.Version,
 			LocalFullPath: depPkg.HomePath,
