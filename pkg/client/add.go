@@ -13,16 +13,21 @@ import (
 type AddOptions struct {
 	// Source is the source of the package to be pulled.
 	// Including git, oci, local.
-	Source     *downloader.Source
-	KclPkg     *pkg.KclPkg
-	NewPkgName string
+	Source *downloader.Source
+	KclPkg *pkg.KclPkg
 }
 
 type AddOption func(*AddOptions) error
 
-func WithNewPkgName(newPkgName string) AddOption {
+func WithAddPkgNameAlias(nameAlias string) AddOption {
 	return func(opts *AddOptions) error {
-		opts.NewPkgName = newPkgName
+		if opts.Source == nil {
+			return fmt.Errorf("source cannot be nil")
+		}
+		if opts.Source.ModSpec.IsNil() {
+			return fmt.Errorf("modSpec cannot be nil")
+		}
+		opts.Source.ModSpec.Alias = nameAlias
 		return nil
 	}
 }
@@ -138,8 +143,8 @@ func (c *KpmClient) Add(options ...AddOption) error {
 		}
 
 		var depName string
-		if opts.NewPkgName != "" {
-			depName = opts.NewPkgName
+		if opts.Source.ModSpec.Alias != "" {
+			depName = opts.Source.ModSpec.Alias
 		} else {
 			depName = depPkg.ModFile.Pkg.Name
 		}

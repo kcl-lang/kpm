@@ -16,14 +16,18 @@ const SPEC_PATTERN = "%s = %q"
 func (ps *ModSpec) MarshalTOML() string {
 	var sb strings.Builder
 	if ps != nil && len(ps.Version) != 0 && len(ps.Name) != 0 {
-		sb.WriteString(fmt.Sprintf(SPEC_PATTERN, ps.Name, ps.Version))
+		if len(ps.Alias) == 0 {
+			sb.WriteString(ps.Version)
+		} else {
+			sb.WriteString(fmt.Sprintf(SOURCE_PATTERN, fmt.Sprintf("package = %q, version = %q", ps.Name, ps.Version)))
+		}
 		return sb.String()
 	}
 
 	return sb.String()
 }
 
-func (source *Source) MarshalTOML(rename bool) string {
+func (source *Source) MarshalTOML() string {
 	var sb strings.Builder
 	if source.SpecOnly() {
 		return source.ModSpec.MarshalTOML()
@@ -32,7 +36,7 @@ func (source *Source) MarshalTOML(rename bool) string {
 		var tomlStr string
 
 		if source.ModSpec != nil && len(source.ModSpec.Version) > 0 {
-			if rename {
+			if source.ModSpec.Alias != "" {
 				pkgSpec = fmt.Sprintf(", package = %q, version = %q", source.ModSpec.Name, source.ModSpec.Version)
 			} else {
 				pkgSpec = fmt.Sprintf(", version = %q", source.ModSpec.Version)
@@ -62,11 +66,7 @@ func (source *Source) MarshalTOML(rename bool) string {
 			}
 		}
 
-		if source.ModSpec != nil && len(source.ModSpec.Name) != 0 && !rename {
-			sb.WriteString(fmt.Sprintf(DEP_PATTERN, source.ModSpec.Name, tomlStr))
-		} else {
-			sb.WriteString(tomlStr)
-		}
+		sb.WriteString(tomlStr)
 	}
 
 	return sb.String()

@@ -89,16 +89,14 @@ const DEP_PATTERN = "%s = %s"
 func (dep *Dependency) MarshalTOML() string {
 	var sb strings.Builder
 
-	if dep.Source.ModSpec != nil && dep.Source.ModSpec.Version != "" && dep.Source.ModSpec.Name != "" {
-		if dep.Source.ModSpec.Name == dep.Name {
-			sb.WriteString(dep.Source.MarshalTOML(false))
-		} else {
-			sb.WriteString(fmt.Sprintf(DEP_PATTERN, dep.Name, dep.Source.MarshalTOML(true)))
+	depName := dep.Name
+	if !dep.Source.ModSpec.IsNil() {
+		if dep.Source.ModSpec.Alias != "" {
+			depName = dep.Source.ModSpec.Alias
 		}
-	} else {
-		sb.WriteString(fmt.Sprintf(DEP_PATTERN, dep.Name, dep.Source.MarshalTOML(false)))
 	}
 
+	sb.WriteString(fmt.Sprintf(DEP_PATTERN, depName, dep.Source.MarshalTOML()))
 	return sb.String()
 }
 
@@ -234,6 +232,11 @@ func (deps *Dependencies) UnmarshalModTOML(data interface{}) error {
 		err := dep.UnmarshalModTOML(v)
 		if err != nil {
 			return err
+		}
+		if !dep.Source.ModSpec.IsNil() {
+			if dep.Source.ModSpec.Name != dep.Name {
+				dep.Source.ModSpec.Alias = dep.Name
+			}
 		}
 		deps.Deps.Set(k, dep)
 	}

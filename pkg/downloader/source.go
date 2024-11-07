@@ -20,6 +20,7 @@ import (
 type ModSpec struct {
 	Name    string
 	Version string
+	Alias   string
 }
 
 // IsNil returns true if the ModSpec is nil.

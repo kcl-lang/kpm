@@ -374,6 +374,7 @@ func TestUnMarshalRename(t *testing.T) {
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Version, "0.0.1")
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Source.ModSpec.Name, "subhelloworld")
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Source.ModSpec.Version, "0.0.1")
+	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Source.ModSpec.Alias, "newpkg")
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Oci.Reg, "ghcr.io")
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Oci.Repo, "kcl-lang/helloworld")
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Oci.Tag, "0.1.4")
