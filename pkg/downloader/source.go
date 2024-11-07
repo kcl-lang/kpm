@@ -331,17 +331,6 @@ func (source *Source) ToString() (string, error) {
 			return "", err
 		}
 	}
-	if source.ModSpec != nil {
-		url, err := url.Parse(sourceStr)
-		if err != nil {
-			return "", err
-		}
-
-		q := url.Query()
-		q.Set(constants.Mod, source.ModSpec.ToString())
-		url.RawQuery = q.Encode()
-		sourceStr = url.String()
-	}
 
 	return sourceStr, nil
 }
