@@ -17,7 +17,7 @@ func (ps *ModSpec) MarshalTOML() string {
 	var sb strings.Builder
 	if ps != nil && len(ps.Version) != 0 && len(ps.Name) != 0 {
 		if len(ps.Alias) == 0 {
-			sb.WriteString(ps.Version)
+			sb.WriteString(fmt.Sprintf("%q", ps.Version))
 		} else {
 			sb.WriteString(fmt.Sprintf(SOURCE_PATTERN, fmt.Sprintf("package = %q, version = %q", ps.Name, ps.Version)))
 		}
