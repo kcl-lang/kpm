@@ -89,6 +89,29 @@ type RunOptions struct {
 
 type RunOption func(*RunOptions) error
 
+func WithRunModSpec(modSpec *downloader.ModSpec) RunOption {
+	return func(ro *RunOptions) error {
+		if modSpec == nil {
+			return errors.New("modSpec cannot be nil")
+		}
+		if ro.Sources == nil {
+			ro.Sources = make([]*downloader.Source, 0)
+		}
+		if len(ro.Sources) > 1 {
+			return errors.New("only allows one package to be compiled at a time")
+		}
+		if len(ro.Sources) == 0 {
+			ro.Sources = append(ro.Sources, &downloader.Source{
+				ModSpec: modSpec,
+			})
+		} else {
+			ro.Sources[0].ModSpec = modSpec
+		}
+
+		return nil
+	}
+}
+
 // Use the another RunOptions to override the current RunOptions.
 func WithRunOptions(runOpts *RunOptions) RunOption {
 	return func(ro *RunOptions) error {
@@ -401,6 +424,16 @@ func (o *RunOptions) applyCompileOptions(source downloader.Source, kclPkg *pkg.K
 			sourcePath = filepath.Join(workDir, sourcePath)
 		}
 
+		// When determining whether the path in 'Source' is the same as homepath of 'KclPkg',
+		// use the subdirectories specified by 'ModSpec'
+		var err error
+		if pkgSource.ModSpec != nil && pkgSource.ModSpec.Name != "" {
+			sourcePath, err = utils.FindPackage(sourcePath, pkgSource.ModSpec.Name)
+			if err != nil {
+				return false
+			}
+		}
+
 		pkgHome := kclPkg.HomePath
 
 		if !filepath.IsAbs(pkgHome) && !utils.IsModRelativePath(sourcePath) {
@@ -479,6 +512,7 @@ func (o *RunOptions) getPkgSource() (*downloader.Source, error) {
 	workDir := o.WorkDir
 
 	var pkgSource *downloader.Source
+	var modSpec *downloader.ModSpec
 	if len(o.Sources) == 0 {
 		workDir, err := filepath.Abs(workDir)
 		if err != nil {
@@ -497,6 +531,9 @@ func (o *RunOptions) getPkgSource() (*downloader.Source, error) {
 		for _, source := range o.Sources {
 			if pkgSource == nil {
 				pkgSource = source
+				// If the root source is found,
+				// update the modSpec and rootPath.
+				modSpec = source.ModSpec
 				rootPath, err = source.FindRootPath()
 				if err != nil {
 					return nil, err
@@ -548,6 +585,7 @@ func (o *RunOptions) getPkgSource() (*downloader.Source, error) {
 			if err != nil {
 				return nil, err
 			}
+			pkgSource.ModSpec = modSpec
 		}
 	}
 

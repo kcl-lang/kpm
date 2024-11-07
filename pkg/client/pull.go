@@ -23,6 +23,23 @@ type PullOptions struct {
 
 type PullOption func(*PullOptions) error
 
+func WithPullModSpec(modSpec *downloader.ModSpec) PullOption {
+	return func(opts *PullOptions) error {
+		if modSpec == nil {
+			return errors.New("modSpec cannot be nil")
+		}
+		if opts.Source == nil {
+			opts.Source = &downloader.Source{
+				ModSpec: modSpec,
+			}
+		} else {
+			opts.Source.ModSpec = modSpec
+		}
+
+		return nil
+	}
+}
+
 func WithPullSourceUrl(sourceUrl string) PullOption {
 	return func(opts *PullOptions) error {
 		source, err := downloader.NewSourceFromStr(sourceUrl)
@@ -76,6 +93,7 @@ func (c *KpmClient) Pull(options ...PullOption) (*pkg.KclPkg, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	reporter.ReportMsgTo(
 		fmt.Sprintf("start to pull %s", sourceStr),
 		c.GetLogWriter(),

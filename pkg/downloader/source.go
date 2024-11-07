@@ -443,7 +443,10 @@ func (source *Source) FromString(sourceStr string) error {
 	} else if sourceUrl.Scheme == constants.DefaultOciScheme {
 		source.ModSpec = &ModSpec{}
 		source.ModSpec.FromString(sourceUrl.String())
-	} else {
+		// There is a case where there is only 'ModSpec'
+		// On winodws, the path url will be parsed as 'Opaque'
+		// On linux, the path url will be parsed as 'Path'
+	} else if sourceUrl.Path != "" || sourceUrl.Opaque != "" {
 		source.Local = &Local{}
 		source.Local.FromString(sourceUrl.String())
 	}
@@ -556,7 +559,8 @@ func (git *Git) GetValidGitReference() (string, error) {
 		nonEmptyRef = git.Branch
 	}
 
-	if nonEmptyFields != 1 {
+	// The latest commit id for git repo is supported.
+	if nonEmptyFields > 1 {
 		return "", errors.New("only one of branch, tag or commit is allowed")
 	}
 

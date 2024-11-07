@@ -13,54 +13,46 @@ import (
 type AddOptions struct {
 	// Source is the source of the package to be pulled.
 	// Including git, oci, local.
-	Sources []*downloader.Source
-	KclPkg  *pkg.KclPkg
+	Source *downloader.Source
+	KclPkg *pkg.KclPkg
 }
 
 type AddOption func(*AddOptions) error
 
-func WithAddSource(source *downloader.Source) AddOption {
+func WithAddModSpec(modSpec *downloader.ModSpec) AddOption {
 	return func(opts *AddOptions) error {
-		if opts.Sources == nil {
-			opts.Sources = make([]*downloader.Source, 0)
+		if modSpec == nil {
+			return fmt.Errorf("modSpec cannot be nil")
 		}
-		opts.Sources = append(opts.Sources, source)
+		if opts.Source == nil {
+			opts.Source = &downloader.Source{
+				ModSpec: modSpec,
+			}
+		} else {
+			opts.Source.ModSpec = modSpec
+		}
+
 		return nil
 	}
 }
 
-func WithAddSources(sources []*downloader.Source) AddOption {
-	return func(ro *AddOptions) error {
-		ro.Sources = sources
+func WithAddSource(source *downloader.Source) AddOption {
+	return func(opts *AddOptions) error {
+		if source == nil {
+			return fmt.Errorf("source cannot be nil")
+		}
+		opts.Source = source
 		return nil
 	}
 }
 
 func WithAddSourceUrl(sourceUrl string) AddOption {
 	return func(opts *AddOptions) error {
-		if opts.Sources == nil {
-			opts.Sources = make([]*downloader.Source, 0)
-		}
 		source, err := downloader.NewSourceFromStr(sourceUrl)
 		if err != nil {
 			return err
 		}
-		opts.Sources = append(opts.Sources, source)
-		return nil
-	}
-}
-
-func WithAddSourceUrls(sourceUrls []string) AddOption {
-	return func(opts *AddOptions) error {
-		var sources []*downloader.Source
-		for _, sourceUrl := range sourceUrls {
-			source, err := downloader.NewSourceFromStr(sourceUrl)
-			if err != nil {
-				return err
-			}
-			sources = append(sources, source)
-		}
-		opts.Sources = sources
+		opts.Source = source
 		return nil
 	}
 }
@@ -88,6 +80,7 @@ func (c *KpmClient) Add(options ...AddOption) error {
 		}
 	}
 	addedPkg := opts.KclPkg
+	depSource := opts.Source
 
 	visitorSelector := func(source *downloader.Source) (visitor.Visitor, error) {
 		pkgVisitor := &visitor.PkgVisitor{
@@ -113,73 +106,71 @@ func (c *KpmClient) Add(options ...AddOption) error {
 		}
 	}
 
-	for _, depSource := range opts.Sources {
-		// Set the default OCI registry and repo if the source is nil and the package spec is not nil.
-		if depSource.IsNilSource() && !depSource.ModSpec.IsNil() {
-			depSource.Oci = &downloader.Oci{
-				Reg:  c.GetSettings().Conf.DefaultOciRegistry,
-				Repo: utils.JoinPath(c.GetSettings().Conf.DefaultOciRepo, depSource.ModSpec.Name),
-				Tag:  depSource.ModSpec.Version,
-			}
-		}
-
-		var fullSouce *downloader.Source
-		// Transform the relative path to the full path.
-		if depSource.IsLocalPath() && !filepath.IsAbs(depSource.Path) {
-			fullSouce = &downloader.Source{
-				ModSpec: depSource.ModSpec,
-				Local: &downloader.Local{
-					Path: filepath.Join(addedPkg.HomePath, depSource.Path),
-				},
-			}
-		} else {
-			fullSouce = depSource
-		}
-
-		visitor, err := visitorSelector(fullSouce)
-		if err != nil {
-			return err
-		}
-
-		// Visit the dependency source
-		// If the dependency is remote, the visitor will download it to the local.
-		// If the dependency is already in local cache, the visitor will not download it again.
-		err = visitor.Visit(fullSouce, func(depPkg *pkg.KclPkg) error {
-			var modSpec *downloader.ModSpec
-			if depSource.ModSpec.IsNil() {
-				modSpec = &downloader.ModSpec{
-					Name:    depPkg.ModFile.Pkg.Name,
-					Version: depPkg.ModFile.Pkg.Version,
-				}
-				depSource.ModSpec = modSpec
-			}
-
-			dep := pkg.Dependency{
-				Name:          depPkg.ModFile.Pkg.Name,
-				FullName:      depPkg.GetPkgFullName(),
-				Version:       depPkg.ModFile.Pkg.Version,
-				LocalFullPath: depPkg.HomePath,
-				Source:        *depSource,
-			}
-
-			// Add the dependency to the kcl.mod file.
-			if modExistDep, ok := addedPkg.ModFile.Dependencies.Deps.Get(dep.Name); ok {
-				if less, err := modExistDep.VersionLessThan(&dep); less && err == nil {
-					addedPkg.ModFile.Dependencies.Deps.Set(dep.Name, dep)
-				}
-			} else {
-				addedPkg.ModFile.Dependencies.Deps.Set(dep.Name, dep)
-			}
-
-			return nil
-		})
-		if err != nil {
-			return err
+	// Set the default OCI registry and repo if the source is nil and the package spec is not nil.
+	if depSource.IsNilSource() && !depSource.ModSpec.IsNil() {
+		depSource.Oci = &downloader.Oci{
+			Reg:  c.GetSettings().Conf.DefaultOciRegistry,
+			Repo: utils.JoinPath(c.GetSettings().Conf.DefaultOciRepo, depSource.ModSpec.Name),
+			Tag:  depSource.ModSpec.Version,
 		}
 	}
 
+	var fullSouce *downloader.Source
+	// Transform the relative path to the full path.
+	if depSource.IsLocalPath() && !filepath.IsAbs(depSource.Path) {
+		fullSouce = &downloader.Source{
+			ModSpec: depSource.ModSpec,
+			Local: &downloader.Local{
+				Path: filepath.Join(addedPkg.HomePath, depSource.Path),
+			},
+		}
+	} else {
+		fullSouce = depSource
+	}
+
+	visitor, err := visitorSelector(fullSouce)
+	if err != nil {
+		return err
+	}
+
+	// Visit the dependency source
+	// If the dependency is remote, the visitor will download it to the local.
+	// If the dependency is already in local cache, the visitor will not download it again.
+	err = visitor.Visit(fullSouce, func(depPkg *pkg.KclPkg) error {
+		var modSpec *downloader.ModSpec
+		if depSource.ModSpec.IsNil() {
+			modSpec = &downloader.ModSpec{
+				Name:    depPkg.ModFile.Pkg.Name,
+				Version: depPkg.ModFile.Pkg.Version,
+			}
+			depSource.ModSpec = modSpec
+		}
+
+		dep := pkg.Dependency{
+			Name:          depPkg.ModFile.Pkg.Name,
+			FullName:      depPkg.GetPkgFullName(),
+			Version:       depPkg.ModFile.Pkg.Version,
+			LocalFullPath: depPkg.HomePath,
+			Source:        *depSource,
+		}
+
+		// Add the dependency to the kcl.mod file.
+		if modExistDep, ok := addedPkg.ModFile.Dependencies.Deps.Get(dep.Name); ok {
+			if less, err := modExistDep.VersionLessThan(&dep); less && err == nil {
+				addedPkg.ModFile.Dependencies.Deps.Set(dep.Name, dep)
+			}
+		} else {
+			addedPkg.ModFile.Dependencies.Deps.Set(dep.Name, dep)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
 	// Iterate the dependencies and update the kcl.mod and kcl.mod.lock respectively.
-	_, err := c.Update(
+	_, err = c.Update(
 		WithUpdatedKclPkg(addedPkg),
 	)
 
