@@ -197,12 +197,22 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 
 	// Generate the local path for the remote package after the version is specified.
 	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok {
+		// update the local module path with the latest version.
 		if len(rv.VisitedSpace) != 0 {
 			modFullPath = s.LocalPath(rv.VisitedSpace)
 		}
+		// update the cache path with the latest version.
+		if rv.EnableCache {
+			cacheFullPath = s.CachePath(rv.CachePath)
+		}
 	} else {
+		// update the local module path with the latest version.
 		if len(rv.VisitedSpace) != 0 {
 			modFullPath = s.LocalPath(filepath.Join(rv.VisitedSpace, s.Type(), "src"))
+		}
+		// update the cache path with the latest version.
+		if rv.EnableCache {
+			cacheFullPath = s.CachePath(filepath.Join(rv.CachePath, s.Type(), "cache"))
 		}
 	}
 
