@@ -92,7 +92,7 @@ type RunOption func(*RunOptions) error
 func WithRunModSpec(modSpec *downloader.ModSpec) RunOption {
 	return func(ro *RunOptions) error {
 		if modSpec == nil {
-			return errors.New("modSpec cannot be nil")
+			return nil
 		}
 		if ro.Sources == nil {
 			ro.Sources = make([]*downloader.Source, 0)
