@@ -6,6 +6,7 @@ import (
 
 	"kcl-lang.io/kpm/pkg/downloader"
 	pkg "kcl-lang.io/kpm/pkg/package"
+	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/utils"
 	"kcl-lang.io/kpm/pkg/visitor"
 )
@@ -92,8 +93,10 @@ func (c *KpmClient) Add(options ...AddOption) error {
 			return err
 		}
 	}
+
 	addedPkg := opts.KclPkg
 	depSource := opts.Source
+	var succeedMsgInfo string
 
 	visitorSelector := func(source *downloader.Source) (visitor.Visitor, error) {
 		pkgVisitor := &visitor.PkgVisitor{
@@ -150,6 +153,10 @@ func (c *KpmClient) Add(options ...AddOption) error {
 	// If the dependency is remote, the visitor will download it to the local.
 	// If the dependency is already in local cache, the visitor will not download it again.
 	err = visitor.Visit(fullSouce, func(depPkg *pkg.KclPkg) error {
+		reporter.ReportMsgTo(
+			fmt.Sprintf("adding dependency '%s'", depPkg.GetPkgName()),
+			c.logWriter,
+		)
 		var modSpec *downloader.ModSpec
 		if depSource.ModSpec.IsNil() {
 			modSpec = &downloader.ModSpec{
@@ -182,7 +189,7 @@ func (c *KpmClient) Add(options ...AddOption) error {
 		} else {
 			addedPkg.ModFile.Dependencies.Deps.Set(dep.Name, dep)
 		}
-
+		succeedMsgInfo = fmt.Sprintf("add dependency '%s:%s' successfully", depPkg.ModFile.Pkg.Name, depPkg.ModFile.Pkg.Version)
 		return nil
 	})
 	if err != nil {
@@ -197,5 +204,6 @@ func (c *KpmClient) Add(options ...AddOption) error {
 	if err != nil {
 		return err
 	}
+	reporter.ReportMsgTo(succeedMsgInfo, c.logWriter)
 	return nil
 }
