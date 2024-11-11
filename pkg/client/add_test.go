@@ -12,47 +12,47 @@ import (
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
-func TestAddWithModSpec(t *testing.T) {
+func testAddWithModSpec(t *testing.T) {
 	tests := []struct {
 		name       string
 		pkgSubPath string
 		sourceUrl  string
 	}{
-		// {
-		// 	name:       "TestAddOciWithModSpec",
-		// 	pkgSubPath: "oci",
-		// 	sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4&mod=subhelloworld:0.0.1",
-		// },
-		// {
-		// 	name:       "TestAddGitWithModSpec",
-		// 	pkgSubPath: "git",
-		// 	sourceUrl:  "git://github.com/kcl-lang/flask-demo-kcl-manifests.git?commit=8308200&mod=cc:0.0.1",
-		// },
-		// {
-		// 	name:       "TestAddLocalWithModSpec",
-		// 	pkgSubPath: filepath.Join("local", "pkg"),
-		// 	sourceUrl:  "../dep?mod=sub:0.0.1",
-		// },
-		// {
-		// 	name:       "TestAddOciWithEmptyVersion",
-		// 	pkgSubPath: "empty_version",
-		// 	sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4&mod=subhelloworld",
-		// },
+		{
+			name:       "TestAddOciWithModSpec",
+			pkgSubPath: "oci",
+			sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4&mod=subhelloworld:0.0.1",
+		},
+		{
+			name:       "TestAddGitWithModSpec",
+			pkgSubPath: "git",
+			sourceUrl:  "git://github.com/kcl-lang/flask-demo-kcl-manifests.git?commit=8308200&mod=cc:0.0.1",
+		},
+		{
+			name:       "TestAddLocalWithModSpec",
+			pkgSubPath: filepath.Join("local", "pkg"),
+			sourceUrl:  "../dep?mod=sub:0.0.1",
+		},
+		{
+			name:       "TestAddOciWithEmptyVersion",
+			pkgSubPath: "empty_version",
+			sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4&mod=subhelloworld",
+		},
 		{
 			name:       "TestAddOciWithNoSpec",
 			pkgSubPath: "no_spec",
 			sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4",
 		},
-		// {
-		// 	name:       "TestAddOciWithNoTag",
-		// 	pkgSubPath: "no_oci_ref",
-		// 	sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld",
-		// },
-		// {
-		// 	name:       "TestAddGitWithNoTag",
-		// 	pkgSubPath: "no_git_ref",
-		// 	sourceUrl:  "git://github.com/kcl-lang/flask-demo-kcl-manifests.git",
-		// },
+		{
+			name:       "TestAddOciWithNoTag",
+			pkgSubPath: "no_oci_ref",
+			sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld",
+		},
+		{
+			name:       "TestAddGitWithNoTag",
+			pkgSubPath: "no_git_ref",
+			sourceUrl:  "git://github.com/kcl-lang/flask-demo-kcl-manifests.git",
+		},
 	}
 
 	for _, tt := range tests {
