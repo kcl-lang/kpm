@@ -183,10 +183,6 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 			rv.LogWriter,
 		)
 
-		if !s.ModSpec.IsNil() && s.ModSpec.Version == "" {
-			s.ModSpec.Version = latest
-		}
-
 		if s.Oci != nil {
 			s.Oci.Tag = latest
 		}

@@ -125,3 +125,29 @@ func TestVisitedSpace(t *testing.T) {
 	})
 	assert.NilError(t, err)
 }
+
+func TestVisitedPkgWithDefaultVersion(t *testing.T) {
+	var buf bytes.Buffer
+	remotePkgVisitor := RemoteVisitor{
+		PkgVisitor: &PkgVisitor{
+			LogWriter: &buf,
+			Settings:  settings.GetSettings(),
+		},
+		Downloader: &downloader.DepDownloader{},
+	}
+
+	buf.Reset()
+	source, err := downloader.NewSourceFromStr("oci://ghcr.io/kcl-lang/helloworld")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	source.ModSpec = &downloader.ModSpec{
+		Name: "subhelloworld",
+	}
+
+	err = remotePkgVisitor.Visit(source, func(pkg *pkg.KclPkg) error { return nil })
+	assert.Equal(t, source.ModSpec.Version, "0.0.1")
+	assert.Equal(t, source.Oci.Tag, "0.1.4")
+	assert.NilError(t, err)
+}
