@@ -165,6 +165,7 @@ func (c *KpmClient) Add(options ...AddOption) error {
 			modSpec = &downloader.ModSpec{
 				Name:    depPkg.ModFile.Pkg.Name,
 				Version: depPkg.ModFile.Pkg.Version,
+				Alias:   depSource.ModSpec.Alias,
 			}
 			depSource.ModSpec = modSpec
 		}
