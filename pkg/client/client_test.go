@@ -93,9 +93,11 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestPull", testPull)
 	test.RunTestWithGlobalLock(t, "TestPullWithInsecureSkipTLSverify", testPullWithInsecureSkipTLSverify)
 	test.RunTestWithGlobalLock(t, "TestPullWithModSpec", testPullWithModSpec)
+	test.RunTestWithGlobalLock(t, "testAddWithOnlyModSpec", testAddWithOnlyModSpec)
 
 	features.Enable(features.SupportNewStorage)
 	test.RunTestWithGlobalLock(t, "testAddWithModSpec", testAddWithModSpec)
+	test.RunTestWithGlobalLock(t, "testAddWithOnlyModSpec", testAddWithOnlyModSpec)
 }
 
 // TestDownloadOci test download from oci registry.

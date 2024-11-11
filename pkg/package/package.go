@@ -395,9 +395,8 @@ func (kclPkg *KclPkg) UpdateModAndLockFile() error {
 		}
 
 		if existDep, ok := depSnapShot.Deps[name]; ok {
-			if existDep.Source.SpecOnly() {
-				existDep.Source.ModSpec = modDep.ModSpec
-			} else {
+			existDep.Source.ModSpec = modDep.ModSpec
+			if !existDep.Source.SpecOnly() {
 				existDep.Source = modDep.Source
 			}
 			kclPkg.ModFile.Deps.Set(name, existDep)
