@@ -137,9 +137,9 @@ func testAddWithModSpec(t *testing.T) {
 	}
 }
 
-func TestAddRenameWithModSpec(t *testing.T) {
+func testAddRenameWithModSpec(t *testing.T) {
 	testDir := getTestDir("add_with_mod_spec")
-	pkgPath := filepath.Join(testDir, "rename")
+	pkgPath := filepath.Join(testDir, "rename_spec_only")
 
 	modbkPath := filepath.Join(pkgPath, "kcl.mod.bk")
 	modPath := filepath.Join(pkgPath, "kcl.mod")
@@ -186,10 +186,9 @@ func TestAddRenameWithModSpec(t *testing.T) {
 
 	err = kpmcli.Add(
 		WithAddKclPkg(kpkg),
-		WithAddSourceUrl("oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4"),
 		WithAddModSpec(&downloader.ModSpec{
-			Name:    "subhelloworld",
-			Version: "0.0.1",
+			Name:    "helloworld",
+			Version: "0.1.2",
 		}),
 		WithAlias("newpkg"),
 	)
