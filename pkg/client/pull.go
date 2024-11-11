@@ -84,6 +84,14 @@ func (c *KpmClient) Pull(options ...PullOption) (*pkg.KclPkg, error) {
 		}
 	}
 
+	if opts.Source.SpecOnly() {
+		opts.Source.Oci = &downloader.Oci{
+			Reg:  c.GetSettings().DefaultOciRegistry(),
+			Repo: utils.JoinPath(c.GetSettings().DefaultOciRepo(), opts.Source.ModSpec.Name),
+			Tag:  opts.Source.ModSpec.Version,
+		}
+	}
+
 	sourceFilePath, err := opts.Source.ToFilePath()
 	if err != nil {
 		return nil, err

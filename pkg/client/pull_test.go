@@ -182,3 +182,35 @@ func testPullWithModSpec(t *testing.T) {
 	)
 	assert.Equal(t, err.Error(), "version mismatch: 0.0.1 != 0.0.2, version 0.0.2 not found")
 }
+
+func TestPullWithOnlySpec(t *testing.T) {
+	pulledPath := getTestDir("test_pull_with_only_modspec")
+	defer func() {
+		err := os.RemoveAll(filepath.Join(pulledPath, "oci"))
+		assert.NilError(t, err)
+	}()
+
+	kpmcli, err := NewKpmClient()
+	assert.NilError(t, err)
+
+	var buf bytes.Buffer
+	kpmcli.SetLogWriter(&buf)
+
+	kPkg, err := kpmcli.Pull(
+		WithLocalPath(pulledPath),
+		WithPullSource(&downloader.Source{
+			ModSpec: &downloader.ModSpec{
+				Name:    "helloworld",
+				Version: "0.1.4",
+			},
+		}),
+	)
+
+	pkgPath := filepath.Join(pulledPath, "oci", "ghcr.io", "kcl-lang", "helloworld", "0.1.4", "helloworld", "0.1.4")
+	assert.NilError(t, err)
+	assert.Equal(t, kPkg.GetPkgName(), "helloworld")
+	assert.Equal(t, kPkg.GetPkgVersion(), "0.1.4")
+	assert.Equal(t, kPkg.HomePath, pkgPath)
+	err = os.RemoveAll(filepath.Join(pulledPath, "oci"))
+	assert.NilError(t, err)
+}
