@@ -96,6 +96,8 @@ func (c *KpmClient) Add(options ...AddOption) error {
 
 	addedPkg := opts.KclPkg
 	depSource := opts.Source
+	specOnly := depSource.SpecOnly()
+
 	var succeedMsgInfo string
 
 	visitorSelector := func(source *downloader.Source) (visitor.Visitor, error) {
@@ -157,6 +159,7 @@ func (c *KpmClient) Add(options ...AddOption) error {
 			fmt.Sprintf("adding dependency '%s'", depPkg.GetPkgName()),
 			c.logWriter,
 		)
+
 		var modSpec *downloader.ModSpec
 		if depSource.ModSpec.IsNil() {
 			modSpec = &downloader.ModSpec{
@@ -179,6 +182,22 @@ func (c *KpmClient) Add(options ...AddOption) error {
 			Version:       depPkg.ModFile.Pkg.Version,
 			LocalFullPath: depPkg.HomePath,
 			Source:        *depSource,
+		}
+
+		// If the dependency is spec only, add the dependency to the backup dep ui,
+		// to generate the dependency like 'helloworld = "0.0.1"' instead of 'helloworld = { oci = "ghcr.io/kcl-lang/helloworld", tag = "0.1.4" }'.
+		if specOnly {
+			addedPkg.BackupDepUI(dep.Name, &pkg.Dependency{
+				Name:    dep.Name,
+				Version: dep.Version,
+				Source: downloader.Source{
+					ModSpec: &downloader.ModSpec{
+						Name:    dep.Name,
+						Version: dep.Version,
+						Alias:   depSource.ModSpec.Alias,
+					},
+				},
+			})
 		}
 
 		// Add the dependency to the kcl.mod file.
