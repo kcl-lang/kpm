@@ -95,11 +95,13 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestPullWithModSpec", testPullWithModSpec)
 	test.RunTestWithGlobalLock(t, "testAddWithOnlyModSpec", testAddWithOnlyModSpec)
 	test.RunTestWithGlobalLock(t, "testAddRenameWithModSpec", testAddRenameWithModSpec)
+	test.RunTestWithGlobalLock(t, "testAddRenameWithNoSpec", testAddRenameWithNoSpec)
 
 	features.Enable(features.SupportNewStorage)
 	test.RunTestWithGlobalLock(t, "testAddWithModSpec", testAddWithModSpec)
 	test.RunTestWithGlobalLock(t, "testAddWithOnlyModSpec", testAddWithOnlyModSpec)
 	test.RunTestWithGlobalLock(t, "testAddRenameWithModSpec", testAddRenameWithModSpec)
+	test.RunTestWithGlobalLock(t, "testAddRenameWithNoSpec", testAddRenameWithNoSpec)
 }
 
 // TestDownloadOci test download from oci registry.

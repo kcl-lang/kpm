@@ -160,18 +160,24 @@ func (c *KpmClient) Add(options ...AddOption) error {
 			c.logWriter,
 		)
 
+		var depAlias string
+		if depSource.ModSpec != nil {
+			depAlias = depSource.ModSpec.Alias
+		}
+
 		var modSpec *downloader.ModSpec
 		if depSource.ModSpec.IsNil() {
 			modSpec = &downloader.ModSpec{
 				Name:    depPkg.ModFile.Pkg.Name,
 				Version: depPkg.ModFile.Pkg.Version,
+				Alias:   depAlias,
 			}
 			depSource.ModSpec = modSpec
 		}
 
 		var depName string
-		if opts.Source.ModSpec.Alias != "" {
-			depName = opts.Source.ModSpec.Alias
+		if depAlias != "" {
+			depName = depAlias
 		} else {
 			depName = depPkg.ModFile.Pkg.Name
 		}
@@ -194,7 +200,7 @@ func (c *KpmClient) Add(options ...AddOption) error {
 					ModSpec: &downloader.ModSpec{
 						Name:    dep.Name,
 						Version: dep.Version,
-						Alias:   depSource.ModSpec.Alias,
+						Alias:   depAlias,
 					},
 				},
 			})
