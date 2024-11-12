@@ -1,0 +1,1 @@
+The_first_kcl_program_current_mod = 'Hello Current Mod World!'

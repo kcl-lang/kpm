@@ -83,3 +83,33 @@ func testRunWithModSpecVersion(t *testing.T) {
 	assert.Equal(t, utils.RmNewline(string(expectedMod)), utils.RmNewline(string(gotMod)))
 	assert.Equal(t, utils.RmNewline(string(expectedLock)), utils.RmNewline(string(gotLock)))
 }
+
+func testRunWithHyphenEntries(t *testing.T) {
+	kpmcli, err := NewKpmClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pkgPath := getTestDir("test_run_hyphen_entries")
+
+	res, err := kpmcli.Run(
+		WithRunSource(
+			&downloader.Source{
+				Local: &downloader.Local{
+					Path: pkgPath,
+				},
+			},
+		),
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expect := `The_first_kcl_program_current_mod: Hello Current Mod World!
+The_fisrt_schema_inst:
+  msg: Hello Schema!
+The_first_kcl_program: Hello World!`
+
+	assert.Equal(t, utils.RmNewline(res.GetRawYamlResult()), utils.RmNewline(expect))
+}

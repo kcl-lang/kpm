@@ -307,6 +307,32 @@ func IsModRelativePath(s string) bool {
 	return re.MatchString(s)
 }
 
+// ParseModRelativePath parses the package name and path from a mod relative path
+func ParseModRelativePath(s string) (string, string, error) {
+	re := regexp.MustCompile(`^\$\{([a-zA-Z0-9_-]+:)?KCL_MOD\}(.*)$`)
+	matches := re.FindStringSubmatch(s)
+	if len(matches) == 0 {
+		return "", "", fmt.Errorf("invalid mod relative path: %s", s)
+	}
+
+	// Extract package name and path
+	var pkgName, path string
+	if matches[1] != "" {
+		pkgName = matches[1][:len(matches[1])-1] // Remove the trailing colon
+	}
+	path = matches[2]
+
+	return pkgName, path, nil
+}
+
+// GenerateModRelativePath generates a mod relative path from the package name and path
+func GenerateModRelativePath(pkgName, path string) string {
+	if pkgName != "" {
+		return fmt.Sprintf("${%s:KCL_MOD}%s", pkgName, path)
+	}
+	return fmt.Sprintf("${KCL_MOD}%s", path)
+}
+
 // MoveFile will move the file from 'src' to 'dest'.
 // On windows, it will copy the file from 'src' to 'dest', and then delete the file under 'src'.
 // On unix-like systems, it will rename the file from 'src' to 'dest'.
