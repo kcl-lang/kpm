@@ -74,6 +74,9 @@ func LoadKclPkgWithOpts(options ...LoadOption) (*KclPkg, error) {
 	}
 
 	pkgPath := opts.Path
+	if opts.Settings == nil {
+		opts.Settings = settings.GetSettings()
+	}
 
 	modFile := new(ModFile)
 	err := modFile.LoadModFile(filepath.Join(pkgPath, MOD_FILE))

@@ -155,3 +155,17 @@ func TestLoadPkgFromLock(t *testing.T) {
 	assert.Equal(t, kpkg.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Source.Oci.Repo, "kcl-lang/helloworld")
 	assert.Equal(t, kpkg.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Source.Oci.Tag, "0.1.2")
 }
+
+func TestLoadKclPkgWithoutSettings(t *testing.T){
+	modPath := getTestDir("load_without_settings")
+	kMod, err := LoadKclPkgWithOpts(
+		WithPath(modPath),
+	)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, kMod.ModFile.Dependencies.Deps.Len(), 1)
+	assert.Equal(t, kMod.ModFile.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Name, "helloworld")
+	assert.Equal(t, kMod.ModFile.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).FullName, "helloworld_0.1.4")
+	assert.Equal(t, kMod.ModFile.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Source.Oci.Reg, "ghcr.io")
+	assert.Equal(t, kMod.ModFile.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Source.Oci.Repo, "kcl-lang/helloworld")
+	assert.Equal(t, kMod.ModFile.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Source.Oci.Tag, "0.1.4")
+}
