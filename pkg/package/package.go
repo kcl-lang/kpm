@@ -74,6 +74,12 @@ func LoadKclPkgWithOpts(options ...LoadOption) (*KclPkg, error) {
 	}
 
 	pkgPath := opts.Path
+	var loadSettings *settings.Settings
+	if opts.Settings == nil {
+		loadSettings = settings.GetSettings()
+	} else {
+		loadSettings = opts.Settings
+	}
 
 	modFile := new(ModFile)
 	err := modFile.LoadModFile(filepath.Join(pkgPath, MOD_FILE))
@@ -114,7 +120,7 @@ func LoadKclPkgWithOpts(options ...LoadOption) (*KclPkg, error) {
 		return nil, fmt.Errorf("could not load 'kcl.mod' in '%s'\n%w", pkgPath, err)
 	}
 	// 2. Fill the default oci registry, the default oci registry is in the settings.
-	err = fillDepsInfoWithSettings(&modFile.Dependencies, opts.Settings)
+	err = fillDepsInfoWithSettings(&modFile.Dependencies, loadSettings)
 	if err != nil {
 		return nil, fmt.Errorf("could not load 'kcl.mod' in '%s'\n%w", pkgPath, err)
 	}
@@ -136,8 +142,8 @@ func LoadKclPkgWithOpts(options ...LoadOption) (*KclPkg, error) {
 						Version: lockDep.Version,
 					},
 					Oci: &downloader.Oci{
-						Reg:  opts.Settings.DefaultOciRegistry(),
-						Repo: utils.JoinPath(opts.Settings.DefaultOciRepo(), lockDep.Name),
+						Reg:  loadSettings.DefaultOciRegistry(),
+						Repo: utils.JoinPath(loadSettings.DefaultOciRepo(), lockDep.Name),
 						Tag:  lockDep.Version,
 					},
 				}
