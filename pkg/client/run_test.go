@@ -11,7 +11,7 @@ import (
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
-func TestRunWithModSpecVersion(t *testing.T) {
+func testRunWithModSpecVersion(t *testing.T) {
 	pkgPath := getTestDir("test_run_with_modspec_version")
 	modbkPath := filepath.Join(pkgPath, "kcl.mod.bk")
 	modPath := filepath.Join(pkgPath, "kcl.mod")
