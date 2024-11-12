@@ -183,7 +183,7 @@ func testPullWithModSpec(t *testing.T) {
 	assert.Equal(t, err.Error(), "version mismatch: 0.0.1 != 0.0.2, version 0.0.2 not found")
 }
 
-func TestPullWithOnlySpec(t *testing.T) {
+func testPullWithOnlySpec(t *testing.T) {
 	pulledPath := getTestDir("test_pull_with_only_modspec")
 	defer func() {
 		err := os.RemoveAll(filepath.Join(pulledPath, "oci"))
