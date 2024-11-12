@@ -100,6 +100,14 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestRunWithModSpecVersion", testRunWithModSpecVersion)
 	test.RunTestWithGlobalLock(t, "TestGraph", testGraph)
 	test.RunTestWithGlobalLock(t, "testRunWithHyphenEntries", testRunWithHyphenEntries)
+	test.RunTestWithGlobalLock(t, "testUpdate", testUpdate)
+	test.RunTestWithGlobalLock(t, "testRunWithNoSumCheck", testRunWithNoSumCheck)
+	test.RunTestWithGlobalLock(t, "testCyclicDependency", testCyclicDependency)
+	test.RunTestWithGlobalLock(t, "testNewKpmClient", testNewKpmClient)
+	test.RunTestWithGlobalLock(t, "testLoadPkgFormOci", testLoadPkgFormOci)
+	test.RunTestWithGlobalLock(t, "testAddWithLocalPath", testAddWithLocalPath)
+	test.RunTestWithGlobalLock(t, "testRunLocalWithoutArgs", testRunLocalWithoutArgs)
+	test.RunTestWithGlobalLock(t, "TestRunLocalWithArgs", testRunLocalWithArgs)
 
 	features.Enable(features.SupportNewStorage)
 	test.RunTestWithGlobalLock(t, "testAddWithModSpec", testAddWithModSpec)
@@ -392,7 +400,7 @@ func testDependencyGraph(t *testing.T) {
 	assert.Equal(t, err, nil)
 }
 
-func TestCyclicDependency(t *testing.T) {
+func testCyclicDependency(t *testing.T) {
 	testDir := getTestDir("test_cyclic_dependency")
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "aaa")), true)
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "aaa/kcl.mod")), true)
@@ -1020,7 +1028,7 @@ func hasSubdirInTar(tarPath, subdir string) (bool, error) {
 	return false, nil
 }
 
-func TestNewKpmClient(t *testing.T) {
+func testNewKpmClient(t *testing.T) {
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
 	kpmhome, err := env.GetAbsPkgPath()
@@ -1461,7 +1469,7 @@ func testAddWithGitCommit(t *testing.T) {
 	}()
 }
 
-func TestLoadPkgFormOci(t *testing.T) {
+func testLoadPkgFormOci(t *testing.T) {
 	type testCase struct {
 		Reg  string
 		Repo string
@@ -1508,7 +1516,7 @@ func TestLoadPkgFormOci(t *testing.T) {
 	}
 }
 
-func TestAddWithLocalPath(t *testing.T) {
+func testAddWithLocalPath(t *testing.T) {
 
 	testpath := getTestDir("add_with_local_path")
 
@@ -1866,7 +1874,7 @@ func testDependenciesOrder(t *testing.T) {
 	assert.Equal(t, utils.RmNewline(string(got)), utils.RmNewline(string(expect)))
 }
 
-func TestRunLocalWithoutArgs(t *testing.T) {
+func testRunLocalWithoutArgs(t *testing.T) {
 	pkgPath := getTestDir("test_run_options")
 
 	kpmcli, err := NewKpmClient()
@@ -1906,7 +1914,7 @@ func TestRunLocalWithoutArgs(t *testing.T) {
 	}
 }
 
-func TestRunLocalWithArgs(t *testing.T) {
+func testRunLocalWithArgs(t *testing.T) {
 	pkgPath := getTestDir("test_run_options")
 
 	kpmcli, err := NewKpmClient()

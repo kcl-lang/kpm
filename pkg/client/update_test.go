@@ -11,7 +11,7 @@ import (
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
-func TestUpdate(t *testing.T) {
+func testUpdate(t *testing.T) {
 	features.Enable(features.SupportMVS)
 	testDir := getTestDir("test_update_with_mvs")
 	kpmcli, err := NewKpmClient()

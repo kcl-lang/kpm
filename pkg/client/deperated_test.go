@@ -16,7 +16,7 @@ import (
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
-func TestRunWithNoSumCheck(t *testing.T) {
+func testRunWithNoSumCheck(t *testing.T) {
 	pkgPath := getTestDir("test_run_no_sum_check")
 
 	kpmcli, err := NewKpmClient()
