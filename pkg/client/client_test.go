@@ -97,6 +97,7 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "testAddRenameWithModSpec", testAddRenameWithModSpec)
 	test.RunTestWithGlobalLock(t, "testAddRenameWithNoSpec", testAddRenameWithNoSpec)
 	test.RunTestWithGlobalLock(t, "testPullWithOnlySpec", testPullWithOnlySpec)
+	test.RunTestWithGlobalLock(t, "TestRunWithModSpecVersion", testRunWithModSpecVersion)
 
 	features.Enable(features.SupportNewStorage)
 	test.RunTestWithGlobalLock(t, "testAddWithModSpec", testAddWithModSpec)
