@@ -99,7 +99,6 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "testPullWithOnlySpec", testPullWithOnlySpec)
 	test.RunTestWithGlobalLock(t, "TestRunWithModSpecVersion", testRunWithModSpecVersion)
 	test.RunTestWithGlobalLock(t, "TestGraph", testGraph)
-	test.RunTestWithGlobalLock(t, "testRunWithHyphenEntries", testRunWithHyphenEntries)
 	test.RunTestWithGlobalLock(t, "testUpdate", testUpdate)
 	test.RunTestWithGlobalLock(t, "testRunWithNoSumCheck", testRunWithNoSumCheck)
 	test.RunTestWithGlobalLock(t, "testCyclicDependency", testCyclicDependency)
@@ -113,6 +112,7 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestAddDepsWithInsecureSkipTLSverify", testAddDepsWithInsecureSkipTLSverify)
 	test.RunTestWithGlobalLock(t, "testPushWithInsecureSkipTLSverify", testPushWithInsecureSkipTLSverify)
 	test.RunTestWithGlobalLock(t, "testMetadataOffline", testMetadataOffline)
+	test.RunTestWithGlobalLock(t, "testRunWithHyphenEntries", testRunWithHyphenEntries)
 
 	features.Enable(features.SupportNewStorage)
 	test.RunTestWithGlobalLock(t, "testAddWithModSpec", testAddWithModSpec)

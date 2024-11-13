@@ -4,7 +4,7 @@ edition = "v0.10.0"
 version = "0.0.1"
 
 [dependencies]
-hello-world = { package = "helloworld", version = "0.1.4" }
+flask_manifests = { git = "https://github.com/kcl-lang/flask-demo-kcl-manifests.git", commit = "ade147b", version = "0.0.1" }
 
 [profile]
-entries = ["main.k", "${hello-world:KCL_MOD}/main.k"]
+entries = ["main.k", "${flask-manifests:KCL_MOD}/main.k"]

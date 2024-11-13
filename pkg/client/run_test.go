@@ -106,10 +106,10 @@ func testRunWithHyphenEntries(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expect := `The_first_kcl_program_current_mod: Hello Current Mod World!
-The_fisrt_schema_inst:
-  msg: Hello Schema!
-The_first_kcl_program: Hello World!`
+	expect, err := os.ReadFile(filepath.Join(pkgPath, "stdout"))
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	assert.Equal(t, utils.RmNewline(res.GetRawYamlResult()), utils.RmNewline(expect))
+	assert.Equal(t, utils.RmNewline(res.GetRawYamlResult()), utils.RmNewline(string(expect)))
 }
