@@ -571,7 +571,7 @@ func ParseOpt(opt *opt.RegistryOptions) (*Dependency, error) {
 					Version: opt.Registry.Tag,
 					Name:    opt.Registry.Ref,
 				},
-				Oci:      &ociSource,
+				Oci: &ociSource,
 			},
 			Version: opt.Registry.Tag,
 		}, nil
