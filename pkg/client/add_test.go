@@ -24,7 +24,7 @@ func testAddWithModSpec(t *testing.T) {
 			name:       "TestAddOciWithModSpec",
 			pkgSubPath: "oci",
 			sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4&mod=subhelloworld:0.0.1",
-			msg:        "adding dependency 'subhelloworld'add dependency 'subhelloworld:0.0.1' successfully",
+			msg:        "downloading 'kcl-lang/helloworld:0.1.4' from 'ghcr.io/kcl-lang/helloworld:0.1.4'adding dependency 'subhelloworld'add dependency 'subhelloworld:0.0.1' successfully",
 		},
 		{
 			name:       "TestAddGitWithModSpec",
@@ -42,7 +42,7 @@ func testAddWithModSpec(t *testing.T) {
 			name:       "TestAddGitWithoutModFileWithModSpec",
 			pkgSubPath: "git_mod_1",
 			sourceUrl:  "git://github.com/kcl-lang/flask-demo-kcl-manifests.git?commit=5ab0fff&mod=cc",
-			msg:        "cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with commit '5ab0fff'adding dependency 'cc'add dependency 'cc:0.0.1' successfull",
+			msg:        "adding dependency 'cc'add dependency 'cc:0.0.1' successfully",
 		},
 		{
 			name:       "TestAddLocalWithModSpec",
