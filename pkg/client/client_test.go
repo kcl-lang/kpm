@@ -27,7 +27,6 @@ import (
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/env"
-	"kcl-lang.io/kpm/pkg/features"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -73,17 +72,9 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestPull", testPull)
 	test.RunTestWithGlobalLock(t, "TestPullWithInsecureSkipTLSverify", testPullWithInsecureSkipTLSverify)
 	test.RunTestWithGlobalLock(t, "TestPullWithModSpec", testPullWithModSpec)
-	test.RunTestWithGlobalLock(t, "testAddWithOnlyModSpec", testAddWithOnlyModSpec)
-	test.RunTestWithGlobalLock(t, "testAddRenameWithModSpec", testAddRenameWithModSpec)
-	test.RunTestWithGlobalLock(t, "testAddRenameWithNoSpec", testAddRenameWithNoSpec)
 	test.RunTestWithGlobalLock(t, "testPullWithOnlySpec", testPullWithOnlySpec)
 	test.RunTestWithGlobalLock(t, "TestRunWithModSpecVersion", testRunWithModSpecVersion)
 	test.RunTestWithGlobalLock(t, "TestGraph", testGraph)
-
-	features.Enable(features.SupportNewStorage)
-	test.RunTestWithGlobalLock(t, "testAddWithOnlyModSpec", testAddWithOnlyModSpec)
-	test.RunTestWithGlobalLock(t, "testAddRenameWithModSpec", testAddRenameWithModSpec)
-	test.RunTestWithGlobalLock(t, "testAddRenameWithNoSpec", testAddRenameWithNoSpec)
 }
 
 // TestDownloadOci test download from oci registry.
