@@ -67,7 +67,7 @@ func FindPackageByModSpec(root string, modSpec *ModSpec) (string, error) {
 				if matchesPackageSpec(kclModPath, modSpec) {
 					result = path
 					return filepath.SkipAll
-				} else {
+				} else if modSpec.Version == "" {
 					// If the package name specified, but version are not specified,
 					if utils.MatchesPackageName(kclModPath, modSpec.Name) {
 						// load the version from the kcl.mod file
