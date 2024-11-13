@@ -108,6 +108,11 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "testAddWithLocalPath", testAddWithLocalPath)
 	test.RunTestWithGlobalLock(t, "testRunLocalWithoutArgs", testRunLocalWithoutArgs)
 	test.RunTestWithGlobalLock(t, "TestRunLocalWithArgs", testRunLocalWithArgs)
+	test.RunTestWithGlobalLock(t, "testInsecureSkipTLSverifyOCIRegistry", testInsecureSkipTLSverifyOCIRegistry)
+	test.RunTestWithGlobalLock(t, "testRunWithInsecureSkipTLSverify", testRunWithInsecureSkipTLSverify)
+	test.RunTestWithGlobalLock(t, "TestAddDepsWithInsecureSkipTLSverify", testAddDepsWithInsecureSkipTLSverify)
+	test.RunTestWithGlobalLock(t, "testPushWithInsecureSkipTLSverify", testPushWithInsecureSkipTLSverify)
+	test.RunTestWithGlobalLock(t, "testMetadataOffline", testMetadataOffline)
 
 	features.Enable(features.SupportNewStorage)
 	test.RunTestWithGlobalLock(t, "testAddWithModSpec", testAddWithModSpec)
@@ -1170,7 +1175,7 @@ func testUpdateWithKclModlock(t *testing.T) {
 	}()
 }
 
-func TestMetadataOffline(t *testing.T) {
+func testMetadataOffline(t *testing.T) {
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
 
@@ -2196,7 +2201,7 @@ func TestVirtualPackageVisiter(t *testing.T) {
 	assert.Equal(t, os.IsNotExist(err), true)
 }
 
-func TestRunWithInsecureSkipTLSverify(t *testing.T) {
+func testRunWithInsecureSkipTLSverify(t *testing.T) {
 
 	var buf bytes.Buffer
 
@@ -2235,7 +2240,7 @@ func TestRunWithInsecureSkipTLSverify(t *testing.T) {
 	assert.Equal(t, buf.String(), "Called Success\n")
 }
 
-func TestAddDepsWithInsecureSkipTLSverify(t *testing.T) {
+func testAddDepsWithInsecureSkipTLSverify(t *testing.T) {
 
 	var buf bytes.Buffer
 
@@ -2288,7 +2293,7 @@ func TestAddDepsWithInsecureSkipTLSverify(t *testing.T) {
 	assert.Equal(t, buf.String(), "Called Success\n")
 }
 
-func TestPushWithInsecureSkipTLSverify(t *testing.T) {
+func testPushWithInsecureSkipTLSverify(t *testing.T) {
 	var buf bytes.Buffer
 
 	mux := http.NewServeMux()
