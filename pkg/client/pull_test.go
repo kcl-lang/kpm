@@ -180,7 +180,7 @@ func testPullWithModSpec(t *testing.T) {
 		WithLocalPath(pulledPath),
 		WithPullSourceUrl("oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4&mod=subhelloworld:0.0.2"),
 	)
-	assert.Equal(t, err.Error(), "kcl.mod with package 'subhelloworld:0.0.2'")
+	assert.Equal(t, err.Error(), "kcl.mod with package 'subhelloworld:0.0.2' not found")
 }
 
 func testPullWithOnlySpec(t *testing.T) {
