@@ -13,7 +13,7 @@ import (
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
-func testAddWithModSpec(t *testing.T) {
+func TestAddWithModSpec(t *testing.T) {
 	tests := []struct {
 		name       string
 		pkgSubPath string
@@ -24,19 +24,19 @@ func testAddWithModSpec(t *testing.T) {
 			name:       "TestAddOciWithModSpec",
 			pkgSubPath: "oci",
 			sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4&mod=subhelloworld:0.0.1",
-			msg:        "adding dependency 'subhelloworld'add dependency 'subhelloworld:0.0.1' successfully",
+			msg:        "downloading 'kcl-lang/helloworld:0.1.4' from 'ghcr.io/kcl-lang/helloworld:0.1.4'adding dependency 'subhelloworld'add dependency 'subhelloworld:0.0.1' successfully",
 		},
 		{
 			name:       "TestAddGitWithModSpec",
 			pkgSubPath: "git",
 			sourceUrl:  "git://github.com/kcl-lang/flask-demo-kcl-manifests.git?commit=8308200&mod=cc:0.0.1",
-			msg:        "adding dependency 'cc'add dependency 'cc:0.0.1' successfully",
+			msg:        "cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with commit '8308200'adding dependency 'cc'add dependency 'cc:0.0.1' successfully",
 		},
 		{
 			name:       "TestAddGitWithModSpec",
 			pkgSubPath: "git_mod_0",
 			sourceUrl:  "git://github.com/kcl-lang/flask-demo-kcl-manifests.git?commit=8308200&mod=cc",
-			msg:        "adding dependency 'cc'add dependency 'cc:0.0.1' successfully",
+			msg:        "cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with commit '8308200'adding dependency 'cc'add dependency 'cc:0.0.1' successfully",
 		},
 		{
 			name:       "TestAddGitWithoutModFileWithModSpec",
@@ -54,75 +54,68 @@ func testAddWithModSpec(t *testing.T) {
 			name:       "TestAddOciWithEmptyVersion",
 			pkgSubPath: "empty_version",
 			sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4&mod=subhelloworld",
-			msg:        "adding dependency 'subhelloworld'add dependency 'subhelloworld:0.0.1' successfully",
+			msg:        "downloading 'kcl-lang/helloworld:0.1.4' from 'ghcr.io/kcl-lang/helloworld:0.1.4'adding dependency 'subhelloworld'add dependency 'subhelloworld:0.0.1' successfully",
 		},
 		{
 			name:       "TestAddOciWithNoSpec",
 			pkgSubPath: "no_spec",
 			sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld?tag=0.1.4",
-			msg:        "adding dependency 'helloworld'add dependency 'helloworld:0.1.4' successfully",
+			msg:        "downloading 'kcl-lang/helloworld:0.1.4' from 'ghcr.io/kcl-lang/helloworld:0.1.4'adding dependency 'helloworld'add dependency 'helloworld:0.1.4' successfully",
 		},
 		{
 			name:       "TestAddOciWithNoTag",
 			pkgSubPath: "no_oci_ref",
 			sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld",
-			msg:        "the lastest version '0.1.4' will be downloadedadding dependency 'helloworld'add dependency 'helloworld:0.1.4' successfully",
+			msg:        "the lastest version '0.1.4' will be downloadeddownloading 'kcl-lang/helloworld:0.1.4' from 'ghcr.io/kcl-lang/helloworld:0.1.4'adding dependency 'helloworld'add dependency 'helloworld:0.1.4' successfully",
 		},
 		{
 			name:       "TestAddGitWithNoTag",
 			pkgSubPath: "no_git_ref",
 			sourceUrl:  "git://github.com/kcl-lang/flask-demo-kcl-manifests.git",
-			msg:        "the lastest version 'ade147b' will be downloadedadding dependency 'flask_manifests'add dependency 'flask_manifests:0.0.1' successfully",
+			msg:        "the lastest version 'ade147b' will be downloadedcloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with commit 'ade147b'adding dependency 'flask_manifests'add dependency 'flask_manifests:0.0.1' successfully",
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			testDir := getTestDir("add_with_mod_spec")
-			pkgPath := filepath.Join(testDir, tt.pkgSubPath)
+		testDir := getTestDir("add_with_mod_spec")
+		pkgPath := filepath.Join(testDir, tt.pkgSubPath)
 
-			modbkPath := filepath.Join(pkgPath, "kcl.mod.bk")
-			modPath := filepath.Join(pkgPath, "kcl.mod")
-			modExpect := filepath.Join(pkgPath, "kcl.mod.expect")
-			lockbkPath := filepath.Join(pkgPath, "kcl.mod.lock.bk")
-			lockPath := filepath.Join(pkgPath, "kcl.mod.lock")
-			lockExpect := filepath.Join(pkgPath, "kcl.mod.lock.expect")
+		modbkPath := filepath.Join(pkgPath, "kcl.mod.bk")
+		modPath := filepath.Join(pkgPath, "kcl.mod")
+		modExpect := filepath.Join(pkgPath, "kcl.mod.expect")
+		lockbkPath := filepath.Join(pkgPath, "kcl.mod.lock.bk")
+		lockPath := filepath.Join(pkgPath, "kcl.mod.lock")
+		lockExpect := filepath.Join(pkgPath, "kcl.mod.lock.expect")
 
-			err := copy.Copy(modbkPath, modPath)
+		err := copy.Copy(modbkPath, modPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = copy.Copy(lockbkPath, lockPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		defer func() {
+			// remove the copied files
+			err := os.RemoveAll(modPath)
 			if err != nil {
 				t.Fatal(err)
 			}
-
-			err = copy.Copy(lockbkPath, lockPath)
+			err = os.RemoveAll(lockPath)
 			if err != nil {
 				t.Fatal(err)
 			}
+		}()
 
-			defer func() {
-				// remove the copied files
-				err := os.RemoveAll(modPath)
-				if err != nil {
-					t.Fatal(err)
-				}
-				err = os.RemoveAll(lockPath)
-				if err != nil {
-					t.Fatal(err)
-				}
-			}()
-
-			kpmcli, err := NewKpmClient()
-			if err != nil {
-				t.Fatal(err)
-			}
-
+		testFunc := func(t *testing.T, kpmcli *KpmClient) {
 			var buf bytes.Buffer
 			kpmcli.SetLogWriter(&buf)
-
 			kpkg, err := pkg.LoadKclPkgWithOpts(
 				pkg.WithPath(pkgPath),
 				pkg.WithSettings(kpmcli.GetSettings()),
 			)
-
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -137,29 +130,31 @@ func testAddWithModSpec(t *testing.T) {
 			}
 
 			assert.Equal(t, utils.RmNewline(tt.msg), utils.RmNewline(buf.String()))
+		}
 
-			expectedMod, err := os.ReadFile(modExpect)
-			if err != nil {
-				t.Fatal(err)
-			}
-			gotMod, err := os.ReadFile(modPath)
-			if err != nil {
-				t.Fatal(err)
-			}
+		RunTestWithGlobalLockAndKpmCli(t, tt.name, testFunc)
 
-			expectedLock, err := os.ReadFile(lockExpect)
-			if err != nil {
-				t.Fatal(err)
-			}
+		expectedMod, err := os.ReadFile(modExpect)
+		if err != nil {
+			t.Fatal(err)
+		}
+		gotMod, err := os.ReadFile(modPath)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-			gotLock, err := os.ReadFile(lockPath)
-			if err != nil {
-				t.Fatal(err)
-			}
+		expectedLock, err := os.ReadFile(lockExpect)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-			assert.Equal(t, utils.RmNewline(string(expectedMod)), utils.RmNewline(string(gotMod)))
-			assert.Equal(t, utils.RmNewline(string(expectedLock)), utils.RmNewline(string(gotLock)))
-		})
+		gotLock, err := os.ReadFile(lockPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, utils.RmNewline(string(expectedMod)), utils.RmNewline(string(gotMod)))
+		assert.Equal(t, utils.RmNewline(string(expectedLock)), utils.RmNewline(string(gotLock)))
 	}
 }
 
