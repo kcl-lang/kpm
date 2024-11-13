@@ -2013,7 +2013,7 @@ func testRunRemoteWithArgsInvalid(t *testing.T) {
 		{
 			sourceURL:      "git://github.com/kcl-lang/flask-demo-kcl-manifests?commit=8308200&mod=cc:0.0.2",
 			expectedLog:    "cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests' with commit '8308200'\n",
-			expectedErrMsg: "version mismatch: 0.0.1 != 0.0.2, version 0.0.2 not found",
+			expectedErrMsg: "kcl.mod with package 'cc:0.0.2' not found",
 		},
 	}
 
