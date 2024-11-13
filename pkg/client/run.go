@@ -428,7 +428,7 @@ func (o *RunOptions) applyCompileOptions(source downloader.Source, kclPkg *pkg.K
 		// use the subdirectories specified by 'ModSpec'
 		var err error
 		if pkgSource.ModSpec != nil && pkgSource.ModSpec.Name != "" {
-			sourcePath, err = utils.FindPackage(sourcePath, pkgSource.ModSpec.Name)
+			sourcePath, err = downloader.FindPackageByModSpec(sourcePath, pkgSource.ModSpec)
 			if err != nil {
 				return false
 			}

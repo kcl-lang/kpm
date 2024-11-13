@@ -42,7 +42,7 @@ func (pv *PkgVisitor) Visit(s *downloader.Source, v visitFunc) error {
 	}
 
 	if s.ModSpec != nil && s.ModSpec.Name != "" {
-		modPath, err = utils.FindPackage(modPath, s.ModSpec.Name)
+		modPath, err = downloader.FindPackageByModSpec(modPath, s.ModSpec)
 		if err != nil {
 			return err
 		}
@@ -242,7 +242,7 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		return err
 	}
 	if !s.ModSpec.IsNil() {
-		modFullPath, err = utils.FindPackage(modFullPath, s.ModSpec.Name)
+		modFullPath, err = downloader.FindPackageByModSpec(modFullPath, s.ModSpec)
 		if err != nil {
 			return err
 		}

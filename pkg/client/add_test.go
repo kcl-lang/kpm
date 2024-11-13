@@ -53,6 +53,22 @@ func TestAddWithModSpec(t *testing.T) {
 				"add dependency 'cc:0.0.1' successfully",
 		},
 		{
+			name:       "TestAddGitWithoutModFileWithModSpec",
+			pkgSubPath: "git_mod_2",
+			sourceUrl:  "git://github.com/kcl-lang/flask-demo-kcl-manifests.git?commit=3adfc81&mod=cc",
+			msg: "cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with commit '3adfc81'" +
+				"adding dependency 'cc'" +
+				"add dependency 'cc:0.0.2' successfully",
+		},
+		{
+			name:       "TestAddGitWithoutModFileWithModSpec",
+			pkgSubPath: "git_mod_3",
+			sourceUrl:  "git://github.com/kcl-lang/flask-demo-kcl-manifests.git?commit=3adfc81&mod=cc:0.0.1",
+			msg: "cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with commit '3adfc81'" +
+				"adding dependency 'cc'" +
+				"add dependency 'cc:0.0.1' successfully",
+		},
+		{
 			name:       "TestAddLocalWithModSpec",
 			pkgSubPath: filepath.Join("local", "pkg"),
 			sourceUrl:  "../dep?mod=sub:0.0.1",
