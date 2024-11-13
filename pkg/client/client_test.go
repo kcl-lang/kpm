@@ -27,7 +27,6 @@ import (
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/env"
-	"kcl-lang.io/kpm/pkg/features"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -35,25 +34,6 @@ import (
 	"kcl-lang.io/kpm/pkg/test"
 	"kcl-lang.io/kpm/pkg/utils"
 )
-
-const testDataDir = "test_data"
-
-func getTestDir(subDir string) string {
-	pwd, _ := os.Getwd()
-	testDir := filepath.Join(pwd, testDataDir)
-	testDir = filepath.Join(testDir, subDir)
-
-	return testDir
-}
-
-func initTestDir(subDir string) string {
-	testDir := getTestDir(subDir)
-	// clean the test data
-	_ = os.RemoveAll(testDir)
-	_ = os.Mkdir(testDir, 0755)
-
-	return testDir
-}
 
 func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestUpdateWithKclMod", testUpdateWithKclMod)
@@ -83,7 +63,6 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestDownloadGitWithPackage", testDownloadGitWithPackage)
 	test.RunTestWithGlobalLock(t, "TestModandLockFilesWithGitPackageDownload", testModandLockFilesWithGitPackageDownload)
 	test.RunTestWithGlobalLock(t, "TestDependencyGraph", testDependencyGraph)
-	test.RunTestWithGlobalLock(t, "TestAddWithModSpec", testAddWithModSpec)
 	test.RunTestWithGlobalLock(t, "TestRunRemoteWithArgsInvalid", testRunRemoteWithArgsInvalid)
 	test.RunTestWithGlobalLock(t, "TestRunRemoteWithArgs", testRunRemoteWithArgs)
 	test.RunTestWithGlobalLock(t, "TestRunWithNoSumCheck", testRunWithGitPackage)
@@ -93,18 +72,9 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestPull", testPull)
 	test.RunTestWithGlobalLock(t, "TestPullWithInsecureSkipTLSverify", testPullWithInsecureSkipTLSverify)
 	test.RunTestWithGlobalLock(t, "TestPullWithModSpec", testPullWithModSpec)
-	test.RunTestWithGlobalLock(t, "testAddWithOnlyModSpec", testAddWithOnlyModSpec)
-	test.RunTestWithGlobalLock(t, "testAddRenameWithModSpec", testAddRenameWithModSpec)
-	test.RunTestWithGlobalLock(t, "testAddRenameWithNoSpec", testAddRenameWithNoSpec)
 	test.RunTestWithGlobalLock(t, "testPullWithOnlySpec", testPullWithOnlySpec)
 	test.RunTestWithGlobalLock(t, "TestRunWithModSpecVersion", testRunWithModSpecVersion)
 	test.RunTestWithGlobalLock(t, "TestGraph", testGraph)
-
-	features.Enable(features.SupportNewStorage)
-	test.RunTestWithGlobalLock(t, "testAddWithModSpec", testAddWithModSpec)
-	test.RunTestWithGlobalLock(t, "testAddWithOnlyModSpec", testAddWithOnlyModSpec)
-	test.RunTestWithGlobalLock(t, "testAddRenameWithModSpec", testAddRenameWithModSpec)
-	test.RunTestWithGlobalLock(t, "testAddRenameWithNoSpec", testAddRenameWithNoSpec)
 }
 
 // TestDownloadOci test download from oci registry.

@@ -275,7 +275,7 @@ func (d *DepDownloader) Download(opts *DownloadOptions) error {
 	localPath := opts.LocalPath
 	cacheFullPath := opts.CachePath
 	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok && opts.EnableCache {
-		if utils.DirExists(cacheFullPath) && utils.DirExists(filepath.Join(cacheFullPath, constants.KCL_MOD)) &&
+		if utils.DirExists(cacheFullPath) &&
 			// If the version in modspec is empty, meanings the latest version is needed.
 			// The latest version should be requested first and the cache should be updated.
 			((opts.Source.ModSpec != nil && opts.Source.ModSpec.Version != "") || opts.Source.ModSpec == nil) {

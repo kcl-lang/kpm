@@ -222,13 +222,6 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		defer os.RemoveAll(tmpDir)
 	}
 
-	if !utils.DirExists(modFullPath) {
-		err := os.MkdirAll(modFullPath, 0755)
-		if err != nil {
-			return err
-		}
-	}
-
 	credCli, err = downloader.LoadCredentialFile(rv.Settings.CredentialsFile)
 	if err != nil {
 		return err

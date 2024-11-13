@@ -1,0 +1,8 @@
+[dependencies]
+  [dependencies.newpkg]
+    name = "newpkg"
+    full_name = "newpkg_0.0.1"
+    version = "0.0.1"
+    reg = "ghcr.io"
+    repo = "kcl-lang/helloworld"
+    oci_tag = "0.1.4"
