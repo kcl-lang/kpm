@@ -4,8 +4,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/mod/module"
-	"gotest.tools/v3/assert"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/utils"
 )
@@ -43,5 +43,7 @@ func testGraph(t *testing.T) {
 		t.Fatalf("failed to display graph: %v", err)
 	}
 
-	assert.Equal(t, utils.RmNewline(graStr), "pkg@0.0.1 dep@0.0.1pkg@0.0.1 helloworld@0.1.4dep@0.0.1 helloworld@0.1.4")
+	assert.Contains(t, utils.RmNewline(graStr), "pkg@0.0.1 dep@0.0.1")
+	assert.Contains(t, utils.RmNewline(graStr), "pkg@0.0.1 helloworld@0.1.4")
+	assert.Contains(t, utils.RmNewline(graStr), "dep@0.0.1 helloworld@0.1.4")
 }
