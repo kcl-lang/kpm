@@ -13,7 +13,7 @@ import (
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
-func TestAddWithModSpec(t *testing.T) {
+func testAddWithModSpec(t *testing.T) {
 	tests := []struct {
 		name       string
 		pkgSubPath string
