@@ -603,7 +603,7 @@ func FindPackage(root, targetPackage string) (string, error) {
 		if info.IsDir() {
 			kclModPath := filepath.Join(path, constants.KCL_MOD)
 			if _, err := os.Stat(kclModPath); err == nil {
-				if matchesPackageName(kclModPath, targetPackage) {
+				if MatchesPackageName(kclModPath, targetPackage) {
 					result = path
 					return filepath.SkipAll
 				}
@@ -622,7 +622,7 @@ func FindPackage(root, targetPackage string) (string, error) {
 }
 
 // MatchesPackageName checks whether the package name in the kcl.mod file under 'kclModPath' is equal to 'targetPackage'.
-func matchesPackageName(kclModPath, targetPackage string) bool {
+func MatchesPackageName(kclModPath, targetPackage string) bool {
 	type Package struct {
 		Name string `toml:"name"`
 	}

@@ -312,7 +312,7 @@ func TestFindPackage(t *testing.T) {
 
 func TestMatchesPackageName(t *testing.T) {
 	address := filepath.Join(getTestDir("test_find_package"), "test_2", "kcl.mod")
-	assert.Equal(t, matchesPackageName(address, "test_find_package"), true)
+	assert.Equal(t, MatchesPackageName(address, "test_find_package"), true)
 }
 
 func TestShortHash(t *testing.T) {
