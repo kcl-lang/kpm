@@ -441,7 +441,7 @@ func (o *RunOptions) applyCompileOptions(source downloader.Source, kclPkg *pkg.K
 			pkgHome = filepath.Join(workDir, pkgHome)
 		}
 
-		return sourcePath == pkgHome
+		return strings.EqualFold(sourcePath, pkgHome)
 	}
 
 	// If the sources from cli is not empty, use the sources from cli.
@@ -516,7 +516,6 @@ func (o *RunOptions) applyCompileOptions(source downloader.Source, kclPkg *pkg.K
 			}
 			modRelativePath := utils.GenerateModRelativePath(modName, entriesPath)
 			o.KFilenameList[i] = modRelativePath
-			fmt.Printf("o.KFilenameList: %v\n", o.KFilenameList)
 		}
 	}
 
