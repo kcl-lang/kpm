@@ -83,7 +83,7 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestDownloadGitWithPackage", testDownloadGitWithPackage)
 	test.RunTestWithGlobalLock(t, "TestModandLockFilesWithGitPackageDownload", testModandLockFilesWithGitPackageDownload)
 	test.RunTestWithGlobalLock(t, "TestDependencyGraph", testDependencyGraph)
-	test.RunTestWithGlobalLock(t, "TestAddWithModSpec", testAddWithModSpec)
+	test.RunTestWithGlobalLock(t, "TestAddWithModSpec", TestAddWithModSpec)
 	test.RunTestWithGlobalLock(t, "TestRunRemoteWithArgsInvalid", testRunRemoteWithArgsInvalid)
 	test.RunTestWithGlobalLock(t, "TestRunRemoteWithArgs", testRunRemoteWithArgs)
 	test.RunTestWithGlobalLock(t, "TestRunWithNoSumCheck", testRunWithGitPackage)
@@ -101,7 +101,7 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestGraph", testGraph)
 
 	features.Enable(features.SupportNewStorage)
-	test.RunTestWithGlobalLock(t, "testAddWithModSpec", testAddWithModSpec)
+	test.RunTestWithGlobalLock(t, "testAddWithModSpec", TestAddWithModSpec)
 	test.RunTestWithGlobalLock(t, "testAddWithOnlyModSpec", testAddWithOnlyModSpec)
 	test.RunTestWithGlobalLock(t, "testAddRenameWithModSpec", testAddRenameWithModSpec)
 	test.RunTestWithGlobalLock(t, "testAddRenameWithNoSpec", testAddRenameWithNoSpec)
