@@ -516,6 +516,7 @@ func (o *RunOptions) applyCompileOptions(source downloader.Source, kclPkg *pkg.K
 			}
 			modRelativePath := utils.GenerateModRelativePath(modName, entriesPath)
 			o.KFilenameList[i] = modRelativePath
+			fmt.Printf("o.KFilenameList: %v\n", o.KFilenameList)
 		}
 	}
 
