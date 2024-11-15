@@ -148,7 +148,7 @@ func (dr *DepsResolver) Resolve(options ...ResolveOption) error {
 		}
 
 		err = depVisitor.Visit(depSource, func(kclMod *pkg.KclPkg) error {
-			dep.FromKclPkg(kclMod)
+			dep.LocalFullPath = kclMod.HomePath
 			for _, resolveFunc := range dr.ResolveFuncs {
 				err := resolveFunc(&dep, kMod)
 				if err != nil {
