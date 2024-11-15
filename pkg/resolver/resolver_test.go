@@ -47,9 +47,17 @@ func TestResolver(t *testing.T) {
 		}},
 	}
 
+	kMod, err := pkg.LoadKclPkgWithOpts(
+		pkg.WithPath(pkgPath),
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	err = resolver.Resolve(
 		WithEnableCache(true),
-		WithSourceUrl(pkgPath),
+		WithResolveKclMod(kMod),
 	)
 
 	if err != nil {

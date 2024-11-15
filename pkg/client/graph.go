@@ -2,11 +2,9 @@ package client
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/dominikbraun/graph"
 	"golang.org/x/mod/module"
-	"kcl-lang.io/kpm/pkg/downloader"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/resolver"
 )
@@ -156,37 +154,13 @@ func (c *KpmClient) Graph(opts ...GraphOption) (*DepGraph, error) {
 	}
 	depResolver.ResolveFuncs = append(depResolver.ResolveFuncs, resolverFunc)
 
-	for _, depName := range modDeps.Keys() {
-		dep, ok := modDeps.Get(depName)
-		if !ok {
-			return nil, fmt.Errorf("failed to get dependency %s", depName)
-		}
+	err := depResolver.Resolve(
+		resolver.WithEnableCache(true),
+		resolver.WithResolveKclMod(kMod),
+	)
 
-		// Check if the dependency is a local path and it is not an absolute path.
-		// If it is not an absolute path, transform the path to an absolute path.
-		var depSource *downloader.Source
-		if dep.Source.IsLocalPath() && !filepath.IsAbs(dep.Source.Local.Path) {
-			depSource = &downloader.Source{
-				Local: &downloader.Local{
-					Path: filepath.Join(kMod.HomePath, dep.Source.Local.Path),
-				},
-			}
-		} else {
-			depSource = &dep.Source
-		}
-
-		err := resolverFunc(&dep, kMod)
-		if err != nil {
-			return nil, err
-		}
-
-		err = depResolver.Resolve(
-			resolver.WithEnableCache(true),
-			resolver.WithSource(depSource),
-		)
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
 	}
 
 	return dGraph, nil

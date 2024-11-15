@@ -12,12 +12,17 @@ import (
 )
 
 func TestUpdate(t *testing.T) {
+	RunTestWithGlobalLockAndKpmCli(t, "TestUpdateWithKclMod", testUpdateWithKclMod)
+	RunTestWithGlobalLockAndKpmCli(t, "TestUpdateWithKclModlock", testUpdateWithKclModlock)
+	RunTestWithGlobalLockAndKpmCli(t, "TestUpdateWithNoSumCheck", testUpdateWithNoSumCheck)
+	RunTestWithGlobalLockAndKpmCli(t, "TestUpdateDefaultRegistryDep", testUpdateDefaultRegistryDep)
+	RunTestWithGlobalLockAndKpmCli(t, "TestUpdateWithKclModAndLock", testUpdateKclModAndLock)
+	RunTestWithGlobalLockAndKpmCli(t, "TestUpdate", testUpdate)
+}
+
+func testUpdate(t *testing.T, kpmcli *KpmClient) {
 	features.Enable(features.SupportMVS)
 	testDir := getTestDir("test_update_with_mvs")
-	kpmcli, err := NewKpmClient()
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	updates := []struct {
 		name   string
