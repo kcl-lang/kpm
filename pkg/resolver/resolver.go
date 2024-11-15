@@ -137,6 +137,7 @@ func (dr *DepsResolver) Resolve(options ...ResolveOption) error {
 				Local: &downloader.Local{
 					Path: filepath.Join(kMod.HomePath, dep.Source.Local.Path),
 				},
+				ModSpec: dep.Source.ModSpec,
 			}
 		} else {
 			depSource = &dep.Source
