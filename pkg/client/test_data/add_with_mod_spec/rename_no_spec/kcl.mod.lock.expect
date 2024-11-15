@@ -3,6 +3,7 @@
     name = "newpkg"
     full_name = "helloworld_0.1.4"
     version = "0.1.4"
+    sum = "9J9HOMhdypaDYf0J7PqtpGTdlkbxkN0HFEYhosHhf4U="
     reg = "ghcr.io"
     repo = "kcl-lang/helloworld"
     oci_tag = "0.1.4"
