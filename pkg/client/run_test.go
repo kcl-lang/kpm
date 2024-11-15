@@ -8,6 +8,7 @@ import (
 	"github.com/otiai10/copy"
 	"gotest.tools/v3/assert"
 	"kcl-lang.io/kpm/pkg/downloader"
+	"kcl-lang.io/kpm/pkg/features"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -80,6 +81,19 @@ func testRunWithModSpecVersion(t *testing.T, kpmcli *KpmClient) {
 }
 
 func TestRun(t *testing.T) {
+	features.Enable(features.SupportNewStorage)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunWithOciDownloader", testRunWithOciDownloader)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunDefaultRegistryDep", testRunDefaultRegistryDep)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunInVendor", testRunInVendor)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunRemoteWithArgsInvalid", testRunRemoteWithArgsInvalid)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunRemoteWithArgs", testRunRemoteWithArgs)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunWithNoSumCheck", testRunWithNoSumCheck)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunWithGitPackage", testRunWithGitPackage)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunGit", testRunGit)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunOciWithSettingsFile", testRunOciWithSettingsFile)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunWithModSpecVersion", testRunWithModSpecVersion)
+
+	features.Disable(features.SupportNewStorage)
 	RunTestWithGlobalLockAndKpmCli(t, "TestRunWithOciDownloader", testRunWithOciDownloader)
 	RunTestWithGlobalLockAndKpmCli(t, "TestRunDefaultRegistryDep", testRunDefaultRegistryDep)
 	RunTestWithGlobalLockAndKpmCli(t, "TestRunInVendor", testRunInVendor)

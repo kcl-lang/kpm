@@ -16,7 +16,7 @@ const (
 
 var features = map[string]bool{
 	SupportMVS:        false,
-	SupportNewStorage: true,
+	SupportNewStorage: false,
 }
 
 func init() {
