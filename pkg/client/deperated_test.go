@@ -16,17 +16,14 @@ import (
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
-func TestRunWithNoSumCheck(t *testing.T) {
+func testRunWithNoSumCheck(t *testing.T, kpmcli *KpmClient) {
 	pkgPath := getTestDir("test_run_no_sum_check")
-
-	kpmcli, err := NewKpmClient()
-	assert.Equal(t, err, nil)
 
 	opts := opt.DefaultCompileOptions()
 	opts.SetNoSumCheck(true)
 	opts.SetPkgPath(pkgPath)
 
-	_, err = kpmcli.CompileWithOpts(opts)
+	_, err := kpmcli.CompileWithOpts(opts)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), false)
 
@@ -42,11 +39,8 @@ func TestRunWithNoSumCheck(t *testing.T) {
 	}()
 }
 
-func testRunWithGitPackage(t *testing.T) {
+func testRunWithGitPackage(t *testing.T, kpmcli *KpmClient) {
 	pkgPath := getTestDir("test_run_git_package")
-
-	kpmcli, err := NewKpmClient()
-	assert.Equal(t, err, nil)
 
 	opts := opt.DefaultCompileOptions()
 	opts.SetPkgPath(pkgPath)
@@ -63,11 +57,8 @@ func testRunWithGitPackage(t *testing.T) {
 	}()
 }
 
-func testRunWithOciDownloader(t *testing.T) {
-	kpmCli, err := NewKpmClient()
+func testRunWithOciDownloader(t *testing.T, kpmCli *KpmClient) {
 	path := getTestDir("test_oci_downloader")
-	assert.Equal(t, err, nil)
-
 	kpmCli.DepDownloader = downloader.NewOciDownloader("linux/amd64")
 
 	var buf bytes.Buffer
@@ -84,10 +75,7 @@ func testRunWithOciDownloader(t *testing.T) {
 	assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
 }
 
-func testRunGit(t *testing.T) {
-	kpmcli, err := NewKpmClient()
-	assert.Equal(t, err, nil)
-
+func testRunGit(t *testing.T, kpmcli *KpmClient) {
 	testPath := getTestDir("test_run_git")
 
 	opts := opt.DefaultCompileOptions()
@@ -107,15 +95,13 @@ func testRunGit(t *testing.T) {
 	assert.Equal(t, utils.RmNewline(string(bytes)), utils.RmNewline(string(resultStr)))
 }
 
-func testRunOciWithSettingsFile(t *testing.T) {
-	kpmcli, err := NewKpmClient()
-	assert.Equal(t, err, nil)
+func testRunOciWithSettingsFile(t *testing.T, kpmcli *KpmClient) {
 	kpmcli.SetLogWriter(nil)
 	opts := opt.DefaultCompileOptions()
 	opts.SetEntries([]string{})
 	opts.Merge(kcl.WithSettings(filepath.Join(".", "test_data", "test_run_oci_with_settings", "kcl.yaml")))
 	opts.SetHasSettingsYaml(true)
-	_, err = kpmcli.CompileOciPkg("oci://ghcr.io/kcl-lang/helloworld", "", opts)
+	_, err := kpmcli.CompileOciPkg("oci://ghcr.io/kcl-lang/helloworld", "", opts)
 	assert.Equal(t, err, nil)
 }
 

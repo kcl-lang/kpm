@@ -11,7 +11,7 @@ import (
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
-func testRunWithModSpecVersion(t *testing.T) {
+func testRunWithModSpecVersion(t *testing.T, kpmcli *KpmClient) {
 	pkgPath := getTestDir("test_run_with_modspec_version")
 	modbkPath := filepath.Join(pkgPath, "kcl.mod.bk")
 	modPath := filepath.Join(pkgPath, "kcl.mod")
@@ -40,11 +40,6 @@ func testRunWithModSpecVersion(t *testing.T) {
 			t.Fatal(err)
 		}
 	}()
-
-	kpmcli, err := NewKpmClient()
-	if err != nil {
-		t.Errorf("Failed to create kpm client: %v", err)
-	}
 
 	res, err := kpmcli.Run(
 		WithRunSource(
@@ -82,4 +77,17 @@ func testRunWithModSpecVersion(t *testing.T) {
 
 	assert.Equal(t, utils.RmNewline(string(expectedMod)), utils.RmNewline(string(gotMod)))
 	assert.Equal(t, utils.RmNewline(string(expectedLock)), utils.RmNewline(string(gotLock)))
+}
+
+func TestRun(t *testing.T) {
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunWithOciDownloader", testRunWithOciDownloader)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunDefaultRegistryDep", testRunDefaultRegistryDep)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunInVendor", testRunInVendor)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunRemoteWithArgsInvalid", testRunRemoteWithArgsInvalid)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunRemoteWithArgs", testRunRemoteWithArgs)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunWithNoSumCheck", testRunWithNoSumCheck)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunWithGitPackage", testRunWithGitPackage)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunGit", testRunGit)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunOciWithSettingsFile", testRunOciWithSettingsFile)
+	RunTestWithGlobalLockAndKpmCli(t, "TestRunWithModSpecVersion", testRunWithModSpecVersion)
 }
