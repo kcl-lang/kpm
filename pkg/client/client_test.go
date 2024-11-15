@@ -42,15 +42,12 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestAddWithDiffVersionNoSumCheck", testAddWithDiffVersionNoSumCheck)
 	test.RunTestWithGlobalLock(t, "TestAddWithDiffVersionWithSumCheck", testAddWithDiffVersionWithSumCheck)
 	test.RunTestWithGlobalLock(t, "TestDownloadOci", testDownloadOci)
-	test.RunTestWithGlobalLock(t, "TestRunWithOciDownloader", testRunWithOciDownloader)
 	test.RunTestWithGlobalLock(t, "TestAddWithOciDownloader", testAddWithOciDownloader)
 	test.RunTestWithGlobalLock(t, "TestAddDefaultRegistryDep", testAddDefaultRegistryDep)
 	test.RunTestWithGlobalLock(t, "TestUpdateDefaultRegistryDep", testUpdateDefaultRegistryDep)
-	test.RunTestWithGlobalLock(t, "TestRunDefaultRegistryDep", testRunDefaultRegistryDep)
 	test.RunTestWithGlobalLock(t, "TestAddWithNoSumCheck", testAddWithNoSumCheck)
 	test.RunTestWithGlobalLock(t, "TestAddWithGitCommit", testAddWithGitCommit)
 	test.RunTestWithGlobalLock(t, "TestDependenciesOrder", testDependenciesOrder)
-	test.RunTestWithGlobalLock(t, "TestRunInVendor", testRunInVendor)
 	test.RunTestWithGlobalLock(t, "TestPkgWithInVendorMode", testPkgWithInVendorMode)
 	test.RunTestWithGlobalLock(t, "TestResolveMetadataInJsonStrWithPackage", testResolveMetadataInJsonStrWithPackage)
 	test.RunTestWithGlobalLock(t, "TestResolveMetadataInJsonStr", testResolveMetadataInJsonStr)
@@ -63,17 +60,11 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestDownloadGitWithPackage", testDownloadGitWithPackage)
 	test.RunTestWithGlobalLock(t, "TestModandLockFilesWithGitPackageDownload", testModandLockFilesWithGitPackageDownload)
 	test.RunTestWithGlobalLock(t, "TestDependencyGraph", testDependencyGraph)
-	test.RunTestWithGlobalLock(t, "TestRunRemoteWithArgsInvalid", testRunRemoteWithArgsInvalid)
-	test.RunTestWithGlobalLock(t, "TestRunRemoteWithArgs", testRunRemoteWithArgs)
-	test.RunTestWithGlobalLock(t, "TestRunWithNoSumCheck", testRunWithGitPackage)
-	test.RunTestWithGlobalLock(t, "TestRunGit", testRunGit)
-	test.RunTestWithGlobalLock(t, "TestRunOciWithSettingsFile", testRunOciWithSettingsFile)
 	test.RunTestWithGlobalLock(t, "TestVendorWithGlobalLock", testVendorWithGlobalLock)
 	test.RunTestWithGlobalLock(t, "TestPull", testPull)
 	test.RunTestWithGlobalLock(t, "TestPullWithInsecureSkipTLSverify", testPullWithInsecureSkipTLSverify)
 	test.RunTestWithGlobalLock(t, "TestPullWithModSpec", testPullWithModSpec)
 	test.RunTestWithGlobalLock(t, "testPullWithOnlySpec", testPullWithOnlySpec)
-	test.RunTestWithGlobalLock(t, "TestRunWithModSpecVersion", testRunWithModSpecVersion)
 	test.RunTestWithGlobalLock(t, "TestGraph", testGraph)
 }
 
@@ -1757,7 +1748,7 @@ func testUpdateDefaultRegistryDep(t *testing.T) {
 	}()
 }
 
-func testRunDefaultRegistryDep(t *testing.T) {
+func testRunDefaultRegistryDep(t *testing.T, kpmcli *KpmClient) {
 	pkgPath := getTestDir("run_with_default_dep")
 
 	pkgWithSumCheckPathModBak := filepath.Join(pkgPath, "kcl.mod.bak")
@@ -1771,9 +1762,6 @@ func testRunDefaultRegistryDep(t *testing.T) {
 	err := copy.Copy(pkgWithSumCheckPathModBak, pkgWithSumCheckPathMod)
 	assert.Equal(t, err, nil)
 	err = copy.Copy(pkgWithSumCheckPathModLockBak, pkgWithSumCheckPathModLock)
-	assert.Equal(t, err, nil)
-
-	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
 
 	kclPkg, err := kpmcli.LoadPkgFromPath(pkgPath)
@@ -1996,10 +1984,7 @@ func TestRunLocalWithArgs(t *testing.T) {
 	}
 }
 
-func testRunRemoteWithArgsInvalid(t *testing.T) {
-	kpmcli, err := NewKpmClient()
-	assert.Equal(t, err, nil)
-
+func testRunRemoteWithArgsInvalid(t *testing.T, kpmcli *KpmClient) {
 	logbuf := new(bytes.Buffer)
 	kpmcli.SetLogWriter(logbuf)
 
@@ -2025,10 +2010,8 @@ func testRunRemoteWithArgsInvalid(t *testing.T) {
 	}
 }
 
-func testRunRemoteWithArgs(t *testing.T) {
+func testRunRemoteWithArgs(t *testing.T, kpmcli *KpmClient) {
 	pkgPath := getTestDir("test_run_options")
-	kpmcli, err := NewKpmClient()
-	assert.Equal(t, err, nil)
 
 	logbuf := new(bytes.Buffer)
 	kpmcli.SetLogWriter(logbuf)
@@ -2091,13 +2074,7 @@ func testRunRemoteWithArgs(t *testing.T) {
 	}
 }
 
-func testRunInVendor(t *testing.T) {
-	// Create a new kpm client.
-	kpmcli, err := NewKpmClient()
-	if err != nil {
-		t.Fatal(err)
-	}
-
+func testRunInVendor(t *testing.T, kpmcli *KpmClient) {
 	pkgPath := getTestDir("test_run_in_vendor")
 	workdir := filepath.Join(pkgPath, "pkg")
 
