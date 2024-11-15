@@ -1201,6 +1201,7 @@ func testUpdateWithNoSumCheck(t *testing.T, kpmcli *KpmClient) {
 	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), false)
 	buf.Reset()
 
+	kpmcli.SetNoSumCheck(false)
 	kclPkg, err = kpmcli.LoadPkgFromPath(pkgPath)
 	assert.Equal(t, err, nil)
 	kclPkg.NoSumCheck = false
