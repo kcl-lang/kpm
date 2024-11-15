@@ -447,6 +447,39 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 					return err
 				}
 			}
+		} else {
+			reporter.ReportMsgTo(
+				fmt.Sprintf(
+					"downloading '%s:%s' from '%s/%s:%s'",
+					ociSource.Repo, ociSource.Tag, ociSource.Reg, ociSource.Repo, ociSource.Tag,
+				),
+				opts.LogWriter,
+			)
+
+			err = ociCli.Pull(localPath, ociSource.Tag)
+			if err != nil {
+				return err
+			}
+			tarPath, err := utils.FindPkgArchive(localPath)
+			if err != nil {
+				return err
+			}
+			if utils.IsTar(tarPath) {
+				err = utils.UnTarDir(tarPath, localPath)
+			} else {
+				err = utils.ExtractTarball(tarPath, localPath)
+			}
+			if err != nil {
+				return fmt.Errorf("failed to untar the kcl package tar from '%s' into '%s'", tarPath, localPath)
+			}
+
+			// After untar the downloaded kcl package tar file, remove the tar file.
+			if utils.DirExists(tarPath) {
+				rmErr := os.Remove(tarPath)
+				if rmErr != nil {
+					return fmt.Errorf("failed to remove the downloaded kcl package tar file '%s'", tarPath)
+				}
+			}
 		}
 	} else {
 		reporter.ReportMsgTo(
@@ -498,6 +531,19 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 		git.WithTag(gitSource.Tag),
 	}
 
+	var msg string
+	if len(opts.Source.Git.Tag) != 0 {
+		msg = fmt.Sprintf("with tag '%s'", opts.Source.Git.Tag)
+	}
+
+	if len(opts.Source.Git.Commit) != 0 {
+		msg = fmt.Sprintf("with commit '%s'", opts.Source.Git.Commit)
+	}
+
+	if len(opts.Source.Git.Branch) != 0 {
+		msg = fmt.Sprintf("with branch '%s'", opts.Source.Git.Branch)
+	}
+
 	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && ok {
 		if opts.EnableCache {
 			cacheFullPath := opts.CachePath
@@ -525,6 +571,10 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 							return err
 						}
 					} else {
+						reporter.ReportMsgTo(
+							fmt.Sprintf("cloning '%s' %s", opts.Source.Git.Url, msg),
+							opts.LogWriter,
+						)
 						// If not, clone the bare repository from the remote git repository, update the cache.
 						if utils.DirExists(cacheFullPath) {
 							err = os.Remove(cacheFullPath)
@@ -558,21 +608,24 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 					}
 				}
 			}
+		} else {
+			reporter.ReportMsgTo(
+				fmt.Sprintf("cloning '%s' %s", opts.Source.Git.Url, msg),
+				opts.LogWriter,
+			)
+			// If the cache is disabled, clone the repository from the remote git repository.
+			_, err := git.CloneWithOpts(
+				append(
+					cloneOpts,
+					git.WithRepoURL(gitSource.Url),
+					git.WithLocalPath(opts.LocalPath),
+				)...,
+			)
+			if err != nil {
+				return err
+			}
 		}
 	} else {
-		var msg string
-		if len(opts.Source.Git.Tag) != 0 {
-			msg = fmt.Sprintf("with tag '%s'", opts.Source.Git.Tag)
-		}
-
-		if len(opts.Source.Git.Commit) != 0 {
-			msg = fmt.Sprintf("with commit '%s'", opts.Source.Git.Commit)
-		}
-
-		if len(opts.Source.Git.Branch) != 0 {
-			msg = fmt.Sprintf("with branch '%s'", opts.Source.Git.Branch)
-		}
-
 		reporter.ReportMsgTo(
 			fmt.Sprintf("cloning '%s' %s", opts.Source.Git.Url, msg),
 			opts.LogWriter,

@@ -210,6 +210,14 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		if rv.EnableCache {
 			cacheFullPath = s.CachePath(filepath.Join(rv.CachePath, s.Type(), "cache"))
 		}
+		if modFullPath != "" {
+			if !utils.DirExists(modFullPath) {
+				err := os.MkdirAll(modFullPath, 0755)
+				if err != nil {
+					return err
+				}
+			}
+		}
 	}
 
 	if len(rv.VisitedSpace) == 0 {

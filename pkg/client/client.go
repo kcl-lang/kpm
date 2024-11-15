@@ -211,9 +211,26 @@ func (c *KpmClient) AcquireDepSum(dep pkg.Dependency) (string, error) {
 
 // ResolveDepsIntoMap will calculate the map of kcl package name and local storage path of the external packages.
 func (c *KpmClient) ResolveDepsIntoMap(kclPkg *pkg.KclPkg) (map[string]string, error) {
-	err := c.ResolvePkgDepsMetadata(kclPkg, true)
-	if err != nil {
-		return nil, err
+	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok {
+		err := c.ResolvePkgDepsMetadata(kclPkg, true)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		if kclPkg.IsVendorMode() {
+			// In the vendor mode, the search path is the vendor subdirectory of the current package.
+			err := c.VendorDeps(kclPkg)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			kclPkg, err = c.Update(
+				WithUpdatedKclPkg(kclPkg),
+			)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	depMetadatas, err := kclPkg.GetDepsMetadata()
