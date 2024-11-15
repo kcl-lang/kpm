@@ -37,6 +37,8 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 		return nil, fmt.Errorf("kcl package is nil")
 	}
 
+	kMod.NoSumCheck = c.noSumCheck
+
 	modDeps := kMod.ModFile.Dependencies.Deps
 	if modDeps == nil {
 		return nil, fmt.Errorf("kcl.mod dependencies is nil")
@@ -80,6 +82,15 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 			}
 		}
 		selectedDep.LocalFullPath = dep.LocalFullPath
+		if selectedDep.Sum == "" {
+			sum, err := c.AcquireDepSum(*selectedDep)
+			if err != nil {
+				return err
+			}
+			if sum != "" {
+				selectedDep.Sum = sum
+			}
+		}
 		kMod.Dependencies.Deps.Set(dep.Name, *selectedDep)
 
 		return nil

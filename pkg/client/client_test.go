@@ -1185,6 +1185,9 @@ func testAddWithNoSumCheck(t *testing.T) {
 
 func testUpdateWithNoSumCheck(t *testing.T, kpmcli *KpmClient) {
 	pkgPath := getTestDir("test_update_no_sum_check")
+	defer func() {
+		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
+	}()
 
 	var buf bytes.Buffer
 	kpmcli.SetLogWriter(&buf)
@@ -1201,15 +1204,12 @@ func testUpdateWithNoSumCheck(t *testing.T, kpmcli *KpmClient) {
 	kpmcli.SetNoSumCheck(false)
 	kclPkg, err = kpmcli.LoadPkgFromPath(pkgPath)
 	assert.Equal(t, err, nil)
+	kclPkg.NoSumCheck = false
 
 	err = kpmcli.UpdateDeps(kclPkg)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), true)
 	assert.Equal(t, buf.String(), "")
-
-	defer func() {
-		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
-	}()
 }
 
 func testAddWithDiffVersionNoSumCheck(t *testing.T) {
