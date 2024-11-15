@@ -4,3 +4,6 @@
     full_name = "helloworld_0.1.0"
     version = "0.1.0"
     sum = "aqrvSsd8zGHzRERbOzxYxARmK6QjvpQMYC1OqemdZvc="
+    reg = "ghcr.io"
+    repo = "kcl-lang/helloworld"
+    oci_tag = "0.1.0"
