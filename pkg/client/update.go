@@ -67,6 +67,7 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 			// if the dependency does not exist in the mod file,
 			// the dependency is a indirect dependency.
 			// it will be added to the kcl.mod.lock file not the kcl.mod file.
+			kMod.ModFile.Dependencies.Deps.Set(dep.Name, *selectedModDep)
 		}
 
 		selectedDep := dep
@@ -79,8 +80,6 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 			}
 		}
 		selectedDep.LocalFullPath = dep.LocalFullPath
-
-		kMod.ModFile.Dependencies.Deps.Set(dep.Name, *selectedModDep)
 		kMod.Dependencies.Deps.Set(dep.Name, *selectedDep)
 
 		return nil
