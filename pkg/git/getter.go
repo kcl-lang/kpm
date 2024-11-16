@@ -3,6 +3,7 @@ package git
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 
 	"github.com/hashicorp/go-getter"
@@ -52,4 +53,30 @@ func (cloneOpts *CloneOptions) ForceGitUrl() (string, error) {
 	}
 
 	return ForceProtocol(cloneOpts.RepoURL, GIT_PROTOCOL), nil
+}
+
+// SetProxy sets the HTTP client with proxy settings for go-getter
+func SetProxy(client *getter.Client, proxyURL string) error {
+	parsedProxyURL, err := url.Parse(proxyURL)
+	if err != nil {
+		return fmt.Errorf("invalid proxy URL: %w", err)
+	}
+
+	transport := &http.Transport{
+		Proxy: http.ProxyURL(parsedProxyURL),
+	}
+	httpClient := &http.Client{
+		Transport: transport,
+	}
+
+	// Create a custom HttpGetter with the custom HTTP client
+	customHttpGetter := &getter.HttpGetter{
+		Client: httpClient,
+	}
+
+	// Assign the custom getter to the client for "http" and "https" protocols
+	client.Getters["http"] = customHttpGetter
+	client.Getters["https"] = customHttpGetter
+
+	return nil
 }

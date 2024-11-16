@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/go-git/go-git/v5"
+	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/hashicorp/go-getter"
 	giturl "github.com/kubescape/go-git-url"
@@ -26,7 +27,8 @@ type CloneOptions struct {
 	Branch    string
 	LocalPath string
 	Writer    io.Writer
-	Bare      bool // New field to indicate if the clone should be bare
+	Bare      bool   // New field to indicate if the clone should be bare
+	ProxyURL  string // New field for proxy URL
 }
 
 // CloneOption is a function that modifies CloneOptions
@@ -92,6 +94,13 @@ func WithWriter(writer io.Writer) CloneOption {
 	}
 }
 
+// WithProxyURL sets the proxy URL for CloneOptions
+func WithProxyURL(proxyURL string) CloneOption {
+	return func(o *CloneOptions) {
+		o.ProxyURL = proxyURL
+	}
+}
+
 // Validate checks if the CloneOptions are valid
 func (cloneOpts *CloneOptions) Validate() error {
 	onlyOneAllowed := 0
@@ -144,7 +153,7 @@ func (cloneOpts *CloneOptions) CheckoutFromBare() error {
 	return nil
 }
 
-// Clone clones a git repository, handling both bare and non-bare options
+// Clone clones a git repository, handling both bare and non-bare options with proxy support
 func (cloneOpts *CloneOptions) Clone() (*git.Repository, error) {
 	if err := cloneOpts.Validate(); err != nil {
 		return nil, err
@@ -155,6 +164,16 @@ func (cloneOpts *CloneOptions) Clone() (*git.Repository, error) {
 		cmdArgs := []string{"clone", "--bare", cloneOpts.RepoURL, cloneOpts.LocalPath}
 		cmd := exec.Command("git", cmdArgs...)
 
+		// Set proxy environment variables if ProxyURL is set
+		if cloneOpts.ProxyURL != "" {
+			env := os.Environ()
+			env = append(env, "http_proxy="+cloneOpts.ProxyURL, "https_proxy="+cloneOpts.ProxyURL)
+			cmd.Env = env
+		}
+
+		cmd.Stdout = cloneOpts.Writer
+		cmd.Stderr = cloneOpts.Writer
+
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			return nil, fmt.Errorf("failed to clone repository: %s, error: %w", string(output), err)
@@ -163,6 +182,14 @@ func (cloneOpts *CloneOptions) Clone() (*git.Repository, error) {
 		repo, err := git.PlainOpen(cloneOpts.LocalPath)
 		if err != nil {
 			return nil, err
+		}
+
+		// If a branch, tag, or commit is specified, check it out
+		if cloneOpts.Branch != "" || cloneOpts.Tag != "" || cloneOpts.Commit != "" {
+			err = cloneOpts.CheckoutFromBare()
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		return repo, nil
@@ -183,6 +210,13 @@ func (cloneOpts *CloneOptions) Clone() (*git.Repository, error) {
 		Getters:   goGetterGetters,
 	}
 
+	// Set HTTP client with proxy if ProxyURL is set
+	if cloneOpts.ProxyURL != "" {
+		if err := SetProxy(client, cloneOpts.ProxyURL); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := client.Get(); err != nil {
 		return nil, err
 	}
@@ -193,9 +227,10 @@ func (cloneOpts *CloneOptions) Clone() (*git.Repository, error) {
 	}
 
 	return repo, nil
+
 }
 
-// CloneWithOpts will clone from `repoURL` to `localPath` via git by using CloneOptions
+// CloneWithOpts clones from `repoURL` to `localPath` via git using CloneOptions
 func CloneWithOpts(opts ...CloneOption) (*git.Repository, error) {
 	cloneOpts := &CloneOptions{}
 	for _, opt := range opts {
@@ -210,7 +245,7 @@ func CloneWithOpts(opts ...CloneOption) (*git.Repository, error) {
 	return cloneOpts.Clone()
 }
 
-// Clone will clone from `repoURL` to `localPath` via git by tag name.
+// Clone clones from `repoURL` to `localPath` via git by tag name.
 // Deprecated: This function will be removed in a future version. Use CloneWithOpts instead.
 func Clone(repoURL string, tagName string, localPath string, writer io.Writer) (*git.Repository, error) {
 	repo, err := git.PlainClone(localPath, false, &git.CloneOptions{
@@ -298,7 +333,6 @@ func GetAllGithubReleases(url string) ([]string, error) {
 		} else {
 			apiURL = ""
 		}
-		fmt.Println(apiURL)
 	}
 
 	return releaseTags, nil

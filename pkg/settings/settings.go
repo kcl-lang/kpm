@@ -158,43 +158,46 @@ func (settings *Settings) DefaultOciRef() string {
 	return utils.JoinPath(settings.Conf.DefaultOciRegistry, settings.Conf.DefaultOciRepo)
 }
 
-// LoadSettingsFromEnv will load the kpm settings from environment variables.
+// / LoadSettingsFromEnv will load the KPM settings from environment variables.
 func (settings *Settings) LoadSettingsFromEnv() (*Settings, *reporter.KpmEvent) {
-	// Load the env KPM_REG
+	// Load the environment variable for OCI registry
 	reg := os.Getenv(DEFAULT_REGISTRY_ENV)
 	if len(reg) > 0 {
 		settings.Conf.DefaultOciRegistry = reg
 	}
-	// Load the env KPM_REPO
+
+	// Load the environment variable for OCI repository
 	repo := os.Getenv(DEFAULT_REPO_ENV)
 	if len(repo) > 0 {
 		settings.Conf.DefaultOciRepo = repo
 	}
 
-	// Load the env OCI_REG_PLAIN_HTTP
+	// Load the environment variable for OCI plain HTTP
 	plainHttp := os.Getenv(DEFAULT_OCI_PLAIN_HTTP_ENV)
 	if len(plainHttp) > 0 {
 		isPlainHttp, err := isOn(plainHttp)
-		settings.Conf.DefaultOciPlainHttp = &isPlainHttp
 		if err != nil {
 			return settings, reporter.NewErrorEvent(
 				reporter.UnknownEnv,
 				err,
-				fmt.Sprintf("unknown environment variable '%s=%s'", DEFAULT_OCI_PLAIN_HTTP_ENV, plainHttp),
+				fmt.Sprintf("Invalid value for environment variable '%s': %s", DEFAULT_OCI_PLAIN_HTTP_ENV, plainHttp),
 			)
 		}
+		settings.Conf.DefaultOciPlainHttp = &isPlainHttp
 	}
+
 	return settings, nil
 }
 
-func isOn(input string) (bool, error) {
-	if strings.ToLower(input) == ON {
+// isOn converts ON/OFF values from environment variables to boolean.
+func isOn(value string) (bool, error) {
+	lowerValue := strings.ToLower(value)
+	if lowerValue == "on" {
 		return true, nil
-	} else if strings.ToLower(input) == OFF {
+	} else if lowerValue == "off" {
 		return false, nil
-	} else {
-		return false, errors.UnknownEnv
 	}
+	return false, fmt.Errorf("expected 'on' or 'off', got '%s'", value)
 }
 
 // GetFullPath returns the full path file path under '$HOME/.kpm/config/'

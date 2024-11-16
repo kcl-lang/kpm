@@ -39,6 +39,8 @@ type DownloadOptions struct {
 	credsClient *CredClient
 	// InsecureSkipTLSverify is the flag to skip the verification of the certificate.
 	InsecureSkipTLSverify bool
+	// ProxyURL is the URL of the proxy server to use for downloads.
+	ProxyURL string
 }
 
 type Option func(*DownloadOptions)
@@ -97,6 +99,12 @@ func NewDownloadOptions(opts ...Option) *DownloadOptions {
 		opt(do)
 	}
 	return do
+}
+
+func WithProxyURL(proxyURL string) Option {
+	return func(do *DownloadOptions) {
+		do.ProxyURL = proxyURL
+	}
 }
 
 // Downloader is the interface for downloading a package.
@@ -259,94 +267,161 @@ func NewOciDownloader(platform string) *DepDownloader {
 	}
 }
 
-func (d *DepDownloader) Download(opts *DownloadOptions) error {
+// func (d *DepDownloader) Download(opts *DownloadOptions) error {
 
-	// create a tmp dir to download the oci package.
-	tmpDir, err := os.MkdirTemp("", "")
+// 	// create a tmp dir to download the oci package.
+// 	tmpDir, err := os.MkdirTemp("", "")
+// 	if err != nil {
+// 		return fmt.Errorf("failed to create a temp dir: %w", err)
+// 	}
+// 	if opts.Source.Git != nil {
+// 		tmpDir = filepath.Join(tmpDir, constants.GitScheme)
+// 	}
+// 	// clean the temp dir.
+// 	defer os.RemoveAll(tmpDir)
+
+// 	localPath := opts.LocalPath
+// 	cacheFullPath := opts.CachePath
+// 	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok && opts.EnableCache {
+// 		if utils.DirExists(cacheFullPath) &&
+// 			// If the version in modspec is empty, meanings the latest version is needed.
+// 			// The latest version should be requested first and the cache should be updated.
+// 			((opts.Source.ModSpec != nil && opts.Source.ModSpec.Version != "") || opts.Source.ModSpec == nil) {
+// 			// copy the cache to the local path
+// 			if cacheFullPath != opts.LocalPath {
+// 				err := copy.Copy(cacheFullPath, opts.LocalPath)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 			return nil
+// 		} else {
+// 			err := os.MkdirAll(cacheFullPath, 0755)
+// 			if err != nil {
+// 				return err
+// 			}
+// 		}
+// 	}
+
+// 	// If the dependency package is already exist,
+// 	// Skip the download process.
+// 	if utils.DirExists(localPath) &&
+// 		utils.DirExists(filepath.Join(localPath, constants.KCL_MOD)) {
+// 		return nil
+// 	} else {
+// 		opts.LocalPath = tmpDir
+// 		// Dispatch the download to the specific downloader by package source.
+// 		if opts.Source.Oci != nil {
+// 			if d.OciDownloader == nil {
+// 				d.OciDownloader = &OciDownloader{}
+// 			}
+// 			err := d.OciDownloader.Download(opts)
+// 			if err != nil {
+// 				return err
+// 			}
+// 		}
+
+// 		if opts.Source.Git != nil {
+// 			if d.GitDownloader == nil {
+// 				d.GitDownloader = &GitDownloader{}
+// 			}
+// 			err := d.GitDownloader.Download(opts)
+// 			if err != nil {
+// 				return err
+// 			}
+// 		}
+
+// 		// rename the tmp dir to the local path.
+// 		if utils.DirExists(localPath) {
+// 			err := os.RemoveAll(localPath)
+// 			if err != nil {
+// 				return err
+// 			}
+// 		}
+
+// 		// Move the downloaded package to the local path.
+// 		// On unix, after the move, the tmp dir will be removed.
+// 		err = utils.MoveOrCopy(tmpDir, localPath)
+// 		if err != nil {
+// 			return err
+// 		}
+
+// 		if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok && opts.EnableCache {
+// 			// Enable the cache, update the dependency package to the cache path.
+// 			if cacheFullPath != localPath {
+// 				err := copy.Copy(localPath, cacheFullPath)
+// 				if err != nil {
+// 					return err
+// 				}
+// 			}
+// 		}
+// 	}
+
+// 	return nil
+// }
+
+func (d *DepDownloader) Download(opts *DownloadOptions) error {
+	// Create a temporary directory to handle the package download.
+	tmpDir, err := os.MkdirTemp("", "package-download-")
 	if err != nil {
-		return fmt.Errorf("failed to create a temp dir: %w", err)
+		return fmt.Errorf("failed to create temporary directory: %w", err)
 	}
-	if opts.Source.Git != nil {
-		tmpDir = filepath.Join(tmpDir, constants.GitScheme)
-	}
-	// clean the temp dir.
 	defer os.RemoveAll(tmpDir)
 
-	localPath := opts.LocalPath
-	cacheFullPath := opts.CachePath
-	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok && opts.EnableCache {
-		if utils.DirExists(cacheFullPath) &&
-			// If the version in modspec is empty, meanings the latest version is needed.
-			// The latest version should be requested first and the cache should be updated.
-			((opts.Source.ModSpec != nil && opts.Source.ModSpec.Version != "") || opts.Source.ModSpec == nil) {
-			// copy the cache to the local path
-			if cacheFullPath != opts.LocalPath {
-				err := copy.Copy(cacheFullPath, opts.LocalPath)
-				if err != nil {
-					return err
-				}
+	// Store the original local path.
+	originalLocalPath := opts.LocalPath
+	// Use the temporary directory as the download location.
+	opts.LocalPath = tmpDir
+
+	// Dispatch the download to the specific downloader based on the source.
+	if opts.Source.Oci != nil {
+		// Use an OCI downloader.
+		if d.OciDownloader == nil {
+			d.OciDownloader = &OciDownloader{}
+		}
+		if err := d.OciDownloader.Download(opts); err != nil {
+			return fmt.Errorf("failed to download from OCI source: %w", err)
+		}
+	} else if opts.Source.Git != nil {
+		// Use a Git downloader.
+		if d.GitDownloader == nil {
+			d.GitDownloader = &GitDownloader{}
+		}
+		if err := d.GitDownloader.Download(opts); err != nil {
+			return fmt.Errorf("failed to download from Git source: %w", err)
+		}
+	} else {
+		return errors.New("no valid source specified in options")
+	}
+
+	// Handle caching if enabled.
+	if opts.EnableCache {
+		cachingSupported, err := features.Enabled("caching")
+		if err != nil {
+			return fmt.Errorf("failed to check if caching is supported: %w", err)
+		}
+		if cachingSupported {
+			// Create the cache directory if it doesn't exist.
+			if err := os.MkdirAll(opts.CachePath, 0755); err != nil {
+				return fmt.Errorf("failed to create cache directory: %w", err)
 			}
-			return nil
-		} else {
-			err := os.MkdirAll(cacheFullPath, 0755)
-			if err != nil {
-				return err
+			// Copy the downloaded content to the cache directory.
+			if err := copy.Copy(tmpDir, opts.CachePath); err != nil {
+				return fmt.Errorf("failed to copy content to cache directory: %w", err)
 			}
 		}
 	}
 
-	// If the dependency package is already exist,
-	// Skip the download process.
-	if utils.DirExists(localPath) &&
-		utils.DirExists(filepath.Join(localPath, constants.KCL_MOD)) {
-		return nil
-	} else {
-		opts.LocalPath = tmpDir
-		// Dispatch the download to the specific downloader by package source.
-		if opts.Source.Oci != nil {
-			if d.OciDownloader == nil {
-				d.OciDownloader = &OciDownloader{}
-			}
-			err := d.OciDownloader.Download(opts)
-			if err != nil {
-				return err
-			}
+	// Remove existing content at the destination path.
+	if utils.DirExists(originalLocalPath) {
+		if err := os.RemoveAll(originalLocalPath); err != nil {
+			return fmt.Errorf("failed to clear existing local path: %w", err)
 		}
+	}
 
-		if opts.Source.Git != nil {
-			if d.GitDownloader == nil {
-				d.GitDownloader = &GitDownloader{}
-			}
-			err := d.GitDownloader.Download(opts)
-			if err != nil {
-				return err
-			}
-		}
-
-		// rename the tmp dir to the local path.
-		if utils.DirExists(localPath) {
-			err := os.RemoveAll(localPath)
-			if err != nil {
-				return err
-			}
-		}
-
-		// Move the downloaded package to the local path.
-		// On unix, after the move, the tmp dir will be removed.
-		err = utils.MoveOrCopy(tmpDir, localPath)
-		if err != nil {
-			return err
-		}
-
-		if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok && opts.EnableCache {
-			// Enable the cache, update the dependency package to the cache path.
-			if cacheFullPath != localPath {
-				err := copy.Copy(localPath, cacheFullPath)
-				if err != nil {
-					return err
-				}
-			}
-		}
+	// Move the downloaded content to the final destination.
+	if err := copy.Copy(tmpDir, originalLocalPath); err != nil {
+		return fmt.Errorf("failed to move content to final destination: %w", err)
 	}
 
 	return nil
@@ -385,6 +460,7 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 		oci.WithRepoPath(repoPath),
 		oci.WithSettings(&opts.Settings),
 		oci.WithInsecureSkipTLSverify(opts.InsecureSkipTLSverify),
+		oci.WithProxyURL(opts.ProxyURL),
 	)
 
 	if err != nil {
@@ -496,6 +572,7 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 		git.WithCommit(gitSource.Commit),
 		git.WithBranch(gitSource.Branch),
 		git.WithTag(gitSource.Tag),
+		git.WithProxyURL(opts.ProxyURL),
 	}
 
 	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && ok {

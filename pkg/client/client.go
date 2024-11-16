@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -51,24 +53,59 @@ type KpmClient struct {
 	noSumCheck bool
 	// The flag of whether to skip the verification of TLS.
 	insecureSkipTLSverify bool
+	// HttpClient is used to make HTTP requests.
+	httpClient *http.Client
 }
 
-// NewKpmClient will create a new kpm client with default settings.
-func NewKpmClient() (*KpmClient, error) {
-	settings := settings.GetSettings()
+// NewHTTPClient creates a new HTTP client configured with proxy settings.
+func NewHTTPClient(cfg *settings.Config) (*http.Client, error) {
+	proxyFunc := http.ProxyFromEnvironment // Use environment variables by default
 
-	if settings.ErrorEvent != (*reporter.KpmEvent)(nil) {
-		return nil, settings.ErrorEvent
+	if cfg.Proxy.HTTP != "" { // Override with custom proxy settings if provided
+		proxyURL, err := url.Parse(cfg.Proxy.HTTP)
+		if err != nil {
+			return nil, err // Handle the error if URL parsing fails
+		}
+		proxyFunc = http.ProxyURL(proxyURL)
 	}
 
+	transport := &http.Transport{
+		Proxy: proxyFunc,
+	}
+
+	return &http.Client{Transport: transport}, nil
+}
+
+// NewKpmClient creates a new kpm client with default settings.
+func NewKpmClient() (*KpmClient, error) {
+	// Load settings using the appropriate method that returns both settings and error
+	cfg, err := settings.LoadConfig() // Assuming LoadConfig is a method that returns (*Config, error)
+	if err != nil {
+		return nil, err // Handle configuration load error
+	}
+
+	// Create an HTTP client with the loaded settings
+	httpClient, err := NewHTTPClient(cfg)
+	if err != nil {
+		return nil, err // Handle HTTP client creation error
+	}
+
+	// Check if there is an error event stored in settings
+	if cfg.ErrorEvent != nil { // Assuming ErrorEvent is a pointer to a KpmEvent or similar error handling
+		return nil, cfg.ErrorEvent
+	}
+
+	// Retrieve the absolute package path from environment
 	homePath, err := env.GetAbsPkgPath()
 	if err != nil {
 		return nil, err
 	}
 
+	// Construct the KpmClient instance with loaded settings and components
 	return &KpmClient{
 		logWriter:     os.Stdout,
-		settings:      *settings,
+		settings:      *cfg,
+		httpClient:    httpClient, // Store the HTTP client in the KpmClient structure
 		homePath:      homePath,
 		DepDownloader: &downloader.DepDownloader{},
 	}, nil
