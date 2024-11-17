@@ -2,9 +2,7 @@ package client
 
 import (
 	"fmt"
-	"path/filepath"
 
-	"kcl-lang.io/kpm/pkg/downloader"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/resolver"
 )
@@ -34,16 +32,18 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 		}
 	}
 
-	kpkg := opts.kpkg
-	if kpkg == nil {
+	kMod := opts.kpkg
+	if kMod == nil {
 		return nil, fmt.Errorf("kcl package is nil")
 	}
 
-	modDeps := kpkg.ModFile.Dependencies.Deps
+	kMod.NoSumCheck = c.noSumCheck
+
+	modDeps := kMod.ModFile.Dependencies.Deps
 	if modDeps == nil {
 		return nil, fmt.Errorf("kcl.mod dependencies is nil")
 	}
-	lockDeps := kpkg.Dependencies.Deps
+	lockDeps := kMod.Dependencies.Deps
 	if lockDeps == nil {
 		return nil, fmt.Errorf("kcl.mod.lock dependencies is nil")
 	}
@@ -58,72 +58,58 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 	}
 	// ResolveFunc is the function for resolving each dependency when traversing the dependency graph.
 	resolverFunc := func(dep *pkg.Dependency, parentPkg *pkg.KclPkg) error {
+		selectedModDep := dep
 		// Check if the dependency exists in the mod file.
 		if existDep, exist := modDeps.Get(dep.Name); exist {
 			// if the dependency exists in the mod file,
 			// check the version and select the greater one.
-			if less, err := existDep.VersionLessThan(dep); less && err == nil {
-				kpkg.ModFile.Dependencies.Deps.Set(dep.Name, *dep)
+			if less, err := dep.VersionLessThan(&existDep); less && err == nil {
+				selectedModDep = &existDep
 			}
 			// if the dependency does not exist in the mod file,
 			// the dependency is a indirect dependency.
 			// it will be added to the kcl.mod.lock file not the kcl.mod file.
+			kMod.ModFile.Dependencies.Deps.Set(dep.Name, *selectedModDep)
 		}
+
+		selectedDep := dep
 		// Check if the dependency exists in the lock file.
 		if existDep, exist := lockDeps.Get(dep.Name); exist {
 			// If the dependency exists in the lock file,
 			// check the version and select the greater one.
-			if less, err := existDep.VersionLessThan(dep); less && err == nil {
-				kpkg.Dependencies.Deps.Set(dep.Name, *dep)
+			if less, err := dep.VersionLessThan(&existDep); less && err == nil {
+				selectedDep = &existDep
 			}
-		} else {
-			// if the dependency does not exist in the lock file,
-			// the dependency is a new dependency and will be added to the lock file.
-			kpkg.Dependencies.Deps.Set(dep.Name, *dep)
 		}
+		selectedDep.LocalFullPath = dep.LocalFullPath
+		if selectedDep.Sum == "" {
+			sum, err := c.AcquireDepSum(*selectedDep)
+			if err != nil {
+				return err
+			}
+			if sum != "" {
+				selectedDep.Sum = sum
+			}
+		}
+		kMod.Dependencies.Deps.Set(dep.Name, *selectedDep)
 
 		return nil
 	}
 	depResolver.ResolveFuncs = append(depResolver.ResolveFuncs, resolverFunc)
 
-	// Iterate all the dependencies of the package in kcl.mod and resolve each dependency.
-	for _, depName := range modDeps.Keys() {
-		dep, ok := modDeps.Get(depName)
-		if !ok {
-			return nil, fmt.Errorf("failed to get dependency %s", depName)
-		}
+	err := depResolver.Resolve(
+		resolver.WithResolveKclMod(kMod),
+		resolver.WithEnableCache(true),
+	)
 
-		// Check if the dependency is a local path and it is not an absolute path.
-		// If it is not an absolute path, transform the path to an absolute path.
-		var depSource *downloader.Source
-		if dep.Source.IsLocalPath() && !filepath.IsAbs(dep.Source.Local.Path) {
-			depSource = &downloader.Source{
-				Local: &downloader.Local{
-					Path: filepath.Join(kpkg.HomePath, dep.Source.Local.Path),
-				},
-			}
-		} else {
-			depSource = &dep.Source
-		}
-
-		err := resolverFunc(&dep, kpkg)
-		if err != nil {
-			return nil, err
-		}
-
-		err = depResolver.Resolve(
-			resolver.WithEnableCache(true),
-			resolver.WithSource(depSource),
-		)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	err := kpkg.UpdateModAndLockFile()
 	if err != nil {
 		return nil, err
 	}
 
-	return kpkg, nil
+	err = kMod.UpdateModAndLockFile()
+	if err != nil {
+		return nil, err
+	}
+
+	return kMod, nil
 }
