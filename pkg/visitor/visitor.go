@@ -102,6 +102,7 @@ type RemoteVisitor struct {
 	VisitedSpace          string
 	Downloader            downloader.Downloader
 	InsecureSkipTLSverify bool
+	ProxyURL              string
 }
 
 // NewRemoteVisitor creates a new RemoteVisitor.

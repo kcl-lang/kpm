@@ -55,14 +55,16 @@ type KpmClient struct {
 	insecureSkipTLSverify bool
 	// HttpClient is used to make HTTP requests.
 	httpClient *http.Client
+	// ProxyURL is the URL of the proxy server to use for downloads.
+	proxyURL string // New field for proxy URL
 }
 
 // NewHTTPClient creates a new HTTP client configured with proxy settings.
-func NewHTTPClient(cfg *settings.Config) (*http.Client, error) {
+func NewHTTPClient(cfg *settings.Settings) (*http.Client, error) {
 	proxyFunc := http.ProxyFromEnvironment // Use environment variables by default
 
-	if cfg.Proxy.HTTP != "" { // Override with custom proxy settings if provided
-		proxyURL, err := url.Parse(cfg.Proxy.HTTP)
+	if cfg.Conf.Proxy != nil && cfg.Conf.Proxy.HTTP != "" { // Override with custom proxy settings if provided
+		proxyURL, err := url.Parse(cfg.Conf.Proxy.HTTP)
 		if err != nil {
 			return nil, err // Handle the error if URL parsing fails
 		}
@@ -78,21 +80,18 @@ func NewHTTPClient(cfg *settings.Config) (*http.Client, error) {
 
 // NewKpmClient creates a new kpm client with default settings.
 func NewKpmClient() (*KpmClient, error) {
-	// Load settings using the appropriate method that returns both settings and error
-	cfg, err := settings.LoadConfig() // Assuming LoadConfig is a method that returns (*Config, error)
-	if err != nil {
-		return nil, err // Handle configuration load error
+	// Load settings using the appropriate method that returns *Settings
+	cfg := settings.GetSettings()
+
+	// Check if there is an error event stored in settings
+	if cfg.ErrorEvent != nil { // Assuming ErrorEvent is a pointer to a KpmEvent or similar error handling
+		return nil, cfg.ErrorEvent
 	}
 
 	// Create an HTTP client with the loaded settings
 	httpClient, err := NewHTTPClient(cfg)
 	if err != nil {
 		return nil, err // Handle HTTP client creation error
-	}
-
-	// Check if there is an error event stored in settings
-	if cfg.ErrorEvent != nil { // Assuming ErrorEvent is a pointer to a KpmEvent or similar error handling
-		return nil, cfg.ErrorEvent
 	}
 
 	// Retrieve the absolute package path from environment
@@ -108,6 +107,7 @@ func NewKpmClient() (*KpmClient, error) {
 		httpClient:    httpClient, // Store the HTTP client in the KpmClient structure
 		homePath:      homePath,
 		DepDownloader: &downloader.DepDownloader{},
+		proxyURL:      cfg.Conf.Proxy.HTTP, // Store the proxy URL in the KpmClient
 	}, nil
 }
 
@@ -288,7 +288,7 @@ func (c *KpmClient) getDepStorePath(search_path string, d *pkg.Dependency, isVen
 
 // ResolveDepsMetadata will calculate the local storage path of the external package,
 // and check whether the package exists locally.
-// If the package does not exist, it will re-download to the local.
+// If the package does not exist, it will re-download to the local path.
 // Since redownloads are not triggered if local dependencies exists,
 // indirect dependencies are also synchronized to the lock file by `lockDeps`.
 func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) error {
@@ -319,7 +319,7 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 		// If not under the mode of '--no_sum_check',
 		// all the dependencies in kcl.mod.lock are the dependencies of the current package.
 		//
-		// alian the dependencies between kcl.mod and kcl.mod.lock
+		// align the dependencies between kcl.mod and kcl.mod.lock
 		// clean the dependencies in kcl.mod.lock which not in kcl.mod
 		// clean the dependencies in kcl.mod.lock and kcl.mod which have different version
 		for _, name := range kclPkg.Dependencies.Deps.Keys() {
@@ -769,6 +769,7 @@ func (c *KpmClient) AcquireTheLatestOciVersion(ociSource downloader.Oci) (string
 		oci.WithRepoPath(repoPath),
 		oci.WithSettings(c.GetSettings()),
 		oci.WithInsecureSkipTLSverify(c.insecureSkipTLSverify),
+		oci.WithProxyURL(c.proxyURL), // Pass ProxyURL to OCI client options
 	)
 
 	if err != nil {
@@ -805,6 +806,7 @@ func (c *KpmClient) downloadPkg(options ...downloader.Option) (*pkg.KclPkg, erro
 		downloader.WithSettings(*c.GetSettings()),
 		downloader.WithCredsClient(credCli),
 		downloader.WithInsecureSkipTLSverify(opts.InsecureSkipTLSverify),
+		downloader.WithProxyURL(c.proxyURL), // Pass ProxyURL to downloader options
 	))
 
 	if err != nil {
@@ -852,6 +854,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			downloader.WithSource(dep.Source),
 			downloader.WithLogWriter(c.logWriter),
 			downloader.WithSettings(c.settings),
+			downloader.WithProxyURL(c.proxyURL), // Pass ProxyURL to downloader options
 		))
 		if err != nil {
 			return nil, err
@@ -882,7 +885,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		if dep.Source.Oci != nil {
 			ociSource = dep.Source.Oci
 		}
-		// Select the latest tag, if the tag, the user inputed, is empty.
+		// Select the latest tag, if the tag, the user inputted, is empty.
 		if ociSource.Tag == "" || ociSource.Tag == constants.LATEST {
 			latestTag, err := c.AcquireTheLatestOciVersion(*ociSource)
 			if err != nil {
@@ -926,6 +929,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			downloader.WithSettings(c.settings),
 			downloader.WithCredsClient(credCli),
 			downloader.WithInsecureSkipTLSverify(c.insecureSkipTLSverify),
+			downloader.WithProxyURL(c.proxyURL), // Pass ProxyURL to downloader options
 		))
 		if err != nil {
 			return nil, err
@@ -1006,6 +1010,7 @@ func (c *KpmClient) DownloadFromGit(dep *downloader.Git, localPath string) (stri
 		git.WithRepoURL(dep.Url),
 		git.WithLocalPath(localPath),
 		git.WithWriter(c.logWriter),
+		git.WithProxyURL(c.proxyURL), // Pass ProxyURL to git clone options
 	)
 
 	if err != nil {
@@ -1074,6 +1079,7 @@ func (c *KpmClient) DownloadPkgFromOci(dep *downloader.Oci, localPath string) (*
 		oci.WithCredential(cred),
 		oci.WithRepoPath(repoPath),
 		oci.WithSettings(c.GetSettings()),
+		oci.WithProxyURL(c.proxyURL), // Pass ProxyURL to OCI client options
 	)
 
 	if err != nil {
@@ -1081,7 +1087,7 @@ func (c *KpmClient) DownloadPkgFromOci(dep *downloader.Oci, localPath string) (*
 	}
 
 	ociClient.SetLogWriter(c.logWriter)
-	// Select the latest tag, if the tag, the user inputed, is empty.
+	// Select the latest tag, if the tag, the user inputted, is empty.
 	var tagSelected string
 	if len(dep.Tag) == 0 {
 		tagSelected, err = ociClient.TheLatestTag()
@@ -1090,7 +1096,7 @@ func (c *KpmClient) DownloadPkgFromOci(dep *downloader.Oci, localPath string) (*
 		}
 
 		reporter.ReportMsgTo(
-			fmt.Sprintf("the lastest version '%s' will be added", tagSelected),
+			fmt.Sprintf("the latest version '%s' will be added", tagSelected),
 			c.logWriter,
 		)
 
@@ -1209,6 +1215,7 @@ func (c *KpmClient) PushToOci(localPath string, ociOpts *opt.OciOptions) error {
 		oci.WithRepoPath(repoPath),
 		oci.WithSettings(c.GetSettings()),
 		oci.WithInsecureSkipTLSverify(c.insecureSkipTLSverify),
+		oci.WithProxyURL(c.proxyURL), // Pass ProxyURL to OCI client options
 	)
 
 	if err != nil {
@@ -1278,7 +1285,7 @@ func (c *KpmClient) LogoutOci(hostname string) error {
 	return nil
 }
 
-// ParseOciRef will parser '<repo_name>:<repo_tag>' into an 'OciOptions'.
+// ParseOciRef will parse '<repo_name>:<repo_tag>' into an 'OciOptions'.
 func (c *KpmClient) ParseOciRef(ociRef string) (*opt.OciOptions, error) {
 	oci_address := strings.Split(ociRef, constants.OCI_SEPARATOR)
 	if len(oci_address) == 1 {
@@ -1297,7 +1304,7 @@ func (c *KpmClient) ParseOciRef(ociRef string) (*opt.OciOptions, error) {
 	}
 }
 
-// ParseOciOptionFromString will parser '<repo_name>:<repo_tag>' into an 'OciOptions' with an OCI registry.
+// ParseOciOptionFromString will parse '<repo_name>:<repo_tag>' into an 'OciOptions' with an OCI registry.
 // the default OCI registry is 'docker.io'.
 // if the 'ociUrl' is only '<repo_name>', ParseOciOptionFromString will take 'latest' as the default tag.
 func (c *KpmClient) ParseOciOptionFromString(oci string, tag string) (*opt.OciOptions, error) {
@@ -1544,6 +1551,7 @@ func (c *KpmClient) pullTarFromOci(localPath string, ociOpts *opt.OciOptions) er
 		oci.WithRepoPath(repoPath),
 		oci.WithSettings(c.GetSettings()),
 		oci.WithInsecureSkipTLSverify(ociOpts.InsecureSkipTLSverify),
+		oci.WithProxyURL(c.proxyURL), // Pass ProxyURL to OCI client options
 	)
 
 	if err != nil {
@@ -1559,7 +1567,7 @@ func (c *KpmClient) pullTarFromOci(localPath string, ociOpts *opt.OciOptions) er
 			return err
 		}
 		reporter.ReportMsgTo(
-			fmt.Sprintf("the lastest version '%s' will be pulled", tagSelected),
+			fmt.Sprintf("the latest version '%s' will be pulled", tagSelected),
 			c.logWriter,
 		)
 	} else {
@@ -1593,6 +1601,7 @@ func (c *KpmClient) FetchOciManifestIntoJsonStr(opts opt.OciFetchOptions) (strin
 		oci.WithCredential(cred),
 		oci.WithRepoPath(repoPath),
 		oci.WithSettings(c.GetSettings()),
+		oci.WithProxyURL(c.proxyURL), // Pass ProxyURL to OCI client options
 	)
 
 	if err != nil {
@@ -1618,6 +1627,7 @@ func NewVisitor(source downloader.Source, kpmcli *KpmClient) visitor.Visitor {
 			PkgVisitor:            PkgVisitor,
 			Downloader:            kpmcli.DepDownloader,
 			InsecureSkipTLSverify: kpmcli.insecureSkipTLSverify,
+			ProxyURL:              kpmcli.proxyURL, // Pass ProxyURL to RemoteVisitor
 		}
 	} else if source.IsLocalTarPath() || source.IsLocalTgzPath() {
 		return visitor.NewArchiveVisitor(PkgVisitor)

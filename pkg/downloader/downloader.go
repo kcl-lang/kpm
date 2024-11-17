@@ -31,7 +31,7 @@ type DownloadOptions struct {
 	EnableCache bool
 	// Source is the source of the package. including git, oci, local.
 	Source Source
-	// Settings is the default settings and authrization information.
+	// Settings is the default settings and authorization information.
 	Settings settings.Settings
 	// LogWriter is the writer to write the log.
 	LogWriter io.Writer
@@ -40,7 +40,7 @@ type DownloadOptions struct {
 	// InsecureSkipTLSverify is the flag to skip the verification of the certificate.
 	InsecureSkipTLSverify bool
 	// ProxyURL is the URL of the proxy server to use for downloads.
-	ProxyURL string
+	ProxyURL string // New field for proxy URL
 }
 
 type Option func(*DownloadOptions)
@@ -93,18 +93,18 @@ func WithSource(source Source) Option {
 	}
 }
 
+func WithProxyURL(proxyURL string) Option {
+	return func(do *DownloadOptions) {
+		do.ProxyURL = proxyURL
+	}
+}
+
 func NewDownloadOptions(opts ...Option) *DownloadOptions {
 	do := &DownloadOptions{}
 	for _, opt := range opts {
 		opt(do)
 	}
 	return do
-}
-
-func WithProxyURL(proxyURL string) Option {
-	return func(do *DownloadOptions) {
-		do.ProxyURL = proxyURL
-	}
 }
 
 // Downloader is the interface for downloading a package.
@@ -167,6 +167,7 @@ func (d *GitDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
 			git.WithTag(opts.Source.Git.Tag),
 			git.WithRepoURL(opts.Source.Git.Url),
 			git.WithLocalPath(tmp),
+			git.WithProxyURL(opts.ProxyURL), // Pass ProxyURL to git clone options
 		)
 
 		if err != nil {
@@ -191,6 +192,7 @@ func (d *GitDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
 				git.WithCommit(opts.Source.Git.Commit),
 				git.WithBranch(opts.Source.Git.Branch),
 				git.WithTag(opts.Source.Git.Tag),
+				git.WithProxyURL(opts.ProxyURL), // Pass ProxyURL to git clone options
 			}
 
 			repo, err = git.CloneWithOpts(
@@ -248,6 +250,7 @@ func (d *OciDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
 		oci.WithRepoPath(repoPath),
 		oci.WithSettings(&opts.Settings),
 		oci.WithInsecureSkipTLSverify(opts.InsecureSkipTLSverify),
+		oci.WithProxyURL(opts.ProxyURL), // Pass ProxyURL to OCI client options
 	)
 
 	if err != nil {
@@ -267,99 +270,6 @@ func NewOciDownloader(platform string) *DepDownloader {
 	}
 }
 
-// func (d *DepDownloader) Download(opts *DownloadOptions) error {
-
-// 	// create a tmp dir to download the oci package.
-// 	tmpDir, err := os.MkdirTemp("", "")
-// 	if err != nil {
-// 		return fmt.Errorf("failed to create a temp dir: %w", err)
-// 	}
-// 	if opts.Source.Git != nil {
-// 		tmpDir = filepath.Join(tmpDir, constants.GitScheme)
-// 	}
-// 	// clean the temp dir.
-// 	defer os.RemoveAll(tmpDir)
-
-// 	localPath := opts.LocalPath
-// 	cacheFullPath := opts.CachePath
-// 	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok && opts.EnableCache {
-// 		if utils.DirExists(cacheFullPath) &&
-// 			// If the version in modspec is empty, meanings the latest version is needed.
-// 			// The latest version should be requested first and the cache should be updated.
-// 			((opts.Source.ModSpec != nil && opts.Source.ModSpec.Version != "") || opts.Source.ModSpec == nil) {
-// 			// copy the cache to the local path
-// 			if cacheFullPath != opts.LocalPath {
-// 				err := copy.Copy(cacheFullPath, opts.LocalPath)
-// 				if err != nil {
-// 					return err
-// 				}
-// 			}
-// 			return nil
-// 		} else {
-// 			err := os.MkdirAll(cacheFullPath, 0755)
-// 			if err != nil {
-// 				return err
-// 			}
-// 		}
-// 	}
-
-// 	// If the dependency package is already exist,
-// 	// Skip the download process.
-// 	if utils.DirExists(localPath) &&
-// 		utils.DirExists(filepath.Join(localPath, constants.KCL_MOD)) {
-// 		return nil
-// 	} else {
-// 		opts.LocalPath = tmpDir
-// 		// Dispatch the download to the specific downloader by package source.
-// 		if opts.Source.Oci != nil {
-// 			if d.OciDownloader == nil {
-// 				d.OciDownloader = &OciDownloader{}
-// 			}
-// 			err := d.OciDownloader.Download(opts)
-// 			if err != nil {
-// 				return err
-// 			}
-// 		}
-
-// 		if opts.Source.Git != nil {
-// 			if d.GitDownloader == nil {
-// 				d.GitDownloader = &GitDownloader{}
-// 			}
-// 			err := d.GitDownloader.Download(opts)
-// 			if err != nil {
-// 				return err
-// 			}
-// 		}
-
-// 		// rename the tmp dir to the local path.
-// 		if utils.DirExists(localPath) {
-// 			err := os.RemoveAll(localPath)
-// 			if err != nil {
-// 				return err
-// 			}
-// 		}
-
-// 		// Move the downloaded package to the local path.
-// 		// On unix, after the move, the tmp dir will be removed.
-// 		err = utils.MoveOrCopy(tmpDir, localPath)
-// 		if err != nil {
-// 			return err
-// 		}
-
-// 		if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok && opts.EnableCache {
-// 			// Enable the cache, update the dependency package to the cache path.
-// 			if cacheFullPath != localPath {
-// 				err := copy.Copy(localPath, cacheFullPath)
-// 				if err != nil {
-// 					return err
-// 				}
-// 			}
-// 		}
-// 	}
-
-// 	return nil
-// }
-
 func (d *DepDownloader) Download(opts *DownloadOptions) error {
 	// Create a temporary directory to handle the package download.
 	tmpDir, err := os.MkdirTemp("", "package-download-")
@@ -377,7 +287,9 @@ func (d *DepDownloader) Download(opts *DownloadOptions) error {
 	if opts.Source.Oci != nil {
 		// Use an OCI downloader.
 		if d.OciDownloader == nil {
-			d.OciDownloader = &OciDownloader{}
+			d.OciDownloader = &OciDownloader{
+				Platform: d.Platform,
+			}
 		}
 		if err := d.OciDownloader.Download(opts); err != nil {
 			return fmt.Errorf("failed to download from OCI source: %w", err)
@@ -460,7 +372,7 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 		oci.WithRepoPath(repoPath),
 		oci.WithSettings(&opts.Settings),
 		oci.WithInsecureSkipTLSverify(opts.InsecureSkipTLSverify),
-		oci.WithProxyURL(opts.ProxyURL),
+		oci.WithProxyURL(opts.ProxyURL), // Pass ProxyURL to OCI client options
 	)
 
 	if err != nil {
@@ -476,7 +388,7 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 		}
 
 		reporter.ReportMsgTo(
-			fmt.Sprintf("the lastest version '%s' will be downloaded", tagSelected),
+			fmt.Sprintf("the latest version '%s' will be downloaded", tagSelected),
 			opts.LogWriter,
 		)
 
@@ -572,7 +484,7 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 		git.WithCommit(gitSource.Commit),
 		git.WithBranch(gitSource.Branch),
 		git.WithTag(gitSource.Tag),
-		git.WithProxyURL(opts.ProxyURL),
+		git.WithProxyURL(opts.ProxyURL), // Pass ProxyURL to git clone options
 	}
 
 	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && ok {
@@ -604,7 +516,7 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 					} else {
 						// If not, clone the bare repository from the remote git repository, update the cache.
 						if utils.DirExists(cacheFullPath) {
-							err = os.Remove(cacheFullPath)
+							err = os.RemoveAll(cacheFullPath)
 							if err != nil {
 								return err
 							}
@@ -666,6 +578,7 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 			git.WithTag(gitSource.Tag),
 			git.WithRepoURL(gitSource.Url),
 			git.WithLocalPath(opts.LocalPath),
+			git.WithProxyURL(opts.ProxyURL), // Pass ProxyURL to git clone options
 		)
 
 		if err != nil {

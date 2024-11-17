@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -103,6 +104,7 @@ type OciClient struct {
 	insecureSkipTLSverify bool
 	cred                  *remoteauth.Credential
 	PullOciOptions        *PullOciOptions
+	ProxyURL              string // New field for proxy URL
 }
 
 // OciClientOption configures how we set up the OciClient
@@ -152,6 +154,14 @@ func WithPlainHttp(plainHttp bool) OciClientOption {
 	}
 }
 
+// WithProxyURL sets the proxy URL of the OciClient
+func WithProxyURL(proxyURL string) OciClientOption {
+	return func(c *OciClient) error {
+		c.ProxyURL = proxyURL
+		return nil
+	}
+}
+
 type PullOciOptions struct {
 	Platform string
 	CopyOpts *oras.CopyOptions
@@ -179,6 +189,15 @@ func NewOciClientWithOpts(opts ...OciClientOption) (*OciClient, error) {
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: client.insecureSkipTLSverify,
 		},
+	}
+
+	// Set up proxy if ProxyURL is provided
+	if client.ProxyURL != "" {
+		proxyURL, err := url.Parse(client.ProxyURL)
+		if err != nil {
+			return nil, fmt.Errorf("invalid proxy URL: %w", err)
+		}
+		customTransport.Proxy = http.ProxyURL(proxyURL)
 	}
 
 	customClient := &http.Client{

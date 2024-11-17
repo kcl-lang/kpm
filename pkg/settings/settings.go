@@ -30,7 +30,13 @@ const PACKAGE_CACHE_PATH = ".kpm/config/package-cache"
 type KpmConf struct {
 	DefaultOciRegistry  string
 	DefaultOciRepo      string
-	DefaultOciPlainHttp *bool `json:",omitempty"`
+	DefaultOciPlainHttp *bool        `json:",omitempty"`
+	Proxy               *ProxyConfig `json:",omitempty"`
+}
+
+// ProxyConfig holds proxy settings
+type ProxyConfig struct {
+	HTTP string `json:"http"`
 }
 
 const ON = "on"
@@ -41,6 +47,7 @@ const DEFAULT_OCI_PLAIN_HTTP = ON
 const DEFAULT_REGISTRY_ENV = "KPM_REG"
 const DEFAULT_REPO_ENV = "KPM_REPO"
 const DEFAULT_OCI_PLAIN_HTTP_ENV = "OCI_REG_PLAIN_HTTP"
+const PROXY_HTTP_ENV = "KPM_PROXY_HTTP" // Environment variable for proxy
 
 // This is a singleton that loads kpm settings from 'kpm.json'
 // and is only initialized on the first call by 'Init()' or 'GetSettings()'
@@ -53,6 +60,7 @@ func DefaultKpmConf() KpmConf {
 		DefaultOciRegistry:  DEFAULT_REGISTRY,
 		DefaultOciRepo:      DEFAULT_REPO,
 		DefaultOciPlainHttp: nil,
+		Proxy:               &ProxyConfig{}, // Initialize empty ProxyConfig
 	}
 }
 
@@ -95,10 +103,8 @@ func (settings *Settings) AcquirePackageCacheLock(logWriter io.Writer) error {
 			if locked {
 				break
 			}
-			// when waiting for a file lock, the program will continuously attempt to acquire the lock.
+			// when waiting for a file lock, the program will continuously attempt to acquire the lock,
 			// without adding a sleep, the program will rapidly try to acquire the lock, consuming a large amount of CPU resources.
-			// by adding a sleep, the program can pause for a period of time between each attempt to acquire the lock,
-			// reducing the consumption of CPU resources.
 			time.Sleep(2 * time.Millisecond)
 		}
 	}
@@ -158,7 +164,7 @@ func (settings *Settings) DefaultOciRef() string {
 	return utils.JoinPath(settings.Conf.DefaultOciRegistry, settings.Conf.DefaultOciRepo)
 }
 
-// / LoadSettingsFromEnv will load the KPM settings from environment variables.
+// LoadSettingsFromEnv will load the KPM settings from environment variables.
 func (settings *Settings) LoadSettingsFromEnv() (*Settings, *reporter.KpmEvent) {
 	// Load the environment variable for OCI registry
 	reg := os.Getenv(DEFAULT_REGISTRY_ENV)
@@ -184,6 +190,15 @@ func (settings *Settings) LoadSettingsFromEnv() (*Settings, *reporter.KpmEvent) 
 			)
 		}
 		settings.Conf.DefaultOciPlainHttp = &isPlainHttp
+	}
+
+	// Load the environment variable for Proxy HTTP
+	proxyHTTP := os.Getenv(PROXY_HTTP_ENV)
+	if len(proxyHTTP) > 0 {
+		if settings.Conf.Proxy == nil {
+			settings.Conf.Proxy = &ProxyConfig{}
+		}
+		settings.Conf.Proxy.HTTP = proxyHTTP
 	}
 
 	return settings, nil
@@ -269,7 +284,7 @@ func GetSettings() *Settings {
 				)
 				return
 			}
-			// create a empty file named 'package-cache'.
+			// create an empty file named 'package-cache'.
 			_, err = os.Create(lockPath)
 			if err != nil {
 				kpm_settings.ErrorEvent = reporter.NewErrorEvent(
