@@ -179,7 +179,7 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		}
 
 		reporter.ReportMsgTo(
-			fmt.Sprintf("the lastest version '%s' will be downloaded", latest),
+			fmt.Sprintf("the latest version '%s' will be downloaded", latest),
 			rv.LogWriter,
 		)
 

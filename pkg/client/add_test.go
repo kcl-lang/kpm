@@ -95,7 +95,7 @@ func TestAddWithModSpec(t *testing.T) {
 			name:       "TestAddOciWithNoTag",
 			pkgSubPath: "no_oci_ref",
 			sourceUrl:  "oci://ghcr.io/kcl-lang/helloworld",
-			msg: "the lastest version '0.1.4' will be downloaded" +
+			msg: "the latest version '0.1.4' will be downloaded" +
 				"downloading 'kcl-lang/helloworld:0.1.4' from 'ghcr.io/kcl-lang/helloworld:0.1.4'" +
 				"adding dependency 'helloworld'" +
 				"add dependency 'helloworld:0.1.4' successfully",
@@ -104,7 +104,7 @@ func TestAddWithModSpec(t *testing.T) {
 			name:       "TestAddGitWithNoTag",
 			pkgSubPath: "no_git_ref",
 			sourceUrl:  "git://github.com/kcl-lang/flask-demo-kcl-manifests.git",
-			msg: "the lastest version 'ade147b' will be downloaded" +
+			msg: "the latest version 'ade147b' will be downloaded" +
 				"cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with commit 'ade147b'" +
 				"adding dependency 'flask_manifests'" +
 				"add dependency 'flask_manifests:0.0.1' successfully",
@@ -306,7 +306,7 @@ func TestAddWithOnlyModSpec(t *testing.T) {
 			name:      "TestAddWithOnlyModSpecButNoVersion",
 			testDir:   "add_with_mod_spec",
 			pkgSubDir: "spec_only_no_ver",
-			msg: "the lastest version '0.1.4' will be downloaded" +
+			msg: "the latest version '0.1.4' will be downloaded" +
 				"downloading 'kcl-lang/helloworld:0.1.4' from 'ghcr.io/kcl-lang/helloworld:0.1.4'" +
 				"adding dependency 'helloworld'" +
 				"add dependency 'helloworld:0.1.4' successfully",
@@ -461,7 +461,7 @@ func TestAddRenameWithNoSpec(t *testing.T) {
 		)
 
 		assert.Equal(t,
-			"the lastest version '0.1.4' will be downloaded"+
+			"the latest version '0.1.4' will be downloaded"+
 				"downloading 'kcl-lang/helloworld:0.1.4' from 'ghcr.io/kcl-lang/helloworld:0.1.4'"+
 				"adding dependency 'helloworld'"+
 				"add dependency 'helloworld:0.1.4' successfully",

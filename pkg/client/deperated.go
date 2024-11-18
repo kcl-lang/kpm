@@ -187,7 +187,7 @@ func (c *KpmClient) DownloadFromOci(dep *downloader.Oci, localPath string) (stri
 		return "", err
 	}
 	ociClient.SetLogWriter(c.logWriter)
-	// Select the latest tag, if the tag, the user inputed, is empty.
+	// Select the latest tag, if the tag, the user inputted, is empty.
 	var tagSelected string
 	if len(dep.Tag) == 0 {
 		tagSelected, err = ociClient.TheLatestTag()
@@ -196,7 +196,7 @@ func (c *KpmClient) DownloadFromOci(dep *downloader.Oci, localPath string) (stri
 		}
 
 		reporter.ReportMsgTo(
-			fmt.Sprintf("the lastest version '%s' will be added", tagSelected),
+			fmt.Sprintf("the latest version '%s' will be added", tagSelected),
 			c.logWriter,
 		)
 

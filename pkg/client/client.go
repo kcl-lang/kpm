@@ -282,7 +282,7 @@ func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencie
 		// If not under the mode of '--no_sum_check',
 		// all the dependencies in kcl.mod.lock are the dependencies of the current package.
 		//
-		// alian the dependencies between kcl.mod and kcl.mod.lock
+		// align the dependencies between kcl.mod and kcl.mod.lock
 		// clean the dependencies in kcl.mod.lock which not in kcl.mod
 		// clean the dependencies in kcl.mod.lock and kcl.mod which have different version
 		for _, name := range kclPkg.Dependencies.Deps.Keys() {
@@ -845,7 +845,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		if dep.Source.Oci != nil {
 			ociSource = dep.Source.Oci
 		}
-		// Select the latest tag, if the tag, the user inputed, is empty.
+		// Select the latest tag, if the tag, the user inputted, is empty.
 		if ociSource.Tag == "" || ociSource.Tag == constants.LATEST {
 			latestTag, err := c.AcquireTheLatestOciVersion(*ociSource)
 			if err != nil {
@@ -1044,7 +1044,7 @@ func (c *KpmClient) DownloadPkgFromOci(dep *downloader.Oci, localPath string) (*
 	}
 
 	ociClient.SetLogWriter(c.logWriter)
-	// Select the latest tag, if the tag, the user inputed, is empty.
+	// Select the latest tag, if the tag, the user inputted, is empty.
 	var tagSelected string
 	if len(dep.Tag) == 0 {
 		tagSelected, err = ociClient.TheLatestTag()
@@ -1053,7 +1053,7 @@ func (c *KpmClient) DownloadPkgFromOci(dep *downloader.Oci, localPath string) (*
 		}
 
 		reporter.ReportMsgTo(
-			fmt.Sprintf("the lastest version '%s' will be added", tagSelected),
+			fmt.Sprintf("the latest version '%s' will be added", tagSelected),
 			c.logWriter,
 		)
 
@@ -1241,7 +1241,7 @@ func (c *KpmClient) LogoutOci(hostname string) error {
 	return nil
 }
 
-// ParseOciRef will parser '<repo_name>:<repo_tag>' into an 'OciOptions'.
+// ParseOciRef will parse '<repo_name>:<repo_tag>' into an 'OciOptions'.
 func (c *KpmClient) ParseOciRef(ociRef string) (*opt.OciOptions, error) {
 	oci_address := strings.Split(ociRef, constants.OCI_SEPARATOR)
 	if len(oci_address) == 1 {
@@ -1260,7 +1260,7 @@ func (c *KpmClient) ParseOciRef(ociRef string) (*opt.OciOptions, error) {
 	}
 }
 
-// ParseOciOptionFromString will parser '<repo_name>:<repo_tag>' into an 'OciOptions' with an OCI registry.
+// ParseOciOptionFromString will parse '<repo_name>:<repo_tag>' into an 'OciOptions' with an OCI registry.
 // the default OCI registry is 'docker.io'.
 // if the 'ociUrl' is only '<repo_name>', ParseOciOptionFromString will take 'latest' as the default tag.
 func (c *KpmClient) ParseOciOptionFromString(oci string, tag string) (*opt.OciOptions, error) {
@@ -1522,7 +1522,7 @@ func (c *KpmClient) pullTarFromOci(localPath string, ociOpts *opt.OciOptions) er
 			return err
 		}
 		reporter.ReportMsgTo(
-			fmt.Sprintf("the lastest version '%s' will be pulled", tagSelected),
+			fmt.Sprintf("the latest version '%s' will be pulled", tagSelected),
 			c.logWriter,
 		)
 	} else {

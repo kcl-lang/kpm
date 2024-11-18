@@ -1,4 +1,4 @@
 start to pull 'oci://localhost:5001/test/helloworld'
-the lastest version '0.1.2' will be pulled
+the latest version '0.1.2' will be pulled
 pulling '/test/helloworld:0.1.2' from 'localhost:5001/test/helloworld'
 pulled 'oci://localhost:5001/test/helloworld' in '<workspace>/localhost:5001/test/helloworld' successfully
