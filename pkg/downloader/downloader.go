@@ -400,7 +400,7 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 		}
 
 		reporter.ReportMsgTo(
-			fmt.Sprintf("the lastest version '%s' will be downloaded", tagSelected),
+			fmt.Sprintf("the latest version '%s' will be downloaded", tagSelected),
 			opts.LogWriter,
 		)
 

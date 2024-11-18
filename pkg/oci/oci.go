@@ -435,7 +435,7 @@ func Pull(localPath, hostName, repoName, tag string, settings *settings.Settings
 			return err
 		}
 		reporter.ReportMsgTo(
-			fmt.Sprintf("the lastest version '%s' will be pulled", tagSelected),
+			fmt.Sprintf("the latest version '%s' will be pulled", tagSelected),
 			os.Stdout,
 		)
 	} else {
