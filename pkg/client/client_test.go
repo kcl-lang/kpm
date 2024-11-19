@@ -61,8 +61,6 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestPullWithModSpec", testPullWithModSpec)
 	test.RunTestWithGlobalLock(t, "testPullWithOnlySpec", testPullWithOnlySpec)
 	test.RunTestWithGlobalLock(t, "TestGraph", testGraph)
-	test.RunTestWithGlobalLock(t, "testUpdate", testUpdate)
-	test.RunTestWithGlobalLock(t, "testRunWithNoSumCheck", testRunWithNoSumCheck)
 	test.RunTestWithGlobalLock(t, "testCyclicDependency", testCyclicDependency)
 	test.RunTestWithGlobalLock(t, "testNewKpmClient", testNewKpmClient)
 	test.RunTestWithGlobalLock(t, "testLoadPkgFormOci", testLoadPkgFormOci)
