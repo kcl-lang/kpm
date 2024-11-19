@@ -105,3 +105,31 @@ func TestRun(t *testing.T) {
 	RunTestWithGlobalLockAndKpmCli(t, "TestRunOciWithSettingsFile", testRunOciWithSettingsFile)
 	RunTestWithGlobalLockAndKpmCli(t, "TestRunWithModSpecVersion", testRunWithModSpecVersion)
 }
+func TestRunWithHyphenEntries(t *testing.T) {
+	testFunc := func(t *testing.T, kpmcli *KpmClient) {
+		pkgPath := getTestDir("test_run_hyphen_entries")
+
+		res, err := kpmcli.Run(
+			WithRunSource(
+				&downloader.Source{
+					Local: &downloader.Local{
+						Path: pkgPath,
+					},
+				},
+			),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expect, err := os.ReadFile(filepath.Join(pkgPath, "stdout"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, utils.RmNewline(res.GetRawYamlResult()), utils.RmNewline(string(expect)))
+	}
+
+	RunTestWithGlobalLockAndKpmCli(t, "testRunWithHyphenEntries", testFunc)
+}

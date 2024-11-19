@@ -1,0 +1,18 @@
+The_first_kcl_program_current_mod: Hello Current Mod World!
+config:
+  name: flask-demo
+  replicas: 1
+  labels:
+    app: flask-demo
+  service:
+    type: NodePort
+    ports:
+    - port: 5000
+      protocol: TCP
+      targetPort: 5000
+  containers:
+    flaskdemo:
+      image: kcllang/flask_demo:8d31498e765ff67a2fa9933d4adffe067544b2fe
+      ports:
+      - protocol: TCP
+        containerPort: 5000

@@ -61,6 +61,19 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestPullWithModSpec", testPullWithModSpec)
 	test.RunTestWithGlobalLock(t, "testPullWithOnlySpec", testPullWithOnlySpec)
 	test.RunTestWithGlobalLock(t, "TestGraph", testGraph)
+	test.RunTestWithGlobalLock(t, "testUpdate", testUpdate)
+	test.RunTestWithGlobalLock(t, "testRunWithNoSumCheck", testRunWithNoSumCheck)
+	test.RunTestWithGlobalLock(t, "testCyclicDependency", testCyclicDependency)
+	test.RunTestWithGlobalLock(t, "testNewKpmClient", testNewKpmClient)
+	test.RunTestWithGlobalLock(t, "testLoadPkgFormOci", testLoadPkgFormOci)
+	test.RunTestWithGlobalLock(t, "testAddWithLocalPath", testAddWithLocalPath)
+	test.RunTestWithGlobalLock(t, "testRunLocalWithoutArgs", testRunLocalWithoutArgs)
+	test.RunTestWithGlobalLock(t, "TestRunLocalWithArgs", testRunLocalWithArgs)
+	test.RunTestWithGlobalLock(t, "testInsecureSkipTLSverifyOCIRegistry", testInsecureSkipTLSverifyOCIRegistry)
+	test.RunTestWithGlobalLock(t, "testRunWithInsecureSkipTLSverify", testRunWithInsecureSkipTLSverify)
+	test.RunTestWithGlobalLock(t, "TestAddDepsWithInsecureSkipTLSverify", testAddDepsWithInsecureSkipTLSverify)
+	test.RunTestWithGlobalLock(t, "testPushWithInsecureSkipTLSverify", testPushWithInsecureSkipTLSverify)
+	test.RunTestWithGlobalLock(t, "testMetadataOffline", testMetadataOffline)
 }
 
 // TestDownloadOci test download from oci registry.
@@ -347,7 +360,7 @@ func testDependencyGraph(t *testing.T) {
 	assert.Equal(t, err, nil)
 }
 
-func TestCyclicDependency(t *testing.T) {
+func testCyclicDependency(t *testing.T) {
 	testDir := getTestDir("test_cyclic_dependency")
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "aaa")), true)
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "aaa/kcl.mod")), true)
@@ -972,7 +985,7 @@ func hasSubdirInTar(tarPath, subdir string) (bool, error) {
 	return false, nil
 }
 
-func TestNewKpmClient(t *testing.T) {
+func testNewKpmClient(t *testing.T) {
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
 	kpmhome, err := env.GetAbsPkgPath()
@@ -1108,7 +1121,7 @@ func testUpdateWithKclModlock(t *testing.T, kpmcli *KpmClient) {
 	}()
 }
 
-func TestMetadataOffline(t *testing.T) {
+func testMetadataOffline(t *testing.T) {
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
 
@@ -1405,7 +1418,7 @@ func testAddWithGitCommit(t *testing.T) {
 	}()
 }
 
-func TestLoadPkgFormOci(t *testing.T) {
+func testLoadPkgFormOci(t *testing.T) {
 	type testCase struct {
 		Reg  string
 		Repo string
@@ -1452,7 +1465,7 @@ func TestLoadPkgFormOci(t *testing.T) {
 	}
 }
 
-func TestAddWithLocalPath(t *testing.T) {
+func testAddWithLocalPath(t *testing.T) {
 
 	testpath := getTestDir("add_with_local_path")
 
@@ -1804,7 +1817,7 @@ func testDependenciesOrder(t *testing.T) {
 	assert.Equal(t, utils.RmNewline(string(got)), utils.RmNewline(string(expect)))
 }
 
-func TestRunLocalWithoutArgs(t *testing.T) {
+func testRunLocalWithoutArgs(t *testing.T) {
 	pkgPath := getTestDir("test_run_options")
 
 	kpmcli, err := NewKpmClient()
@@ -1844,7 +1857,7 @@ func TestRunLocalWithoutArgs(t *testing.T) {
 	}
 }
 
-func TestRunLocalWithArgs(t *testing.T) {
+func testRunLocalWithArgs(t *testing.T) {
 	pkgPath := getTestDir("test_run_options")
 
 	kpmcli, err := NewKpmClient()
@@ -2115,7 +2128,7 @@ func TestVirtualPackageVisiter(t *testing.T) {
 	assert.Equal(t, os.IsNotExist(err), true)
 }
 
-func TestRunWithInsecureSkipTLSverify(t *testing.T) {
+func testRunWithInsecureSkipTLSverify(t *testing.T) {
 
 	var buf bytes.Buffer
 
@@ -2154,7 +2167,7 @@ func TestRunWithInsecureSkipTLSverify(t *testing.T) {
 	assert.Equal(t, buf.String(), "Called Success\n")
 }
 
-func TestAddDepsWithInsecureSkipTLSverify(t *testing.T) {
+func testAddDepsWithInsecureSkipTLSverify(t *testing.T) {
 
 	var buf bytes.Buffer
 
@@ -2207,7 +2220,7 @@ func TestAddDepsWithInsecureSkipTLSverify(t *testing.T) {
 	assert.Equal(t, buf.String(), "Called Success\n")
 }
 
-func TestPushWithInsecureSkipTLSverify(t *testing.T) {
+func testPushWithInsecureSkipTLSverify(t *testing.T) {
 	var buf bytes.Buffer
 
 	mux := http.NewServeMux()
