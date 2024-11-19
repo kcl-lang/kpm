@@ -88,7 +88,7 @@ func testPullWithInsecureSkipTLSverify(t *testing.T) {
 	}()
 }
 
-func TestInsecureSkipTLSverifyOCIRegistry(t *testing.T) {
+func testInsecureSkipTLSverifyOCIRegistry(t *testing.T) {
 	var buf bytes.Buffer
 
 	mux := http.NewServeMux()

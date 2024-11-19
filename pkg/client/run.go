@@ -68,6 +68,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/constants"
@@ -440,7 +441,7 @@ func (o *RunOptions) applyCompileOptions(source downloader.Source, kclPkg *pkg.K
 			pkgHome = filepath.Join(workDir, pkgHome)
 		}
 
-		return sourcePath == pkgHome
+		return strings.EqualFold(sourcePath, pkgHome)
 	}
 
 	// If the sources from cli is not empty, use the sources from cli.
@@ -500,6 +501,21 @@ func (o *RunOptions) applyCompileOptions(source downloader.Source, kclPkg *pkg.K
 			o.KFilenameList = []string{kclPkg.HomePath}
 		} else {
 			o.KFilenameList = []string{workDir}
+		}
+	}
+
+	// Iterate all the kcl files and transform the '-' in mod relative path to '_'
+	for i, kfile := range o.KFilenameList {
+		if utils.IsModRelativePath(kfile) {
+			modName, entriesPath, err := utils.ParseModRelativePath(kfile)
+			if err != nil {
+				return err
+			}
+			if modName != "" {
+				modName = strings.ReplaceAll(modName, "-", "_")
+			}
+			modRelativePath := utils.GenerateModRelativePath(modName, entriesPath)
+			o.KFilenameList[i] = modRelativePath
 		}
 	}
 
