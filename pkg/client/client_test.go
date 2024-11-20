@@ -651,7 +651,7 @@ func testCompileWithEntryFile(t *testing.T) {
 		Source: downloader.Source{
 			Oci: &downloader.Oci{
 				Reg:  "ghcr.io",
-				Repo: "kcl-lang/kcl2",
+				Repo: "kcl-lang/kcl1",
 				Tag:  "0.0.1",
 			},
 		},
