@@ -205,10 +205,22 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		// update the local module path with the latest version.
 		if len(rv.VisitedSpace) != 0 {
 			modFullPath = s.LocalPath(filepath.Join(rv.VisitedSpace, s.Type(), "src"))
+			if !utils.DirExists(modFullPath) {
+				err = os.MkdirAll(modFullPath, 0755)
+				if err != nil {
+					return err
+				}
+			}
 		}
 		// update the cache path with the latest version.
 		if rv.EnableCache {
 			cacheFullPath = s.CachePath(filepath.Join(rv.CachePath, s.Type(), "cache"))
+			if !utils.DirExists(cacheFullPath) {
+				err = os.MkdirAll(cacheFullPath, 0755)
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
 

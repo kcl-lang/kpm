@@ -4,4 +4,4 @@ edition = "v0.10.0"
 version = "0.0.1"
 
 [dependencies]
-helloworld = { version = "0.1.2" }
+helloworld = "0.1.2"
