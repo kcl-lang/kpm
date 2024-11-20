@@ -1,0 +1,29 @@
+[dependencies]
+  [dependencies.b]
+    name = "b"
+    full_name = "b_0.0.1"
+    version = "0.0.1"
+  [dependencies.fluxcd-helm-controller]
+    name = "fluxcd-helm-controller"
+    full_name = "fluxcd-helm-controller_v1.0.3"
+    version = "v1.0.3"
+    sum = "IfDYAw0NW8XsbUSygAfqkgrJ8LdI7x4NIq7e9TuTbKY="
+    reg = "ghcr.io"
+    repo = "kcl-lang/fluxcd-helm-controller"
+    oci_tag = "v1.0.3"
+  [dependencies.fluxcd-source-controller]
+    name = "fluxcd-source-controller"
+    full_name = "fluxcd-source-controller_v1.3.2"
+    version = "v1.3.2"
+    sum = "iZlc0kXOSajJNUmzvOlcIZgk60WGJbl4xKy4AVWYfkM="
+    reg = "ghcr.io"
+    repo = "kcl-lang/fluxcd-source-controller"
+    oci_tag = "v1.3.2"
+  [dependencies.k8s]
+    name = "k8s"
+    full_name = "k8s_1.31.2"
+    version = "1.31.2"
+    sum = "xBZgPsnpVVyWBpahuPQHReeRx28eUHGFoaPeqbct+vs="
+    reg = "ghcr.io"
+    repo = "kcl-lang/k8s"
+    oci_tag = "1.31.2"
