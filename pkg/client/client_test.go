@@ -55,7 +55,6 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestDownloadGitWithPackage", testDownloadGitWithPackage)
 	test.RunTestWithGlobalLock(t, "TestModandLockFilesWithGitPackageDownload", testModandLockFilesWithGitPackageDownload)
 	test.RunTestWithGlobalLock(t, "TestDependencyGraph", testDependencyGraph)
-	test.RunTestWithGlobalLock(t, "TestVendorWithGlobalLock", testVendorWithGlobalLock)
 	test.RunTestWithGlobalLock(t, "TestPull", testPull)
 	test.RunTestWithGlobalLock(t, "TestPullWithInsecureSkipTLSverify", testPullWithInsecureSkipTLSverify)
 	test.RunTestWithGlobalLock(t, "TestPullWithModSpec", testPullWithModSpec)
@@ -561,8 +560,8 @@ func testResolveDepsVendorMode(t *testing.T) {
 	kpm_home := filepath.Join(testDir, "kpm_home")
 	home_path := filepath.Join(testDir, "my_kcl_resolve_deps_vendor_mode")
 	os.RemoveAll(home_path)
-	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1"))
-	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
+	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1_0.0.1"))
+	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2_0.0.1"))
 
 	depKcl1 := pkg.Dependency{
 		Name:     "kcl1",
@@ -642,7 +641,7 @@ func testCompileWithEntryFile(t *testing.T) {
 	entry_file := filepath.Join(home_path, "main.k")
 	os.RemoveAll(vendor_path)
 
-	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1"))
+	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1_0.0.1"))
 	depKcl1 := pkg.Dependency{
 		Name:     "kcl1",
 		FullName: "kcl1_0.0.1",
@@ -651,12 +650,12 @@ func testCompileWithEntryFile(t *testing.T) {
 		Source: downloader.Source{
 			Oci: &downloader.Oci{
 				Reg:  "ghcr.io",
-				Repo: "kcl-lang/kcl2",
+				Repo: "kcl-lang/kcl1",
 				Tag:  "0.0.1",
 			},
 		},
 	}
-	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
+	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2_0.0.1"))
 	depKcl2 := pkg.Dependency{
 		Name:     "kcl2",
 		FullName: "kcl2_0.0.1",
@@ -2253,4 +2252,46 @@ func testPushWithInsecureSkipTLSverify(t *testing.T) {
 	_ = kpmcli.PushToOci("test", ociOpts)
 
 	assert.Equal(t, buf.String(), "Called Success\n")
+}
+
+func TestIssues(t *testing.T) {
+	// "kcl-lang/kcl/issue/1760" is the repo where the issue was actually raised and the issue id.
+	// "testIssue1760" is the test case cover the issue.
+	RunTestWithGlobalLockAndKpmCli(t, "kcl-lang/kcl/issue/1760", testIssue1760)
+}
+
+func testIssue1760(t *testing.T, kpmcli *KpmClient) {
+	rootPath := getTestDir("issues")
+	mainKFilePath := filepath.Join(rootPath, "kcl-lang/kcl/issue/1760", "a", "main.k")
+	var buf bytes.Buffer
+	kpmcli.SetLogWriter(&buf)
+
+	res, err := kpmcli.Run(
+		WithRunSource(
+			&downloader.Source{
+				Local: &downloader.Local{
+					Path: mainKFilePath,
+				},
+			},
+		),
+	)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Contains(t,
+		utils.RmNewline(buf.String()),
+		"downloading 'kcl-lang/fluxcd-source-controller:v1.3.2' from 'ghcr.io/kcl-lang/fluxcd-source-controller:v1.3.2'",
+	)
+	assert.Contains(t,
+		utils.RmNewline(buf.String()),
+		"downloading 'kcl-lang/k8s:1.31.2' from 'ghcr.io/kcl-lang/k8s:1.31.2'",
+	)
+
+	assert.Contains(t,
+		utils.RmNewline(buf.String()),
+		"downloading 'kcl-lang/fluxcd-helm-controller:v1.0.3' from 'ghcr.io/kcl-lang/fluxcd-helm-controller:v1.0.3'",
+	)
+	assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
 }

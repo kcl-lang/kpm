@@ -11,16 +11,15 @@ import (
 	"kcl-lang.io/kpm/pkg/features"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/settings"
-	"kcl-lang.io/kpm/pkg/test"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
-func testVendorDeps(t *testing.T) {
+func testVendorDeps(t *testing.T, kpmcli *KpmClient) {
 	testDir := getTestDir("resolve_deps")
 	kpm_home := filepath.Join(testDir, "kpm_home")
 	os.RemoveAll(filepath.Join(testDir, "my_kcl"))
-	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1"))
-	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
+	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1_0.0.1"))
+	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2_0.0.1"))
 
 	depKcl1 := pkg.Dependency{
 		Name:     "kcl1",
@@ -75,10 +74,8 @@ func testVendorDeps(t *testing.T) {
 
 	mykclVendorPath := filepath.Join(filepath.Join(testDir, "my_kcl"), "vendor")
 	assert.Equal(t, utils.DirExists(mykclVendorPath), false)
-	kpmcli, err := NewKpmClient()
 	kpmcli.homePath = kpm_home
-	assert.Equal(t, err, nil)
-	err = kpmcli.VendorDeps(&kclPkg)
+	err := kpmcli.VendorDeps(&kclPkg)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, utils.DirExists(mykclVendorPath), true)
 	assert.Equal(t, utils.DirExists(filepath.Join(mykclVendorPath, "kcl1_0.0.1")), true)
@@ -91,7 +88,7 @@ func testVendorDeps(t *testing.T) {
 	os.RemoveAll(filepath.Join(testDir, "my_kcl"))
 }
 
-func testVendorWithMVS(t *testing.T) {
+func testVendorWithMVS(t *testing.T, kpmcli *KpmClient) {
 	features.Enable(features.SupportMVS)
 	defer features.Disable(features.SupportMVS)
 	testDir := getTestDir("test_vendor_mvs")
@@ -101,9 +98,6 @@ func testVendorWithMVS(t *testing.T) {
 		pkg.WithSettings(settings.GetSettings()),
 	)
 	assert.Equal(t, err, nil)
-
-	kpmcli, err := NewKpmClient()
-	assert.Equal(t, err, nil)
 	err = kpmcli.VendorDeps(kPkg)
 	assert.Equal(t, err, nil)
 
@@ -112,7 +106,7 @@ func testVendorWithMVS(t *testing.T) {
 	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "vendor", "helloworld_0.1.1")), false)
 }
 
-func testVendorWithGlobalLock(t *testing.T) {
-	test.RunTestWithGlobalLock(t, "TestVendorDeps", testVendorDeps)
-	test.RunTestWithGlobalLock(t, "TestVendorWithMVS", testVendorWithMVS)
+func TestVendorWithGlobalLock(t *testing.T) {
+	RunTestWithGlobalLockAndKpmCli(t, "TestVendorDeps", testVendorDeps)
+	RunTestWithGlobalLockAndKpmCli(t, "TestVendorWithMVS", testVendorWithMVS)
 }
