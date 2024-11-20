@@ -642,7 +642,7 @@ func testCompileWithEntryFile(t *testing.T) {
 	entry_file := filepath.Join(home_path, "main.k")
 	os.RemoveAll(vendor_path)
 
-	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1"))
+	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1_0.0.1"))
 	depKcl1 := pkg.Dependency{
 		Name:     "kcl1",
 		FullName: "kcl1_0.0.1",
@@ -656,7 +656,7 @@ func testCompileWithEntryFile(t *testing.T) {
 			},
 		},
 	}
-	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
+	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2_0.0.1"))
 	depKcl2 := pkg.Dependency{
 		Name:     "kcl2",
 		FullName: "kcl2_0.0.1",
