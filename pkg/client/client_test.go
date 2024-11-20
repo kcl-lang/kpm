@@ -561,8 +561,8 @@ func testResolveDepsVendorMode(t *testing.T) {
 	kpm_home := filepath.Join(testDir, "kpm_home")
 	home_path := filepath.Join(testDir, "my_kcl_resolve_deps_vendor_mode")
 	os.RemoveAll(home_path)
-	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1"))
-	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2"))
+	kcl1Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl1_0.0.1"))
+	kcl2Sum, _ := utils.HashDir(filepath.Join(kpm_home, "kcl2_0.0.1"))
 
 	depKcl1 := pkg.Dependency{
 		Name:     "kcl1",
