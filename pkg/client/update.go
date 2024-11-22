@@ -100,6 +100,7 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 	err := depResolver.Resolve(
 		resolver.WithResolveKclMod(kMod),
 		resolver.WithEnableCache(true),
+		resolver.WithCachePath(c.homePath),
 	)
 
 	if err != nil {
