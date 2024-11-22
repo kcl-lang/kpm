@@ -27,6 +27,16 @@ type ResolveOptions struct {
 	EnableCache bool
 	// CachePath is the path of the cache.
 	CachePath string
+	// Offline is the flag to resolve the package offline.
+	Offline bool
+}
+
+// WithOffline sets the offline option to resolve the package.
+func WithOffline(offline bool) ResolveOption {
+	return func(opts *ResolveOptions) error {
+		opts.Offline = offline
+		return nil
+	}
 }
 
 func WithResolveKclMod(kMod *pkg.KclPkg) ResolveOption {
@@ -94,6 +104,7 @@ func (dr *DepsResolver) Resolve(options ...ResolveOption) error {
 				EnableCache:           opts.EnableCache,
 				CachePath:             cachePath,
 				VisitedSpace:          cachePath,
+				Offline:               opts.Offline,
 			}, nil
 		} else if source.IsLocalTarPath() || source.IsLocalTgzPath() {
 			return visitor.NewArchiveVisitor(pkgVisitor), nil
