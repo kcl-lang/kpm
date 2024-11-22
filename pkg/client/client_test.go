@@ -814,7 +814,10 @@ func testResolveMetadataInJsonStr(t *testing.T) {
 	assert.Equal(t, utils.DirExists(vendorDir), false)
 	assert.Equal(t, utils.DirExists(filepath.Join(vendorDir, "flask-demo-kcl-manifests_ade147b")), false)
 	assert.Equal(t, err, nil)
-	expectedStr := "{\"packages\":{\"flask_demo_kcl_manifests\":{\"name\":\"flask_demo_kcl_manifests\",\"manifest_path\":\"\"}}}"
+	expectedStr := fmt.Sprintf(
+		"{\"packages\":{\"flask_demo_kcl_manifests\":{\"name\":\"flask_demo_kcl_manifests\",\"manifest_path\":\"%s\"}}}",
+		filepath.Join("not_exist", "flask-demo-kcl-manifests_ade147b"),
+	)
 	assert.Equal(t, res, expectedStr)
 	defer func() {
 		if r := os.RemoveAll(filepath.Join("not_exist", "flask-demo-kcl-manifests_ade147b")); r != nil {

@@ -52,47 +52,45 @@ func TestKclIssue1760(t *testing.T) {
 
 	for _, tc := range testCases {
 		tc := tc // capture range variable
-		t.Run(tc.name, func(t *testing.T) {
-			tc.setup()
+		tc.setup()
 
-			testFunc := func(t *testing.T, kpmcli *KpmClient) {
-				rootPath := getTestDir("issues")
-				mainKFilePath := filepath.Join(rootPath, testPath, "a", "main.k")
-				var buf bytes.Buffer
-				kpmcli.SetLogWriter(&buf)
+		testFunc := func(t *testing.T, kpmcli *KpmClient) {
+			rootPath := getTestDir("issues")
+			mainKFilePath := filepath.Join(rootPath, testPath, "a", "main.k")
+			var buf bytes.Buffer
+			kpmcli.SetLogWriter(&buf)
 
-				res, err := kpmcli.Run(
-					WithRunSource(
-						&downloader.Source{
-							Local: &downloader.Local{
-								Path: mainKFilePath,
-							},
+			res, err := kpmcli.Run(
+				WithRunSource(
+					&downloader.Source{
+						Local: &downloader.Local{
+							Path: mainKFilePath,
 						},
-					),
-				)
+					},
+				),
+			)
 
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				assert.Contains(t,
-					utils.RmNewline(buf.String()),
-					"downloading 'kcl-lang/fluxcd-source-controller:v1.3.2' from 'ghcr.io/kcl-lang/fluxcd-source-controller:v1.3.2'",
-				)
-				assert.Contains(t,
-					utils.RmNewline(buf.String()),
-					"downloading 'kcl-lang/k8s:1.31.2' from 'ghcr.io/kcl-lang/k8s:1.31.2'",
-				)
-
-				assert.Contains(t,
-					utils.RmNewline(buf.String()),
-					"downloading 'kcl-lang/fluxcd-helm-controller:v1.0.3' from 'ghcr.io/kcl-lang/fluxcd-helm-controller:v1.0.3'",
-				)
-				assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			RunTestWithGlobalLockAndKpmCli(t, testPath, testFunc)
-		})
+			assert.Contains(t,
+				utils.RmNewline(buf.String()),
+				"downloading 'kcl-lang/fluxcd-source-controller:v1.3.2' from 'ghcr.io/kcl-lang/fluxcd-source-controller:v1.3.2'",
+			)
+			assert.Contains(t,
+				utils.RmNewline(buf.String()),
+				"downloading 'kcl-lang/k8s:1.31.2' from 'ghcr.io/kcl-lang/k8s:1.31.2'",
+			)
+
+			assert.Contains(t,
+				utils.RmNewline(buf.String()),
+				"downloading 'kcl-lang/fluxcd-helm-controller:v1.0.3' from 'ghcr.io/kcl-lang/fluxcd-helm-controller:v1.0.3'",
+			)
+			assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
+		}
+
+		RunTestWithGlobalLockAndKpmCli(t, tc.name, testFunc)
 	}
 }
 
@@ -139,54 +137,56 @@ func TestKpmIssue550(t *testing.T) {
 
 	for _, tc := range testCases {
 		tc := tc // capture range variable
-		t.Run(tc.name, func(t *testing.T) {
-			tc.setup()
 
-			testFunc := func(t *testing.T, kpmcli *KpmClient) {
-				rootPath := getTestDir("issues")
-				modPath := filepath.Join(rootPath, testPath, "pkg")
-				var buf bytes.Buffer
-				kpmcli.SetLogWriter(&buf)
+		tc.setup()
 
-				tmpKpmHome, err := os.MkdirTemp("", "")
-				if err != nil {
-					t.Fatal(err)
-				}
-				defer os.RemoveAll(tmpKpmHome)
+		testFunc := func(t *testing.T, kpmcli *KpmClient) {
+			rootPath := getTestDir("issues")
+			modPath := filepath.Join(rootPath, testPath, "pkg")
+			var buf bytes.Buffer
+			kpmcli.SetLogWriter(&buf)
 
-				kpmcli.homePath = tmpKpmHome
+			tmpKpmHome, err := os.MkdirTemp("", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer os.RemoveAll(tmpKpmHome)
 
-				kMod, err := pkg.LoadKclPkgWithOpts(
-					pkg.WithPath(modPath),
-				)
+			kpmcli.homePath = tmpKpmHome
 
-				if err != nil {
-					t.Fatal(err)
-				}
+			kMod, err := pkg.LoadKclPkgWithOpts(
+				pkg.WithPath(modPath),
+			)
 
-				res, err := kpmcli.ResolveDepsMetadataInJsonStr(kMod, true)
-
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				assert.Equal(t, res, fmt.Sprintf(`{"cc":"%s"}`, filepath.Join(tmpKpmHome, tc.expected)))
-
-				resMap, err := kpmcli.ResolveDepsIntoMap(kMod)
-
-				if err != nil {
-					t.Fatal(err)
-				}
-				fmt.Printf("buf.String(): %v\n", buf.String())
-				assert.Contains(t,
-					utils.RmNewline(buf.String()),
-					"cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with branch 'test-branch-without-modfile'",
-				)
-				assert.Equal(t, len(resMap), 1)
-				assert.Equal(t, resMap["cc"], filepath.Join(tmpKpmHome, tc.expected))
+			if err != nil {
+				t.Fatal(err)
 			}
 
-			RunTestWithGlobalLockAndKpmCli(t, testPath, testFunc)
-		})
+			res, err := kpmcli.ResolveDepsMetadataInJsonStr(kMod, true)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, res, fmt.Sprintf(
+				`{"packages":{"cc":{"name":"cc","manifest_path":"%s"}`,
+				filepath.Join(tmpKpmHome, tc.expected),
+			))
+
+			resMap, err := kpmcli.ResolveDepsIntoMap(kMod)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+			fmt.Printf("buf.String(): %v\n", buf.String())
+			assert.Contains(t,
+				utils.RmNewline(buf.String()),
+				"cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with branch 'test-branch-without-modfile'",
+			)
+			assert.Equal(t, len(resMap), 1)
+			assert.Equal(t, resMap["cc"], filepath.Join(tmpKpmHome, tc.expected))
+		}
+
+		RunTestWithGlobalLockAndKpmCli(t, tc.name, testFunc)
 	}
 }

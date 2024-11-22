@@ -261,7 +261,7 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 	} else {
 		_, err = c.Update(
 			WithUpdatedKclPkg(kclPkg),
-			WithOffline(update),
+			WithOffline(!update),
 		)
 	}
 	return err
@@ -414,6 +414,7 @@ func (c *KpmClient) UpdateDeps(kclPkg *pkg.KclPkg) error {
 	if ok, err := features.Enabled(features.SupportMVS); err != nil && ok {
 		_, err = c.Update(
 			WithUpdatedKclPkg(kclPkg),
+			WithOffline(false),
 		)
 		if err != nil {
 			return err
