@@ -178,7 +178,7 @@ func TestKpmIssue550(t *testing.T) {
 
 			assert.Equal(t, res, fmt.Sprintf(
 				`{"packages":{"cc":{"name":"cc","manifest_path":"%s"}}}`,
-				filepath.Join(tmpKpmHome, tc.expected),
+				expectedPath,
 			))
 
 			resMap, err := kpmcli.ResolveDepsIntoMap(kMod)
@@ -192,7 +192,7 @@ func TestKpmIssue550(t *testing.T) {
 				"cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with branch 'test-branch-without-modfile'",
 			)
 			assert.Equal(t, len(resMap), 1)
-			assert.Equal(t, resMap["cc"], filepath.Join(tmpKpmHome, tc.expected))
+			assert.Equal(t, resMap["cc"], expectedPath)
 		}
 
 		RunTestWithGlobalLockAndKpmCli(t, tc.name, testFunc)
