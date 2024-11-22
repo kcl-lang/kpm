@@ -99,9 +99,10 @@ func TestKclIssue1760(t *testing.T) {
 func TestKpmIssue550(t *testing.T) {
 	testPath := "github.com/kcl-lang/kpm/issues/550"
 	testCases := []struct {
-		name     string
-		setup    func()
-		expected string
+		name        string
+		setup       func()
+		expected    string
+		winExpected string
 	}{
 		{
 			name: "Default",
@@ -109,7 +110,8 @@ func TestKpmIssue550(t *testing.T) {
 				features.Disable(features.SupportNewStorage)
 				features.Disable(features.SupportMVS)
 			},
-			expected: filepath.Join("flask-demo-kcl-manifests_test-branch-without-modfile", "aa", "cc"),
+			expected:    filepath.Join("flask-demo-kcl-manifests_test-branch-without-modfile", "aa", "cc"),
+			winExpected: filepath.Join("flask-demo-kcl-manifests_test-branch-without-modfile", "aa", "cc"),
 		},
 		{
 			name: "SupportNewStorage",
@@ -117,7 +119,8 @@ func TestKpmIssue550(t *testing.T) {
 				features.Enable(features.SupportNewStorage)
 				features.Disable(features.SupportMVS)
 			},
-			expected: filepath.Join("git", "src", "200297ed26e4aeb7", "flask-demo-kcl-manifests", "test-branch-without-modfile", "aa", "cc"),
+			expected:    filepath.Join("git", "src", "200297ed26e4aeb7", "flask-demo-kcl-manifests", "test-branch-without-modfile", "aa", "cc"),
+			winExpected: filepath.Join("git", "src", "3523a44a55384201", "flask-demo-kcl-manifests", "test-branch-without-modfile", "aa", "cc"),
 		},
 		{
 			name: "SupportMVS",
@@ -125,7 +128,8 @@ func TestKpmIssue550(t *testing.T) {
 				features.Disable(features.SupportNewStorage)
 				features.Enable(features.SupportMVS)
 			},
-			expected: filepath.Join("flask-demo-kcl-manifests_test-branch-without-modfile", "aa", "cc"),
+			expected:    filepath.Join("flask-demo-kcl-manifests_test-branch-without-modfile", "aa", "cc"),
+			winExpected: filepath.Join("flask-demo-kcl-manifests_test-branch-without-modfile", "aa", "cc"),
 		},
 		{
 			name: "SupportNewStorageAndMVS",
@@ -133,7 +137,8 @@ func TestKpmIssue550(t *testing.T) {
 				features.Enable(features.SupportNewStorage)
 				features.Enable(features.SupportMVS)
 			},
-			expected: filepath.Join("git", "src", "200297ed26e4aeb7", "flask-demo-kcl-manifests", "test-branch-without-modfile", "aa", "cc"),
+			expected:    filepath.Join("git", "src", "200297ed26e4aeb7", "flask-demo-kcl-manifests", "test-branch-without-modfile", "aa", "cc"),
+			winExpected: filepath.Join("git", "src", "3523a44a55384201", "flask-demo-kcl-manifests", "test-branch-without-modfile", "aa", "cc"),
 		},
 	}
 
@@ -172,7 +177,7 @@ func TestKpmIssue550(t *testing.T) {
 
 			expectedPath := filepath.Join(tmpKpmHome, tc.expected)
 			if runtime.GOOS == "windows" {
-				expectedPath = filepath.Join(tmpKpmHome, tc.expected)
+				expectedPath = filepath.Join(tmpKpmHome, tc.winExpected)
 				expectedPath = strings.ReplaceAll(expectedPath, "\\", "\\\\")
 			}
 
@@ -192,7 +197,11 @@ func TestKpmIssue550(t *testing.T) {
 				"cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with branch 'test-branch-without-modfile'",
 			)
 			assert.Equal(t, len(resMap), 1)
-			assert.Equal(t, resMap["cc"], filepath.Join(tmpKpmHome, tc.expected))
+			if runtime.GOOS == "windows" {
+				assert.Equal(t, resMap["cc"], filepath.Join(tmpKpmHome, tc.winExpected))
+			} else {
+				assert.Equal(t, resMap["cc"], filepath.Join(tmpKpmHome, tc.expected))
+			}
 		}
 
 		RunTestWithGlobalLockAndKpmCli(t, tc.name, testFunc)
