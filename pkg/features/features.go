@@ -5,6 +5,7 @@ package features
 import (
 	"os"
 	"strings"
+	"sync"
 )
 
 const (
@@ -14,10 +15,13 @@ const (
 	SupportNewStorage = "SupportNewStorage"
 )
 
-var features = map[string]bool{
-	SupportMVS:        false,
-	SupportNewStorage: false,
-}
+var (
+	features = map[string]bool{
+		SupportMVS:        false,
+		SupportNewStorage: false,
+	}
+	mu sync.Mutex
+)
 
 func init() {
 	// supports the env: export KPM_FEATURE_GATES="SupportMVS=true"
@@ -39,6 +43,8 @@ func FeatureGates() map[string]bool {
 // pkg/runtime/features, so callers won't need to import
 // both packages for checking whether a feature is enabled.
 func Enabled(feature string) (bool, error) {
+	mu.Lock()
+	defer mu.Unlock()
 	if enabled, ok := features[feature]; ok {
 		return enabled, nil
 	}
@@ -48,6 +54,8 @@ func Enabled(feature string) (bool, error) {
 // Enable enables the specified feature. If the feature is not
 // present, it's a no-op.
 func Enable(feature string) {
+	mu.Lock()
+	defer mu.Unlock()
 	if _, ok := features[feature]; ok {
 		features[feature] = true
 	}
@@ -56,6 +64,8 @@ func Enable(feature string) {
 // Disable disables the specified feature. If the feature is not
 // present, it's a no-op.
 func Disable(feature string) {
+	mu.Lock()
+	defer mu.Unlock()
 	if _, ok := features[feature]; ok {
 		features[feature] = false
 	}

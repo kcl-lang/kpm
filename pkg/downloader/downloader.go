@@ -39,9 +39,17 @@ type DownloadOptions struct {
 	credsClient *CredClient
 	// InsecureSkipTLSverify is the flag to skip the verification of the certificate.
 	InsecureSkipTLSverify bool
+	// Offline is the flag to download the package offline.
+	Offline bool
 }
 
 type Option func(*DownloadOptions)
+
+func WithOffline(offline bool) Option {
+	return func(do *DownloadOptions) {
+		do.Offline = offline
+	}
+}
 
 func WithInsecureSkipTLSverify(insecureSkipTLSverify bool) Option {
 	return func(do *DownloadOptions) {
@@ -137,6 +145,9 @@ type DepDownloader struct {
 type GitDownloader struct{}
 
 func (d *GitDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
+	if opts.Offline {
+		return "", errors.New("offline mode is enabled, the latest version is not supported")
+	}
 	// TODO：supports fetch the latest commit from the git bare repo,
 	// after totally transfer to the new storage.
 	// refer to cargo: https://github.com/rust-lang/cargo/blob/3dedb85a25604bdbbb8d3bf4b03162961a4facd0/crates/cargo-util-schemas/src/core/source_kind.rs#L133
@@ -216,6 +227,10 @@ type OciDownloader struct {
 }
 
 func (d *OciDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
+	if opts.Offline {
+		return "", errors.New("offline mode is enabled, the latest version is not supported")
+	}
+
 	// download the package from the OCI registry
 	ociSource := opts.Source.Oci
 	if ociSource == nil {
@@ -260,7 +275,6 @@ func NewOciDownloader(platform string) *DepDownloader {
 }
 
 func (d *DepDownloader) Download(opts *DownloadOptions) error {
-
 	// create a tmp dir to download the oci package.
 	tmpDir, err := os.MkdirTemp("", "")
 	if err != nil {
@@ -447,7 +461,7 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 					return err
 				}
 			}
-		} else {
+		} else if !opts.Offline {
 			reporter.ReportMsgTo(
 				fmt.Sprintf(
 					"downloading '%s:%s' from '%s/%s:%s'",
@@ -481,7 +495,7 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 				}
 			}
 		}
-	} else {
+	} else if !opts.Offline {
 		reporter.ReportMsgTo(
 			fmt.Sprintf(
 				"downloading '%s:%s' from '%s/%s:%s'",
@@ -563,14 +577,14 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 				)
 				// If failed to clone the bare repository from the cache path,
 				// clone the bare repository from the remote git repository, update the cache.
-				if err != nil {
+				if err != nil && !opts.Offline {
 					// If the bare repository cache exists, fetch the latest commit from the cache.
 					if utils.DirExists(cacheFullPath) && git.IsGitBareRepo(cacheFullPath) {
 						err := git.Fetch(cacheFullPath)
 						if err != nil {
 							return err
 						}
-					} else {
+					} else if !opts.Offline {
 						reporter.ReportMsgTo(
 							fmt.Sprintf("cloning '%s' %s", opts.Source.Git.Url, msg),
 							opts.LogWriter,
@@ -608,7 +622,7 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 					}
 				}
 			}
-		} else {
+		} else if !opts.Offline {
 			reporter.ReportMsgTo(
 				fmt.Sprintf("cloning '%s' %s", opts.Source.Git.Url, msg),
 				opts.LogWriter,
@@ -625,7 +639,7 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 				return err
 			}
 		}
-	} else {
+	} else if !opts.Offline {
 		reporter.ReportMsgTo(
 			fmt.Sprintf("cloning '%s' %s", opts.Source.Git.Url, msg),
 			opts.LogWriter,

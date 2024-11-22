@@ -211,14 +211,7 @@ func (c *KpmClient) AcquireDepSum(dep pkg.Dependency) (string, error) {
 
 // ResolveDepsIntoMap will calculate the map of kcl package name and local storage path of the external packages.
 func (c *KpmClient) ResolveDepsIntoMap(kclPkg *pkg.KclPkg) (map[string]string, error) {
-	var err error
-	if kclPkg.IsVendorMode() {
-		err = c.VendorDeps(kclPkg)
-	} else {
-		kclPkg, err = c.Update(
-			WithUpdatedKclPkg(kclPkg),
-		)
-	}
+	err := c.ResolvePkgDepsMetadata(kclPkg, true)
 	if err != nil {
 		return nil, err
 	}
@@ -262,21 +255,16 @@ func (c *KpmClient) getDepStorePath(search_path string, d *pkg.Dependency, isVen
 // Since redownloads are not triggered if local dependencies exists,
 // indirect dependencies are also synchronized to the lock file by `lockDeps`.
 func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) error {
+	var err error
 	if kclPkg.IsVendorMode() {
-		// In the vendor mode, the search path is the vendor subdirectory of the current package.
-		err := c.VendorDeps(kclPkg)
-		if err != nil {
-			return err
-		}
+		err = c.VendorDeps(kclPkg)
 	} else {
-		// In the non-vendor mode, the search path is the KCL_PKG_PATH.
-		err := c.resolvePkgDeps(kclPkg, &kclPkg.Dependencies, update)
-		if err != nil {
-			return err
-		}
-
+		_, err = c.Update(
+			WithUpdatedKclPkg(kclPkg),
+			WithOffline(!update),
+		)
 	}
-	return nil
+	return err
 }
 
 func (c *KpmClient) resolvePkgDeps(kclPkg *pkg.KclPkg, lockDeps *pkg.Dependencies, update bool) error {
@@ -426,6 +414,7 @@ func (c *KpmClient) UpdateDeps(kclPkg *pkg.KclPkg) error {
 	if ok, err := features.Enabled(features.SupportMVS); err != nil && ok {
 		_, err = c.Update(
 			WithUpdatedKclPkg(kclPkg),
+			WithOffline(false),
 		)
 		if err != nil {
 			return err

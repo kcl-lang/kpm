@@ -11,10 +11,19 @@ import (
 // Updating a package means iterating all the dependencies of the package
 // and updating the dependencies and selecting the version of the dependencies by MVS.
 type UpdateOptions struct {
-	kpkg *pkg.KclPkg
+	kpkg    *pkg.KclPkg
+	offline bool
 }
 
 type UpdateOption func(*UpdateOptions) error
+
+// WithOffline sets the offline option to update the package.
+func WithOffline(offline bool) UpdateOption {
+	return func(opts *UpdateOptions) error {
+		opts.offline = offline
+		return nil
+	}
+}
 
 // WithUpdatedKclPkg sets the kcl package to be updated.
 func WithUpdatedKclPkg(kpkg *pkg.KclPkg) UpdateOption {
@@ -100,6 +109,7 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 	err := depResolver.Resolve(
 		resolver.WithResolveKclMod(kMod),
 		resolver.WithEnableCache(true),
+		resolver.WithCachePath(c.homePath),
 	)
 
 	if err != nil {
