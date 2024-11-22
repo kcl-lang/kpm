@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -166,6 +168,12 @@ func TestKpmIssue550(t *testing.T) {
 
 			if err != nil {
 				t.Fatal(err)
+			}
+
+			expectedPath := filepath.Join(tmpKpmHome, tc.expected)
+			if runtime.GOOS == "windows" {
+				expectedPath = filepath.Join(tmpKpmHome, tc.expected)
+				expectedPath = strings.ReplaceAll(expectedPath, "\\", "\\\\")
 			}
 
 			assert.Equal(t, res, fmt.Sprintf(
