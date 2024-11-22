@@ -192,7 +192,7 @@ func TestKpmIssue550(t *testing.T) {
 				"cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with branch 'test-branch-without-modfile'",
 			)
 			assert.Equal(t, len(resMap), 1)
-			assert.Equal(t, resMap["cc"], expectedPath)
+			assert.Equal(t, resMap["cc"], filepath.Join(tmpKpmHome, tc.expected))
 		}
 
 		RunTestWithGlobalLockAndKpmCli(t, tc.name, testFunc)
