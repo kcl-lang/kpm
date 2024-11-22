@@ -1149,6 +1149,9 @@ func testMetadataOffline(t *testing.T) {
 	assert.Equal(t, res, "{\"packages\":{}}")
 	content_after_metadata, err := os.ReadFile(kclMod)
 	assert.Equal(t, err, nil)
+	if runtime.GOOS == "windows" {
+		uglyContent = []byte(strings.ReplaceAll(string(uglyContent), "\r\n", "\n"))
+	}
 	assert.Equal(t, string(content_after_metadata), string(uglyContent))
 
 	res, err = kpmcli.ResolveDepsMetadataInJsonStr(kclPkg, true)
