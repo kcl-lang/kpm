@@ -169,7 +169,7 @@ func TestKpmIssue550(t *testing.T) {
 			}
 
 			assert.Equal(t, res, fmt.Sprintf(
-				`{"packages":{"cc":{"name":"cc","manifest_path":"%s"}`,
+				`{"packages":{"cc":{"name":"cc","manifest_path":"%s"}}}`,
 				filepath.Join(tmpKpmHome, tc.expected),
 			))
 
