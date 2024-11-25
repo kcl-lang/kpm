@@ -13,12 +13,15 @@ const (
 	SupportMVS = "SupportMVS"
 	// SupportNewStorage is the feature gate for enabling the support for the new storage structure.
 	SupportNewStorage = "SupportNewStorage"
+	// SupportCheckSum is the feature gate for enabling the support for the checksum verification.
+	SupportCheckSum = "SupportCheckSum"
 )
 
 var (
 	features = map[string]bool{
 		SupportMVS:        false,
 		SupportNewStorage: false,
+		SupportCheckSum:   false,
 	}
 	mu sync.Mutex
 )

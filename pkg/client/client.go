@@ -947,18 +947,20 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 }
 
 func (c *KpmClient) ValidateDependency(dep *pkg.Dependency) error {
-	tmpKclPkg := pkg.KclPkg{
-		HomePath: dep.LocalFullPath,
-		Dependencies: pkg.Dependencies{Deps: func() *orderedmap.OrderedMap[string, pkg.Dependency] {
-			m := orderedmap.NewOrderedMap[string, pkg.Dependency]()
-			m.Set(dep.Name, *dep)
-			return m
-		}()},
-		NoSumCheck: c.GetNoSumCheck(),
-	}
+	if ok, err := features.Enabled(features.SupportCheckSum); err == nil && ok {
+		tmpKclPkg := pkg.KclPkg{
+			HomePath: dep.LocalFullPath,
+			Dependencies: pkg.Dependencies{Deps: func() *orderedmap.OrderedMap[string, pkg.Dependency] {
+				m := orderedmap.NewOrderedMap[string, pkg.Dependency]()
+				m.Set(dep.Name, *dep)
+				return m
+			}()},
+			NoSumCheck: c.GetNoSumCheck(),
+		}
 
-	if err := c.DepChecker.Check(tmpKclPkg); err != nil {
-		return reporter.NewErrorEvent(reporter.InvalidKclPkg, err, fmt.Sprintf("%s package does not match the original kcl package", dep.FullName))
+		if err := c.DepChecker.Check(tmpKclPkg); err != nil {
+			return reporter.NewErrorEvent(reporter.InvalidKclPkg, err, fmt.Sprintf("%s package does not match the original kcl package", dep.FullName))
+		}
 	}
 
 	return nil

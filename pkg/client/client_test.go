@@ -27,6 +27,7 @@ import (
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/env"
+	"kcl-lang.io/kpm/pkg/features"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -2262,4 +2263,47 @@ func testPushWithInsecureSkipTLSverify(t *testing.T) {
 	_ = kpmcli.PushToOci("test", ociOpts)
 
 	assert.Equal(t, buf.String(), "Called Success\n")
+}
+
+func TestValidateDependency(t *testing.T) {
+	features.Enable(features.SupportCheckSum)
+	defer features.Disable(features.SupportCheckSum)
+
+	kpmcli, err := NewKpmClient()
+	assert.Equal(t, err, nil)
+
+	dep1 := pkg.Dependency{
+		Name:          "helloworld",
+		FullName:      "helloworld_0.1.2",
+		Version:       "0.1.2",
+		Sum:           "PN0OMEV9M8VGFn1CtA/T3bcgZmMJmOo+RkBrLKIWYeQ=",
+		LocalFullPath: "path/to/kcl/package",
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/helloworld",
+				Tag:  "0.1.2",
+			},
+		},
+	}
+	err = kpmcli.ValidateDependency(&dep1)
+	assert.Equal(t, err, nil)
+
+	dep2 := pkg.Dependency{
+		Name:          "helloworld",
+		FullName:      "helloworld_0.1.2",
+		Version:       "0.1.2",
+		Sum:           "fail-to-validate-dependency",
+		LocalFullPath: "path/to/kcl/package",
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/helloworld",
+				Tag:  "0.1.2",
+			},
+		},
+	}
+
+	err = kpmcli.ValidateDependency(&dep2)
+	assert.Error(t, err)
 }
