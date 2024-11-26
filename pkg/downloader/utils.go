@@ -104,7 +104,7 @@ func FindPackageByModSpec(root string, modSpec *ModSpec) (string, error) {
 		return "", err
 	}
 	if result == "" {
-		return "", fmt.Errorf("kcl.mod with package '%s:%s' not found", modSpec.Name, modSpec.Version)
+		return "", fmt.Errorf("package '%s:%s' not found", modSpec.Name, modSpec.Version)
 	}
 	return result, nil
 }
