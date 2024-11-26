@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/features"
@@ -206,4 +207,226 @@ func TestKpmIssue550(t *testing.T) {
 
 		RunTestWithGlobalLockAndKpmCli(t, tc.name, testFunc)
 	}
+}
+
+func TestKpmIssue226(t *testing.T) {
+	testPath := "github.com/kcl-lang/kpm/issues/226"
+	test_add_dep_with_git_commit := func(t *testing.T, kpmcli *KpmClient) {
+		rootPath := getTestDir("issues")
+		modPath := filepath.Join(rootPath, testPath, "add_with_commit")
+		modFileBk := filepath.Join(modPath, "kcl.mod.bk")
+		LockFileBk := filepath.Join(modPath, "kcl.mod.lock.bk")
+		modFile := filepath.Join(modPath, "kcl.mod")
+		LockFile := filepath.Join(modPath, "kcl.mod.lock")
+		modFileExpect := filepath.Join(modPath, "kcl.mod.expect")
+		LockFileExpect := filepath.Join(modPath, "kcl.mod.lock.expect")
+
+		defer func() {
+			_ = os.RemoveAll(modFile)
+			_ = os.RemoveAll(LockFile)
+		}()
+
+		err := copy.Copy(modFileBk, modFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = copy.Copy(LockFileBk, LockFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var buf bytes.Buffer
+		kpmcli.SetLogWriter(&buf)
+
+		kpkg, err := pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(modPath),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = kpmcli.Add(
+			WithAddKclPkg(kpkg),
+			WithAddSource(
+				&downloader.Source{
+					Git: &downloader.Git{
+						Url:    "https://github.com/kcl-lang/flask-demo-kcl-manifests.git",
+						Commit: "ade147b",
+					},
+				},
+			),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, utils.RmNewline(buf.String()),
+			"cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with commit 'ade147b'"+
+				"adding dependency 'flask_manifests'"+
+				"add dependency 'flask_manifests:0.0.1' successfully")
+
+		modFileContent, err := os.ReadFile(modFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lockFileContent, err := os.ReadFile(LockFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		modFileExpectContent, err := os.ReadFile(modFileExpect)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		lockFileExpectContent, err := os.ReadFile(LockFileExpect)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, utils.RmNewline(string(modFileContent)), utils.RmNewline(string(modFileExpectContent)))
+		assert.Equal(t, utils.RmNewline(string(lockFileContent)), utils.RmNewline(string(lockFileExpectContent)))
+	}
+
+	test_update_with_git_commit := func(t *testing.T, kpmcli *KpmClient) {
+		rootPath := getTestDir("issues")
+		modPath := filepath.Join(rootPath, testPath, "update_check_version")
+		modFileBk := filepath.Join(modPath, "kcl.mod.bk")
+		LockFileBk := filepath.Join(modPath, "kcl.mod.lock.bk")
+		modFile := filepath.Join(modPath, "kcl.mod")
+		LockFile := filepath.Join(modPath, "kcl.mod.lock")
+		modFileExpect := filepath.Join(modPath, "kcl.mod.expect")
+		LockFileExpect := filepath.Join(modPath, "kcl.mod.lock.expect")
+
+		defer func() {
+			_ = os.RemoveAll(modFile)
+			_ = os.RemoveAll(LockFile)
+		}()
+
+		err := copy.Copy(modFileBk, modFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = copy.Copy(LockFileBk, LockFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var buf bytes.Buffer
+		kpmcli.SetLogWriter(&buf)
+
+		kpkg, err := pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(modPath),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		_, err = kpmcli.Update(
+			WithUpdatedKclPkg(kpkg),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, utils.RmNewline(buf.String()),
+			"cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with commit 'ade147b'")
+
+		modFileContent, err := os.ReadFile(modFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lockFileContent, err := os.ReadFile(LockFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		modFileExpectContent, err := os.ReadFile(modFileExpect)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		lockFileExpectContent, err := os.ReadFile(LockFileExpect)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, utils.RmNewline(string(modFileContent)), utils.RmNewline(string(modFileExpectContent)))
+		assert.Equal(t, utils.RmNewline(string(lockFileContent)), utils.RmNewline(string(lockFileExpectContent)))
+	}
+
+	test_update_with_git_commit_invalid := func(t *testing.T, kpmcli *KpmClient) {
+		rootPath := getTestDir("issues")
+		modPath := filepath.Join(rootPath, testPath, "update_check_version_invalid")
+		modFileBk := filepath.Join(modPath, "kcl.mod.bk")
+		LockFileBk := filepath.Join(modPath, "kcl.mod.lock.bk")
+		modFile := filepath.Join(modPath, "kcl.mod")
+		LockFile := filepath.Join(modPath, "kcl.mod.lock")
+		modFileExpect := filepath.Join(modPath, "kcl.mod.expect")
+		LockFileExpect := filepath.Join(modPath, "kcl.mod.lock.expect")
+
+		defer func() {
+			_ = os.RemoveAll(modFile)
+			_ = os.RemoveAll(LockFile)
+		}()
+
+		err := copy.Copy(modFileBk, modFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = copy.Copy(LockFileBk, LockFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var buf bytes.Buffer
+		kpmcli.SetLogWriter(&buf)
+
+		kpkg, err := pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(modPath),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		_, err = kpmcli.Update(
+			WithUpdatedKclPkg(kpkg),
+		)
+
+		assert.Equal(t, err.Error(), "package 'flask_manifests:0.100.0' not found")
+
+		assert.Equal(t, utils.RmNewline(buf.String()),
+			"cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with commit 'ade147b'")
+
+		modFileContent, err := os.ReadFile(modFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lockFileContent, err := os.ReadFile(LockFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		modFileExpectContent, err := os.ReadFile(modFileExpect)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		lockFileExpectContent, err := os.ReadFile(LockFileExpect)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, utils.RmNewline(string(modFileContent)), utils.RmNewline(string(modFileExpectContent)))
+		assert.Equal(t, utils.RmNewline(string(lockFileContent)), utils.RmNewline(string(lockFileExpectContent)))
+	}
+
+	RunTestWithGlobalLockAndKpmCli(t, "add_dep_with_git_commit", test_add_dep_with_git_commit)
+	RunTestWithGlobalLockAndKpmCli(t, "update_with_git_commit", test_update_with_git_commit)
+	RunTestWithGlobalLockAndKpmCli(t, "update_with_git_commit_invalid", test_update_with_git_commit_invalid)
 }

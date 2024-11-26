@@ -642,7 +642,7 @@ func FindPackage(root, targetPackage string) (string, error) {
 		return "", err
 	}
 	if result == "" {
-		return "", fmt.Errorf("kcl.mod with package '%s' not found", targetPackage)
+		return "", fmt.Errorf("package '%s' not found", targetPackage)
 	}
 	return result, nil
 }
