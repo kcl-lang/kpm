@@ -25,40 +25,57 @@ type Checker interface {
 	Check(pkg.KclPkg) error
 }
 
-// DepChecker is responsible for running multiple checkers on a package's dependencies.
-type DepChecker struct {
+// ModChecker is responsible for running multiple checkers on a KCL module.
+type ModChecker struct {
 	checkers []Checker
 }
 
-// DepCheckerOption configures how we set up DepChecker.
-type DepCheckerOption func(*DepChecker)
+// ModCheckerOption configures how we set up ModChecker.
+type ModCheckerOption func(*ModChecker)
 
-// NewDepChecker creates a new DepChecker with options.
-func NewDepChecker(options ...DepCheckerOption) *DepChecker {
-	depChecker := &DepChecker{}
+// NewModChecker creates a new ModChecker with options.
+func NewModChecker(options ...ModCheckerOption) *ModChecker {
+	ModChecker := &ModChecker{}
 	for _, opt := range options {
-		opt(depChecker)
+		opt(ModChecker)
 	}
-	return depChecker
+	return ModChecker
 }
 
-// WithChecker adds a single Checker to DepChecker.
-func WithChecker(checker Checker) DepCheckerOption {
-	return func(c *DepChecker) {
+// WithChecker adds a single Checker to ModChecker.
+func WithChecker(checker Checker) ModCheckerOption {
+	return func(c *ModChecker) {
+		if c.checkers == nil {
+			c.checkers = []Checker{}
+		}
 		c.checkers = append(c.checkers, checker)
 	}
 }
 
-// WithCheckers adds multiple Checkers to DepChecker.
-func WithCheckers(checkers ...Checker) DepCheckerOption {
-	return func(c *DepChecker) {
+// WithCheckers adds multiple Checkers to ModChecker.
+func WithCheckers(checkers ...Checker) ModCheckerOption {
+	return func(c *ModChecker) {
+		if c.checkers == nil {
+			c.checkers = []Checker{}
+		}
 		c.checkers = append(c.checkers, checkers...)
 	}
 }
 
+func (mc *ModChecker) AddChecker(checker Checker) {
+	mc.checkers = append(mc.checkers, checker)
+}
+
+func (mc *ModChecker) CheckersSize() int {
+	if mc.checkers == nil {
+		return 0
+	}
+	return len(mc.checkers)
+}
+
 // Check runs all individual checks for a kclPkg.
-func (dc *DepChecker) Check(kclPkg pkg.KclPkg) error {
-	for _, checker := range dc.checkers {
+func (mc *ModChecker) Check(kclPkg pkg.KclPkg) error {
+	for _, checker := range mc.checkers {
 		if err := checker.Check(kclPkg); err != nil {
 			return err
 		}
@@ -75,11 +92,8 @@ func NewIdentChecker() *IdentChecker {
 }
 
 func (ic *IdentChecker) Check(kclPkg pkg.KclPkg) error {
-	for _, key := range kclPkg.Dependencies.Deps.Keys() {
-		dep, _ := kclPkg.Dependencies.Deps.Get(key)
-		if !isValidDependencyName(dep.Name) {
-			return fmt.Errorf("invalid dependency name: %s", dep.Name)
-		}
+	if !isValidDependencyName(kclPkg.ModFile.Pkg.Name) {
+		return fmt.Errorf("invalid name: %s", kclPkg.ModFile.Pkg.Name)
 	}
 	return nil
 }
@@ -93,12 +107,11 @@ func NewVersionChecker() *VersionChecker {
 }
 
 func (vc *VersionChecker) Check(kclPkg pkg.KclPkg) error {
-	for _, key := range kclPkg.Dependencies.Deps.Keys() {
-		dep, _ := kclPkg.Dependencies.Deps.Get(key)
-		if !isValidDependencyVersion(dep.Version) {
-			return fmt.Errorf("invalid dependency version: %s for %s", dep.Version, dep.Name)
-		}
+	if !isValidDependencyVersion(kclPkg.ModFile.Pkg.Version) {
+		return fmt.Errorf("invalid version: %s for %s",
+			kclPkg.ModFile.Pkg.Version, kclPkg.ModFile.Pkg.Name)
 	}
+
 	return nil
 }
 
@@ -147,7 +160,7 @@ func (sc *SumChecker) Check(kclPkg pkg.KclPkg) error {
 
 // isValidDependencyName checks whether the given dependency name is valid.
 func isValidDependencyName(name string) bool {
-	validNamePattern := `^[a-zA-Z][a-zA-Z0-9_\-\.]*[a-zA-Z0-9_]$`
+	validNamePattern := `^[a-z][a-z0-9_]*(?:-[a-z0-9_]+)*$`
 	regex := regexp.MustCompile(validNamePattern)
 	return regex.MatchString(name)
 }

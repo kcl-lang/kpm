@@ -2266,8 +2266,8 @@ func testPushWithInsecureSkipTLSverify(t *testing.T) {
 }
 
 func TestValidateDependency(t *testing.T) {
-	features.Enable(features.SupportCheckSum)
-	defer features.Disable(features.SupportCheckSum)
+	features.Enable(features.SupportModCheck)
+	defer features.Disable(features.SupportModCheck)
 
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
@@ -2287,6 +2287,7 @@ func TestValidateDependency(t *testing.T) {
 		},
 	}
 	err = kpmcli.ValidateDependency(&dep1)
+	fmt.Printf("err: %v\n", err)
 	assert.Equal(t, err, nil)
 
 	dep2 := pkg.Dependency{

@@ -3,6 +3,8 @@ package client
 import (
 	"fmt"
 
+	"kcl-lang.io/kpm/pkg/checker"
+	"kcl-lang.io/kpm/pkg/features"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/resolver"
 )
@@ -44,6 +46,23 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 	kMod := opts.kpkg
 	if kMod == nil {
 		return nil, fmt.Errorf("kcl package is nil")
+	}
+
+	if ok, err := features.Enabled(features.SupportModCheck); err == nil && ok && c.noSumCheck {
+		c.ModChecker = checker.NewModChecker(
+			checker.WithCheckers(
+				checker.NewIdentChecker(),
+				checker.NewVersionChecker(),
+				checker.NewSumChecker(),
+			),
+		)
+
+		err := c.Check(
+			WithCheckKclMod(kMod),
+		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	kMod.NoSumCheck = c.noSumCheck
