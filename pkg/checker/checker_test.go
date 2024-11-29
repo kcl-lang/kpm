@@ -203,6 +203,10 @@ func TestModCheckerCheck_WithTrustedSum(t *testing.T) {
 			name: "valid kcl package - with sum check",
 			KclPkg: pkg.KclPkg{
 				ModFile: pkg.ModFile{
+					Pkg: pkg.Package{
+						Name:    "testmod",
+						Version: "0.0.1",
+					},
 					HomePath: "path/to/modfile",
 				},
 				HomePath: "path/to/kcl/pkg",
@@ -217,6 +221,10 @@ func TestModCheckerCheck_WithTrustedSum(t *testing.T) {
 			name: "valid kcl package - with no sum check enabled",
 			KclPkg: pkg.KclPkg{
 				ModFile: pkg.ModFile{
+					Pkg: pkg.Package{
+						Name:    "testmod",
+						Version: "0.0.1",
+					},
 					HomePath: "path/to/modfile",
 				},
 				HomePath: "path/to/kcl/pkg",
@@ -231,6 +239,10 @@ func TestModCheckerCheck_WithTrustedSum(t *testing.T) {
 			name: "Invalid kcl package - with no sum check disabled - checksum mismatches",
 			KclPkg: pkg.KclPkg{
 				ModFile: pkg.ModFile{
+					Pkg: pkg.Package{
+						Name:    "testmod",
+						Version: "0.0.1",
+					},
 					HomePath: "path/to/modfile",
 				},
 				HomePath: "path/to/kcl/pkg",
