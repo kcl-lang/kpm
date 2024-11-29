@@ -6,8 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/elliotchance/orderedmap/v2"
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/downloader"
+	"kcl-lang.io/kpm/pkg/features"
 	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/oci"
 	"kcl-lang.io/kpm/pkg/opt"
@@ -15,6 +17,33 @@ import (
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/utils"
 )
+
+// Deprecated: ValidateDependency is deprecated, use `Check` replaced.
+func (c *KpmClient) ValidateDependency(dep *pkg.Dependency) error {
+	if ok, err := features.Enabled(features.SupportModCheck); err == nil && ok {
+		tmpKclPkg := pkg.KclPkg{
+			ModFile: pkg.ModFile{
+				Pkg: pkg.Package{
+					Name:    dep.Name,
+					Version: dep.Version,
+				},
+			},
+			HomePath: dep.LocalFullPath,
+			Dependencies: pkg.Dependencies{Deps: func() *orderedmap.OrderedMap[string, pkg.Dependency] {
+				m := orderedmap.NewOrderedMap[string, pkg.Dependency]()
+				m.Set(dep.Name, *dep)
+				return m
+			}()},
+			NoSumCheck: c.GetNoSumCheck(),
+		}
+
+		if err := c.ModChecker.Check(tmpKclPkg); err != nil {
+			return reporter.NewErrorEvent(reporter.InvalidKclPkg, err, fmt.Sprintf("%s package does not match the original kcl package", dep.FullName))
+		}
+	}
+
+	return nil
+}
 
 // CompileWithOpts will compile the kcl program with the compile options.
 // Deprecated: Use `Run` instead.

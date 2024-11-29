@@ -2287,6 +2287,7 @@ func TestValidateDependency(t *testing.T) {
 		},
 	}
 	err = kpmcli.ValidateDependency(&dep1)
+	fmt.Printf("err: %v\n", err)
 	assert.Equal(t, err, nil)
 
 	dep2 := pkg.Dependency{

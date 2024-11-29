@@ -946,26 +946,6 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 	return dep, nil
 }
 
-func (c *KpmClient) ValidateDependency(dep *pkg.Dependency) error {
-	if ok, err := features.Enabled(features.SupportModCheck); err == nil && ok {
-		tmpKclPkg := pkg.KclPkg{
-			HomePath: dep.LocalFullPath,
-			Dependencies: pkg.Dependencies{Deps: func() *orderedmap.OrderedMap[string, pkg.Dependency] {
-				m := orderedmap.NewOrderedMap[string, pkg.Dependency]()
-				m.Set(dep.Name, *dep)
-				return m
-			}()},
-			NoSumCheck: c.GetNoSumCheck(),
-		}
-
-		if err := c.ModChecker.Check(tmpKclPkg); err != nil {
-			return reporter.NewErrorEvent(reporter.InvalidKclPkg, err, fmt.Sprintf("%s package does not match the original kcl package", dep.FullName))
-		}
-	}
-
-	return nil
-}
-
 // DownloadFromGit will download the dependency from the git repository.
 func (c *KpmClient) DownloadFromGit(dep *downloader.Git, localPath string) (string, error) {
 	var msg string
