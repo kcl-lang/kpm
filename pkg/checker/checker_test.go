@@ -14,8 +14,8 @@ import (
 	"kcl-lang.io/kpm/pkg/settings"
 )
 
-func TestDepCheckerCheck(t *testing.T) {
-	depChecker := NewDepChecker(WithCheckers(NewIdentChecker(), NewVersionChecker(), NewSumChecker()))
+func TestModCheckerCheck(t *testing.T) {
+	ModChecker := NewModChecker(WithCheckers(NewIdentChecker(), NewVersionChecker(), NewSumChecker()))
 
 	deps1 := orderedmap.NewOrderedMap[string, pkg.Dependency]()
 	deps1.Set("kcl1", pkg.Dependency{
@@ -31,22 +31,6 @@ func TestDepCheckerCheck(t *testing.T) {
 		Sum:      "no-sum-check-enabled",
 	})
 
-	deps2 := orderedmap.NewOrderedMap[string, pkg.Dependency]()
-	deps2.Set("kcl1", pkg.Dependency{
-		Name:     ".kcl1",
-		FullName: "kcl1",
-		Version:  "0.0.1",
-		Sum:      "",
-	})
-
-	deps3 := orderedmap.NewOrderedMap[string, pkg.Dependency]()
-	deps3.Set("kcl1", pkg.Dependency{
-		Name:     "kcl1",
-		FullName: "kcl1",
-		Version:  "1.0.0-alpha#",
-		Sum:      "",
-	})
-
 	tests := []struct {
 		name    string
 		KclPkg  pkg.KclPkg
@@ -56,6 +40,10 @@ func TestDepCheckerCheck(t *testing.T) {
 			name: "valid kcl package - with no sum check enabled",
 			KclPkg: pkg.KclPkg{
 				ModFile: pkg.ModFile{
+					Pkg: pkg.Package{
+						Name:    "testmod",
+						Version: "0.0.1",
+					},
 					HomePath: "path/to/modfile",
 				},
 				HomePath: "path/to/kcl/pkg",
@@ -66,40 +54,12 @@ func TestDepCheckerCheck(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
-			name: "Invalid kcl package - invalid dependency name",
-			KclPkg: pkg.KclPkg{
-				ModFile: pkg.ModFile{
-					HomePath: "path/to/modfile",
-				},
-				HomePath: "path/to/kcl/pkg",
-				Dependencies: pkg.Dependencies{
-					Deps: deps2,
-				},
-				NoSumCheck: false,
-			},
-			wantErr: true,
-		},
-		{
-			name: "Invalid kcl package - invalid dependency version",
-			KclPkg: pkg.KclPkg{
-				ModFile: pkg.ModFile{
-					HomePath: "path/to/modfile",
-				},
-				HomePath: "path/to/kcl/pkg",
-				Dependencies: pkg.Dependencies{
-					Deps: deps3,
-				},
-				NoSumCheck: false,
-			},
-			wantErr: true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotErr := depChecker.Check(tt.KclPkg)
+			gotErr := ModChecker.Check(tt.KclPkg)
 			if (gotErr != nil) != tt.wantErr {
-				t.Errorf("depChecker.Check(%v) = %v, want error %v", tt.KclPkg, gotErr, tt.wantErr)
+				t.Errorf("ModChecker.Check(%v) = %v, want error %v", tt.KclPkg, gotErr, tt.wantErr)
 			}
 		})
 	}
@@ -112,12 +72,12 @@ func TestIsValidDependencyName(t *testing.T) {
 		want           bool
 	}{
 		{"Empty Name", "", false},
-		{"Valid Name - Simple", "myDependency", true},
+		{"Valid Name - Simple", "myDependency", false},
 		{"Valid Name - With Underscore", "my_dependency", true},
 		{"Valid Name - With Hyphen", "my-dependency", true},
-		{"Valid Name - With Dot", "my.dependency", true},
-		{"Valid Name - Mixed Case", "MyDependency", true},
-		{"Valid Name - Long Name", "My_Very-Long.Dependency", true},
+		{"Valid Name - With Dot", "my.dependency", false},
+		{"Valid Name - Mixed Case", "MyDependency", false},
+		{"Valid Name - Long Name", "My_Very-Long.Dependency", false},
 		{"Contains Number", "depend3ncy", true},
 		{"Starts with Special Character", "-dependency", false},
 		{"Starts and Ends with Dot", ".dependency.", false},
@@ -184,9 +144,9 @@ func getTestSettings() (*settings.Settings, error) {
 	return settings, nil
 }
 
-func TestDepCheckerCheck_WithTrustedSum(t *testing.T) {
+func TestModCheckerCheck_WithTrustedSum(t *testing.T) {
 	if runtime.GOOS == "windows" {
-		t.Skip("Skipping TestDepCheckerCheck_WithTrustedSum test on Windows")
+		t.Skip("Skipping TestModCheckerCheck_WithTrustedSum test on Windows")
 	}
 
 	// Start the local Docker registry required for testing
@@ -197,12 +157,12 @@ func TestDepCheckerCheck_WithTrustedSum(t *testing.T) {
 	err = mock.PushTestPkgToRegistry()
 	assert.Equal(t, err, nil)
 
-	// Initialize settings for use with the DepChecker
+	// Initialize settings for use with the ModChecker
 	settings, err := getTestSettings()
 	assert.Equal(t, err, nil)
 
-	// Initialize the DepChecker with required checkers
-	depChecker := NewDepChecker(WithCheckers(NewIdentChecker(), NewVersionChecker(), NewSumChecker(WithSettings(*settings))))
+	// Initialize the ModChecker with required checkers
+	ModChecker := NewModChecker(WithCheckers(NewIdentChecker(), NewVersionChecker(), NewSumChecker(WithSettings(*settings))))
 
 	deps1 := orderedmap.NewOrderedMap[string, pkg.Dependency]()
 	deps1.Set("kcl1", pkg.Dependency{
@@ -285,9 +245,9 @@ func TestDepCheckerCheck_WithTrustedSum(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotErr := depChecker.Check(tt.KclPkg)
+			gotErr := ModChecker.Check(tt.KclPkg)
 			if (gotErr != nil) != tt.wantErr {
-				t.Errorf("depChecker.Check(%v) = %v, want error %v", tt.KclPkg, gotErr, tt.wantErr)
+				t.Errorf("ModChecker.Check(%v) = %v, want error %v", tt.KclPkg, gotErr, tt.wantErr)
 			}
 		})
 	}

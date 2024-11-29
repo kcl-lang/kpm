@@ -49,7 +49,7 @@ type KpmClient struct {
 	// The settings of kpm loaded from the global configuration file.
 	settings settings.Settings
 	// The checker to validate dependencies
-	DepChecker *checker.DepChecker
+	ModChecker *checker.ModChecker
 	// The flag of whether to check the checksum of the package and update kcl.mod.lock.
 	noSumCheck bool
 	// The flag of whether to skip the verification of TLS.
@@ -69,7 +69,7 @@ func NewKpmClient() (*KpmClient, error) {
 		return nil, err
 	}
 
-	depChecker := checker.NewDepChecker(
+	ModChecker := checker.NewModChecker(
 		checker.WithCheckers(checker.NewIdentChecker(), checker.NewVersionChecker(), checker.NewSumChecker(
 			checker.WithSettings(*settings))),
 	)
@@ -78,7 +78,7 @@ func NewKpmClient() (*KpmClient, error) {
 		logWriter:     os.Stdout,
 		settings:      *settings,
 		homePath:      homePath,
-		DepChecker:    depChecker,
+		ModChecker:    ModChecker,
 		DepDownloader: &downloader.DepDownloader{},
 	}, nil
 }
@@ -947,7 +947,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 }
 
 func (c *KpmClient) ValidateDependency(dep *pkg.Dependency) error {
-	if ok, err := features.Enabled(features.SupportCheckSum); err == nil && ok {
+	if ok, err := features.Enabled(features.SupportModCheck); err == nil && ok {
 		tmpKclPkg := pkg.KclPkg{
 			HomePath: dep.LocalFullPath,
 			Dependencies: pkg.Dependencies{Deps: func() *orderedmap.OrderedMap[string, pkg.Dependency] {
@@ -958,7 +958,7 @@ func (c *KpmClient) ValidateDependency(dep *pkg.Dependency) error {
 			NoSumCheck: c.GetNoSumCheck(),
 		}
 
-		if err := c.DepChecker.Check(tmpKclPkg); err != nil {
+		if err := c.ModChecker.Check(tmpKclPkg); err != nil {
 			return reporter.NewErrorEvent(reporter.InvalidKclPkg, err, fmt.Sprintf("%s package does not match the original kcl package", dep.FullName))
 		}
 	}
