@@ -120,22 +120,6 @@ func (profile *Profile) GetEntries() []string {
 	return *profile.Entries
 }
 
-// FillDependenciesInfo will fill registry information for all dependencies in a kcl.mod.
-func (modFile *ModFile) FillDependenciesInfo() error {
-	for _, k := range modFile.Deps.Keys() {
-		v, ok := modFile.Deps.Get(k)
-		if !ok {
-			break
-		}
-		err := v.FillDepInfo(modFile.HomePath)
-		if err != nil {
-			return err
-		}
-		modFile.Deps.Set(k, v)
-	}
-	return nil
-}
-
 // GetEntries will get the entry kcl files from kcl.mod.
 func (modFile *ModFile) GetEntries() []string {
 	if modFile.Profiles == nil {
@@ -292,31 +276,6 @@ func (d *Dependency) GenPathSuffix() string {
 
 func (dep *Dependency) IsFromLocal() bool {
 	return dep.Source.Oci == nil && dep.Source.Git == nil && dep.Source.Local != nil
-}
-
-// FillDepInfo will fill registry information for a dependency.
-func (dep *Dependency) FillDepInfo(homepath string) error {
-	if dep.Source.Oci != nil {
-		settings := settings.GetSettings()
-		if settings.ErrorEvent != nil {
-			return settings.ErrorEvent
-		}
-		if dep.Source.Oci.Reg == "" {
-			dep.Source.Oci.Reg = settings.DefaultOciRegistry()
-		}
-
-		if dep.Source.Oci.Repo == "" {
-			urlpath := utils.JoinPath(settings.DefaultOciRepo(), dep.Name)
-			dep.Source.Oci.Repo = urlpath
-		}
-	}
-	if dep.Source.Local != nil {
-		dep.LocalFullPath = dep.Source.Local.Path
-	}
-
-	dep.FullName = dep.GenDepFullName()
-
-	return nil
 }
 
 // GenDepFullName will generate the full name of a dependency by its name and version

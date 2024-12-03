@@ -638,7 +638,7 @@ func (c *KpmClient) Run(options ...RunOption) (*kcl.KCLResultList, error) {
 
 	// Visit the root package source.
 	var res *kcl.KCLResultList
-	err = NewVisitor(*pkgSource, c).Visit(pkgSource, func(kclPkg *pkg.KclPkg) error {
+	err = newVisitor(*pkgSource, c).Visit(pkgSource, func(kclPkg *pkg.KclPkg) error {
 		// Apply the compile options from cli, kcl.yaml or kcl.mod
 		err = opts.applyCompileOptions(*pkgSource, kclPkg, opts.WorkDir)
 		if err != nil {
@@ -675,4 +675,23 @@ func (c *KpmClient) Run(options ...RunOption) (*kcl.KCLResultList, error) {
 		return nil, err
 	}
 	return res, nil
+}
+
+// ResolveDepsIntoMap will calculate the map of kcl package name and local storage path of the external packages.
+func (c *KpmClient) ResolveDepsIntoMap(kclPkg *pkg.KclPkg) (map[string]string, error) {
+	err := c.ResolvePkgDepsMetadata(kclPkg, true)
+	if err != nil {
+		return nil, err
+	}
+
+	depMetadatas, err := kclPkg.GetDepsMetadata()
+	if err != nil {
+		return nil, err
+	}
+	var pkgMap map[string]string = make(map[string]string)
+	for _, d := range depMetadatas.Deps {
+		pkgMap[d.GetAliasName()] = d.GetLocalFullPath(kclPkg.HomePath)
+	}
+
+	return pkgMap, nil
 }
