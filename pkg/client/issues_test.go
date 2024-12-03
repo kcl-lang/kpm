@@ -93,7 +93,7 @@ func TestKclIssue1760(t *testing.T) {
 			assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
 		}
 
-		RunTestWithGlobalLockAndKpmCli(t, tc.name, testFunc)
+		RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: tc.name, TestFunc: testFunc}})
 	}
 }
 
@@ -205,7 +205,7 @@ func TestKpmIssue550(t *testing.T) {
 			}
 		}
 
-		RunTestWithGlobalLockAndKpmCli(t, tc.name, testFunc)
+		RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: tc.name, TestFunc: testFunc}})
 	}
 }
 
@@ -426,7 +426,7 @@ func TestKpmIssue226(t *testing.T) {
 		assert.Equal(t, utils.RmNewline(string(lockFileContent)), utils.RmNewline(string(lockFileExpectContent)))
 	}
 
-	RunTestWithGlobalLockAndKpmCli(t, "add_dep_with_git_commit", test_add_dep_with_git_commit)
-	RunTestWithGlobalLockAndKpmCli(t, "update_with_git_commit", test_update_with_git_commit)
-	RunTestWithGlobalLockAndKpmCli(t, "update_with_git_commit_invalid", test_update_with_git_commit_invalid)
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "add_dep_with_git_commit", TestFunc: test_add_dep_with_git_commit}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "update_with_git_commit", TestFunc: test_update_with_git_commit}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "update_with_git_commit_invalid", TestFunc: test_update_with_git_commit_invalid}})
 }

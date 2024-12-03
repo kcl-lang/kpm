@@ -107,6 +107,6 @@ func testVendorWithMVS(t *testing.T, kpmcli *KpmClient) {
 }
 
 func TestVendorWithGlobalLock(t *testing.T) {
-	RunTestWithGlobalLockAndKpmCli(t, "TestVendorDeps", testVendorDeps)
-	RunTestWithGlobalLockAndKpmCli(t, "TestVendorWithMVS", testVendorWithMVS)
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestVendorDeps", TestFunc: testVendorDeps}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestVendorWithMVS", TestFunc: testVendorWithMVS}})
 }
