@@ -167,7 +167,7 @@ func TestAddWithModSpec(t *testing.T) {
 			assert.Equal(t, utils.RmNewline(tt.msg), utils.RmNewline(buf.String()))
 		}
 
-		RunTestWithGlobalLockAndKpmCli(t, tt.name, testFunc)
+		RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: tt.name, TestFunc: testFunc}})
 
 		expectedMod, err := os.ReadFile(modExpect)
 		if err != nil {
@@ -257,7 +257,7 @@ func TestAddRenameWithModSpec(t *testing.T) {
 		), utils.RmNewline(buf.String()))
 	}
 
-	RunTestWithGlobalLockAndKpmCli(t, "TestAddRenameWithModSpec", testFunc)
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestAddRenameWithModSpec", TestFunc: testFunc}})
 
 	expectedMod, err := os.ReadFile(modExpect)
 	if err != nil {
@@ -374,7 +374,7 @@ func TestAddWithOnlyModSpec(t *testing.T) {
 			assert.Equal(t, utils.RmNewline(tc.msg), utils.RmNewline(buf.String()))
 		}
 
-		RunTestWithGlobalLockAndKpmCli(t, tc.name, testFunc)
+		RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: tc.name, TestFunc: testFunc}})
 
 		expectedMod, err := os.ReadFile(modExpect)
 		if err != nil {
@@ -473,7 +473,7 @@ func TestAddRenameWithNoSpec(t *testing.T) {
 		}
 	}
 
-	RunTestWithGlobalLockAndKpmCli(t, "TestAddRenameWithNoSpec", testFunc)
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestAddRenameWithNoSpec", TestFunc: testFunc}})
 
 	expectedMod, err := os.ReadFile(modExpect)
 	if err != nil {

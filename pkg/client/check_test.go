@@ -27,7 +27,7 @@ func TestModCheckPass(t *testing.T) {
 			t.Fatalf("failed to check kcl package: %v", err)
 		}
 	}
-	RunTestWithGlobalLockAndKpmCli(t, "test_mod_check_pass", testModCheckPass)
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "test_mod_check_pass", TestFunc: testModCheckPass}})
 }
 
 func TestModCheckNameFailed(t *testing.T) {
@@ -47,7 +47,7 @@ func TestModCheckNameFailed(t *testing.T) {
 
 		assert.Equal(t, err.Error(), "invalid name: invalid/mod/name")
 	}
-	RunTestWithGlobalLockAndKpmCli(t, "test_mod_check_name_failed", testModCheckNameFailed)
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "test_mod_check_name_failed", TestFunc: testModCheckNameFailed}})
 }
 
 func TestModCheckVersionFailed(t *testing.T) {
@@ -66,7 +66,7 @@ func TestModCheckVersionFailed(t *testing.T) {
 
 		assert.Equal(t, err.Error(), "invalid version: invalid_version for version_failed")
 	}
-	RunTestWithGlobalLockAndKpmCli(t, "test_mod_check_version_failed", testModCheckVersionFailed)
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "test_mod_check_version_failed", TestFunc: testModCheckVersionFailed}})
 }
 
 func TestCheckDepSumPass(t *testing.T) {
@@ -89,7 +89,7 @@ func TestCheckDepSumPass(t *testing.T) {
 		}
 	}
 
-	RunTestWithGlobalLockAndKpmCli(t, "TestCheckDepSumPass", testDepSumFunc)
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestCheckDepSumPass", TestFunc: testDepSumFunc}})
 }
 
 func TestCheckDepSumFailed(t *testing.T) {
@@ -117,5 +117,5 @@ func TestCheckDepSumFailed(t *testing.T) {
 			"expected '9J9HOMhdypaDYf0J7PqtpGTdlkbxkN0HFEYhosHhf4U=', got 'invalid_sum'")
 	}
 
-	RunTestWithGlobalLockAndKpmCli(t, "TestCheckDepSumFailed", testDepSumFunc)
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestCheckDepSumFailed", TestFunc: testDepSumFunc}})
 }

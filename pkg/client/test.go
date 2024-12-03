@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -26,35 +25,41 @@ func initTestDir(subDir string) string {
 	return testDir
 }
 
+type TestSuite struct {
+	Name     string
+	TestFunc func(t *testing.T, kpmcli *KpmClient)
+}
+
 // Use a global variable to store the kpmcli instance.
-func RunTestWithGlobalLockAndKpmCli(t *testing.T, name string, testFunc func(t *testing.T, kpmcli *KpmClient)) {
-	t.Run(name, func(t *testing.T) {
-		kpmcli, err := NewKpmClient()
+func RunTestWithGlobalLockAndKpmCli(t *testing.T, testSuites []TestSuite) {
+	kpmcli, err := NewKpmClient()
+	if err != nil {
+		t.Errorf("Error acquiring lock: %v", err)
+	}
+	err = kpmcli.AcquirePackageCacheLock()
+	if err != nil {
+		t.Errorf("Error acquiring lock: %v", err)
+	}
+
+	defer func() {
+		err = kpmcli.ReleasePackageCacheLock()
 		if err != nil {
 			t.Errorf("Error acquiring lock: %v", err)
 		}
-		err = kpmcli.AcquirePackageCacheLock()
-		if err != nil {
-			t.Errorf("Error acquiring lock: %v", err)
-		}
+	}()
 
-		defer func() {
-			err = kpmcli.ReleasePackageCacheLock()
-			if err != nil {
-				t.Errorf("Error acquiring lock: %v", err)
-			}
-		}()
+	// create a tmp dir as kpm home for test
+	tmpDir, err := os.MkdirTemp("", "")
+	if err != nil {
+		t.Errorf("Error acquiring lock: %v", err)
+	}
+	// clean the temp dir.
+	defer os.RemoveAll(tmpDir)
+	kpmcli.SetHomePath(tmpDir)
 
-		// create a tmp dir as kpm home for test
-		tmpDir, err := os.MkdirTemp("", "")
-		if err != nil {
-			t.Errorf("Error acquiring lock: %v", err)
-		}
-		// clean the temp dir.
-		defer os.RemoveAll(tmpDir)
-		kpmcli.SetHomePath(tmpDir)
-
-		testFunc(t, kpmcli)
-		fmt.Printf("%s completed\n", name)
-	})
+	for _, testSuite := range testSuites {
+		t.Run(testSuite.Name, func(t *testing.T) {
+			testSuite.TestFunc(t, kpmcli)
+		})
+	}
 }

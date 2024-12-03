@@ -12,12 +12,12 @@ import (
 )
 
 func TestUpdate(t *testing.T) {
-	RunTestWithGlobalLockAndKpmCli(t, "TestUpdateWithKclMod", testUpdateWithKclMod)
-	RunTestWithGlobalLockAndKpmCli(t, "TestUpdateWithKclModlock", testUpdateWithKclModlock)
-	RunTestWithGlobalLockAndKpmCli(t, "TestUpdateWithNoSumCheck", testUpdateWithNoSumCheck)
-	RunTestWithGlobalLockAndKpmCli(t, "TestUpdateDefaultRegistryDep", testUpdateDefaultRegistryDep)
-	RunTestWithGlobalLockAndKpmCli(t, "TestUpdateWithKclModAndLock", testUpdateKclModAndLock)
-	RunTestWithGlobalLockAndKpmCli(t, "TestUpdate", testUpdate)
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestUpdateWithKclMod", TestFunc: testUpdateWithKclMod}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestUpdateWithKclModlock", TestFunc: testUpdateWithKclModlock}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestUpdateWithNoSumCheck", TestFunc: testUpdateWithNoSumCheck}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestUpdateDefaultRegistryDep", TestFunc: testUpdateDefaultRegistryDep}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestUpdateWithKclModAndLock", TestFunc: testUpdateKclModAndLock}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestUpdate", TestFunc: testUpdate}})
 }
 
 func testUpdate(t *testing.T, kpmcli *KpmClient) {

@@ -82,28 +82,28 @@ func testRunWithModSpecVersion(t *testing.T, kpmcli *KpmClient) {
 
 func TestRun(t *testing.T) {
 	features.Enable(features.SupportNewStorage)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunWithOciDownloader", testRunWithOciDownloader)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunDefaultRegistryDep", testRunDefaultRegistryDep)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunInVendor", testRunInVendor)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunRemoteWithArgsInvalid", testRunRemoteWithArgsInvalid)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunRemoteWithArgs", testRunRemoteWithArgs)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunWithNoSumCheck", testRunWithNoSumCheck)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunWithGitPackage", testRunWithGitPackage)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunGit", testRunGit)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunOciWithSettingsFile", testRunOciWithSettingsFile)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunWithModSpecVersion", testRunWithModSpecVersion)
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunWithOciDownloader", TestFunc: testRunWithOciDownloader}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunDefaultRegistryDep", TestFunc: testRunDefaultRegistryDep}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunInVendor", TestFunc: testRunInVendor}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunRemoteWithArgsInvalid", TestFunc: testRunRemoteWithArgsInvalid}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunRemoteWithArgs", TestFunc: testRunRemoteWithArgs}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunWithNoSumCheck", TestFunc: testRunWithNoSumCheck}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunWithGitPackage", TestFunc: testRunWithGitPackage}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunGit", TestFunc: testRunGit}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunOciWithSettingsFile", TestFunc: testRunOciWithSettingsFile}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunWithModSpecVersion", TestFunc: testRunWithModSpecVersion}})
 
 	features.Disable(features.SupportNewStorage)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunWithOciDownloader", testRunWithOciDownloader)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunDefaultRegistryDep", testRunDefaultRegistryDep)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunInVendor", testRunInVendor)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunRemoteWithArgsInvalid", testRunRemoteWithArgsInvalid)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunRemoteWithArgs", testRunRemoteWithArgs)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunWithNoSumCheck", testRunWithNoSumCheck)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunWithGitPackage", testRunWithGitPackage)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunGit", testRunGit)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunOciWithSettingsFile", testRunOciWithSettingsFile)
-	RunTestWithGlobalLockAndKpmCli(t, "TestRunWithModSpecVersion", testRunWithModSpecVersion)
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunWithOciDownloader", TestFunc: testRunWithOciDownloader}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunDefaultRegistryDep", TestFunc: testRunDefaultRegistryDep}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunInVendor", TestFunc: testRunInVendor}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunRemoteWithArgsInvalid", TestFunc: testRunRemoteWithArgsInvalid}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunRemoteWithArgs", TestFunc: testRunRemoteWithArgs}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunWithNoSumCheck", TestFunc: testRunWithNoSumCheck}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunWithGitPackage", TestFunc: testRunWithGitPackage}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunGit", TestFunc: testRunGit}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunOciWithSettingsFile", TestFunc: testRunOciWithSettingsFile}})
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestRunWithModSpecVersion", TestFunc: testRunWithModSpecVersion}})
 }
 func TestRunWithHyphenEntries(t *testing.T) {
 	testFunc := func(t *testing.T, kpmcli *KpmClient) {
@@ -131,5 +131,5 @@ func TestRunWithHyphenEntries(t *testing.T) {
 		assert.Equal(t, utils.RmNewline(res.GetRawYamlResult()), utils.RmNewline(string(expect)))
 	}
 
-	RunTestWithGlobalLockAndKpmCli(t, "testRunWithHyphenEntries", testFunc)
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "testRunWithHyphenEntries", TestFunc: testFunc}})
 }
