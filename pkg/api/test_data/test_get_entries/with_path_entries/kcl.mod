@@ -5,4 +5,3 @@ version = "0.0.1"
 
 [profile]
 entries = ["sub/sub.k"]
-

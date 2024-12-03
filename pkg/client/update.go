@@ -1,12 +1,19 @@
 package client
 
 import (
+	"encoding/json"
 	"fmt"
 
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"kcl-lang.io/kpm/pkg/checker"
+	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/features"
+	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
+	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/resolver"
+	"kcl-lang.io/kpm/pkg/utils"
+	"oras.land/oras-go/v2"
 )
 
 // UpdateOptions is the option for updating a package.
@@ -141,4 +148,45 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 	}
 
 	return kMod, nil
+}
+
+// AcquireDepSum will acquire the checksum of the dependency from the OCI registry.
+func (c *KpmClient) AcquireDepSum(dep pkg.Dependency) (string, error) {
+	// Only the dependencies from the OCI need can be checked.
+	if dep.Source.Oci != nil {
+		if len(dep.Source.Oci.Reg) == 0 {
+			dep.Source.Oci.Reg = c.GetSettings().DefaultOciRegistry()
+		}
+
+		if len(dep.Source.Oci.Repo) == 0 {
+			urlpath := utils.JoinPath(c.GetSettings().DefaultOciRepo(), dep.Name)
+			dep.Source.Oci.Repo = urlpath
+		}
+		// Fetch the metadata of the OCI manifest.
+		manifest := ocispec.Manifest{}
+		jsonDesc, err := c.FetchOciManifestIntoJsonStr(opt.OciFetchOptions{
+			FetchBytesOptions: oras.DefaultFetchBytesOptions,
+			OciOptions: opt.OciOptions{
+				Reg:  dep.Source.Oci.Reg,
+				Repo: dep.Source.Oci.Repo,
+				Tag:  dep.Source.Oci.Tag,
+			},
+		})
+
+		if err != nil {
+			return "", reporter.NewErrorEvent(reporter.FailedFetchOciManifest, err, fmt.Sprintf("failed to fetch the manifest of '%s'", dep.Name))
+		}
+
+		err = json.Unmarshal([]byte(jsonDesc), &manifest)
+		if err != nil {
+			return "", err
+		}
+
+		// Check the dependency checksum.
+		if value, ok := manifest.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_SUM]; ok {
+			return value, nil
+		}
+	}
+
+	return "", nil
 }

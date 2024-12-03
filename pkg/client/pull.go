@@ -110,7 +110,7 @@ func (c *KpmClient) Pull(options ...PullOption) (*pkg.KclPkg, error) {
 	pkgSource := opts.Source
 	pulledFullPath := filepath.Join(opts.LocalPath, sourceFilePath)
 
-	err = NewVisitor(*pkgSource, c).Visit(pkgSource, func(kPkg *pkg.KclPkg) error {
+	err = newVisitor(*pkgSource, c).Visit(pkgSource, func(kPkg *pkg.KclPkg) error {
 		if !utils.DirExists(filepath.Dir(pulledFullPath)) {
 			err := os.MkdirAll(filepath.Dir(pulledFullPath), os.ModePerm)
 			if err != nil {

@@ -2120,7 +2120,7 @@ func TestVirtualPackageVisiter(t *testing.T) {
 	pkgSource, err := downloader.NewSourceFromStr(pkgPath)
 	assert.Equal(t, err, nil)
 
-	v := NewVisitor(*pkgSource, kpmcli)
+	v := newVisitor(*pkgSource, kpmcli)
 	err = v.Visit(pkgSource, func(p *pkg.KclPkg) error {
 		assert.Contains(t, p.GetPkgName(), "vPkg_")
 		_, err = os.Stat(filepath.Join(pkgPath, "kcl.mod"))

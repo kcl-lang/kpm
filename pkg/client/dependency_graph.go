@@ -1,3 +1,4 @@
+// Deprecated: This package is deprecated and will be removed in a future release.
 package client
 
 import pkg "kcl-lang.io/kpm/pkg/package"
