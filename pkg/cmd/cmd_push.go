@@ -165,21 +165,20 @@ func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, vendorMode bool, kpmcli *cli
 		)
 	}
 
-	var gerr error
-	ociOpts.Annotations, gerr = kclPkg.GenOciManifestFromPkg()
-	if gerr != nil {
+	ociOpts.Annotations, err = kclPkg.GenOciManifestFromPkg()
+	if err != nil {
 		return err
 	}
 
 	reporter.ReportMsgTo(fmt.Sprintf("package '%s' will be pushed", kclPkg.GetPkgName()), kpmcli.GetLogWriter())
 	// Push it.
-	gerr = kpmcli.Push(
+	err = kpmcli.Push(
 		client.WithPushModPath(kclPkg.HomePath),
 		client.WithPushOciOptions(ociOpts),
 		client.WithPushVendorMode(vendorMode),
 	)
-	if gerr != nil {
-		return gerr
+	if err != (*reporter.KpmEvent)(nil) {
+		return err
 	}
 	return nil
 }
