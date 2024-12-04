@@ -11,6 +11,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kpm/pkg/client"
+	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/oci"
 	"kcl-lang.io/kpm/pkg/opt"
@@ -165,16 +166,18 @@ func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, vendorMode bool, kpmcli *cli
 		)
 	}
 
-	ociOpts.Annotations, err = kclPkg.GenOciManifestFromPkg()
-	if err != nil {
-		return err
-	}
-
-	reporter.ReportMsgTo(fmt.Sprintf("package '%s' will be pushed", kclPkg.GetPkgName()), kpmcli.GetLogWriter())
 	// Push it.
 	err = kpmcli.Push(
 		client.WithPushModPath(kclPkg.HomePath),
-		client.WithPushOciOptions(ociOpts),
+		client.WithPushSource(
+			downloader.Source{
+				Oci: &downloader.Oci{
+					Reg:  ociOpts.Reg,
+					Repo: utils.JoinPath(ociOpts.Repo, ociOpts.Ref),
+					Tag:  ociOpts.Tag,
+				},
+			},
+		),
 		client.WithPushVendorMode(vendorMode),
 	)
 	if err != (*reporter.KpmEvent)(nil) {

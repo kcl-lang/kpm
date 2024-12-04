@@ -14,7 +14,6 @@ import (
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/features"
 	"kcl-lang.io/kpm/pkg/mock"
-	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/utils"
@@ -486,11 +485,12 @@ func TestKclIssue1768(t *testing.T) {
 
 		err = kpmcli.Push(
 			WithPushModPath(pushedModPath),
-			WithPushOciOptions(&opt.OciOptions{
-				Reg:  "localhost:5001",
-				Repo: "test",
-				Ref:  "oci_pushed_mod",
-				Tag:  "v9.9.9",
+			WithPushSource(downloader.Source{
+				Oci: &downloader.Oci{
+					Reg:  "localhost:5001",
+					Repo: "test/oci_pushed_mod",
+					Tag:  "v9.9.9",
+				},
 			}),
 		)
 

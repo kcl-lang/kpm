@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/oci"
 	"kcl-lang.io/kpm/pkg/opt"
@@ -19,28 +20,25 @@ type PushOptions struct {
 	// repository is set to the default repository `kcl-lang` in the settings
 	// reference is set to the package name in `kcl.mod`
 	// tag is set to the package version in `kcl.mod`
-	OciOpts    *opt.OciOptions
+	Source     downloader.Source
 	ModPath    string
 	VendorMode bool
 }
 
 type PushOption func(*PushOptions) error
 
-// WithPushVendorMode sets the vendor mode for the Push method.
-func WithPushVendorMode(vendorMode bool) PushOption {
+// WithPushSource sets the source for the Push method.
+func WithPushSource(source downloader.Source) PushOption {
 	return func(opts *PushOptions) error {
-		opts.VendorMode = vendorMode
+		opts.Source = source
 		return nil
 	}
 }
 
-// WithPushOciOptions sets the oci options for the Push method.
-func WithPushOciOptions(ociOpts *opt.OciOptions) PushOption {
+// WithPushVendorMode sets the vendor mode for the Push method.
+func WithPushVendorMode(vendorMode bool) PushOption {
 	return func(opts *PushOptions) error {
-		if ociOpts == nil {
-			return fmt.Errorf("ociOpts cannot be nil")
-		}
-		opts.OciOpts = ociOpts
+		opts.VendorMode = vendorMode
 		return nil
 	}
 }
@@ -57,30 +55,17 @@ func WithPushModPath(modPath string) PushOption {
 }
 
 // fillDefaultPushOptions will fill the default values for the PushOptions.
-func (c *KpmClient) fillDefaultPushOptions(opts *PushOptions, kMod *pkg.KclPkg) {
-	if opts.OciOpts == nil {
-		opts.OciOpts = &opt.OciOptions{
-			Reg:  c.GetSettings().DefaultOciRegistry(),
-			Repo: c.GetSettings().DefaultOciRepo(),
-			Ref:  kMod.ModFile.Pkg.Name,
-			Tag:  kMod.ModFile.Pkg.Version,
-		}
-	} else {
-		if opts.OciOpts.Reg == "" {
-			opts.OciOpts.Reg = c.GetSettings().DefaultOciRegistry()
-		}
+func (c *KpmClient) fillDefaultPushOptions(ociOpt *opt.OciOptions, kMod *pkg.KclPkg) {
+	if ociOpt.Reg == "" {
+		ociOpt.Reg = c.GetSettings().DefaultOciRegistry()
+	}
 
-		if opts.OciOpts.Repo == "" {
-			opts.OciOpts.Repo = c.GetSettings().DefaultOciRepo()
-		}
+	if ociOpt.Repo == "" {
+		ociOpt.Repo = c.GetSettings().DefaultOciRepo()
+	}
 
-		if opts.OciOpts.Ref == "" {
-			opts.OciOpts.Ref = kMod.ModFile.Pkg.Name
-		}
-
-		if opts.OciOpts.Tag == "" {
-			opts.OciOpts.Tag = kMod.ModFile.Pkg.Version
-		}
+	if ociOpt.Tag == "" {
+		ociOpt.Tag = kMod.ModFile.Pkg.Version
 	}
 }
 
@@ -102,8 +87,28 @@ func (c *KpmClient) Push(opts ...PushOption) error {
 		return err
 	}
 
-	c.fillDefaultPushOptions(pushOpts, kMod)
-	ociOpts := pushOpts.OciOpts
+	source := pushOpts.Source
+	ociUrl, err := source.ToString()
+	if err != nil {
+		return err
+	}
+	if source.Oci == nil {
+		return fmt.Errorf("'%s' is not an oci source, only support oci source", ociUrl)
+	}
+
+	var tag string
+	if source.Oci.Tag == "" {
+		tag = kMod.ModFile.Pkg.Version
+	} else {
+		tag = source.Oci.Tag
+	}
+
+	ociOpts, err := c.ParseOciOptionFromString(ociUrl, tag)
+	if err != nil {
+		return err
+	}
+	c.fillDefaultPushOptions(ociOpts, kMod)
+
 	ociOpts.Annotations, err = kMod.GenOciManifestFromPkg()
 	if err != nil {
 		return err
@@ -130,8 +135,7 @@ func (c *KpmClient) Push(opts ...PushOption) error {
 
 // PushToOci will push a kcl package to oci registry.
 func (c *KpmClient) pushToOci(localPath string, ociOpts *opt.OciOptions) error {
-	repoPath := utils.JoinPath(ociOpts.Reg, ociOpts.Repo)
-	repoPath = utils.JoinPath(repoPath, ociOpts.Ref)
+	repoPath := utils.JoinPath(ociOpts.Reg, ociOpts.Repo, ociOpts.Ref)
 	cred, err := c.GetCredentials(ociOpts.Reg)
 	if err != nil {
 		return err

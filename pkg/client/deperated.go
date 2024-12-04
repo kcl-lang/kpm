@@ -198,7 +198,7 @@ func (c *KpmClient) CompileOciPkg(ociSource, version string, opts *opt.CompileOp
 	source := downloader.Source{
 		Oci: &downloader.Oci{
 			Reg:  ociOpts.Reg,
-			Repo: ociOpts.Repo,
+			Repo: utils.JoinPath(ociOpts.Repo, ociOpts.Ref),
 			Tag:  ociOpts.Tag,
 		},
 	}
@@ -1338,7 +1338,7 @@ func (c *KpmClient) pullTarFromOci(localPath string, ociOpts *opt.OciOptions) er
 		return reporter.NewErrorEvent(reporter.Bug, err)
 	}
 
-	repoPath := utils.JoinPath(ociOpts.Reg, ociOpts.Repo)
+	repoPath := utils.JoinPath(ociOpts.Reg, ociOpts.Repo, ociOpts.Ref)
 	cred, err := c.GetCredentials(ociOpts.Reg)
 	if err != nil {
 		return err
@@ -1373,9 +1373,10 @@ func (c *KpmClient) pullTarFromOci(localPath string, ociOpts *opt.OciOptions) er
 
 	ociOpts.Tag = tagSelected
 
-	full_repo := utils.JoinPath(ociOpts.Reg, ociOpts.Repo)
+	full_repo := utils.JoinPath(ociOpts.Reg, ociOpts.Repo, ociOpts.Ref)
+	full_ref := utils.JoinPath(ociOpts.Repo, ociOpts.Ref)
 	reporter.ReportMsgTo(
-		fmt.Sprintf("pulling '%s:%s' from '%s'", ociOpts.Repo, tagSelected, full_repo),
+		fmt.Sprintf("pulling '%s:%s' from '%s'", full_ref, tagSelected, full_repo),
 		c.logWriter,
 	)
 
