@@ -143,8 +143,9 @@ func pushTarPackage(ociUrl, localTarPath string, vendorMode bool, kpmcli *client
 // 4. Push the package to the oci registry.
 func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, vendorMode bool, kpmcli *client.KpmClient) error {
 	// If the oci url is not specified, generate the default oci url from the current package.
+	var err error
 	if len(ociUrl) == 0 {
-		ociUrl, err := genDefaultOciUrlForKclPkg(kclPkg, kpmcli)
+		ociUrl, err = genDefaultOciUrlForKclPkg(kclPkg, kpmcli)
 		if err != nil || len(ociUrl) == 0 {
 			return reporter.NewErrorEvent(
 				reporter.InvalidCmd,
@@ -156,7 +157,7 @@ func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, vendorMode bool, kpmcli *cli
 
 	// Generate the OCI options from oci url and the version of current kcl package.
 	ociOpts, err := opt.ParseOciOptionFromOciUrl(ociUrl, kclPkg.GetPkgTag())
-	if err != nil {
+	if err != (*reporter.KpmEvent)(nil) {
 		return reporter.NewErrorEvent(
 			reporter.UnsupportOciUrlScheme,
 			errors.InvalidOciUrl,
@@ -175,6 +176,7 @@ func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, vendorMode bool, kpmcli *cli
 	gerr = kpmcli.Push(
 		client.WithPushModPath(kclPkg.HomePath),
 		client.WithPushOciOptions(ociOpts),
+		client.WithPushVendorMode(vendorMode),
 	)
 	if gerr != nil {
 		return gerr
