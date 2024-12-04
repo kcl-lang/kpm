@@ -2255,12 +2255,12 @@ func testPushWithInsecureSkipTLSverify(t *testing.T) {
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
 
-	_ = kpmcli.PushToOci("test", ociOpts)
+	_ = kpmcli.pushToOci("test", ociOpts)
 
 	assert.Equal(t, buf.String(), "")
 
 	kpmcli.SetInsecureSkipTLSverify(true)
-	_ = kpmcli.PushToOci("test", ociOpts)
+	_ = kpmcli.pushToOci("test", ociOpts)
 
 	assert.Equal(t, buf.String(), "Called Success\n")
 }

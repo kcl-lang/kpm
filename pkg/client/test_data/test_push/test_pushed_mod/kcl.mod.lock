@@ -1,0 +1,9 @@
+[dependencies]
+  [dependencies.push_0]
+    name = "push_0"
+    full_name = "push_0_0.0.1"
+    version = "0.0.1"
+    sum = "m9g+EU6NLk5sbcV2C26/ikgrkcNF7Myk8751xkfUwIk="
+    reg = "localhost:5001"
+    repo = "test/push_0"
+    oci_tag = "0.0.1"

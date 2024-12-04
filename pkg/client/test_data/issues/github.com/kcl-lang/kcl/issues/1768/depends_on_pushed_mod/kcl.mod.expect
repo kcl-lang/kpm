@@ -1,0 +1,7 @@
+[package]
+name = "depends_on_pushed_mod"
+edition = "v0.10.0"
+version = "0.0.1"
+
+[dependencies]
+pushed_mod = { oci = "oci://localhost:5001/test/oci_pushed_mod", tag = "v9.9.9", version = "0.0.1" }

@@ -1,0 +1,9 @@
+[dependencies]
+  [dependencies.pushed_mod]
+    name = "pushed_mod"
+    full_name = "pushed_mod_0.0.1"
+    version = "0.0.1"
+    sum = "7reGjELgXlmS2kU3VeRzvlLv2gauyGmeUNyJmV4R2Kw="
+    reg = "localhost:5001"
+    repo = "test/oci_pushed_mod"
+    oci_tag = "v9.9.9"

@@ -12,6 +12,7 @@ import (
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/settings"
+	"kcl-lang.io/kpm/pkg/test"
 )
 
 func TestModCheckerCheck(t *testing.T) {
@@ -145,126 +146,130 @@ func getTestSettings() (*settings.Settings, error) {
 }
 
 func TestModCheckerCheck_WithTrustedSum(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Skipping TestModCheckerCheck_WithTrustedSum test on Windows")
-	}
+	testFunc := func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("Skipping TestModCheckerCheck_WithTrustedSum test on Windows")
+		}
 
-	// Start the local Docker registry required for testing
-	err := mock.StartDockerRegistry()
-	assert.Equal(t, err, nil)
+		// Start the local Docker registry required for testing
+		err := mock.StartDockerRegistry()
+		assert.Equal(t, err, nil)
 
-	// Push the test package to the local OCI registry
-	err = mock.PushTestPkgToRegistry()
-	assert.Equal(t, err, nil)
+		// Push the test package to the local OCI registry
+		err = mock.PushTestPkgToRegistry()
+		assert.Equal(t, err, nil)
 
-	// Initialize settings for use with the ModChecker
-	settings, err := getTestSettings()
-	assert.Equal(t, err, nil)
+		// Initialize settings for use with the ModChecker
+		settings, err := getTestSettings()
+		assert.Equal(t, err, nil)
 
-	// Initialize the ModChecker with required checkers
-	ModChecker := NewModChecker(WithCheckers(NewIdentChecker(), NewVersionChecker(), NewSumChecker(WithSettings(*settings))))
+		// Initialize the ModChecker with required checkers
+		ModChecker := NewModChecker(WithCheckers(NewIdentChecker(), NewVersionChecker(), NewSumChecker(WithSettings(*settings))))
 
-	deps1 := orderedmap.NewOrderedMap[string, pkg.Dependency]()
-	deps1.Set("kcl1", pkg.Dependency{
-		Name:     "test_data",
-		FullName: "test_data",
-		Version:  "0.0.1",
-		Sum:      "RpZZIvrXwfn5dpt6LqBR8+FlPE9Y+BEou47L3qaCCqk=",
-		Source: downloader.Source{
-			Oci: &downloader.Oci{
-				Reg:  "localhost:5001",
-				Repo: "test",
-				Tag:  "0.0.1",
+		deps1 := orderedmap.NewOrderedMap[string, pkg.Dependency]()
+		deps1.Set("kcl1", pkg.Dependency{
+			Name:     "test_data",
+			FullName: "test_data",
+			Version:  "0.0.1",
+			Sum:      "RpZZIvrXwfn5dpt6LqBR8+FlPE9Y+BEou47L3qaCCqk=",
+			Source: downloader.Source{
+				Oci: &downloader.Oci{
+					Reg:  "localhost:5001",
+					Repo: "test",
+					Tag:  "0.0.1",
+				},
 			},
-		},
-	})
-
-	deps2 := orderedmap.NewOrderedMap[string, pkg.Dependency]()
-	deps2.Set("kcl1", pkg.Dependency{
-		Name:     "test_data",
-		FullName: "test_data",
-		Version:  "0.0.1",
-		Sum:      "Invalid-sum",
-		Source: downloader.Source{
-			Oci: &downloader.Oci{
-				Reg:  "localhost:5001",
-				Repo: "test",
-				Tag:  "0.0.1",
-			},
-		},
-	})
-
-	tests := []struct {
-		name    string
-		KclPkg  pkg.KclPkg
-		wantErr bool
-	}{
-		{
-			name: "valid kcl package - with sum check",
-			KclPkg: pkg.KclPkg{
-				ModFile: pkg.ModFile{
-					Pkg: pkg.Package{
-						Name:    "testmod",
-						Version: "0.0.1",
-					},
-					HomePath: "path/to/modfile",
-				},
-				HomePath: "path/to/kcl/pkg",
-				Dependencies: pkg.Dependencies{
-					Deps: deps1,
-				},
-				NoSumCheck: false,
-			},
-			wantErr: false,
-		},
-		{
-			name: "valid kcl package - with no sum check enabled",
-			KclPkg: pkg.KclPkg{
-				ModFile: pkg.ModFile{
-					Pkg: pkg.Package{
-						Name:    "testmod",
-						Version: "0.0.1",
-					},
-					HomePath: "path/to/modfile",
-				},
-				HomePath: "path/to/kcl/pkg",
-				Dependencies: pkg.Dependencies{
-					Deps: deps2,
-				},
-				NoSumCheck: true,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Invalid kcl package - with no sum check disabled - checksum mismatches",
-			KclPkg: pkg.KclPkg{
-				ModFile: pkg.ModFile{
-					Pkg: pkg.Package{
-						Name:    "testmod",
-						Version: "0.0.1",
-					},
-					HomePath: "path/to/modfile",
-				},
-				HomePath: "path/to/kcl/pkg",
-				Dependencies: pkg.Dependencies{
-					Deps: deps2,
-				},
-				NoSumCheck: false,
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotErr := ModChecker.Check(tt.KclPkg)
-			if (gotErr != nil) != tt.wantErr {
-				t.Errorf("ModChecker.Check(%v) = %v, want error %v", tt.KclPkg, gotErr, tt.wantErr)
-			}
 		})
+
+		deps2 := orderedmap.NewOrderedMap[string, pkg.Dependency]()
+		deps2.Set("kcl1", pkg.Dependency{
+			Name:     "test_data",
+			FullName: "test_data",
+			Version:  "0.0.1",
+			Sum:      "Invalid-sum",
+			Source: downloader.Source{
+				Oci: &downloader.Oci{
+					Reg:  "localhost:5001",
+					Repo: "test",
+					Tag:  "0.0.1",
+				},
+			},
+		})
+
+		tests := []struct {
+			name    string
+			KclPkg  pkg.KclPkg
+			wantErr bool
+		}{
+			{
+				name: "valid kcl package - with sum check",
+				KclPkg: pkg.KclPkg{
+					ModFile: pkg.ModFile{
+						Pkg: pkg.Package{
+							Name:    "testmod",
+							Version: "0.0.1",
+						},
+						HomePath: "path/to/modfile",
+					},
+					HomePath: "path/to/kcl/pkg",
+					Dependencies: pkg.Dependencies{
+						Deps: deps1,
+					},
+					NoSumCheck: false,
+				},
+				wantErr: false,
+			},
+			{
+				name: "valid kcl package - with no sum check enabled",
+				KclPkg: pkg.KclPkg{
+					ModFile: pkg.ModFile{
+						Pkg: pkg.Package{
+							Name:    "testmod",
+							Version: "0.0.1",
+						},
+						HomePath: "path/to/modfile",
+					},
+					HomePath: "path/to/kcl/pkg",
+					Dependencies: pkg.Dependencies{
+						Deps: deps2,
+					},
+					NoSumCheck: true,
+				},
+				wantErr: false,
+			},
+			{
+				name: "Invalid kcl package - with no sum check disabled - checksum mismatches",
+				KclPkg: pkg.KclPkg{
+					ModFile: pkg.ModFile{
+						Pkg: pkg.Package{
+							Name:    "testmod",
+							Version: "0.0.1",
+						},
+						HomePath: "path/to/modfile",
+					},
+					HomePath: "path/to/kcl/pkg",
+					Dependencies: pkg.Dependencies{
+						Deps: deps2,
+					},
+					NoSumCheck: false,
+				},
+				wantErr: true,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				gotErr := ModChecker.Check(tt.KclPkg)
+				if (gotErr != nil) != tt.wantErr {
+					t.Errorf("ModChecker.Check(%v) = %v, want error %v", tt.KclPkg, gotErr, tt.wantErr)
+				}
+			})
+		}
+
+		// Clean the environment after all tests have been run
+		err = mock.CleanTestEnv()
+		assert.Equal(t, err, nil)
 	}
 
-	// Clean the environment after all tests have been run
-	err = mock.CleanTestEnv()
-	assert.Equal(t, err, nil)
+	test.RunTestWithGlobalLock(t, "TestModCheckerCheck_WithTrustedSum", testFunc)
 }
