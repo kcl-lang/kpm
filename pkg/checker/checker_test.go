@@ -175,7 +175,7 @@ func TestModCheckerCheck_WithTrustedSum(t *testing.T) {
 			Source: downloader.Source{
 				Oci: &downloader.Oci{
 					Reg:  "localhost:5001",
-					Repo: "test",
+					Repo: "test/test_data",
 					Tag:  "0.0.1",
 				},
 			},
@@ -190,7 +190,7 @@ func TestModCheckerCheck_WithTrustedSum(t *testing.T) {
 			Source: downloader.Source{
 				Oci: &downloader.Oci{
 					Reg:  "localhost:5001",
-					Repo: "test",
+					Repo: "test/test_data",
 					Tag:  "0.0.1",
 				},
 			},
