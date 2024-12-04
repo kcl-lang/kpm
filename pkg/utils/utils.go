@@ -560,7 +560,7 @@ func JoinPath(elems ...string) string {
 		}
 		elem = strings.TrimPrefix(elem, "/")
 		elem = strings.TrimSuffix(elem, "/")
-		if i == 0 {
+		if i == 0 || result == "" {
 			result = elem
 		} else {
 			result = result + "/" + elem
