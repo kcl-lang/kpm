@@ -1029,7 +1029,7 @@ func TestParseOciOptionFromString(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, ociOption.Ref, "")
 	assert.Equal(t, ociOption.Reg, "test_reg")
-	assert.Equal(t, ociOption.Repo, "/test_oci_repo")
+	assert.Equal(t, ociOption.Repo, "test_oci_repo")
 	assert.Equal(t, ociOption.Tag, "test_tag")
 }
 
