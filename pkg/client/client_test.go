@@ -1029,7 +1029,7 @@ func TestParseOciOptionFromString(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, ociOption.Ref, "")
 	assert.Equal(t, ociOption.Reg, "test_reg")
-	assert.Equal(t, ociOption.Repo, "/test_oci_repo")
+	assert.Equal(t, ociOption.Repo, "test_oci_repo")
 	assert.Equal(t, ociOption.Tag, "test_tag")
 }
 
@@ -2255,12 +2255,12 @@ func testPushWithInsecureSkipTLSverify(t *testing.T) {
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
 
-	_ = kpmcli.PushToOci("test", ociOpts)
+	_ = kpmcli.pushToOci("test", ociOpts)
 
 	assert.Equal(t, buf.String(), "")
 
 	kpmcli.SetInsecureSkipTLSverify(true)
-	_ = kpmcli.PushToOci("test", ociOpts)
+	_ = kpmcli.pushToOci("test", ociOpts)
 
 	assert.Equal(t, buf.String(), "Called Success\n")
 }

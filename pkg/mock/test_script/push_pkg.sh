@@ -29,4 +29,4 @@ echo $current_dir
 
 # Push the test_data package to the registry
 cd "$SCRIPT_DIR/../test_data"
-"$current_dir/bin/kpm" push oci://$KPM_REG/$KPM_REPO
+"$current_dir/bin/kpm" push oci://$KPM_REG/$KPM_REPO/test_data

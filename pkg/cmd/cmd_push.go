@@ -11,6 +11,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kpm/pkg/client"
+	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/oci"
 	"kcl-lang.io/kpm/pkg/opt"
@@ -142,23 +143,8 @@ func pushTarPackage(ociUrl, localTarPath string, vendorMode bool, kpmcli *client
 // 3. Generate the OCI options from oci url and the version of current kcl package.
 // 4. Push the package to the oci registry.
 func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, vendorMode bool, kpmcli *client.KpmClient) error {
-
-	tarPath, err := kpmcli.PackagePkg(kclPkg, vendorMode)
-	if err != nil {
-		return err
-	}
-
-	// clean the tar path.
-	defer func() {
-		if kclPkg != nil && utils.DirExists(tarPath) {
-			err = os.RemoveAll(tarPath)
-			if err != nil {
-				err = reporter.NewErrorEvent(reporter.Bug, err, "internal bugs, failed to clean the temp dir.")
-			}
-		}
-	}()
-
-	// 2. If the oci url is not specified, generate the default oci url from the current package.
+	// If the oci url is not specified, generate the default oci url from the current package.
+	var err error
 	if len(ociUrl) == 0 {
 		ociUrl, err = genDefaultOciUrlForKclPkg(kclPkg, kpmcli)
 		if err != nil || len(ociUrl) == 0 {
@@ -170,7 +156,7 @@ func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, vendorMode bool, kpmcli *cli
 		}
 	}
 
-	// 3. Generate the OCI options from oci url and the version of current kcl package.
+	// Generate the OCI options from oci url and the version of current kcl package.
 	ociOpts, err := opt.ParseOciOptionFromOciUrl(ociUrl, kclPkg.GetPkgTag())
 	if err != (*reporter.KpmEvent)(nil) {
 		return reporter.NewErrorEvent(
@@ -180,14 +166,20 @@ func pushPackage(ociUrl string, kclPkg *pkg.KclPkg, vendorMode bool, kpmcli *cli
 		)
 	}
 
-	ociOpts.Annotations, err = kclPkg.GenOciManifestFromPkg()
-	if err != nil {
-		return err
-	}
-
-	reporter.ReportMsgTo(fmt.Sprintf("package '%s' will be pushed", kclPkg.GetPkgName()), kpmcli.GetLogWriter())
-	// 4. Push it.
-	err = kpmcli.PushToOci(tarPath, ociOpts)
+	// Push it.
+	err = kpmcli.Push(
+		client.WithPushModPath(kclPkg.HomePath),
+		client.WithPushSource(
+			downloader.Source{
+				Oci: &downloader.Oci{
+					Reg:  ociOpts.Reg,
+					Repo: utils.JoinPath(ociOpts.Repo, ociOpts.Ref),
+					Tag:  ociOpts.Tag,
+				},
+			},
+		),
+		client.WithPushVendorMode(vendorMode),
+	)
 	if err != (*reporter.KpmEvent)(nil) {
 		return err
 	}

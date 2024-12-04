@@ -552,10 +552,21 @@ func RmNewline(s string) string {
 }
 
 // JoinPath will join the 'elem' to the 'base' with '/'.
-func JoinPath(base, elem string) string {
-	base = strings.TrimSuffix(base, "/")
-	elem = strings.TrimPrefix(elem, "/")
-	return base + "/" + elem
+func JoinPath(elems ...string) string {
+	var result string
+	for i, elem := range elems {
+		if elem == "" {
+			continue
+		}
+		elem = strings.TrimPrefix(elem, "/")
+		elem = strings.TrimSuffix(elem, "/")
+		if i == 0 || result == "" {
+			result = elem
+		} else {
+			result = result + "/" + elem
+		}
+	}
+	return result
 }
 
 // IsUrl will check whether the string 'str' is a url.

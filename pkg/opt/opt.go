@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	gpath "path"
 	"path/filepath"
 	"strings"
 
@@ -467,9 +468,18 @@ func ParseOciUrl(ociUrl string) (*OciOptions, *reporter.KpmEvent) {
 		return nil, reporter.NewEvent(reporter.UrlSchemeNotOci)
 	}
 
+	repo, ref := gpath.Split(u.Path)
+	repo = strings.TrimPrefix(strings.TrimSuffix(repo, "/"), "/")
+
+	if repo == "" {
+		repo = strings.TrimPrefix(strings.TrimSuffix(u.Path, "/"), "/")
+		ref = ""
+	}
+
 	return &OciOptions{
 		Reg:  u.Host,
-		Repo: u.Path,
+		Repo: repo,
+		Ref:  ref,
 	}, nil
 }
 
@@ -491,7 +501,7 @@ func (oci *OciOptions) AddStoragePathSuffix(pathPrefix string) string {
 
 // SanitizePathSuffix will take 'Registry/Repo/Tag' as a path suffix and sanitize it.
 func (oci *OciOptions) SanitizePathWithSuffix(pathPrefix string) string {
-	return path.SanitizePath(filepath.Join(filepath.Join(filepath.Join(pathPrefix, oci.Reg), oci.Repo), oci.Tag))
+	return path.SanitizePath(filepath.Join(pathPrefix, oci.Reg, oci.Repo, oci.Ref, oci.Tag))
 }
 
 type OciManifestOptions struct {
