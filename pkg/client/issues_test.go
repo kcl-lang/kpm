@@ -436,7 +436,9 @@ func TestKpmIssue226(t *testing.T) {
 func TestKclIssue1768(t *testing.T) {
 	testPath := "github.com/kcl-lang/kcl/issues/1768"
 	test_push_with_tag := func(t *testing.T, kpmcli *KpmClient) {
-
+		if runtime.GOOS == "windows" {
+			t.Skip("Skipping test on Windows")
+		}
 		err := mock.StartDockerRegistry()
 		if err != nil {
 			t.Errorf("Error starting docker registry: %v", err)

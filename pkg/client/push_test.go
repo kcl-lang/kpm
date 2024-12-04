@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,6 +15,9 @@ import (
 
 func TestPush(t *testing.T) {
 	testFunc := func(t *testing.T, kpmcli *KpmClient) {
+		if runtime.GOOS == "windows" {
+			t.Skip("Skipping test on Windows")
+		}
 		err := mock.StartDockerRegistry()
 		if err != nil {
 			t.Errorf("Error starting docker registry: %v", err)
