@@ -19,7 +19,7 @@ https://github.com/kcl-lang/kcl/issues/1760
 ```
 [package]
 name = "a"
-edition = "v0.10.0"
+edition = "v0.11.0-alpha.1"
 version = "0.0.1"
 
 [dependencies]
@@ -33,7 +33,7 @@ fluxcd-helm-controller = "v1.0.3"
 ```
 [package]
 name = "b"
-edition = "v0.10.0"
+edition = "v0.11.0-alpha.1"
 version = "0.0.1"
 
 [dependencies]
