@@ -367,7 +367,7 @@ func TestUnMarshalRename(t *testing.T) {
 	modfile.LoadModFile(filepath.Join(getTestDir("test_rename_pkg"), "kcl.mod"))
 	assert.Equal(t, modfile.Pkg.Name, "rename")
 	assert.Equal(t, modfile.Pkg.Version, "0.0.1")
-	assert.Equal(t, modfile.Pkg.Edition, "v0.10.0")
+	assert.Equal(t, modfile.Pkg.Edition, "v0.11.0-alpha.1")
 	assert.Equal(t, modfile.Dependencies.Deps.Len(), 1)
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Name, "newpkg")
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).FullName, "newpkg_0.0.1")
