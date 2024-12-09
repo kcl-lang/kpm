@@ -229,7 +229,7 @@ func TestMarshalOciUrl(t *testing.T) {
 	modfile := ModFile{
 		Pkg: Package{
 			Name:    "marshal_0",
-			Edition: "v0.10.0",
+			Edition: "v0.11.0-alpha.1",
 			Version: "0.0.1",
 		},
 		Dependencies: Dependencies{
