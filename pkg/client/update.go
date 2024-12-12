@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"kcl-lang.io/kpm/pkg/checker"
@@ -152,7 +153,7 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 		return nil, err
 	}
 
-	if opts.updateModFile {
+	if opts.updateModFile && utils.DirExists(filepath.Join(kMod.HomePath, constants.KCL_MOD)) {
 		err = kMod.UpdateModFile()
 		if err != nil {
 			return nil, err
@@ -160,7 +161,7 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 	}
 
 	// Generate file kcl.mod.lock.
-	if !kMod.NoSumCheck {
+	if !kMod.NoSumCheck && utils.DirExists(filepath.Join(kMod.HomePath, constants.KCL_MOD)) {
 		err := kMod.LockDepsVersion()
 		if err != nil {
 			return nil, err
