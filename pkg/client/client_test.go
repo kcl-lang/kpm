@@ -71,7 +71,7 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "testRunWithInsecureSkipTLSverify", testRunWithInsecureSkipTLSverify)
 	test.RunTestWithGlobalLock(t, "TestAddDepsWithInsecureSkipTLSverify", testAddDepsWithInsecureSkipTLSverify)
 	test.RunTestWithGlobalLock(t, "testPushWithInsecureSkipTLSverify", testPushWithInsecureSkipTLSverify)
-	test.RunTestWithGlobalLock(t, "testMetadataOffline", TestMetadataOffline)
+	test.RunTestWithGlobalLock(t, "testMetadataOffline", testMetadataOffline)
 }
 
 // TestDownloadOci test download from oci registry.
@@ -1126,7 +1126,7 @@ func testUpdateWithKclModlock(t *testing.T, kpmcli *KpmClient) {
 	}()
 }
 
-func TestMetadataOffline(t *testing.T) {
+func testMetadataOffline(t *testing.T) {
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
 
