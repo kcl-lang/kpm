@@ -1,6 +1,7 @@
 package visitor
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -249,9 +250,13 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		downloader.WithCachePath(cacheFullPath),
 		downloader.WithEnableCache(rv.EnableCache),
 		downloader.WithInsecureSkipTLSverify(rv.InsecureSkipTLSverify),
+		downloader.WithOffline(rv.Offline),
 	))
 
 	if err != nil {
+		if errors.Is(err, downloader.ErrNotFoundAndOffline) && rv.Offline {
+			return nil
+		}
 		return err
 	}
 	if !s.ModSpec.IsNil() {
@@ -266,6 +271,9 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		pkg.WithSettings(rv.Settings),
 	)
 	if err != nil {
+		if rv.Offline {
+			return nil
+		}
 		return err
 	}
 

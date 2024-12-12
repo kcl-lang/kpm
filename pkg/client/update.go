@@ -136,6 +136,7 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 		resolver.WithResolveKclMod(kMod),
 		resolver.WithEnableCache(true),
 		resolver.WithCachePath(c.homePath),
+		resolver.WithOffline(opts.offline),
 	)
 
 	if err != nil {
