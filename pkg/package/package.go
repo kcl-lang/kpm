@@ -385,9 +385,8 @@ func (kclPkg *KclPkg) LocalVendorPath() string {
 	return filepath.Join(kclPkg.HomePath, "vendor")
 }
 
-// updateModAndLockFile will update kcl.mod and kcl.mod.lock
-func (kclPkg *KclPkg) UpdateModAndLockFile() error {
-
+// UpdateModFile will update the kcl.mod file.
+func (kclPkg *KclPkg) UpdateModFile() error {
 	// Load kcl.mod SnapShot.
 	depSnapShot := kclPkg.depUI
 
@@ -408,6 +407,16 @@ func (kclPkg *KclPkg) UpdateModAndLockFile() error {
 
 	// Generate file kcl.mod.
 	err := kclPkg.ModFile.StoreModFile()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// updateModAndLockFile will update kcl.mod and kcl.mod.lock
+func (kclPkg *KclPkg) UpdateModAndLockFile() error {
+	err := kclPkg.UpdateModFile()
 	if err != nil {
 		return err
 	}

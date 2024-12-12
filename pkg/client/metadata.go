@@ -20,6 +20,7 @@ func (c *KpmClient) ResolvePkgDepsMetadata(kclPkg *pkg.KclPkg, update bool) erro
 		_, err = c.Update(
 			WithUpdatedKclPkg(kclPkg),
 			WithOffline(!update),
+			WithUpdateModFile(false),
 		)
 	}
 	return err
