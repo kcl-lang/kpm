@@ -20,11 +20,20 @@ import (
 // Updating a package means iterating all the dependencies of the package
 // and updating the dependencies and selecting the version of the dependencies by MVS.
 type UpdateOptions struct {
-	kpkg    *pkg.KclPkg
-	offline bool
+	kpkg          *pkg.KclPkg
+	offline       bool
+	updateModFile bool
 }
 
 type UpdateOption func(*UpdateOptions) error
+
+// WithUpdateModFile sets the flag to update the mod file.
+func WithUpdateModFile(updateModFile bool) UpdateOption {
+	return func(opts *UpdateOptions) error {
+		opts.updateModFile = updateModFile
+		return nil
+	}
+}
 
 // WithOffline sets the offline option to update the package.
 func WithOffline(offline bool) UpdateOption {
@@ -43,7 +52,7 @@ func WithUpdatedKclPkg(kpkg *pkg.KclPkg) UpdateOption {
 }
 
 func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
-	opts := &UpdateOptions{}
+	opts := &UpdateOptions{updateModFile: true}
 	for _, option := range options {
 		if err := option(opts); err != nil {
 			return nil, err
@@ -143,7 +152,7 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 		return nil, err
 	}
 
-	if !opts.offline {
+	if opts.updateModFile {
 		err = kMod.UpdateModAndLockFile()
 		if err != nil {
 			return nil, err

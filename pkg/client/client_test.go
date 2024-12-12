@@ -1146,7 +1146,6 @@ func testMetadataOffline(t *testing.T) {
 	testDir := getTestDir("test_metadata_offline")
 	kclMod := filepath.Join(testDir, "kcl.mod")
 	uglyKclMod := filepath.Join(testDir, "ugly.kcl.mod")
-	BeautifulKclMod := filepath.Join(testDir, "beautiful.kcl.mod")
 
 	uglyContent, err := os.ReadFile(uglyKclMod)
 	assert.Equal(t, err, nil)
@@ -1157,8 +1156,6 @@ func testMetadataOffline(t *testing.T) {
 		assert.Equal(t, err, nil)
 	}()
 
-	beautifulContent, err := os.ReadFile(BeautifulKclMod)
-	assert.Equal(t, err, nil)
 	kclPkg, err := pkg.LoadKclPkg(testDir)
 	assert.Equal(t, err, nil)
 
@@ -1178,7 +1175,7 @@ func testMetadataOffline(t *testing.T) {
 	assert.Equal(t, res, "{\"packages\":{}}")
 	content_after_metadata, err = os.ReadFile(kclMod)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, utils.RmNewline(string(content_after_metadata)), utils.RmNewline(string(beautifulContent)))
+	assert.Equal(t, utils.RmNewline(string(content_after_metadata)), utils.RmNewline(string(uglyContent)))
 }
 
 func testAddWithNoSumCheck(t *testing.T) {
