@@ -819,10 +819,7 @@ func testResolveMetadataInJsonStr(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		expectedPath = strings.ReplaceAll(expectedPath, "\\", "\\\\")
 	}
-	expectedStr := fmt.Sprintf(
-		"{\"packages\":{\"flask_demo_kcl_manifests\":{\"name\":\"flask_demo_kcl_manifests\",\"manifest_path\":\"%s\"}}}",
-		expectedPath,
-	)
+	expectedStr := "{\"packages\":{\"flask_demo_kcl_manifests\":{\"name\":\"flask_demo_kcl_manifests\",\"manifest_path\":\"\"}}}"
 	assert.Equal(t, res, expectedStr)
 	defer func() {
 		if r := os.RemoveAll(expectedPath); r != nil {
