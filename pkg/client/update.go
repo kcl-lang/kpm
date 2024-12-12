@@ -153,7 +153,15 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 	}
 
 	if opts.updateModFile {
-		err = kMod.UpdateModAndLockFile()
+		err = kMod.UpdateModFile()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Generate file kcl.mod.lock.
+	if !kMod.NoSumCheck {
+		err := kMod.LockDepsVersion()
 		if err != nil {
 			return nil, err
 		}

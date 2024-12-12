@@ -170,7 +170,7 @@ func testRunWithNoSumCheck(t *testing.T) {
 	opts.SetNoSumCheck(false)
 	_, err = RunPkgInPath(opts)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), true)
+	assert.Equal(t, utils.DirExists(filepath.Join(pkgPath, "kcl.mod.lock")), false)
 	defer func() {
 		_ = os.Remove(filepath.Join(pkgPath, "kcl.mod.lock"))
 	}()
