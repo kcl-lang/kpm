@@ -227,5 +227,5 @@ func TestStoreModAndModLockFile(t *testing.T) {
 }
 
 func TestRunWithLock(t *testing.T) {
-	test.RunTestWithGlobalLock(t, "TestRunWithNoSumCheck", TestRunWithNoSumCheck)
+	test.RunTestWithGlobalLock(t, "TestRunWithNoSumCheck", testRunWithNoSumCheck)
 }
