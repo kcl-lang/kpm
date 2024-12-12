@@ -142,9 +142,11 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 		return nil, err
 	}
 
-	err = kMod.UpdateModAndLockFile()
-	if err != nil {
-		return nil, err
+	if !opts.offline {
+		err = kMod.UpdateModAndLockFile()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return kMod, nil
