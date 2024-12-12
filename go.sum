@@ -323,8 +323,8 @@ github.com/ebitengine/purego v0.7.1 h1:6/55d26lG3o9VCZX8lping+bZcmShseiqlh2bnUDi
 github.com/ebitengine/purego v0.7.1/go.mod h1:ah1In8AOtksoNK6yk5z1HTJeUkC1Ez4Wk2idgGslMwQ=
 github.com/elazarl/goproxy v0.0.0-20230808193330-2592e75ae04a h1:mATvB/9r/3gvcejNsXKSkQ6lcIaNec2nyfOdlTBR2lU=
 github.com/elazarl/goproxy v0.0.0-20230808193330-2592e75ae04a/go.mod h1:Ro8st/ElPeALwNFlcTpWmkr6IoMFfkjXAvTHpevnDsM=
-github.com/elliotchance/orderedmap/v2 v2.5.0 h1:WRPmWGChucaZ09eEd3UkU8XfVajv6ZZ6eg3+x0cLWPM=
-github.com/elliotchance/orderedmap/v2 v2.5.0/go.mod h1:85lZyVbpGaGvHvnKa7Qhx7zncAdBIBq6u56Hb1PRU5Q=
+github.com/elliotchance/orderedmap/v2 v2.6.0 h1:Zzo4k/u6hTRSt4NbYVphwOn5fBKlLpcbaV00INfJ1WI=
+github.com/elliotchance/orderedmap/v2 v2.6.0/go.mod h1:85lZyVbpGaGvHvnKa7Qhx7zncAdBIBq6u56Hb1PRU5Q=
 github.com/emicklei/proto v1.13.3 h1:h2u3JgIKSBWHI0jTFFAxiIzOQAe+bRGlQ/WlaIa49Uk=
 github.com/emicklei/proto v1.13.3/go.mod h1:rn1FgRS/FANiZdD2djyH7TMA9jdRDcYQ9IEN9yvjX0A=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
