@@ -531,6 +531,10 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 
 	}
 
+	if opts.Offline && !utils.DirExists(filepath.Join(opts.LocalPath, constants.KCL_MOD)) {
+		return ErrNotFoundAndOffline
+	}
+
 	return err
 }
 
@@ -662,5 +666,12 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 			return err
 		}
 	}
+
+	if opts.Offline && !utils.DirExists(filepath.Join(opts.LocalPath, constants.KCL_MOD)) {
+		return ErrNotFoundAndOffline
+	}
+
 	return nil
 }
+
+var ErrNotFoundAndOffline = errors.New("not found and offline")

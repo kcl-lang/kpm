@@ -819,10 +819,7 @@ func testResolveMetadataInJsonStr(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		expectedPath = strings.ReplaceAll(expectedPath, "\\", "\\\\")
 	}
-	expectedStr := fmt.Sprintf(
-		"{\"packages\":{\"flask_demo_kcl_manifests\":{\"name\":\"flask_demo_kcl_manifests\",\"manifest_path\":\"%s\"}}}",
-		expectedPath,
-	)
+	expectedStr := "{\"packages\":{\"flask_demo_kcl_manifests\":{\"name\":\"flask_demo_kcl_manifests\",\"manifest_path\":\"\"}}}"
 	assert.Equal(t, res, expectedStr)
 	defer func() {
 		if r := os.RemoveAll(expectedPath); r != nil {
@@ -1126,6 +1123,22 @@ func testUpdateWithKclModlock(t *testing.T, kpmcli *KpmClient) {
 	}()
 }
 
+func TestNoDownloadWithMetadataOffline(t *testing.T) {
+	testFunc := func(t *testing.T, kpmcli *KpmClient) {
+		testDir := getTestDir("test_no_download_with_metadata_offline")
+		kclPkg, err := pkg.LoadKclPkg(testDir)
+		assert.Equal(t, err, nil)
+		var buf bytes.Buffer
+		kpmcli.SetLogWriter(&buf)
+		res, err := kpmcli.ResolveDepsMetadataInJsonStr(kclPkg, false)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, buf.String(), "")
+		assert.Equal(t, res, "{\"packages\":{\"kcl4\":{\"name\":\"kcl4\",\"manifest_path\":\"\"}}}")
+	}
+
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "test_no_download_with_metadata_offline", TestFunc: testFunc}})
+}
+
 func testMetadataOffline(t *testing.T) {
 	kpmcli, err := NewKpmClient()
 	assert.Equal(t, err, nil)
@@ -1156,6 +1169,7 @@ func testMetadataOffline(t *testing.T) {
 	assert.Equal(t, err, nil)
 	if runtime.GOOS == "windows" {
 		uglyContent = []byte(strings.ReplaceAll(string(uglyContent), "\r\n", "\n"))
+		content_after_metadata = []byte(strings.ReplaceAll(string(content_after_metadata), "\r\n", "\n"))
 	}
 	assert.Equal(t, string(content_after_metadata), string(uglyContent))
 
