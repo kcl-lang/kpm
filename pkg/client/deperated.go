@@ -809,7 +809,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		}
 
 		if localPath != dep.LocalFullPath {
-			err = os.MoveOrCopy(localPath, dep.LocalFullPath)
+			err = utils.MoveOrCopy(localPath, dep.LocalFullPath)
 			if err != nil {
 				return nil, err
 			}
