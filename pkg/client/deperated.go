@@ -685,7 +685,7 @@ func (c *KpmClient) downloadPkg(options ...downloader.Option) (*pkg.KclPkg, erro
 		}
 	}
 
-	err = utils.MoveFile(tmpDir, localPath)
+	err = utils.MoveOrCopy(tmpDir, localPath)
 	if err != nil {
 		return nil, err
 	}
@@ -809,7 +809,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		}
 
 		if localPath != dep.LocalFullPath {
-			err = os.Rename(localPath, dep.LocalFullPath)
+			err = os.MoveOrCopy(localPath, dep.LocalFullPath)
 			if err != nil {
 				return nil, err
 			}
