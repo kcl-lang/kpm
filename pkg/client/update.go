@@ -106,10 +106,12 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 		selectedModDep := dep
 		// Check if the dependency exists in the mod file.
 		if existDep, exist := modDeps.Get(dep.Name); exist {
-			// if the dependency exists in the mod file,
-			// check the version and select the greater one.
-			if less, err := dep.VersionLessThan(&existDep); less && err == nil {
-				selectedModDep = &existDep
+			if ok, err := features.Enabled(features.SupportMVS); err == nil && ok {
+				// if the dependency exists in the mod file,
+				// check the version and select the greater one.
+				if less, err := dep.VersionLessThan(&existDep); less && err == nil {
+					selectedModDep = &existDep
+				}
 			}
 			// if the dependency does not exist in the mod file,
 			// the dependency is a indirect dependency.
@@ -120,10 +122,12 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 		selectedDep := dep
 		// Check if the dependency exists in the lock file.
 		if existDep, exist := lockDeps.Get(dep.Name); exist {
-			// If the dependency exists in the lock file,
-			// check the version and select the greater one.
-			if less, err := dep.VersionLessThan(&existDep); less && err == nil {
-				selectedDep = &existDep
+			if ok, err := features.Enabled(features.SupportMVS); err == nil && ok {
+				// If the dependency exists in the lock file,
+				// check the version and select the greater one.
+				if less, err := dep.VersionLessThan(&existDep); less && err == nil {
+					selectedDep = &existDep
+				}
 			}
 		}
 		selectedDep.LocalFullPath = dep.LocalFullPath

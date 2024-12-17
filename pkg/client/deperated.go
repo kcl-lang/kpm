@@ -432,7 +432,7 @@ func (c *KpmClient) UpdateDeps(kclPkg *pkg.KclPkg) error {
 		return err
 	}
 
-	if ok, err := features.Enabled(features.SupportMVS); err != nil && ok {
+	if ok, err := features.Enabled(features.SupportMVS); err == nil && ok {
 		_, err = c.Update(
 			WithUpdatedKclPkg(kclPkg),
 			WithOffline(false),
@@ -531,7 +531,7 @@ func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pk
 		kclPkg.Dependencies.Deps.Delete(d.Name)
 	}
 
-	if ok, err := features.Enabled(features.SupportMVS); err != nil && ok {
+	if ok, err := features.Enabled(features.SupportMVS); err == nil && ok {
 		// After adding the new dependency,
 		// Iterate through all the dependencies and select the version by mvs
 		_, err = c.Update(

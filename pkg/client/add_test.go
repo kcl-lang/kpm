@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -9,6 +10,7 @@ import (
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
 	"kcl-lang.io/kpm/pkg/downloader"
+	"kcl-lang.io/kpm/pkg/features"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/utils"
 )
@@ -496,4 +498,111 @@ func TestAddRenameWithNoSpec(t *testing.T) {
 
 	assert.Equal(t, utils.RmNewline(string(expectedMod)), utils.RmNewline(string(gotMod)))
 	assert.Equal(t, utils.RmNewline(string(expectedLock)), utils.RmNewline(string(gotLock)))
+}
+
+func TestAddWithMvs(t *testing.T) {
+	defer features.Disable(features.SupportMVS)
+	testDir := getTestDir("add_with_mvs")
+	pkgWithMvsPath := filepath.Join(testDir, "pkg_with_mvs")
+	pkgWithoutMvsPath := filepath.Join(testDir, "pkg_without_mvs")
+
+	testFunc := func(t *testing.T, kpmcli *KpmClient) {
+		var modbkPath, modPath, modExpect, lockbkPath, lockPath, lockExpect, pkgPath string
+		if ok, err := features.Enabled(features.SupportMVS); err == nil && ok {
+			pkgPath = pkgWithMvsPath
+			modbkPath = filepath.Join(pkgWithMvsPath, "kcl.mod.bk")
+			modPath = filepath.Join(pkgWithMvsPath, "kcl.mod")
+			modExpect = filepath.Join(pkgWithMvsPath, "kcl.mod.expect")
+			lockbkPath = filepath.Join(pkgWithMvsPath, "kcl.mod.lock.bk")
+			lockPath = filepath.Join(pkgWithMvsPath, "kcl.mod.lock")
+			lockExpect = filepath.Join(pkgWithMvsPath, "kcl.mod.lock.expect")
+		} else {
+			pkgPath = pkgWithoutMvsPath
+			modbkPath = filepath.Join(pkgWithoutMvsPath, "kcl.mod.bk")
+			modPath = filepath.Join(pkgWithoutMvsPath, "kcl.mod")
+			modExpect = filepath.Join(pkgWithoutMvsPath, "kcl.mod.expect")
+			lockbkPath = filepath.Join(pkgWithoutMvsPath, "kcl.mod.lock.bk")
+			lockPath = filepath.Join(pkgWithoutMvsPath, "kcl.mod.lock")
+			lockExpect = filepath.Join(pkgWithoutMvsPath, "kcl.mod.lock.expect")
+		}
+
+		err := copy.Copy(modbkPath, modPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = copy.Copy(lockbkPath, lockPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		defer func() {
+			// remove the copied files
+			err := os.RemoveAll(modPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = os.RemoveAll(lockPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}()
+
+		kmod, err := pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(pkgPath),
+			pkg.WithSettings(kpmcli.GetSettings()),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = kpmcli.Add(
+			WithAddKclPkg(kmod),
+			WithAddSourceUrl("../h14"),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = kpmcli.Add(
+			WithAddKclPkg(kmod),
+			WithAddSourceUrl("../h12"),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expectedMod, err := os.ReadFile(modExpect)
+		if err != nil {
+			t.Fatal(err)
+		}
+		gotMod, err := os.ReadFile(modPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expectedLock, err := os.ReadFile(lockExpect)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		gotLock, err := os.ReadFile(lockPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, utils.RmNewline(string(expectedMod)), utils.RmNewline(string(gotMod)))
+		assert.Equal(t, utils.RmNewline(string(expectedLock)), utils.RmNewline(string(gotLock)))
+
+	}
+
+	features.Enable(features.SupportMVS)
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestAddWithMvs", TestFunc: testFunc}})
+	fmt.Print("TestAddWithMvs done\n")
+	features.Disable(features.SupportMVS)
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestAddWithoutMvs", TestFunc: testFunc}})
+	fmt.Print("TestAddWithoutMvs done\n")
 }
