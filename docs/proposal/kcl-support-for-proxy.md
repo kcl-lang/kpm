@@ -1,4 +1,4 @@
-### Enhancement Proposal:  Proxy Support in KPM Downloader`
+### Enhancement Proposal:  Proxy Support in KPM`
 
 **Author:** [SkySingh04](https://linktr.ee/skysingh04)
 
