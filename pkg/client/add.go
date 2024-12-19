@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"kcl-lang.io/kpm/pkg/downloader"
+	"kcl-lang.io/kpm/pkg/features"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/utils"
@@ -206,12 +207,18 @@ func (c *KpmClient) Add(options ...AddOption) error {
 			})
 		}
 
-		// Add the dependency to the kcl.mod file.
-		if modExistDep, ok := addedPkg.ModFile.Dependencies.Deps.Get(dep.Name); ok {
-			if less, err := modExistDep.VersionLessThan(&dep); less && err == nil {
+		if ok, err := features.Enabled(features.SupportMVS); err == nil && ok {
+			// Add the dependency to the kcl.mod file.
+			// and select the greater version of the dependency in dependencies graph.
+			if modExistDep, ok := addedPkg.ModFile.Dependencies.Deps.Get(dep.Name); ok {
+				if less, err := modExistDep.VersionLessThan(&dep); less && err == nil {
+					addedPkg.ModFile.Dependencies.Deps.Set(dep.Name, dep)
+				}
+			} else {
 				addedPkg.ModFile.Dependencies.Deps.Set(dep.Name, dep)
 			}
 		} else {
+			// Add the dependency to the kcl.mod file directly.
 			addedPkg.ModFile.Dependencies.Deps.Set(dep.Name, dep)
 		}
 		succeedMsgInfo = fmt.Sprintf("add dependency '%s:%s' successfully", depPkg.ModFile.Pkg.Name, depPkg.ModFile.Pkg.Version)

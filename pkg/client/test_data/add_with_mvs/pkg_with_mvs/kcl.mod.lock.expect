@@ -1,0 +1,17 @@
+[dependencies]
+  [dependencies.h12]
+    name = "h12"
+    full_name = "h12_0.0.1"
+    version = "0.0.1"
+  [dependencies.h14]
+    name = "h14"
+    full_name = "h14_0.0.1"
+    version = "0.0.1"
+  [dependencies.helloworld]
+    name = "helloworld"
+    full_name = "helloworld_0.1.4"
+    version = "0.1.4"
+    sum = "9J9HOMhdypaDYf0J7PqtpGTdlkbxkN0HFEYhosHhf4U="
+    reg = "ghcr.io"
+    repo = "kcl-lang/helloworld"
+    oci_tag = "0.1.4"

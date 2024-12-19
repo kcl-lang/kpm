@@ -1,0 +1,8 @@
+[package]
+name = "pkg_with_mvs"
+edition = "v0.11.0-alpha.1"
+version = "0.0.1"
+
+[dependencies]
+h14 = { path = "../h14", version = "0.0.1" }
+h12 = { path = "../h12", version = "0.0.1" }
