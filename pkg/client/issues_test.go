@@ -554,3 +554,38 @@ func TestKclIssue1768(t *testing.T) {
 	}
 	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "test_push_with_tag", TestFunc: test_push_with_tag}})
 }
+
+func TestKclIssue1788(t *testing.T) {
+	testPath := "github.com/kcl-lang/kcl/issues/1788"
+
+	test_run_only_file_not_generate_mod := func(t *testing.T, kpmcli *KpmClient) {
+		rootPath := getTestDir("issues")
+		kfilePath := filepath.Join(rootPath, testPath, "mod", "main.k")
+		var buf bytes.Buffer
+		kpmcli.SetLogWriter(&buf)
+
+		res, err := kpmcli.Run(
+			WithRunSource(
+				&downloader.Source{
+					Local: &downloader.Local{
+						Path: kfilePath,
+					},
+				},
+			),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		modFilePath := filepath.Join(testPath, "kcl.mod")
+		modLockFilePath := filepath.Join(testPath, "kcl.mod.lock")
+
+		assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
+		assert.Equal(t, buf.String(), "")
+		assert.Equal(t, utils.DirExists(modFilePath), false)
+		assert.Equal(t, utils.DirExists(modLockFilePath), false)
+	}
+
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "test_run_only_file_not_generate_mod", TestFunc: test_run_only_file_not_generate_mod}})
+}
