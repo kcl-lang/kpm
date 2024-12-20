@@ -2487,7 +2487,8 @@ func TestAddGitDepLocalStorage(t *testing.T) {
 
 		assert.Equal(t, buf.String(),
 			"cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with branch 'main'\n"+
-				"adding dependency 'flask_manifests'\n",
+				"adding dependency 'flask_manifests'\n"+
+				"add dependency 'flask_manifests:0.0.1' successfully\n",
 		)
 
 		depPath := filepath.Join(testKpmHome, "flask-demo-kcl-manifests_main")
