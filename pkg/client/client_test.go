@@ -28,6 +28,7 @@ import (
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/features"
+	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -2318,4 +2319,466 @@ func TestValidateDependency(t *testing.T) {
 
 	err = kpmcli.ValidateDependency(&dep2)
 	assert.Error(t, err)
+}
+
+func TestAddOciDepLocalStorage(t *testing.T) {
+	testFunc := func(t *testing.T, kpmcli *KpmClient) {
+		features.Disable(features.SupportNewStorage)
+		testKpmHome := filepath.Join(getTestDir("test_new_storage"), "kpm_home")
+		modPath := filepath.Join(getTestDir("test_new_storage"), "mod")
+		defer func() {
+			_ = os.RemoveAll(testKpmHome)
+		}()
+
+		var buf bytes.Buffer
+
+		kpmcli.SetHomePath(testKpmHome)
+		kpmcli.SetLogWriter(&buf)
+
+		mod, err := pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(modPath),
+			pkg.WithSettings(kpmcli.GetSettings()),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = kpmcli.Add(
+			WithAddKclPkg(mod),
+			WithAddSource(&downloader.Source{
+				Oci: &downloader.Oci{
+					Reg:  "ghcr.io",
+					Repo: "kcl-lang/helloworld",
+					Tag:  "0.1.2",
+				},
+				ModSpec: &downloader.ModSpec{
+					Name:    "helloworld",
+					Version: "0.1.2",
+				},
+			}),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, buf.String(),
+			"downloading 'kcl-lang/helloworld:0.1.2' from 'ghcr.io/kcl-lang/helloworld:0.1.2'\n"+
+				"adding dependency 'helloworld'\n"+
+				"add dependency 'helloworld:0.1.2' successfully\n",
+		)
+
+		depPath := filepath.Join(testKpmHome, "helloworld_0.1.2")
+		_, err = pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(depPath),
+			pkg.WithSettings(kpmcli.GetSettings()),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestAddOciDepLocalStorage", TestFunc: testFunc}})
+}
+
+func TestAddOciNewLocalStorage(t *testing.T) {
+	testFunc := func(t *testing.T, kpmcli *KpmClient) {
+		features.Enable(features.SupportNewStorage)
+		testKpmHome := filepath.Join(getTestDir("test_new_storage"), "kpm_home")
+		modPath := filepath.Join(getTestDir("test_new_storage"), "mod_0")
+		defer func() {
+			_ = os.RemoveAll(testKpmHome)
+			features.Disable(features.SupportNewStorage)
+		}()
+		var buf bytes.Buffer
+
+		kpmcli.SetHomePath(testKpmHome)
+		kpmcli.SetLogWriter(&buf)
+
+		mod, err := pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(modPath),
+			pkg.WithSettings(kpmcli.GetSettings()),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		depSource := &downloader.Source{
+			Oci: &downloader.Oci{
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/helloworld",
+				Tag:  "0.1.2",
+			},
+			ModSpec: &downloader.ModSpec{
+				Name:    "helloworld",
+				Version: "0.1.2",
+			},
+		}
+
+		err = kpmcli.Add(
+			WithAddKclPkg(mod),
+			WithAddSource(depSource),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cachePath := filepath.Join(depSource.CachePath(filepath.Join(testKpmHome, "oci", "cache")), "helloworld_0.1.2.tar")
+		assert.Equal(t, true, utils.DirExists(cachePath))
+
+		assert.Equal(t, buf.String(),
+			"downloading 'kcl-lang/helloworld:0.1.2' from 'ghcr.io/kcl-lang/helloworld:0.1.2'\n"+
+				"adding dependency 'helloworld'\n"+
+				"add dependency 'helloworld:0.1.2' successfully\n",
+		)
+
+		depPath := filepath.Join(depSource.LocalPath(filepath.Join(testKpmHome, "oci", "src")))
+		_, err = pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(depPath),
+			pkg.WithSettings(kpmcli.GetSettings()),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestAddOciNewLocalStorage", TestFunc: testFunc}})
+}
+
+func TestAddGitDepLocalStorage(t *testing.T) {
+	testFunc := func(t *testing.T, kpmcli *KpmClient) {
+		features.Disable(features.SupportNewStorage)
+		testKpmHome := filepath.Join(getTestDir("test_new_storage"), "kpm_home")
+		modPath := filepath.Join(getTestDir("test_new_storage"), "mod_1")
+		defer func() {
+			_ = os.RemoveAll(testKpmHome)
+		}()
+
+		var buf bytes.Buffer
+
+		kpmcli.SetHomePath(testKpmHome)
+		kpmcli.SetLogWriter(&buf)
+
+		mod, err := pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(modPath),
+			pkg.WithSettings(kpmcli.GetSettings()),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = kpmcli.Add(
+			WithAddKclPkg(mod),
+			WithAddSource(&downloader.Source{
+				Git: &downloader.Git{
+					Url:    "https://github.com/kcl-lang/flask-demo-kcl-manifests.git",
+					Branch: "main",
+				},
+			}),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, buf.String(),
+			"cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with branch 'main'\n"+
+				"adding dependency 'flask_manifests'\n",
+		)
+
+		depPath := filepath.Join(testKpmHome, "flask-demo-kcl-manifests_main")
+		_, err = pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(depPath),
+			pkg.WithSettings(kpmcli.GetSettings()),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestAddGitDepLocalStorage", TestFunc: testFunc}})
+}
+
+func TestAddGitNewLocalStorage(t *testing.T) {
+	testFunc := func(t *testing.T, kpmcli *KpmClient) {
+		features.Enable(features.SupportNewStorage)
+		testKpmHome := filepath.Join(getTestDir("test_new_storage"), "kpm_home")
+		modPath := filepath.Join(getTestDir("test_new_storage"), "mod_2")
+		defer func() {
+			_ = os.RemoveAll(testKpmHome)
+			features.Disable(features.SupportNewStorage)
+		}()
+
+		var buf bytes.Buffer
+
+		kpmcli.SetHomePath(testKpmHome)
+		kpmcli.SetLogWriter(&buf)
+
+		mod, err := pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(modPath),
+			pkg.WithSettings(kpmcli.GetSettings()),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		gitSource := &downloader.Source{
+			Git: &downloader.Git{
+				Url:    "https://github.com/kcl-lang/flask-demo-kcl-manifests.git",
+				Branch: "main",
+			},
+		}
+
+		err = kpmcli.Add(
+			WithAddKclPkg(mod),
+			WithAddSource(gitSource),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, buf.String(), "cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with branch 'main'\n"+
+			"adding dependency 'flask_manifests'\n"+
+			"add dependency 'flask_manifests:0.0.1' successfully\n",
+		)
+
+		depPath := gitSource.LocalPath(filepath.Join(testKpmHome, "git", "src"))
+		_, err = pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(depPath),
+			pkg.WithSettings(kpmcli.GetSettings()),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cachePath := gitSource.CachePath(filepath.Join(testKpmHome, "git", "cache"))
+
+		assert.Equal(t, true, utils.DirExists(cachePath))
+		assert.Equal(t, git.IsGitBareRepo(cachePath), true)
+	}
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestAddGitNewLocalStorage", TestFunc: testFunc}})
+}
+
+func TestUpdateOciDepLocalStorage(t *testing.T) {
+	testFunc := func(t *testing.T, kpmcli *KpmClient) {
+		features.Disable(features.SupportNewStorage)
+		testKpmHome := filepath.Join(getTestDir("test_new_storage"), "kpm_home")
+		modPath := filepath.Join(getTestDir("test_new_storage"), "mod_3")
+		defer func() {
+			_ = os.RemoveAll(testKpmHome)
+		}()
+
+		var buf bytes.Buffer
+
+		kpmcli.SetHomePath(testKpmHome)
+		kpmcli.SetLogWriter(&buf)
+
+		mod, err := pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(modPath),
+			pkg.WithSettings(kpmcli.GetSettings()),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		_, err = kpmcli.Update(
+			WithUpdatedKclPkg(mod),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, buf.String(),
+			"downloading 'kcl-lang/helloworld:0.1.2' from 'ghcr.io/kcl-lang/helloworld:0.1.2'\n")
+
+		depPath := filepath.Join(testKpmHome, "helloworld_0.1.2")
+		_, err = pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(depPath),
+			pkg.WithSettings(kpmcli.GetSettings()),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestUpdateOciDepLocalStorage", TestFunc: testFunc}})
+}
+
+func TestUpdateOciNewLocalStorage(t *testing.T) {
+	testFunc := func(t *testing.T, kpmcli *KpmClient) {
+		features.Enable(features.SupportNewStorage)
+		testKpmHome := filepath.Join(getTestDir("test_new_storage"), "kpm_home")
+		modPath := filepath.Join(getTestDir("test_new_storage"), "mod_4")
+		defer func() {
+			_ = os.RemoveAll(testKpmHome)
+			features.Disable(features.SupportNewStorage)
+		}()
+		var buf bytes.Buffer
+
+		kpmcli.SetHomePath(testKpmHome)
+		kpmcli.SetLogWriter(&buf)
+
+		mod, err := pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(modPath),
+			pkg.WithSettings(kpmcli.GetSettings()),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		depSource := &downloader.Source{
+			Oci: &downloader.Oci{
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/helloworld",
+				Tag:  "0.1.2",
+			},
+			ModSpec: &downloader.ModSpec{
+				Name:    "helloworld",
+				Version: "0.1.2",
+			},
+		}
+
+		_, err = kpmcli.Update(
+			WithUpdatedKclPkg(mod),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cachePath := filepath.Join(depSource.CachePath(filepath.Join(testKpmHome, "oci", "cache")), "helloworld_0.1.2.tar")
+		assert.Equal(t, true, utils.DirExists(cachePath))
+
+		assert.Equal(t, buf.String(),
+			"downloading 'kcl-lang/helloworld:0.1.2' from 'ghcr.io/kcl-lang/helloworld:0.1.2'\n",
+		)
+
+		depPath := filepath.Join(depSource.LocalPath(filepath.Join(testKpmHome, "oci", "src")))
+		_, err = pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(depPath),
+			pkg.WithSettings(kpmcli.GetSettings()),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestUpdateOciNewLocalStorage", TestFunc: testFunc}})
+}
+
+func TestUpdateGitDepLocalStorage(t *testing.T) {
+	testFunc := func(t *testing.T, kpmcli *KpmClient) {
+		features.Disable(features.SupportNewStorage)
+		testKpmHome := filepath.Join(getTestDir("test_new_storage"), "kpm_home")
+		modPath := filepath.Join(getTestDir("test_new_storage"), "mod_5")
+		defer func() {
+			_ = os.RemoveAll(testKpmHome)
+		}()
+
+		var buf bytes.Buffer
+
+		kpmcli.SetHomePath(testKpmHome)
+		kpmcli.SetLogWriter(&buf)
+
+		mod, err := pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(modPath),
+			pkg.WithSettings(kpmcli.GetSettings()),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		_, err = kpmcli.Update(
+			WithUpdatedKclPkg(mod),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, buf.String(),
+			"cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with branch 'main'\n",
+		)
+
+		depPath := filepath.Join(testKpmHome, "flask-demo-kcl-manifests_main")
+		_, err = pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(depPath),
+			pkg.WithSettings(kpmcli.GetSettings()),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestUpdateGitDepLocalStorage", TestFunc: testFunc}})
+}
+
+func TestUpdateGitNewLocalStorage(t *testing.T) {
+	testFunc := func(t *testing.T, kpmcli *KpmClient) {
+		features.Enable(features.SupportNewStorage)
+		testKpmHome := filepath.Join(getTestDir("test_new_storage"), "kpm_home")
+		modPath := filepath.Join(getTestDir("test_new_storage"), "mod_6")
+		defer func() {
+			_ = os.RemoveAll(testKpmHome)
+			features.Disable(features.SupportNewStorage)
+		}()
+
+		var buf bytes.Buffer
+
+		kpmcli.SetHomePath(testKpmHome)
+		kpmcli.SetLogWriter(&buf)
+
+		mod, err := pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(modPath),
+			pkg.WithSettings(kpmcli.GetSettings()),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		gitSource := &downloader.Source{
+			Git: &downloader.Git{
+				Url:    "https://github.com/kcl-lang/flask-demo-kcl-manifests.git",
+				Branch: "main",
+			},
+		}
+
+		_, err = kpmcli.Update(
+			WithUpdatedKclPkg(mod),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, buf.String(), "cloning 'https://github.com/kcl-lang/flask-demo-kcl-manifests.git' with branch 'main'\n")
+
+		depPath := gitSource.LocalPath(filepath.Join(testKpmHome, "git", "src"))
+		_, err = pkg.LoadKclPkgWithOpts(
+			pkg.WithPath(depPath),
+			pkg.WithSettings(kpmcli.GetSettings()),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		cachePath := gitSource.CachePath(filepath.Join(testKpmHome, "git", "cache"))
+
+		assert.Equal(t, true, utils.DirExists(cachePath))
+		assert.Equal(t, git.IsGitBareRepo(cachePath), true)
+	}
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestUpdateGitNewLocalStorage", TestFunc: testFunc}})
 }
