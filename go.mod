@@ -7,7 +7,7 @@ require (
 	github.com/containers/image/v5 v5.33.0
 	github.com/distribution/reference v0.6.0
 	github.com/dominikbraun/graph v0.23.0
-	github.com/elliotchance/orderedmap/v2 v2.6.0
+	github.com/elliotchance/orderedmap/v2 v2.6.1
 	github.com/google/uuid v1.6.0
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/otiai10/copy v1.14.0
