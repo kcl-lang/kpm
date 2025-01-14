@@ -155,7 +155,7 @@ require (
 	github.com/jinzhu/copier v0.4.0
 	github.com/kubescape/go-git-url v0.0.30
 	github.com/moby/term v0.5.0
-	github.com/onsi/ginkgo/v2 v2.22.1
+	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/stretchr/testify v1.10.0
