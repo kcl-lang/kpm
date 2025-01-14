@@ -25,7 +25,7 @@ require (
 	cloud.google.com/go/storage v1.38.0 // indirect
 	dario.cat/mergo v1.0.1 // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
-	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
+	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.1.3 // indirect
 	github.com/aws/aws-sdk-go v1.44.122 // indirect
@@ -155,7 +155,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0
 	github.com/jinzhu/copier v0.4.0
 	github.com/kubescape/go-git-url v0.0.30
-	github.com/moby/term v0.5.0
+	github.com/moby/term v0.5.2
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
