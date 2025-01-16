@@ -148,6 +148,10 @@ func (d *GitDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
 	if opts.Offline {
 		return "", errors.New("offline mode is enabled, the latest version is not supported")
 	}
+	gitUrl, err := opts.Source.Git.GetCanonicalizedUrl()
+	if err != nil {
+		return "", err
+	}
 	// TODO：supports fetch the latest commit from the git bare repo,
 	// after totally transfer to the new storage.
 	// refer to cargo: https://github.com/rust-lang/cargo/blob/3dedb85a25604bdbbb8d3bf4b03162961a4facd0/crates/cargo-util-schemas/src/core/source_kind.rs#L133
@@ -168,7 +172,7 @@ func (d *GitDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
 			git.WithCommit(opts.Source.Commit),
 			git.WithBranch(opts.Source.Branch),
 			git.WithTag(opts.Source.Git.Tag),
-			git.WithRepoURL(opts.Source.Git.Url),
+			git.WithRepoURL(gitUrl),
 			git.WithLocalPath(tmp),
 		)
 
@@ -199,7 +203,7 @@ func (d *GitDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
 			repo, err = git.CloneWithOpts(
 				append(
 					cloneOpts,
-					git.WithRepoURL(opts.Source.Git.Url),
+					git.WithRepoURL(gitUrl),
 					git.WithLocalPath(cacheFullPath),
 					git.WithBare(true),
 				)...,
