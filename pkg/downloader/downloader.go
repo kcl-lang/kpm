@@ -654,11 +654,17 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 			return errors.New("git source is nil")
 		}
 
-		_, err := git.CloneWithOpts(
+		// get the canonicalized git url
+	gitUrl, err := gitSource.GetCanonicalizedUrl()
+	if err != nil {
+		return err
+	}
+
+		_, err = git.CloneWithOpts(
 			git.WithCommit(gitSource.Commit),
 			git.WithBranch(gitSource.Branch),
 			git.WithTag(gitSource.Tag),
-			git.WithRepoURL(gitSource.Url),
+			git.WithRepoURL(gitUrl),
 			git.WithLocalPath(opts.LocalPath),
 		)
 
