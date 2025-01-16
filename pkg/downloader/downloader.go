@@ -543,6 +543,11 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 	if gitSource == nil {
 		return errors.New("git source is nil")
 	}
+	// get the canonicalized git url
+	gitUrl, err := gitSource.GetCanonicalizedUrl()
+	if err != nil {
+		return err
+	}
 	cloneOpts := []git.CloneOption{
 		git.WithCommit(gitSource.Commit),
 		git.WithBranch(gitSource.Branch),
@@ -603,7 +608,7 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 						_, err := git.CloneWithOpts(
 							append(
 								cloneOpts,
-								git.WithRepoURL(gitSource.Url),
+								git.WithRepoURL(gitUrl),
 								git.WithLocalPath(cacheFullPath),
 								git.WithBare(true),
 							)...,
@@ -632,10 +637,10 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 				opts.LogWriter,
 			)
 			// If the cache is disabled, clone the repository from the remote git repository.
-			_, err := git.CloneWithOpts(
+			_, err = git.CloneWithOpts(
 				append(
 					cloneOpts,
-					git.WithRepoURL(gitSource.Url),
+					git.WithRepoURL(gitUrl),
 					git.WithLocalPath(opts.LocalPath),
 				)...,
 			)
@@ -652,12 +657,6 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 		gitSource := opts.Source.Git
 		if gitSource == nil {
 			return errors.New("git source is nil")
-		}
-
-		// get the canonicalized git url
-		gitUrl, err := gitSource.GetCanonicalizedUrl()
-		if err != nil {
-			return err
 		}
 
 		_, err = git.CloneWithOpts(
