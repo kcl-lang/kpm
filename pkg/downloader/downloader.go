@@ -148,6 +148,10 @@ func (d *GitDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
 	if opts.Offline {
 		return "", errors.New("offline mode is enabled, the latest version is not supported")
 	}
+	gitUrl, err := opts.Source.Git.GetCanonicalizedUrl()
+	if err != nil {
+		return "", err
+	}
 	// TODO：supports fetch the latest commit from the git bare repo,
 	// after totally transfer to the new storage.
 	// refer to cargo: https://github.com/rust-lang/cargo/blob/3dedb85a25604bdbbb8d3bf4b03162961a4facd0/crates/cargo-util-schemas/src/core/source_kind.rs#L133
@@ -168,7 +172,7 @@ func (d *GitDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
 			git.WithCommit(opts.Source.Commit),
 			git.WithBranch(opts.Source.Branch),
 			git.WithTag(opts.Source.Git.Tag),
-			git.WithRepoURL(opts.Source.Git.Url),
+			git.WithRepoURL(gitUrl),
 			git.WithLocalPath(tmp),
 		)
 
@@ -199,7 +203,7 @@ func (d *GitDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
 			repo, err = git.CloneWithOpts(
 				append(
 					cloneOpts,
-					git.WithRepoURL(opts.Source.Git.Url),
+					git.WithRepoURL(gitUrl),
 					git.WithLocalPath(cacheFullPath),
 					git.WithBare(true),
 				)...,
@@ -543,6 +547,11 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 	if gitSource == nil {
 		return errors.New("git source is nil")
 	}
+	// get the canonicalized git url
+	gitUrl, err := gitSource.GetCanonicalizedUrl()
+	if err != nil {
+		return err
+	}
 	cloneOpts := []git.CloneOption{
 		git.WithCommit(gitSource.Commit),
 		git.WithBranch(gitSource.Branch),
@@ -603,7 +612,7 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 						_, err := git.CloneWithOpts(
 							append(
 								cloneOpts,
-								git.WithRepoURL(gitSource.Url),
+								git.WithRepoURL(gitUrl),
 								git.WithLocalPath(cacheFullPath),
 								git.WithBare(true),
 							)...,
@@ -632,10 +641,10 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 				opts.LogWriter,
 			)
 			// If the cache is disabled, clone the repository from the remote git repository.
-			_, err := git.CloneWithOpts(
+			_, err = git.CloneWithOpts(
 				append(
 					cloneOpts,
-					git.WithRepoURL(gitSource.Url),
+					git.WithRepoURL(gitUrl),
 					git.WithLocalPath(opts.LocalPath),
 				)...,
 			)
@@ -654,11 +663,11 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 			return errors.New("git source is nil")
 		}
 
-		_, err := git.CloneWithOpts(
+		_, err = git.CloneWithOpts(
 			git.WithCommit(gitSource.Commit),
 			git.WithBranch(gitSource.Branch),
 			git.WithTag(gitSource.Tag),
-			git.WithRepoURL(gitSource.Url),
+			git.WithRepoURL(gitUrl),
 			git.WithLocalPath(opts.LocalPath),
 		)
 

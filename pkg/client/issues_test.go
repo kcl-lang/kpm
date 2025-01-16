@@ -589,3 +589,38 @@ func TestKclIssue1788(t *testing.T) {
 
 	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "test_run_only_file_not_generate_mod", TestFunc: test_run_only_file_not_generate_mod}})
 }
+
+func TestKpmIssue587(t *testing.T) {
+	testPath := "github.com/kcl-lang/kpm/issues/587"
+
+	test_download_with_git_dep := func(t *testing.T, kpmcli *KpmClient) {
+		rootPath := getTestDir("issues")
+		kfilePath := filepath.Join(rootPath, testPath)
+		var buf bytes.Buffer
+		kpmcli.SetLogWriter(&buf)
+
+		res, err := kpmcli.Run(
+			WithRunSource(
+				&downloader.Source{
+					Local: &downloader.Local{
+						Path: kfilePath,
+					},
+				},
+			),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		modFilePath := filepath.Join(testPath, "kcl.mod")
+		modLockFilePath := filepath.Join(testPath, "kcl.mod.lock")
+
+		assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
+		assert.Equal(t, buf.String(), "cloning 'git://github.com/kcl-lang/flask-demo-kcl-manifests.git' with tag 'v0.1.0'\n")
+		assert.Equal(t, utils.DirExists(modFilePath), false)
+		assert.Equal(t, utils.DirExists(modLockFilePath), false)
+	}
+
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "test_download_with_git_dep", TestFunc: test_download_with_git_dep}})
+}

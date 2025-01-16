@@ -74,6 +74,21 @@ type Git struct {
 	Package string `toml:"package,omitempty"`
 }
 
+// Transform the git url to the canonicalized url.
+func (git *Git) GetCanonicalizedUrl() (string, error) {
+	url, err := url.Parse(git.Url)
+	if err != nil {
+		return "", err
+	}
+
+	// If the scheme is git, change it to https
+	if url.Scheme == constants.GitScheme {
+		url.Scheme = constants.HttpsScheme
+	}
+
+	return url.String(), nil
+}
+
 // If the git source has no reference, return true.
 func (g *Git) NoRef() bool {
 	return g.Version == "" && g.Tag == "" && g.Branch == "" && g.Commit == ""
