@@ -655,10 +655,10 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 		}
 
 		// get the canonicalized git url
-	gitUrl, err := gitSource.GetCanonicalizedUrl()
-	if err != nil {
-		return err
-	}
+		gitUrl, err := gitSource.GetCanonicalizedUrl()
+		if err != nil {
+			return err
+		}
 
 		_, err = git.CloneWithOpts(
 			git.WithCommit(gitSource.Commit),

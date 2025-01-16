@@ -617,7 +617,7 @@ func TestKpmIssue587(t *testing.T) {
 		modLockFilePath := filepath.Join(testPath, "kcl.mod.lock")
 
 		assert.Equal(t, res.GetRawYamlResult(), "The_first_kcl_program: Hello World!")
-		assert.Equal(t, buf.String(), "")
+		assert.Equal(t, buf.String(), "cloning 'git://github.com/kcl-lang/flask-demo-kcl-manifests.git' with tag 'v0.1.0'\n")
 		assert.Equal(t, utils.DirExists(modFilePath), false)
 		assert.Equal(t, utils.DirExists(modLockFilePath), false)
 	}
