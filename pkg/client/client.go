@@ -5,17 +5,22 @@ import (
 	"os"
 	"path/filepath"
 
+	"fmt"
+
 	remoteauth "oras.land/oras-go/v2/registry/remote/auth"
 
 	"kcl-lang.io/kpm/pkg/checker"
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/env"
+	"kcl-lang.io/kpm/pkg/logger"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/utils"
 	"kcl-lang.io/kpm/pkg/visitor"
+
+	"strings"
 )
 
 // KpmClient is the client of kpm.
@@ -57,12 +62,21 @@ func NewKpmClient() (*KpmClient, error) {
 	)
 
 	return &KpmClient{
-		logWriter:     os.Stdout,
+		logWriter:     logger.NewLogWriter(),
 		settings:      *settings,
 		homePath:      homePath,
 		ModChecker:    ModChecker,
 		DepDownloader: &downloader.DepDownloader{},
 	}, nil
+}
+
+// WriteLog writes a log message
+func (c *KpmClient) WriteLog(message string) {
+	if strings.Contains(message, "[FATAL]") {
+		fmt.Fprintln(c.logWriter, message)
+		os.Exit(1) // Exit the program
+	}
+	c.logWriter.Write([]byte(message + "\n"))
 }
 
 // SetInsecureSkipTLSverify will set the flag of whether to skip the verification of TLS.
