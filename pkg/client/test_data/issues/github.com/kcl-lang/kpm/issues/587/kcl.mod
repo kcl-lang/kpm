@@ -1,6 +1,6 @@
 [package]
 name = "issue587"
-edition = "v0.11.0"
+edition = "v0.11.1"
 version = "0.0.1"
 
 [dependencies]
