@@ -65,7 +65,7 @@ func main() {
 ```
 ### **3.2 Using Flags with the Standard Library**
 
-If you prefer to use Go’s standard library instead of Cobra, you can leverage the built-in `flag` package:
+If we prefer to use Go’s standard library instead of Cobra, we can leverage the built-in `flag` package:
 
 ```go
 / These examples demonstrate more intricate uses of the flag package.
@@ -515,7 +515,7 @@ To meet the requirements for offline testing, we propose leveraging **Helm** in 
 
 In end-to-end tests, external API calls might still need to be simulated. Mock servers help in replicating external services like token validation or metadata retrieval.
 
-You can integrate the mock server (created during unit testing) with real Helm and Kubernetes interactions to test the following scenarios:
+we can integrate the mock server (created during unit testing) with real Helm and Kubernetes interactions to test the following scenarios:
 
 -   Downloading charts from a local registry
 -   Performing token-based authentication
