@@ -201,6 +201,22 @@ func (d *Dependency) VersionLessThan(other *Dependency) (bool, error) {
 	return ver.LessThan(otherVer), nil
 }
 
+// VersionEqual will compare the version of a dependency with another dependency.
+func (d *Dependency) VersionEqual(other *Dependency) (bool, error) {
+
+	ver, err := version.NewVersion(d.Version)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse version %s", d.Version)
+	}
+
+	otherVer, err := version.NewVersion(other.Version)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse version %s", other.Version)
+	}
+
+	return ver.Equal(otherVer), nil
+}
+
 func (d *Dependency) FromKclPkg(pkg *KclPkg) {
 	d.FullName = pkg.GetPkgFullName()
 	d.Version = pkg.GetPkgVersion()
