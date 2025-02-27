@@ -130,6 +130,14 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 				}
 			}
 		}
+
+		// Check if the checksum of the dependency exists in the lock file.
+		if existDep, exist := lockDeps.Get(dep.Name); exist {
+			if equal, err := existDep.VersionEqual(selectedDep); equal && err == nil {
+				selectedDep.Sum = existDep.Sum
+			}
+		}
+
 		selectedDep.LocalFullPath = dep.LocalFullPath
 		if selectedDep.Sum == "" {
 			sum, err := c.AcquireDepSum(*selectedDep)

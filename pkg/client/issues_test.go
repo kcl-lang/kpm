@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/otiai10/copy"
 	"github.com/stretchr/testify/assert"
@@ -623,4 +624,50 @@ func TestKpmIssue587(t *testing.T) {
 	}
 
 	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "test_download_with_git_dep", TestFunc: test_download_with_git_dep}})
+}
+
+func TestKpmIssue605(t *testing.T) {
+	testPath := "github.com/kcl-lang/kpm/issues/605"
+
+	test_run_with_exist_checksum := func(t *testing.T, kpmcli *KpmClient) {
+		rootPath := getTestDir("issues")
+		kfilePath := filepath.Join(rootPath, testPath, "pkg")
+		var buf bytes.Buffer
+		kpmcli.SetLogWriter(&buf)
+
+		// Run the first time，download the dependency to cache and generate the checksum
+		_, err := kpmcli.Run(
+			WithRunSource(
+				&downloader.Source{
+					Local: &downloader.Local{
+						Path: kfilePath,
+					},
+				},
+			),
+		)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Run the second time, this time must be finished in 1 second
+		startTime := time.Now()
+		_, err = kpmcli.Run(
+			WithRunSource(
+				&downloader.Source{
+					Local: &downloader.Local{
+						Path: kfilePath,
+					},
+				},
+			),
+		)
+		duration := time.Since(startTime)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.LessOrEqual(t, duration.Seconds(), 0.7, "The second run should finish in 1 second")
+	}
+
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "test_run_with_exist_checksum", TestFunc: test_run_with_exist_checksum}})
 }
