@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/BurntSushi/toml v1.4.0
-	github.com/containers/image/v5 v5.34.0
+	github.com/containers/image/v5 v5.34.1
 	github.com/distribution/reference v0.6.0
 	github.com/dominikbraun/graph v0.23.0
 	github.com/elliotchance/orderedmap/v2 v2.7.0
