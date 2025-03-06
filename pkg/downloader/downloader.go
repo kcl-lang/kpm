@@ -382,14 +382,16 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 	if ociSource == nil {
 		return errors.New("oci source is nil")
 	}
-
 	if len(ociSource.Digest) == 0 && len(ociSource.Tag) == 0 {
-		return errors.New("both OCI digest and tag are missing; cannot proceed with download")
+		latestDigest, err := d.LatestVersion(opts)
+		if err != nil {
+			return fmt.Errorf("both OCI digest and tag are missing, and failed to retrieve latest digest: %w", err)
+		}
+		ociSource.Digest = latestDigest
+		reporter.ReportMsgTo(fmt.Sprintf("using latest digest '%s' for download", latestDigest), opts.LogWriter)
 	}
-
 	localPath := opts.LocalPath
 	repoPath := utils.JoinPath(ociSource.Reg, ociSource.Repo)
-
 	var cred *remoteauth.Credential
 	var err error
 	if opts.credsClient != nil {
@@ -400,7 +402,6 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 	} else {
 		cred = &remoteauth.Credential{}
 	}
-
 	ociCli, err := oci.NewOciClientWithOpts(
 		oci.WithCredential(cred),
 		oci.WithRepoPath(repoPath),
@@ -410,7 +411,6 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 	if err != nil {
 		return fmt.Errorf("failed to create OCI client: %w", err)
 	}
-
 	ociCli.PullOciOptions.Platform = d.Platform
 	var ref string
 	if len(ociSource.Digest) > 0 {
@@ -427,31 +427,22 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 		}
 		ref = fmt.Sprintf("%s:%s", repoPath, ociSource.Tag)
 	}
-
 	reporter.ReportMsgTo(fmt.Sprintf("downloading from '%s'", ref), opts.LogWriter)
-
 	if err := ociCli.Pull(localPath, ref); err != nil {
 		return fmt.Errorf("failed to pull OCI package from '%s': %w", ref, err)
 	}
-
 	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && ok {
 		if opts.EnableCache {
 			cacheFullPath := opts.CachePath
 			localFullPath := opts.LocalPath
-
 			if utils.DirExists(localFullPath) && utils.DirExists(filepath.Join(localFullPath, constants.KCL_MOD)) {
 				return nil
 			}
 
 			cacheTarPath, err := utils.FindPkgArchive(cacheFullPath)
 			if err != nil && errors.Is(err, utils.PkgArchiveNotFound) {
-				reporter.ReportMsgTo(fmt.Sprintf(
-					"downloading '%s:%s' from '%s/%s:%s'",
-					ociSource.Repo, ociSource.Tag, ociSource.Reg, ociSource.Repo, ociSource.Tag),
-					opts.LogWriter,
-				)
 
-				err = ociCli.Pull(cacheFullPath, ociSource.Tag)
+				err = ociCli.Pull(cacheFullPath, ref)
 				if err != nil {
 					return fmt.Errorf("failed to pull OCI package for caching: %w", err)
 				}
@@ -462,7 +453,6 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 			} else if err != nil {
 				return fmt.Errorf("error finding package archive: %w", err)
 			}
-
 			if utils.IsTar(cacheTarPath) {
 				err = utils.UnTarDir(cacheTarPath, localFullPath)
 			} else {
@@ -479,7 +469,7 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 			opts.LogWriter,
 		)
 
-		err = ociCli.Pull(localPath, ociSource.Tag)
+		err = ociCli.Pull(localPath, ref)
 		if err != nil {
 			return fmt.Errorf("failed to pull OCI package: %w", err)
 		}
@@ -497,7 +487,6 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 			return fmt.Errorf("failed to untar the kcl package tar from '%s' into '%s'", tarPath, localPath)
 		}
 
-		// After untar the downloaded kcl package tar file, remove the tar file.
 		if utils.DirExists(tarPath) {
 			if rmErr := os.Remove(tarPath); rmErr != nil {
 				return fmt.Errorf("failed to remove the downloaded kcl package tar file '%s'", tarPath)
@@ -508,7 +497,6 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 	if opts.Offline && !utils.DirExists(filepath.Join(opts.LocalPath, constants.KCL_MOD)) {
 		return ErrNotFoundAndOffline
 	}
-
 	return nil
 }
 
