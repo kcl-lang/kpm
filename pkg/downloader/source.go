@@ -49,9 +49,10 @@ type Local struct {
 }
 
 type Oci struct {
-	Reg  string `toml:"reg,omitempty"`
-	Repo string `toml:"repo,omitempty"`
-	Tag  string `toml:"oci_tag,omitempty"`
+	Reg    string `toml:"reg,omitempty"`
+	Repo   string `toml:"repo,omitempty"`
+	Tag    string `toml:"oci_tag,omitempty"`
+	Digest string `toml:"oci_digest,omitempty"`
 }
 
 // If the OCI source has no reference, return true.
