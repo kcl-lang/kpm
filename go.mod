@@ -9,7 +9,7 @@ require (
 	github.com/dominikbraun/graph v0.23.0
 	github.com/elliotchance/orderedmap/v2 v2.7.0
 	github.com/google/uuid v1.6.0
-	github.com/opencontainers/image-spec v1.1.0
+	github.com/opencontainers/image-spec v1.1.1
 	github.com/otiai10/copy v1.14.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli/v2 v2.27.5
