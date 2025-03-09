@@ -440,7 +440,19 @@ func (kclPkg *KclPkg) LockDepsVersion() error {
 		return err
 	}
 
-	return utils.StoreToFile(fullPath, lockToml)
+    // Read the existing kcl.mod.lock file content
+    existingLockToml, err := os.ReadFile(fullPath)
+    if err != nil && !os.IsNotExist(err) {
+        return err
+    }
+
+    // Compare the existing content with the new content
+    if string(existingLockToml) == string(lockToml) {
+        return nil
+    }
+
+    // Update the kcl.mod.lock file if there are changes
+    return utils.StoreToFile(fullPath, lockToml)
 }
 
 // CreateDefaultMain will create a default main.k file in the current kcl package.

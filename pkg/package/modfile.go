@@ -393,7 +393,19 @@ func LoadLockDeps(homePath string) (*Dependencies, error) {
 // Write the contents of 'ModFile' to 'kcl.mod' file
 func (mfile *ModFile) StoreModFile() error {
 	fullPath := filepath.Join(mfile.HomePath, MOD_FILE)
-	return utils.StoreToFile(fullPath, mfile.MarshalTOML())
+
+	//Read the existing content of the file
+	existingModContent, err := os.ReadFile(fullPath)
+    if err != nil && !os.IsNotExist(err) {
+        return err
+    }
+	newModContent := mfile.MarshalTOML()
+
+    // Compare the existing content with the new content.
+    if string(existingModContent) == string(newModContent) {
+        return nil
+    }
+	return utils.StoreToFile(fullPath, newModContent)
 }
 
 // Returns the path to the kcl.mod file
