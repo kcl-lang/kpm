@@ -427,7 +427,11 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 		}
 		ref = fmt.Sprintf("%s:%s", repoPath, ociSource.Tag)
 	}
-	reporter.ReportMsgTo(fmt.Sprintf("downloading from '%s'", ref), opts.LogWriter)
+	reporter.ReportMsgTo(fmt.Sprintf(
+		"downloading '%s:%s' from '%s/%s:%s'",
+		ociSource.Repo, ociSource.Tag, ociSource.Reg, ociSource.Repo, ociSource.Tag),
+		opts.LogWriter,
+	)
 	if err := ociCli.Pull(localPath, ref); err != nil {
 		return fmt.Errorf("failed to pull OCI package from '%s': %w", ref, err)
 	}
@@ -463,11 +467,6 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 			}
 		}
 	} else if !opts.Offline {
-		reporter.ReportMsgTo(fmt.Sprintf(
-			"downloading '%s:%s' from '%s/%s:%s'",
-			ociSource.Repo, ociSource.Tag, ociSource.Reg, ociSource.Repo, ociSource.Tag),
-			opts.LogWriter,
-		)
 
 		err = ociCli.Pull(localPath, ref)
 		if err != nil {
