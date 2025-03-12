@@ -1,7 +1,6 @@
 module kcl-lang.io/kpm
 
 go 1.23
-
 require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/containers/image/v5 v5.34.0
@@ -13,7 +12,7 @@ require (
 	github.com/otiai10/copy v1.14.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli/v2 v2.27.6
-	golang.org/x/mod v0.23.0
+	golang.org/x/mod v0.24.0
 	gotest.tools/v3 v3.5.2
 	kcl-lang.io/kcl-go v0.11.1
 )
