@@ -263,3 +263,44 @@ func TestGenSource(t *testing.T) {
 	assert.Equal(t, src.Oci.Repo, "kcl-lang/k8s")
 	assert.Equal(t, src.Oci.Tag, "1.24")
 }
+
+func TestStoreModFile_NoChange(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	modFile := &ModFile{
+		HomePath: tmpDir,
+		Pkg: Package{
+			Name:    "test_package",
+			Version: "0.0.1",
+			Edition: runner.GetKclVersion(),
+		},
+	}
+
+	// First save: kcl.mod should be created.
+	err := modFile.StoreModFile()
+	assert.NoError(t, err)
+
+	// Get modification time after first save.
+	modPath := modFile.GetModFilePath()
+	info1, err := os.Stat(modPath)
+	assert.NoError(t, err)
+	mtime1 := info1.ModTime()
+
+	// Second save: content is the same, no change expected.
+	err = modFile.StoreModFile()
+	assert.NoError(t, err)
+
+	// Get modification time again.
+	info2, err := os.Stat(modPath)
+	assert.NoError(t, err)
+	mtime2 := info2.ModTime()
+
+	// Check that the modification time is unchanged.
+	assert.Equal(t, mtime1, mtime2, "kcl.mod should not be modified when content is the same")
+
+	// Verify that kcl.mod.lock does not exist.
+	lockPath := modFile.GetModLockFilePath()
+	exists, err := utils.Exists(lockPath)
+	assert.NoError(t, err)
+	assert.False(t, exists, "kcl.mod.lock should not be created when there are no dependencies")
+}

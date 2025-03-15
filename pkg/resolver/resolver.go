@@ -151,7 +151,7 @@ func (dr *DepsResolver) Resolve(options ...ResolveOption) error {
 				ModSpec: dep.Source.ModSpec,
 			}
 		} else {
-				depSource = &dep.Source
+			depSource = &dep.Source
 		}
 
 		depVisitor, err := visitorSelectorFunc(depSource)

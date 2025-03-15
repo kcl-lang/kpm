@@ -396,15 +396,15 @@ func (mfile *ModFile) StoreModFile() error {
 
 	//Read the existing content of the file
 	existingModContent, err := os.ReadFile(fullPath)
-    if err != nil && !os.IsNotExist(err) {
-        return err
-    }
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
 	newModContent := mfile.MarshalTOML()
 
-    // Compare the existing content with the new content.
-    if string(existingModContent) == string(newModContent) {
-        return nil
-    }
+	// Compare the existing content with the new content.
+	if string(existingModContent) == string(newModContent) {
+		return nil
+	}
 	return utils.StoreToFile(fullPath, newModContent)
 }
 

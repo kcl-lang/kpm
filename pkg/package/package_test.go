@@ -156,7 +156,7 @@ func TestLoadPkgFromLock(t *testing.T) {
 	assert.Equal(t, kpkg.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Source.Oci.Tag, "0.1.2")
 }
 
-func TestLoadKclPkgWithoutSettings(t *testing.T){
+func TestLoadKclPkgWithoutSettings(t *testing.T) {
 	modPath := getTestDir("load_without_settings")
 	kMod, err := LoadKclPkgWithOpts(
 		WithPath(modPath),
@@ -168,4 +168,53 @@ func TestLoadKclPkgWithoutSettings(t *testing.T){
 	assert.Equal(t, kMod.ModFile.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Source.Oci.Reg, "ghcr.io")
 	assert.Equal(t, kMod.ModFile.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Source.Oci.Repo, "kcl-lang/helloworld")
 	assert.Equal(t, kMod.ModFile.Dependencies.Deps.GetOrDefault("helloworld", TestPkgDependency).Source.Oci.Tag, "0.1.4")
+}
+
+func TestLockDepsVersionNoChange(t *testing.T) {
+	testDir := initTestDir("test_lock_deps_no_change")
+	defer os.RemoveAll(testDir)
+
+	// Initialize a new KclPkg
+	kclPkg := NewKclPkg(&opt.InitOptions{
+		Name:     "test_pkg",
+		InitPath: testDir,
+	})
+
+	// Add a dependency to Dependencies
+	dep := Dependency{
+		Name:     "test_dep",
+		FullName: "test_dep_0.1.0",
+		Version:  "0.1.0",
+		Sum:      "dummy_sum",
+	}
+	kclPkg.Dependencies.Deps.Set(dep.Name, dep)
+
+	// Generate initial lock content
+	initialLockContent, err := kclPkg.Dependencies.MarshalLockTOML()
+	assert.NoError(t, err)
+
+	// Write initial kcl.mod.lock
+	lockPath := filepath.Join(testDir, "kcl.mod.lock")
+	err = os.WriteFile(lockPath, []byte(initialLockContent), 0644)
+	assert.NoError(t, err)
+
+	// Get initial modification time
+	initialStat, err := os.Stat(lockPath)
+	assert.NoError(t, err)
+	initialModTime := initialStat.ModTime()
+
+	// Call LockDepsVersion
+	err = kclPkg.LockDepsVersion()
+	assert.NoError(t, err)
+
+	// Get updated modification time and content
+	updatedStat, err := os.Stat(lockPath)
+	assert.NoError(t, err)
+	updatedModTime := updatedStat.ModTime()
+	updatedLockContent, err := os.ReadFile(lockPath)
+	assert.NoError(t, err)
+
+	// Check mod time and content remain unchanged
+	assert.Equal(t, initialModTime, updatedModTime, "kcl.mod.lock should not be modified")
+	assert.Equal(t, string(initialLockContent), string(updatedLockContent), "kcl.mod.lock content should remain the same")
 }
