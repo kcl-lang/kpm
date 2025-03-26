@@ -12,6 +12,7 @@ import (
 const PKG_PATH = "KCL_PKG_PATH"
 const DEFAULT_PKG_PATH_IN_UER_HOME = ".kcl"
 const KPM_SUB_DIR = "kpm"
+const KPM_NO_SUM = "KPM_NO_SUM"
 
 // GetEnvPkgPath will return the env $KCL_PKG_PATH.
 func GetEnvPkgPath() string {
@@ -41,4 +42,9 @@ func GetAbsPkgPath() (string, error) {
 	}
 
 	return kpmHome, nil
+}
+
+// GetKpmNoSum will return the env $KPM_NO_SUM.
+func GetKpmNoSum() string {
+	return os.Getenv(KPM_NO_SUM)
 }
