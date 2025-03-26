@@ -440,6 +440,21 @@ func (kclPkg *KclPkg) LockDepsVersion() error {
 		return err
 	}
 
+	// Read the existing kcl.mod.lock file content
+	existingLockToml, err := os.ReadFile(fullPath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		} else {
+			return utils.StoreToFile(fullPath, lockToml)
+		}
+	}
+	// Compare the existing content with the new content
+	if string(existingLockToml) == string(lockToml) {
+		return nil
+	}
+
+	// Update the kcl.mod.lock file if there are changes
 	return utils.StoreToFile(fullPath, lockToml)
 }
 
