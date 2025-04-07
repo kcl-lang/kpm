@@ -1,6 +1,7 @@
 module kcl-lang.io/kpm
 
 go 1.23
+toolchain go1.24.1
 
 require (
 	github.com/BurntSushi/toml v1.5.0
@@ -13,7 +14,7 @@ require (
 	github.com/otiai10/copy v1.14.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/urfave/cli/v2 v2.27.6
-	golang.org/x/mod v0.23.0
+	golang.org/x/mod v0.24.0
 	gotest.tools/v3 v3.5.2
 	kcl-lang.io/kcl-go v0.11.1
 )
@@ -70,8 +71,8 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/google/pprof v0.0.0-20241210010833-40e02aabc2ad // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
+	github.com/google/pprof v0.0.0-20250403155104-27863c87afa6 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.2 // indirect
@@ -124,15 +125,16 @@ require (
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
-	golang.org/x/crypto v0.32.0 // indirect
+	go.uber.org/automaxprocs v1.6.0 // indirect
+	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67 // indirect
-	golang.org/x/net v0.34.0 // indirect
+	golang.org/x/net v0.37.0 // indirect
 	golang.org/x/oauth2 v0.25.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
-	golang.org/x/sys v0.29.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/sync v0.12.0 // indirect
+	golang.org/x/sys v0.32.0 // indirect
+	golang.org/x/text v0.23.0 // indirect
 	golang.org/x/time v0.6.0 // indirect
-	golang.org/x/tools v0.29.0 // indirect
+	golang.org/x/tools v0.31.0 // indirect
 	google.golang.org/api v0.169.0 // indirect
 	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241202173237-19429a94021a // indirect
@@ -157,8 +159,8 @@ require (
 	github.com/jinzhu/copier v0.4.0
 	github.com/kubescape/go-git-url v0.0.30
 	github.com/moby/term v0.5.2
-	github.com/onsi/ginkgo/v2 v2.22.2
-	github.com/onsi/gomega v1.36.2
+	github.com/onsi/ginkgo/v2 v2.23.4
+	github.com/onsi/gomega v1.36.3
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/stretchr/testify v1.10.0
 	github.com/thoas/go-funk v0.9.3
