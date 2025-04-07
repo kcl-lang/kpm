@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/BurntSushi/toml v1.5.0
-	github.com/containers/image/v5 v5.34.0
+	github.com/containers/image/v5 v5.34.3
 	github.com/distribution/reference v0.6.0
 	github.com/dominikbraun/graph v0.23.0
 	github.com/elliotchance/orderedmap/v2 v2.7.0
@@ -44,7 +44,7 @@ require (
 	github.com/containerd/platforms v0.2.1 // indirect
 	github.com/containers/libtrust v0.0.0-20230121012942-c1716e8a8d01 // indirect
 	github.com/containers/ocicrypt v1.2.1 // indirect
-	github.com/containers/storage v1.57.1 // indirect
+	github.com/containers/storage v1.57.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.3.6 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/docker/cli v27.5.1+incompatible // indirect
