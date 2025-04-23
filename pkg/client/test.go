@@ -3,7 +3,10 @@ package client
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
+
+	"kcl-lang.io/kpm/pkg/mock"
 )
 
 const testDataDir = "test_data"
@@ -62,4 +65,27 @@ func RunTestWithGlobalLockAndKpmCli(t *testing.T, testSuites []TestSuite) {
 			testSuite.TestFunc(t, kpmcli)
 		})
 	}
+}
+
+func WithMockRegistry(t *testing.T, kpmcli *KpmClient, testBody func()) {
+	if isWindows() {
+		t.Skip("Skipping test on Windows")
+	}
+
+	if err := mock.StartDockerRegistry(); err != nil {
+		t.Fatalf("Failed to start mock registry: %v", err)
+	}
+	defer func() {
+		if err := mock.CleanTestEnv(); err != nil {
+			t.Errorf("Failed to clean up test environment: %v", err)
+		}
+	}()
+	kpmcli.SetInsecureSkipTLSverify(true)
+	if err := kpmcli.LoginOci("localhost:5001", "test", "1234"); err != nil {
+		t.Fatalf("Failed to login to mock registry: %v", err)
+	}
+	testBody()
+}
+func isWindows() bool {
+	return runtime.GOOS == "windows"
 }
