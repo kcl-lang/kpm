@@ -14,52 +14,40 @@ import (
 	"kcl-lang.io/kpm/pkg/downloader"
 )
 
-func testPull(t *testing.T) {
-	pulledPath := getTestDir("test_pull")
-	defer func() {
-		err := os.RemoveAll(filepath.Join(pulledPath, "oci"))
-		assert.NilError(t, err)
-	}()
-
-	kpmcli, err := NewKpmClient()
-	assert.NilError(t, err)
-
-	var buf bytes.Buffer
-	kpmcli.SetLogWriter(&buf)
-
-	kPkg, err := kpmcli.Pull(
-		WithLocalPath(pulledPath),
-		WithPullSource(&downloader.Source{
-			Oci: &downloader.Oci{
-				Reg:  "ghcr.io",
-				Repo: "kcl-lang/helloworld",
-				Tag:  "0.0.1",
-			},
-		}),
-	)
-
-	pkgPath := filepath.Join(pulledPath, "oci", "ghcr.io", "kcl-lang", "helloworld", "0.0.1")
-	assert.NilError(t, err)
-	assert.Equal(t, kPkg.GetPkgName(), "helloworld")
-	assert.Equal(t, kPkg.GetPkgVersion(), "0.0.1")
-	assert.Equal(t, kPkg.HomePath, pkgPath)
-	err = os.RemoveAll(filepath.Join(pulledPath, "oci"))
-	assert.NilError(t, err)
-
-	kPkg, err = kpmcli.Pull(
-		WithLocalPath(pulledPath),
-		WithPullSourceUrl("oci://ghcr.io/kcl-lang/helloworld?tag=0.1.0"),
-	)
-	pkgPath = filepath.Join(pulledPath, "oci", "ghcr.io", "kcl-lang", "helloworld", "0.1.0")
-	assert.NilError(t, err)
-	assert.Equal(t, kPkg.GetPkgName(), "helloworld")
-	assert.Equal(t, kPkg.GetPkgVersion(), "0.1.0")
-	assert.Equal(t, kPkg.HomePath, pkgPath)
-
-	defer func() {
-		err = os.RemoveAll(filepath.Join(pulledPath, "oci"))
-		assert.NilError(t, err)
-	}()
+func TestPull(t *testing.T) {
+	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{
+		Name: "TestPull",
+		TestFunc: func(t *testing.T, kpmcli *KpmClient) {
+			pulledPath := getTestDir("test_pull")
+			t.Cleanup(func() {
+				_ = os.RemoveAll(filepath.Join(pulledPath, "oci"))
+			})
+			var buf bytes.Buffer
+			kpmcli.SetLogWriter(&buf)
+			WithMockRegistry(t, kpmcli, func() {
+				sourcePath := filepath.Join(pulledPath, "src")
+				err := kpmcli.Init(WithInitModPath(sourcePath))
+				assert.NilError(t, err)
+				err = kpmcli.Push(WithPushModPath(sourcePath), WithPushSource(downloader.Source{
+					Oci: &downloader.Oci{
+						Reg:  "localhost:5001",
+						Repo: "testpkg/hello",
+						Tag:  "0.0.1",
+					},
+				}))
+				assert.NilError(t, err)
+				kPkg, err := kpmcli.Pull(
+					WithLocalPath(pulledPath),
+					WithPullSourceUrl("oci://localhost:5001/testpkg/hello?tag=0.0.1"),
+				)
+				assert.NilError(t, err)
+				assert.Equal(t, kPkg.GetPkgName(), "hello")
+				assert.Equal(t, kPkg.GetPkgVersion(), "0.0.1")
+				pkgPath := filepath.Join(pulledPath, "oci", "localhost:5001", "testpkg", "hello", "0.0.1")
+				assert.Equal(t, kPkg.HomePath, pkgPath)
+			})
+		},
+	}})
 }
 
 func testPullWithInsecureSkipTLSverify(t *testing.T) {

@@ -57,7 +57,7 @@ func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestDownloadGitWithPackage", testDownloadGitWithPackage)
 	test.RunTestWithGlobalLock(t, "TestModandLockFilesWithGitPackageDownload", testModandLockFilesWithGitPackageDownload)
 	test.RunTestWithGlobalLock(t, "TestDependencyGraph", testDependencyGraph)
-	test.RunTestWithGlobalLock(t, "TestPull", testPull)
+	test.RunTestWithGlobalLock(t, "TestPull", TestPull)
 	test.RunTestWithGlobalLock(t, "TestPullWithInsecureSkipTLSverify", testPullWithInsecureSkipTLSverify)
 	test.RunTestWithGlobalLock(t, "TestPullWithModSpec", testPullWithModSpec)
 	test.RunTestWithGlobalLock(t, "testPullWithOnlySpec", testPullWithOnlySpec)

@@ -51,7 +51,6 @@ func TestPush(t *testing.T) {
 			testMod, err := pkg.LoadKclPkgWithOpts(
 				pkg.WithPath(testPushModPath),
 			)
-
 			err = kpmcli.Add(
 				WithAddKclPkg(testMod),
 				WithAddSourceUrl("oci://localhost:5001/test/push_0"),
