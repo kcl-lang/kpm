@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/features"
-	"kcl-lang.io/kpm/pkg/mock"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/utils"
@@ -436,122 +435,96 @@ func TestKpmIssue226(t *testing.T) {
 
 func TestKclIssue1768(t *testing.T) {
 	testPath := "github.com/kcl-lang/kcl/issues/1768"
+
 	test_push_with_tag := func(t *testing.T, kpmcli *KpmClient) {
-		if runtime.GOOS == "windows" {
-			t.Skip("Skipping test on Windows")
-		}
-		err := mock.StartDockerRegistry()
-		if err != nil {
-			t.Errorf("Error starting docker registry: %v", err)
-		}
+		WithMockRegistry(t, kpmcli, func() {
+			rootPath := getTestDir("issues")
+			pushedModPath := filepath.Join(rootPath, testPath, "pushed_mod")
 
-		defer func() {
-			err = mock.CleanTestEnv()
-			if err != nil {
-				t.Errorf("Error stopping docker registry: %v", err)
+			modPath := filepath.Join(rootPath, testPath, "depends_on_pushed_mod")
+			modFileBk := filepath.Join(modPath, "kcl.mod.bk")
+			lockFileBk := filepath.Join(modPath, "kcl.mod.lock.bk")
+			modFile := filepath.Join(modPath, "kcl.mod")
+			lockFile := filepath.Join(modPath, "kcl.mod.lock")
+			modFileExpect := filepath.Join(modPath, "kcl.mod.expect")
+			lockFileExpect := filepath.Join(modPath, "kcl.mod.lock.expect")
+
+			defer func() {
+				_ = os.RemoveAll(modFile)
+				_ = os.RemoveAll(lockFile)
+			}()
+
+			if err := copy.Copy(modFileBk, modFile); err != nil {
+				t.Fatalf("Failed to copy mod file: %v", err)
 			}
-		}()
+			if err := copy.Copy(lockFileBk, lockFile); err != nil {
+				t.Fatalf("Failed to copy lock file: %v", err)
+			}
 
-		kpmcli.SetInsecureSkipTLSverify(true)
-		err = kpmcli.LoginOci("localhost:5001", "test", "1234")
-		if err != nil {
-			t.Errorf("Error logging in to docker registry: %v", err)
-		}
+			var buf bytes.Buffer
+			kpmcli.SetLogWriter(&buf)
 
-		rootPath := getTestDir("issues")
-		pushedModPath := filepath.Join(rootPath, testPath, "pushed_mod")
-
-		modPath := filepath.Join(rootPath, testPath, "depends_on_pushed_mod")
-		modFileBk := filepath.Join(modPath, "kcl.mod.bk")
-		LockFileBk := filepath.Join(modPath, "kcl.mod.lock.bk")
-		modFile := filepath.Join(modPath, "kcl.mod")
-		LockFile := filepath.Join(modPath, "kcl.mod.lock")
-		modFileExpect := filepath.Join(modPath, "kcl.mod.expect")
-		LockFileExpect := filepath.Join(modPath, "kcl.mod.lock.expect")
-
-		defer func() {
-			_ = os.RemoveAll(modFile)
-			_ = os.RemoveAll(LockFile)
-		}()
-
-		err = copy.Copy(modFileBk, modFile)
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = copy.Copy(LockFileBk, LockFile)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		var buf bytes.Buffer
-		kpmcli.SetLogWriter(&buf)
-
-		err = kpmcli.Push(
-			WithPushModPath(pushedModPath),
-			WithPushSource(downloader.Source{
-				Oci: &downloader.Oci{
-					Reg:  "localhost:5001",
-					Repo: "test/oci_pushed_mod",
-					Tag:  "v9.9.9",
-				},
-			}),
-		)
-
-		if err != (*reporter.KpmEvent)(nil) {
-			t.Errorf("Error pushing kcl package: %v", err)
-		}
-
-		assert.Contains(t, buf.String(), "package 'pushed_mod' will be pushed")
-		assert.Contains(t, buf.String(), "pushed [registry] localhost:5001/test/oci_pushed_mod")
-		assert.Contains(t, buf.String(), "digest: sha256:")
-
-		kmod, err := pkg.LoadKclPkgWithOpts(
-			pkg.WithPath(modPath),
-		)
-
-		err = kpmcli.Add(
-			WithAddKclPkg(kmod),
-			WithAddSource(
-				&downloader.Source{
+			err := kpmcli.Push(
+				WithPushModPath(pushedModPath),
+				WithPushSource(downloader.Source{
 					Oci: &downloader.Oci{
 						Reg:  "localhost:5001",
 						Repo: "test/oci_pushed_mod",
 						Tag:  "v9.9.9",
-					}},
-			),
-			WithAddModSpec(
-				&downloader.ModSpec{
+					},
+				}),
+			)
+			if err != (*reporter.KpmEvent)(nil) {
+				t.Errorf("Error pushing KCL package: %v", err)
+			}
+
+			assert.Contains(t, buf.String(), "package 'pushed_mod' will be pushed")
+			assert.Contains(t, buf.String(), "pushed [registry] localhost:5001/test/oci_pushed_mod")
+			assert.Contains(t, buf.String(), "digest: sha256:")
+
+			kmod, err := pkg.LoadKclPkgWithOpts(pkg.WithPath(modPath))
+			if err != nil {
+				t.Fatalf("Failed to load dependent module: %v", err)
+			}
+
+			err = kpmcli.Add(
+				WithAddKclPkg(kmod),
+				WithAddSource(&downloader.Source{
+					Oci: &downloader.Oci{
+						Reg:  "localhost:5001",
+						Repo: "test/oci_pushed_mod",
+						Tag:  "v9.9.9",
+					},
+				}),
+				WithAddModSpec(&downloader.ModSpec{
 					Name:    "pushed_mod",
 					Version: "0.0.1",
-				},
-			),
-		)
+				}),
+			)
+			if err != nil {
+				t.Errorf("Error adding dependency: %v", err)
+			}
 
-		if err != nil {
-			t.Errorf("Error adding dependency: %v", err)
-		}
+			modFileContent, err := os.ReadFile(modFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			lockFileContent, err := os.ReadFile(lockFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			modFileExpectContent, err := os.ReadFile(modFileExpect)
+			if err != nil {
+				t.Fatal(err)
+			}
+			lockFileExpectContent, err := os.ReadFile(lockFileExpect)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		modFileContent, err := os.ReadFile(modFile)
-		if err != nil {
-			t.Fatal(err)
-		}
-		lockFileContent, err := os.ReadFile(LockFile)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		modFileExpectContent, err := os.ReadFile(modFileExpect)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		lockFileExpectContent, err := os.ReadFile(LockFileExpect)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		assert.Equal(t, utils.RmNewline(string(modFileContent)), utils.RmNewline(string(modFileExpectContent)))
-		assert.Equal(t, utils.RmNewline(string(lockFileContent)), utils.RmNewline(string(lockFileExpectContent)))
+			assert.Equal(t, utils.RmNewline(string(modFileContent)), utils.RmNewline(string(modFileExpectContent)))
+			assert.Equal(t, utils.RmNewline(string(lockFileContent)), utils.RmNewline(string(lockFileExpectContent)))
+		})
 	}
 	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "test_push_with_tag", TestFunc: test_push_with_tag}})
 }
