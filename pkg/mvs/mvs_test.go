@@ -10,6 +10,8 @@ import (
 	"golang.org/x/mod/module"
 	"kcl-lang.io/kpm/pkg/3rdparty/mvs"
 	"kcl-lang.io/kpm/pkg/client"
+	"kcl-lang.io/kpm/pkg/oci"
+	"kcl-lang.io/kpm/pkg/settings"
 	"kcl-lang.io/kpm/pkg/test"
 	"kcl-lang.io/kpm/pkg/utils"
 )
@@ -118,7 +120,12 @@ func testUpgradeToLatest(t *testing.T) {
 
 	upgrade, err := reqs.Upgrade(module.Version{Path: "k8s", Version: "1.27"})
 	assert.Equal(t, err, nil)
-	assert.Equal(t, upgrade, module.Version{Path: "k8s", Version: "1.31.2"})
+
+	ociClient, err := oci.NewOciClient("ghcr.io", "kcl-lang/k8s", settings.GetSettings())
+	assert.Equal(t, err, nil)
+	tagSelected, err := ociClient.TheLatestTag()
+	assert.Equal(t, err, nil)
+	assert.Equal(t, upgrade, module.Version{Path: "k8s", Version: tagSelected})
 }
 
 func testUpgradeAllToLatest(t *testing.T) {
@@ -143,15 +150,20 @@ func testUpgradeAllToLatest(t *testing.T) {
 	upgrade, err := mvs.UpgradeAll(target, reqs)
 	assert.Equal(t, err, nil)
 
+	ociClient, err := oci.NewOciClient("ghcr.io", "kcl-lang/k8s", settings.GetSettings())
+	assert.Equal(t, err, nil)
+	tagSelected, err := ociClient.TheLatestTag()
+	assert.Equal(t, err, nil)
+
 	expectedReqs := []module.Version{
 		{Path: "test_with_external_deps", Version: "0.0.1"},
 		{Path: "argo-cd-order", Version: "0.2.0"},
 		{Path: "helloworld", Version: "0.1.4"},
 		{Path: "json_merge_patch", Version: "0.1.1"},
-		{Path: "k8s", Version: "1.31.2"},
+		{Path: "k8s", Version: tagSelected},
 		{Path: "podinfo", Version: "0.2.1"},
 	}
-	assert.Equal(t, upgrade, expectedReqs)
+	assert.Equal(t, expectedReqs, upgrade)
 }
 
 func testPrevious(t *testing.T) {

@@ -19,3 +19,11 @@
     reg = "ghcr.io"
     repo = "kcl-lang/fluxcd-source-controller"
     oci_tag = "v1.3.2"
+  [dependencies.k8s]
+    name = "k8s"
+    full_name = "k8s_1.31.2"
+    version = "1.31.2"
+    sum = "xBZgPsnpVVyWBpahuPQHReeRx28eUHGFoaPeqbct+vs="
+    reg = "ghcr.io"
+    repo = "kcl-lang/k8s"
+    oci_tag = "1.31.2"
