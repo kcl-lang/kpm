@@ -86,7 +86,40 @@ func testGitDownloader(t *testing.T) {
 	assert.Equal(t, utils.DirExists(filepath.Join(path_git, "git", "src", gitHash, "kcl.mod")), true)
 }
 
+func testDepDownloader(t *testing.T) {
+	path_git := getTestDir("test_dep_downloader")
+	if err := os.MkdirAll(path_git, os.ModePerm); err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		_ = os.RemoveAll(path_git)
+	}()
+	dep := NewOciDownloader("linux/amd64")
+	err := dep.Download(&DownloadOptions{
+		LocalPath:   path_git,
+		CachePath:   path_git,
+		EnableCache: true,
+		Source: Source{
+			ModSpec: &ModSpec{
+				Name:    "k8s",
+				Version: "1.28.1",
+			},
+			Oci: &Oci{
+				Reg:  "ghcr.io",
+				Repo: "kcl-lang/k8s",
+			},
+		},
+	})
+	assert.Equal(t, err, nil)
+	existFile, err := utils.Exists(path_git + "/kcl.mod")
+	assert.Equal(t, err, nil)
+	assert.Equal(t, existFile, true)
+}
+
+// go test -timeout 30s -run ^TestWithGlobalLock$ kcl-lang.io/kpm/pkg/downloader -v
 func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestOciDownloader", testOciDownloader)
 	test.RunTestWithGlobalLock(t, "TestGitDownloader", testGitDownloader)
+	test.RunTestWithGlobalLock(t, "TestDepDownloader", testDepDownloader)
 }
