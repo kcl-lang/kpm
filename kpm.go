@@ -3,6 +3,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/urfave/cli/v2"
@@ -16,7 +17,7 @@ func main() {
 	reporter.InitReporter()
 	kpmcli, err := client.NewKpmClient()
 	if err != nil {
-		reporter.Fatal(err)
+		kpmcli.WriteLog(fmt.Sprintf("Error: %v", err))
 	}
 	app := cli.NewApp()
 	app.Name = "kpm"
