@@ -19,7 +19,6 @@ import (
 	"github.com/containers/image/v5/types"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/thoas/go-funk"
-	"oras.land/oras-go/pkg/auth"
 	dockerauth "oras.land/oras-go/pkg/auth/docker"
 	remoteauth "oras.land/oras-go/v2/registry/remote/auth"
 
@@ -42,56 +41,6 @@ const (
 	OciErrorCodeNameUnknown  = "NAME_UNKNOWN"
 	OciErrorCodeRepoNotFound = "NOT_FOUND"
 )
-
-// Login will login 'hostname' by 'username' and 'password'.
-func Login(hostname, username, password string, setting *settings.Settings) error {
-
-	authClient, err := dockerauth.NewClientWithDockerFallback(setting.CredentialsFile)
-
-	if err != nil {
-		return reporter.NewErrorEvent(
-			reporter.FailedLogin,
-			err,
-			fmt.Sprintf("failed to login '%s', please check registry, username and password is valid", hostname),
-		)
-	}
-
-	err = authClient.LoginWithOpts(
-		[]auth.LoginOption{
-			auth.WithLoginHostname(hostname),
-			auth.WithLoginUsername(username),
-			auth.WithLoginSecret(password),
-		}...,
-	)
-
-	if err != nil {
-		return reporter.NewErrorEvent(
-			reporter.FailedLogin,
-			err,
-			fmt.Sprintf("failed to login '%s', please check registry, username and password is valid", hostname),
-		)
-	}
-
-	return nil
-}
-
-// Logout will logout from registry.
-func Logout(hostname string, setting *settings.Settings) error {
-
-	authClient, err := dockerauth.NewClientWithDockerFallback(setting.CredentialsFile)
-
-	if err != nil {
-		return reporter.NewErrorEvent(reporter.FailedLogout, err, fmt.Sprintf("failed to logout '%s'", hostname))
-	}
-
-	err = authClient.Logout(context.Background(), hostname)
-
-	if err != nil {
-		return reporter.NewErrorEvent(reporter.FailedLogout, err, fmt.Sprintf("failed to logout '%s'", hostname))
-	}
-
-	return nil
-}
 
 // OciClient is mainly responsible for interacting with OCI registry
 type OciClient struct {
