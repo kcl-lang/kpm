@@ -24,31 +24,54 @@ func getTestDir(subDir string) string {
 }
 
 func testOciDownloader(t *testing.T) {
-	path_oci := getTestDir("test_oci")
-	if err := os.MkdirAll(path_oci, os.ModePerm); err != nil {
-		t.Fatal(err)
-	}
-
-	defer func() {
-		_ = os.RemoveAll(path_oci)
-	}()
-
-	ociDownloader := OciDownloader{
-		Platform: "linux/amd64",
-	}
-
-	err := ociDownloader.Download(NewDownloadOptions(
-		WithSource(Source{
-			Oci: &Oci{
-				Reg:  "ghcr.io",
-				Repo: "zong-zhe/helloworld",
-				Tag:  "0.0.3",
+	testCases := []struct {
+		name   string
+		source Source
+	}{
+		{
+			name: "Download using Digest",
+			source: Source{
+				Oci: &Oci{
+					Reg:    "ghcr.io",
+					Repo:   "kcl-lang/k8s",
+					Digest: "sha256:e1317f84cb0c6188054332983e09779e5d86fbadc8702d5b4b2959ef4753367b",
+				},
 			},
-		}),
-		WithLocalPath(path_oci),
-	))
+		},
+		{
+			name: "Download using Tag",
+			source: Source{
+				Oci: &Oci{
+					Reg:  "ghcr.io",
+					Repo: "zong-zhe/helloworld",
+					Tag:  "0.0.3",
+				},
+			},
+		},
+	}
 
-	assert.Equal(t, err, nil)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			path_oci := getTestDir("test_oci")
+			if err := os.MkdirAll(path_oci, os.ModePerm); err != nil {
+				t.Fatal(err)
+			}
+			defer func() {
+				_ = os.RemoveAll(path_oci)
+			}()
+
+			ociDownloader := OciDownloader{
+				Platform: "linux/amd64",
+			}
+
+			err := ociDownloader.Download(NewDownloadOptions(
+				WithSource(tc.source),
+				WithLocalPath(path_oci),
+			))
+
+			assert.Equal(t, err, nil)
+		})
+	}
 }
 
 func testGitDownloader(t *testing.T) {
