@@ -1,4 +1,4 @@
 [package]
 name = "add_with_default"
-edition = "v0.11.1"
+edition = "v0.11.2"
 version = "0.0.1"
