@@ -3,7 +3,7 @@
     name = "pushed_mod"
     full_name = "pushed_mod_0.0.1"
     version = "0.0.1"
-    sum = "xUrUcS6PfEjxLhtxI1ygD5yFv5rX6CiItwp8k7nX6OU="
+    sum = "y7WxQIobRlGWey0OKaSwkzBqKG8ivrTCS0xA9ZcyPOw="
     reg = "localhost:5001"
     repo = "test/oci_pushed_mod"
     oci_tag = "v9.9.9"
