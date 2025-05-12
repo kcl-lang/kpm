@@ -1,6 +1,6 @@
 module kcl-lang.io/kpm
 
-go 1.23
+go 1.23.0
 
 require (
 	github.com/BurntSushi/toml v1.5.0
@@ -129,7 +129,7 @@ require (
 	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/oauth2 v0.26.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
+	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.6.0 // indirect
@@ -165,5 +165,5 @@ require (
 	github.com/thoas/go-funk v0.9.3
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	oras.land/oras-go v1.2.6
-	oras.land/oras-go/v2 v2.5.0
+	oras.land/oras-go/v2 v2.6.0
 )
