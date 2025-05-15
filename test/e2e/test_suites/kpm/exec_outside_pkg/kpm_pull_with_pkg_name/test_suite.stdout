@@ -1,4 +1,4 @@
 start to pull 'k8s'
 the latest version '1.31.2' will be pulled
-pulling 'test/k8s:1.31.2' from 'localhost:5001/test/k8s'
-pulled 'k8s' in '<workspace>/localhost:5001/test/k8s/1.31.2' successfully
+pulling 'test/k8s:1.31.2' from 'localhost:5002/test/k8s'
+pulled 'k8s' in '<workspace>/localhost:5002/test/k8s/1.31.2' successfully

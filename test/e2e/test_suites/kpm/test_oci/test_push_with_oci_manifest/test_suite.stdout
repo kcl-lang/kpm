@@ -1,3 +1,3 @@
 package 'test_push_with_oci_manifest' will be pushed
-pushed [registry] localhost:5001/test/test_push_with_oci_manifest
+pushed [registry] localhost:5002/test/test_push_with_oci_manifest
 digest: sha256:

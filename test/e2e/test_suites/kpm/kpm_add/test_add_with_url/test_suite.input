@@ -1,1 +1,1 @@
-kpm add oci://localhost:5001/test/helloworld
+kpm add oci://localhost:5002/test/helloworld

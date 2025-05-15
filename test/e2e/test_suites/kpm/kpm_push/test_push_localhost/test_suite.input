@@ -1,1 +1,1 @@
-kpm push oci://localhost:5001/test/helloworld
+kpm push oci://localhost:5002/test/helloworld

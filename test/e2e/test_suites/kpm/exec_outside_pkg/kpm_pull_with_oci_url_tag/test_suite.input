@@ -1,1 +1,1 @@
-kpm pull --tag 1.14 oci://localhost:5001/test/k8s
+kpm pull --tag 1.14 oci://localhost:5002/test/k8s

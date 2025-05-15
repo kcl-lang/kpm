@@ -453,7 +453,7 @@ func TestKclIssue1768(t *testing.T) {
 		}()
 
 		kpmcli.SetInsecureSkipTLSverify(true)
-		err = kpmcli.LoginOci("localhost:5001", "test", "1234")
+		err = kpmcli.LoginOci("localhost:5002", "test", "1234")
 		if err != nil {
 			t.Errorf("Error logging in to docker registry: %v", err)
 		}
@@ -490,7 +490,7 @@ func TestKclIssue1768(t *testing.T) {
 			WithPushModPath(pushedModPath),
 			WithPushSource(downloader.Source{
 				Oci: &downloader.Oci{
-					Reg:  "localhost:5001",
+					Reg:  "localhost:5002",
 					Repo: "test/oci_pushed_mod",
 					Tag:  "v9.9.9",
 				},
@@ -502,7 +502,7 @@ func TestKclIssue1768(t *testing.T) {
 		}
 
 		assert.Contains(t, buf.String(), "package 'pushed_mod' will be pushed")
-		assert.Contains(t, buf.String(), "pushed [registry] localhost:5001/test/oci_pushed_mod")
+		assert.Contains(t, buf.String(), "pushed [registry] localhost:5002/test/oci_pushed_mod")
 		assert.Contains(t, buf.String(), "digest: sha256:")
 
 		kmod, err := pkg.LoadKclPkgWithOpts(
@@ -514,7 +514,7 @@ func TestKclIssue1768(t *testing.T) {
 			WithAddSource(
 				&downloader.Source{
 					Oci: &downloader.Oci{
-						Reg:  "localhost:5001",
+						Reg:  "localhost:5002",
 						Repo: "test/oci_pushed_mod",
 						Tag:  "v9.9.9",
 					}},
