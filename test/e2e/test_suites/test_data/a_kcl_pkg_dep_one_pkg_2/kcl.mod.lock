@@ -4,7 +4,7 @@
     full_name = "k8s_1.27"
     version = "1.27"
     sum = "xnYM1FWHAy3m+KcQMQb2rjZouTxumqYt6FGZpu2T4yM="
-    reg = "localhost:5001"
+    reg = "localhost:5002"
     repo = "test/k8s"
     oci_tag = "1.27"
   [dependencies.kcl1]
@@ -12,6 +12,6 @@
     full_name = "kcl1_0.0.1"
     version = "0.0.1"
     sum = "zLzaol7KpC57mKLQ/56ciIHO397Rk/Dum+meo+tUsw8="
-    reg = "localhost:5001"
+    reg = "localhost:5002"
     repo = "test/kcl1"
     oci_tag = "0.0.1"

@@ -190,7 +190,7 @@ func TestUnMarshalOciUrl(t *testing.T) {
 		DepSourceTag  string
 	}{
 		{"unmarshal_0", "oci_pkg_name", "oci_pkg_name_0.0.1", "0.0.1", "ghcr.io", "test/helloworld", "0.0.1"},
-		{"unmarshal_1", "oci_pkg_name", "oci_pkg_name_0.0.1", "0.0.1", "localhost:5001", "test/helloworld", "0.0.1"},
+		{"unmarshal_1", "oci_pkg_name", "oci_pkg_name_0.0.1", "0.0.1", "localhost:5002", "test/helloworld", "0.0.1"},
 	}
 
 	for _, tc := range testCases {

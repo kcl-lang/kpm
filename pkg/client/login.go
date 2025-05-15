@@ -14,12 +14,20 @@ func (c *KpmClient) LoginOci(hostname, username, password string) error {
 		return err
 	}
 
+	opts := []auth.LoginOption{
+		auth.WithLoginHostname(hostname),
+		auth.WithLoginUsername(username),
+		auth.WithLoginSecret(password),
+	}
+
+	defaultOciPlainHttp, forceOciPlainHttp := c.GetSettings().ForceOciPlainHttp()
+
+	if defaultOciPlainHttp || forceOciPlainHttp {
+		opts = append(opts, auth.WithLoginInsecure())
+	}
+
 	err = credCli.GetAuthClient().LoginWithOpts(
-		[]auth.LoginOption{
-			auth.WithLoginHostname(hostname),
-			auth.WithLoginUsername(username),
-			auth.WithLoginSecret(password),
-		}...,
+		opts...,
 	)
 
 	if err != nil {

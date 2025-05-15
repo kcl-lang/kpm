@@ -261,13 +261,13 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 
 				// 2. fetch the metadata in OCI manifest to check if the metadata is correct
-				repo, err := remote.NewRepository("localhost:5001/test/test_push_with_oci_manifest")
+				repo, err := remote.NewRepository("localhost:5002/test/test_push_with_oci_manifest")
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
 				repo.PlainHTTP = true
 				repo.Client = &auth.Client{
 					Client: retry.DefaultClient,
 					Cache:  auth.DefaultCache,
-					Credential: auth.StaticCredential("localhost:5001", auth.Credential{
+					Credential: auth.StaticCredential("localhost:5002", auth.Credential{
 						Username: "test",
 						Password: "1234",
 					}),
@@ -300,7 +300,7 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 				jsonstr, err := kpmcli.FetchOciManifestIntoJsonStr(opt.OciFetchOptions{
 					FetchBytesOptions: oras.DefaultFetchBytesOptions,
 					OciOptions: opt.OciOptions{
-						Reg:  "localhost:5001",
+						Reg:  "localhost:5002",
 						Repo: "test/kcl2",
 						Tag:  "0.0.1",
 					},

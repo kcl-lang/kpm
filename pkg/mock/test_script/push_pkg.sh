@@ -17,7 +17,7 @@ if ! echo "$version" | grep -q "kpm version test_version"; then
   exit 1
 fi
 
-export KPM_REG="localhost:5001"
+export KPM_REG="localhost:5002"
 export KPM_REPO="test"
 
 # Prepare the package on the registry
@@ -25,7 +25,7 @@ current_dir=$(pwd)
 echo $current_dir
 
 # Log in to the local registry
-"$current_dir/bin/kpm" login -u test -p 1234 localhost:5001
+"$current_dir/bin/kpm" login -u test -p 1234 localhost:5002
 
 # Push the test_data package to the registry
 cd "$SCRIPT_DIR/../test_data"

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-# start registry at 'localhost:5001'
+# start registry at 'localhost:5002'
 # include account 'test' and password '1234'
 ./scripts/reg.sh
 
 # set the kpm default registry and repository
-export KPM_REG="localhost:5001"
+export KPM_REG="localhost:5002"
 export KPM_REPO="test"
 
 set -o errexit

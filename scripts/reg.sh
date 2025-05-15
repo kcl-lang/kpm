@@ -13,15 +13,21 @@ if [ "$(docker ps -aq -f name=kcl-registry)" ]; then
     docker rm kcl-registry
 fi
 
+docker network rm kcl || true
+docker network create kcl --subnet=172.88.0.0/24
+
 # start the Docker Registry with authentication
-docker run -p 5001:5000 \
+docker run -p 5002:5002 \
 --restart=always \
 --name kcl-registry \
+--network kcl \
+--ip 172.88.0.8 \
 -v /var/lib/registry:/var/lib/registry \
 -v $PWD/scripts/registry_auth/:/auth/ \
 -e "REGISTRY_AUTH=htpasswd" \
 -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm" \
 -e "REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd" \
+-e "REGISTRY_HTTP_ADDR=:5002" \
 -d registry
 
 # clean the registry

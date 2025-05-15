@@ -14,5 +14,5 @@ fi
 # pull the package 'k8s' from 'ghcr.io/kcl-lang/k8s'
 ./scripts/pull_pkg.sh
 
-# push the package 'k8s' to 'localhost:5001/test'
+# push the package 'k8s' to 'localhost:5002/test'
 ./scripts/push_pkg.sh

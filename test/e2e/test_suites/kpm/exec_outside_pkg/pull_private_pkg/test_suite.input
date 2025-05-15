@@ -1,1 +1,1 @@
-kpm pull oci://localhost:5001/test/helloworld
+kpm pull oci://localhost:5002/test/helloworld
