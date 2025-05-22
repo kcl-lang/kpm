@@ -4,4 +4,4 @@ edition = "v0.11.2"
 version = "0.0.1"
 
 [dependencies]
-pushed_mod = { oci = "oci://localhost:5001/test/oci_pushed_mod", tag = "v9.9.9", version = "0.0.1" }
+pushed_mod = { oci = "oci://localhost:5002/test/oci_pushed_mod", tag = "v9.9.9", version = "0.0.1" }

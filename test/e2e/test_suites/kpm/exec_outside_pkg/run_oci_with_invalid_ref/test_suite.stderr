@@ -1,2 +1,2 @@
-failed to get package with 'invalid_tag' from 'localhost:5001/test/invalid_oci_repo'
-failed to resolve invalid_tag: localhost:5001/test/invalid_oci_repo:invalid_tag: not found
+failed to get package with 'invalid_tag' from 'localhost:5002/test/invalid_oci_repo'
+failed to resolve invalid_tag: localhost:5002/test/invalid_oci_repo:invalid_tag: not found

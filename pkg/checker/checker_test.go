@@ -174,7 +174,7 @@ func TestModCheckerCheck_WithTrustedSum(t *testing.T) {
 			Sum:      "RpZZIvrXwfn5dpt6LqBR8+FlPE9Y+BEou47L3qaCCqk=",
 			Source: downloader.Source{
 				Oci: &downloader.Oci{
-					Reg:  "localhost:5001",
+					Reg:  "localhost:5002",
 					Repo: "test/test_data",
 					Tag:  "0.0.1",
 				},
@@ -189,7 +189,7 @@ func TestModCheckerCheck_WithTrustedSum(t *testing.T) {
 			Sum:      "Invalid-sum",
 			Source: downloader.Source{
 				Oci: &downloader.Oci{
-					Reg:  "localhost:5001",
+					Reg:  "localhost:5002",
 					Repo: "test/test_data",
 					Tag:  "0.0.1",
 				},
