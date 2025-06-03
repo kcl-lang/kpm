@@ -124,10 +124,9 @@ func NewOciClientWithOpts(opts ...OciClientOption) (*OciClient, error) {
 		}
 	}
 
-	customTransport := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: client.insecureSkipTLSverify,
-		},
+	customTransport := http.DefaultTransport
+	customTransport.(*http.Transport).TLSClientConfig = &tls.Config{
+		InsecureSkipVerify: client.insecureSkipTLSverify,
 	}
 
 	customClient := &http.Client{
