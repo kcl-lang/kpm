@@ -216,6 +216,49 @@ func (ociClient *OciClient) Pull(localPath, tag string) error {
 		)
 	}
 
+	if err := DedupePulledFiles(localPath); err != nil {
+		return reporter.NewErrorEvent(reporter.FailedGetPkg, err, "failed to dedupe pulled OCI files")
+	}
+
+	return nil
+}
+
+// DedupePulledFiles renames any files in dir that share the same name by appending
+// a numeric suffix (e.g. pkg.kcl, pkg-2.kcl, pkg-3.kcl).
+func DedupePulledFiles(dir string) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	// count how many of each name we have
+	counts := make(map[string]int)
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		counts[e.Name()]++
+	}
+
+	// for any name that appears more than once, rename them with -1, -2, …
+	seen := make(map[string]int)
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		if counts[name] > 1 {
+			seen[name]++
+			ext := filepath.Ext(name)
+			base := strings.TrimSuffix(name, ext)
+			newName := fmt.Sprintf("%s-%d%s", base, seen[name], ext)
+			oldPath := filepath.Join(dir, name)
+			newPath := filepath.Join(dir, newName)
+			if err := os.Rename(oldPath, newPath); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
