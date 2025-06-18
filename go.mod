@@ -12,7 +12,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/otiai10/copy v1.14.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/urfave/cli/v2 v2.27.6
+	github.com/urfave/cli/v2 v2.27.7
 	golang.org/x/mod v0.25.0
 	gotest.tools/v3 v3.5.2
 	kcl-lang.io/kcl-go v0.11.2
@@ -147,7 +147,7 @@ require (
 )
 
 require (
-	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/dchest/siphash v1.2.3
 	github.com/go-git/go-git/v5 v5.16.2
 	github.com/gofrs/flock v0.12.1
