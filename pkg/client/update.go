@@ -3,9 +3,12 @@ package client
 import (
 	"encoding/json"
 	"fmt"
+	"kcl-lang.io/kpm/pkg/env"
+	"net/url"
 	"path/filepath"
 
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	"golang.org/x/mod/module"
 	"kcl-lang.io/kpm/pkg/checker"
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/features"
@@ -139,7 +142,7 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 		}
 
 		selectedDep.LocalFullPath = dep.LocalFullPath
-		if selectedDep.Sum == "" {
+		if selectedDep.Sum == "" && NeedCheckSum(*selectedDep) {
 			sum, err := c.AcquireDepSum(*selectedDep)
 			if err != nil {
 				return err
@@ -222,4 +225,25 @@ func (c *KpmClient) AcquireDepSum(dep pkg.Dependency) (string, error) {
 	}
 
 	return "", nil
+}
+
+// NeedCheckSum reports whether to check the checksum for the given module.
+func NeedCheckSum(dep pkg.Dependency) bool {
+	path := ""
+	if dep.Source.Local != nil {
+		path = dep.Source.Local.Path
+	}
+	// extract the path from the url, like: ghcr.io/kcl-lang/konfig
+	if dep.Source.Oci != nil {
+		path = fmt.Sprintf("%s/%s", dep.Source.Oci.Reg, dep.Source.Oci.Repo)
+	}
+	// extract the path from the url, like: github.com/kcl-lang/kpm
+	if dep.Source.Git != nil {
+		parse, err := url.Parse(dep.Source.Git.Url)
+		if err != nil {
+			return false
+		}
+		path = parse.Host + parse.Path
+	}
+	return !module.MatchPrefixPatterns(env.GetKpmNoSum(), path)
 }
