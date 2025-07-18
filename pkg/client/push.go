@@ -20,9 +20,11 @@ type PushOptions struct {
 	// repository is set to the default repository `kcl-lang` in the settings
 	// reference is set to the package name in `kcl.mod`
 	// tag is set to the package version in `kcl.mod`
+	// Force is set to false by default
 	Source     downloader.Source
 	ModPath    string
 	VendorMode bool
+	Force      bool
 }
 
 type PushOption func(*PushOptions) error
@@ -50,6 +52,14 @@ func WithPushModPath(modPath string) PushOption {
 			return fmt.Errorf("modPath cannot be empty")
 		}
 		opts.ModPath = modPath
+		return nil
+	}
+}
+
+// WithPushForce sets the Force option for the Push method.
+func WithPushForce(allowForce bool) PushOption {
+	return func(opts *PushOptions) error {
+		opts.Force = allowForce
 		return nil
 	}
 }
@@ -130,11 +140,11 @@ func (c *KpmClient) Push(opts ...PushOption) error {
 	}()
 
 	reporter.ReportMsgTo(fmt.Sprintf("package '%s' will be pushed", kMod.GetPkgName()), c.GetLogWriter())
-	return c.pushToOci(tarPath, ociOpts)
+	return c.pushToOci(tarPath, ociOpts, pushOpts)
 }
 
 // PushToOci will push a kcl package to oci registry.
-func (c *KpmClient) pushToOci(localPath string, ociOpts *opt.OciOptions) error {
+func (c *KpmClient) pushToOci(localPath string, ociOpts *opt.OciOptions, pushOpts *PushOptions) error {
 	repoPath := utils.JoinPath(ociOpts.Reg, ociOpts.Repo, ociOpts.Ref)
 	cred, err := c.GetCredentials(ociOpts.Reg)
 	if err != nil {
@@ -160,10 +170,15 @@ func (c *KpmClient) pushToOci(localPath string, ociOpts *opt.OciOptions) error {
 	}
 
 	if exist {
-		return reporter.NewErrorEvent(
-			reporter.PkgTagExists,
-			fmt.Errorf("package version '%s' already exists", ociOpts.Tag),
-		)
+		// Allow force when explicitly allowed
+		if pushOpts.Force {
+			reporter.ReportMsgTo(fmt.Sprintf("package version '%s' already exists, force pushing", ociOpts.Tag), c.GetLogWriter())
+		} else {
+			return reporter.NewErrorEvent(
+				reporter.PkgTagExists,
+				fmt.Errorf("package version '%s' already exists", ociOpts.Tag),
+			)
+		}
 	}
 
 	return ociCli.PushWithOciManifest(localPath, ociOpts.Tag, &opt.OciManifestOptions{

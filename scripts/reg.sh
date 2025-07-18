@@ -30,5 +30,8 @@ docker run -p 5002:5002 \
 -e "REGISTRY_HTTP_ADDR=:5002" \
 -d registry
 
+# Wait for the container to start and registry to be ready
+for i in {1..60}; do nc -z 127.0.0.1 5002 && break || sleep 1; echo "Waiting for registry to start $i.."; done
+
 # clean the registry
 docker exec kcl-registry rm -rf /var/lib/registry/docker/registry/v2/repositories/
