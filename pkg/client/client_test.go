@@ -2783,3 +2783,43 @@ func TestUpdateGitNewLocalStorage(t *testing.T) {
 	}
 	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "TestUpdateGitNewLocalStorage", TestFunc: testFunc}})
 }
+
+func TestGetCredsClientReloadBehavior(t *testing.T) {
+	// preserve and restore env
+	orig := os.Getenv("KPM_RELOAD_CREDS")
+	defer os.Setenv("KPM_RELOAD_CREDS", orig)
+
+	// Prepare a temporary credentials file path
+	tmpDir := t.TempDir()
+	credsPath := filepath.Join(tmpDir, "config.json")
+	// Create an empty file; the oras docker auth client tolerates empty store for constructing client
+	_ = os.WriteFile(credsPath, []byte("{}"), 0644)
+
+	// Helper to build client with injected settings path
+	newClientWithCredsPath := func() *KpmClient {
+		cli, err := NewKpmClient()
+		assert.Nil(t, err)
+		// overwrite settings to point to our temp creds file and reload env
+		cli.settings.CredentialsFile = credsPath
+		_, _ = cli.settings.LoadSettingsFromEnv()
+		return cli
+	}
+
+	// OFF (default) -> cached; repeated calls should return the same pointer
+	_ = os.Setenv("KPM_RELOAD_CREDS", "off")
+	c := newClientWithCredsPath()
+	cc1, err := c.GetCredsClient()
+	assert.Nil(t, err)
+	cc2, err := c.GetCredsClient()
+	assert.Nil(t, err)
+	assert.Equal(t, cc1, cc2)
+
+	// ON -> reload each time; repeated calls should return different pointers
+	_ = os.Setenv("KPM_RELOAD_CREDS", "on")
+	c = newClientWithCredsPath()
+	cc3, err := c.GetCredsClient()
+	assert.Nil(t, err)
+	cc4, err := c.GetCredsClient()
+	assert.Nil(t, err)
+	assert.NotEqual(t, cc3, cc4)
+}

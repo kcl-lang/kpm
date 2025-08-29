@@ -77,6 +77,11 @@ func (c *KpmClient) SetNoSumCheck(noSumCheck bool) {
 
 // GetCredsClient will return the credential client.
 func (c *KpmClient) GetCredsClient() (*downloader.CredClient, error) {
+	reloadCreds, _ := c.settings.ForceReloadCredsPerUse()
+	if reloadCreds {
+		return downloader.LoadCredentialFile(c.settings.CredentialsFile)
+	}
+
 	if c.credsClient == nil {
 		credCli, err := downloader.LoadCredentialFile(c.settings.CredentialsFile)
 		if err != nil {
