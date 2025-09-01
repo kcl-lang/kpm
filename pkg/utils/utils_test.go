@@ -2,6 +2,7 @@ package utils
 
 import (
 	"archive/tar"
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -126,9 +127,10 @@ func TestTarDir(t *testing.T) {
 
 	_ = TarDir(testSrcDir, tarPath, []string{}, []string{"*.mod"})
 	fileNames, _ := getTarFileNames(tarPath)
+	assert.Greater(t, len(fileNames), 0, "expected tar to have greater than 0 files")
 	for _, fileName := range fileNames {
 		flag, _ := filepath.Match(getNewPattern("*.mod"), fileName)
-		assert.Equal(t, flag, false)
+		assert.Equal(t, flag, false, "expected *.mod to be excluded")
 	}
 	_, err = os.Stat(tarPath)
 	assert.Equal(t, err, nil)
@@ -136,9 +138,11 @@ func TestTarDir(t *testing.T) {
 
 	_ = TarDir(testSrcDir, tarPath, []string{"*/*.lock", "*.mod"}, []string{})
 	fileNames, _ = getTarFileNames(tarPath)
+	assert.Greater(t, len(fileNames), 0, "expected tar to have greater than 0 files")
 	for _, fileName := range fileNames {
-		flag, _ := filepath.Match(getNewPattern("*/*.lock"), fileName)
-		assert.Equal(t, flag, true)
+		matchedLockPattern, _ := filepath.Match(getNewPattern("*/*.lock"), fileName)
+		matchedModPattern, _ := filepath.Match(getNewPattern("*.mod"), fileName)
+		assert.True(t, matchedLockPattern || matchedModPattern, fmt.Sprintf("expected \"%s\" to match one of */*.lock or *.mod", fileName))
 	}
 	_, err = os.Stat(tarPath)
 	assert.Equal(t, err, nil)

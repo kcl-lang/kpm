@@ -48,7 +48,7 @@ func HashDir(dir string) (string, error) {
 
 		// files in the ".git "directory will cause the same repository, cloned at different times,
 		// has different checksum.
-		for _, ignore := range ignores {
+		for _, ignore := range defaultIgnores {
 			if strings.Contains(path, ignore) {
 				return nil
 			}
@@ -120,7 +120,7 @@ func Exists(path string) (bool, error) {
 }
 
 // todo: Consider using the OCI tarball as the standard tar format.
-var ignores = []string{".git", ".tar"}
+var defaultIgnores = []string{".git", ".tar"}
 
 func TarDir(srcDir string, tarPath string, include []string, exclude []string) error {
 	fw, err := os.Create(tarPath)
@@ -132,9 +132,17 @@ func TarDir(srcDir string, tarPath string, include []string, exclude []string) e
 	tw := tar.NewWriter(fw)
 	defer tw.Close()
 
+	// In case the tarPath is within the current working directory, exclude it from the tar itself.
+	ignores := append(defaultIgnores, filepath.Join(srcDir, filepath.Dir(tarPath)))
+
 	err = filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
+		}
+
+		// Ignore the current directory root "."
+		if path == srcDir {
+			return nil
 		}
 
 		for _, ignore := range ignores {
@@ -145,7 +153,8 @@ func TarDir(srcDir string, tarPath string, include []string, exclude []string) e
 
 		getNewPattern := func(ex string) string {
 			newPath := ex
-			if !strings.HasPrefix(ex, srcDir+string(filepath.Separator)) {
+			prefix := srcDir + string(filepath.Separator)
+			if !strings.HasPrefix(ex, prefix) {
 				newPath = filepath.Join(srcDir, ex)
 			}
 			return newPath
@@ -157,10 +166,18 @@ func TarDir(srcDir string, tarPath string, include []string, exclude []string) e
 			}
 		}
 
+		// If the include list is empty, all files are included by default.
+		matchedInclude := len(include) == 0
 		for _, inc := range include {
-			if matched, _ := filepath.Match(getNewPattern(inc), path); !matched {
-				return nil
+			if matched, _ := filepath.Match(getNewPattern(inc), path); matched {
+				matchedInclude = true
+				break
 			}
+		}
+
+		// As long as _one_ of the include patterns matches, the file will be included.
+		if !matchedInclude {
+			return nil
 		}
 
 		relPath, _ := filepath.Rel(srcDir, path)

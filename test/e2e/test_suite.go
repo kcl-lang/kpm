@@ -63,11 +63,13 @@ func LoadTestSuite(testSuitePath, name string) TestSuite {
 	reporter.Report("kpm_e2e: loading '", name, "' from ", testSuitePath)
 	CheckTestSuite(testSuitePath, name)
 	return TestSuite{
-		Name:         name,
+		Name:             name,
 		ExpectStdout: LoadFirstFileWithExt(testSuitePath, STDOUT_EXT),
 		ExpectStderr: LoadFirstFileWithExt(testSuitePath, STDERR_EXT),
-		Input:        LoadFirstFileWithExt(testSuitePath, INPUT_EXT),
-		Envs:         LoadFirstFileWithExt(testSuitePath, ENV_EXT),
+
+		// Strip whitespace to ignore the leading and trailing new lines.
+		Input: strings.TrimSpace(LoadFirstFileWithExt(testSuitePath, INPUT_EXT)),
+		Envs:  LoadFirstFileWithExt(testSuitePath, ENV_EXT),
 	}
 }
 

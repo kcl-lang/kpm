@@ -1,11 +1,14 @@
 package e2e
 
 import (
+	"archive/tar"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/onsi/ginkgo/v2"
@@ -22,6 +25,59 @@ import (
 )
 
 var _ = ginkgo.Describe("Kpm CLI Testing", func() {
+	ginkgo.Context("testing 'kpm pkg'", func() {
+		testSuitesRoot := filepath.Join(filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "kpm"), "kpm_pkg")
+		testSuites := LoadAllTestSuites(testSuitesRoot)
+		testDataRoot := filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "test_data")
+		for _, ts := range testSuites {
+			ts := ts
+			ginkgo.It(ts.GetTestSuiteInfo(), func() {
+				workspace := GetWorkspace()
+
+				// Copy the test data to the workspace
+				CopyDir(filepath.Join(testDataRoot, ts.Name), filepath.Join(workspace, ts.Name))
+
+				// Run the command from test_suite.input
+				stdout, stderr, _ := ExecKpmWithWorkDir(ts.Input, filepath.Join(workspace, ts.Name))
+
+				// kpm pkg always produces no output
+				gomega.Expect(stdout).To(gomega.BeEmpty(), "unexpected stdout from kpm pkg")
+				gomega.Expect(stderr).To(gomega.BeEmpty(), "unexpected stderr from kpm pkg")
+				//time.Sleep(300 * time.Second)
+
+				// Assert the contents of the tarball without extracting
+				expectedTarContentFilepath := filepath.Join(testDataRoot, ts.Name, "expected_tar_content.txt")
+				exist, _ := utils.Exists(expectedTarContentFilepath)
+				gomega.Expect(exist).To(gomega.BeTrue(), "expected_tar_content.txt not found in test data")
+        expectedTarContentBytes, err := os.ReadFile(expectedTarContentFilepath)
+        gomega.Expect(err).ShouldNot(gomega.HaveOccurred(), "failed to read from expected_tar_content.txt")
+        expectedFiles := strings.Split(strings.TrimSpace(string(expectedTarContentBytes)), "\n")
+				sort.Strings(expectedFiles)
+
+				tarballPath := filepath.Join(workspace, ts.Name, "dist", fmt.Sprintf("%s_0.0.1.tar", ts.Name))
+				fmt.Printf("tarballPath: %s\n", tarballPath)
+				exist, _ = utils.Exists(tarballPath)
+				gomega.Expect(exist).To(gomega.BeTrue(), "pkg tarball not found, check kcl.mod name should match test suite")
+				f, err := os.Open(tarballPath)
+				gomega.Expect(err).ShouldNot(gomega.HaveOccurred(), "failed to open pkg tarball")
+				defer f.Close()
+
+				tr := tar.NewReader(f)
+				var actualFiles []string
+				for {
+					hdr, err := tr.Next()
+					if err == io.EOF {
+						break
+					}
+					gomega.Expect(err).ShouldNot(gomega.HaveOccurred(), "error reading pkg tarball")
+					actualFiles = append(actualFiles, hdr.Name)
+				}
+				sort.Strings(actualFiles)
+				gomega.Expect(actualFiles).To(gomega.Equal(expectedFiles), "unexpected pkg tarball content")
+			})
+		}
+	})
+
 	ginkgo.Context("testing 'exec kpm outside a kcl package'", func() {
 		testSuites := LoadAllTestSuites(filepath.Join(filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "kpm"), "exec_outside_pkg"))
 		testDataRoot := filepath.Join(filepath.Join(GetWorkDir(), TEST_SUITES_DIR), "test_data")
