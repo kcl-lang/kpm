@@ -187,3 +187,34 @@ func TestSettingEnv(t *testing.T) {
 	settings = GetSettings()
 	assert.Equal(t, settings.DefaultOciPlainHttp(), false)
 }
+
+func TestReloadCredsEnvParsing(t *testing.T) {
+	// preserve and restore env
+	orig := os.Getenv("KPM_RELOAD_CREDS")
+	defer os.Setenv("KPM_RELOAD_CREDS", orig)
+
+	// invalid value -> UnknownEnv error
+	_ = os.Setenv("KPM_RELOAD_CREDS", "true")
+	s := &Settings{Conf: DefaultKpmConf()}
+	_, evt := s.LoadSettingsFromEnv()
+	assert.NotNil(t, evt)
+	assert.Equal(t, reporter.UnknownEnv, evt.Type())
+
+	// ON -> true
+	_ = os.Setenv("KPM_RELOAD_CREDS", "on")
+	s = &Settings{Conf: DefaultKpmConf()}
+	_, evt = s.LoadSettingsFromEnv()
+	assert.Nil(t, evt)
+	reload, force := s.ForceReloadCredsPerUse()
+	assert.True(t, force)
+	assert.True(t, reload)
+
+	// OFF -> false
+	_ = os.Setenv("KPM_RELOAD_CREDS", "off")
+	s = &Settings{Conf: DefaultKpmConf()}
+	_, evt = s.LoadSettingsFromEnv()
+	assert.Nil(t, evt)
+	reload, force = s.ForceReloadCredsPerUse()
+	assert.True(t, force)
+	assert.False(t, reload)
+}

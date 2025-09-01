@@ -31,6 +31,7 @@ type KpmConf struct {
 	DefaultOciRegistry  string
 	DefaultOciRepo      string
 	DefaultOciPlainHttp *bool `json:",omitempty"`
+	ReloadCredsPerUse   *bool `json:",omitempty"`
 }
 
 const ON = "on"
@@ -41,6 +42,7 @@ const DEFAULT_OCI_PLAIN_HTTP = ON
 const DEFAULT_REGISTRY_ENV = "KPM_REG"
 const DEFAULT_REPO_ENV = "KPM_REPO"
 const DEFAULT_OCI_PLAIN_HTTP_ENV = "OCI_REG_PLAIN_HTTP"
+const DEFAULT_RELOAD_CREDS_ENV = "KPM_RELOAD_CREDS"
 
 // This is a singleton that loads kpm settings from 'kpm.json'
 // and is only initialized on the first call by 'Init()' or 'GetSettings()'
@@ -53,6 +55,7 @@ func DefaultKpmConf() KpmConf {
 		DefaultOciRegistry:  DEFAULT_REGISTRY,
 		DefaultOciRepo:      DEFAULT_REPO,
 		DefaultOciPlainHttp: nil,
+		ReloadCredsPerUse:   nil,
 	}
 }
 
@@ -153,6 +156,14 @@ func (settings *Settings) ForceOciPlainHttp() (bool, bool) {
 	return *settings.Conf.DefaultOciPlainHttp, true
 }
 
+// ForceReloadCredsPerUse returns whether reloading credentials per use is forced.
+func (settings *Settings) ForceReloadCredsPerUse() (bool, bool) {
+	if settings.Conf.ReloadCredsPerUse == nil {
+		return false, false
+	}
+	return *settings.Conf.ReloadCredsPerUse, true
+}
+
 // DefaultOciRef return the default OCI ref 'ghcr.io/kcl-lang'.
 func (settings *Settings) DefaultOciRef() string {
 	return utils.JoinPath(settings.Conf.DefaultOciRegistry, settings.Conf.DefaultOciRepo)
@@ -181,6 +192,20 @@ func (settings *Settings) LoadSettingsFromEnv() (*Settings, *reporter.KpmEvent) 
 				reporter.UnknownEnv,
 				err,
 				fmt.Sprintf("unknown environment variable '%s=%s'", DEFAULT_OCI_PLAIN_HTTP_ENV, plainHttp),
+			)
+		}
+	}
+
+	// Load the env KPM_RELOAD_CREDS (ON/OFF)
+	reloadCreds := os.Getenv(DEFAULT_RELOAD_CREDS_ENV)
+	if len(reloadCreds) > 0 {
+		shouldReload, err := isOn(reloadCreds)
+		settings.Conf.ReloadCredsPerUse = &shouldReload
+		if err != nil {
+			return settings, reporter.NewErrorEvent(
+				reporter.UnknownEnv,
+				err,
+				fmt.Sprintf("unknown environment variable '%s=%s'", DEFAULT_RELOAD_CREDS_ENV, reloadCreds),
 			)
 		}
 	}
