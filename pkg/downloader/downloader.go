@@ -293,7 +293,7 @@ func (d *DepDownloader) Download(opts *DownloadOptions) error {
 	localPath := opts.LocalPath
 	cacheFullPath := opts.CachePath
 	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok && opts.EnableCache {
-		if utils.DirExists(cacheFullPath) &&
+		if dependencyPackageExists(cacheFullPath) &&
 			// If the version in modspec is empty, meanings the latest version is needed.
 			// The latest version should be requested first and the cache should be updated.
 			((opts.Source.ModSpec != nil && opts.Source.ModSpec.Version != "") || opts.Source.ModSpec == nil) {
@@ -315,8 +315,7 @@ func (d *DepDownloader) Download(opts *DownloadOptions) error {
 
 	// If the dependency package is already exist,
 	// Skip the download process.
-	if utils.DirExists(localPath) &&
-		utils.DirExists(filepath.Join(localPath, constants.KCL_MOD)) {
+	if dependencyPackageExists(localPath) {
 		return nil
 	} else {
 		opts.LocalPath = tmpDir
@@ -368,6 +367,11 @@ func (d *DepDownloader) Download(opts *DownloadOptions) error {
 	}
 
 	return nil
+}
+
+func dependencyPackageExists(path string) bool {
+	return utils.DirExists(path) &&
+		utils.DirExists(filepath.Join(path, constants.KCL_MOD))
 }
 
 // Platform option struct.

@@ -23,11 +23,15 @@ func getTestDir(subDir string) string {
 	return testDir
 }
 
-func testOciDownloader(t *testing.T) {
-	path_oci := getTestDir("test_oci")
-	if err := os.MkdirAll(path_oci, os.ModePerm); err != nil {
+func makeDir(t *testing.T, path string) {
+	if err := os.MkdirAll(path, os.ModePerm); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func testOciDownloader(t *testing.T) {
+	path_oci := getTestDir("test_oci")
+	makeDir(t, path_oci)
 
 	defer func() {
 		_ = os.RemoveAll(path_oci)
@@ -54,9 +58,7 @@ func testOciDownloader(t *testing.T) {
 func testGitDownloader(t *testing.T) {
 	features.Enable(features.SupportNewStorage)
 	path_git := getTestDir("test_git_bare_repo")
-	if err := os.MkdirAll(path_git, os.ModePerm); err != nil {
-		t.Fatal(err)
-	}
+	makeDir(t, path_git)
 
 	defer func() {
 		_ = os.RemoveAll(path_git)
@@ -86,7 +88,46 @@ func testGitDownloader(t *testing.T) {
 	assert.Equal(t, utils.DirExists(filepath.Join(path_git, "git", "src", gitHash, "kcl.mod")), true)
 }
 
+func testDepDownloaderWhenPackageCacheFolderExistsButEmpty(t *testing.T) {
+	path_tmp := getTestDir("test_dep_downloader")
+	makeDir(t, path_tmp)
+	defer func() {
+		_ = os.RemoveAll(path_tmp)
+	}()
+
+	path_local := filepath.Join(path_tmp, "package_local")
+	makeDir(t, path_local)
+	path_cache := filepath.Join(path_tmp, "package_cache")
+	makeDir(t, path_cache)
+
+	depDownloader := DepDownloader{
+		OciDownloader: &OciDownloader{
+			Platform: "linux/amd64",
+		},
+	}
+
+	err := depDownloader.Download(NewDownloadOptions(
+		WithSource(Source{
+			Oci: &Oci{
+				Reg:  "ghcr.io",
+				Repo: "zong-zhe/helloworld",
+				Tag:  "0.0.3",
+			},
+		}),
+		WithLocalPath(path_local),
+		WithCachePath(path_cache),
+		WithEnableCache(true),
+	))
+
+	assert.Equal(t, err, nil)
+	existFile, err := utils.Exists(path_local + "/kcl.mod")
+	assert.NilError(t, err)
+	assert.Check(t, existFile)
+}
+
 func TestWithGlobalLock(t *testing.T) {
 	test.RunTestWithGlobalLock(t, "TestOciDownloader", testOciDownloader)
 	test.RunTestWithGlobalLock(t, "TestGitDownloader", testGitDownloader)
+	test.RunTestWithGlobalLock(t, "TestDepDownloaderWhenPackageCacheFolderExistsButEmpty",
+		testDepDownloaderWhenPackageCacheFolderExistsButEmpty)
 }
