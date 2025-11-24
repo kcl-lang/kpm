@@ -63,7 +63,7 @@ func LoadTestSuite(testSuitePath, name string) TestSuite {
 	reporter.Report("kpm_e2e: loading '", name, "' from ", testSuitePath)
 	CheckTestSuite(testSuitePath, name)
 	return TestSuite{
-		Name:             name,
+		Name:         name,
 		ExpectStdout: LoadFirstFileWithExt(testSuitePath, STDOUT_EXT),
 		ExpectStderr: LoadFirstFileWithExt(testSuitePath, STDERR_EXT),
 

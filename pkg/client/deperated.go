@@ -453,8 +453,8 @@ func (c *KpmClient) UpdateDeps(kclPkg *pkg.KclPkg) error {
 
 // Compile will call kcl compiler to compile the current kcl package and its dependent packages.
 // Deprecated: Use `Run` instead.
-func (c *KpmClient) Compile(kclPkg *pkg.KclPkg, kclvmCompiler *runner.Compiler) (*kcl.KCLResultList, error) {
-	pkgMap, err := c.ResolveDepsIntoMap(kclPkg)
+func (c *KpmClient) Compile(pkg *pkg.KclPkg, compiler *runner.Compiler) (*kcl.KCLResultList, error) {
+	pkgMap, err := c.ResolveDepsIntoMap(pkg)
 	if err != nil {
 		return nil, err
 	}
@@ -464,10 +464,10 @@ func (c *KpmClient) Compile(kclPkg *pkg.KclPkg, kclvmCompiler *runner.Compiler) 
 		if !filepath.IsAbs(dPath) {
 			dPath = filepath.Join(c.homePath, dPath)
 		}
-		kclvmCompiler.AddDepPath(dName, dPath)
+		compiler.AddDepPath(dName, dPath)
 	}
 
-	return kclvmCompiler.Run()
+	return compiler.Run()
 }
 
 // AddDepWithOpts will add a dependency to the current kcl package.
@@ -816,7 +816,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 		}
 
 		// Creating symbolic links in a global cache is not an optimal solution.
-		// This allows kclvm to locate the package by default.
+		// This allows kcl to locate the package by default.
 		// This feature is unstable and will be removed soon.
 		// err = createDepRef(dep.LocalFullPath, filepath.Join(filepath.Dir(localPath), dep.Name))
 		// if err != nil {

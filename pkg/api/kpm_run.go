@@ -21,7 +21,7 @@ import (
 // RunTar will compile the kcl package from a kcl package tar.
 func RunTar(tarPath string, opts *opt.CompileOptions) (string, error) {
 	// The directory after extracting the tar package is taken as the root directory of the package,
-	// and kclvm is called to compile the kcl program under the 'destDir'.
+	// and kcl is called to compile the kcl program under the 'destDir'.
 	// e.g.
 	// if the tar path is 'xxx/xxx/xxx/test.tar',
 	// the 'xxx/xxx/xxx/test' will be taken as the root path of the kcl package to compile.
@@ -136,7 +136,7 @@ func RunTarPkg(tarPath string, opts *opt.CompileOptions) (*kcl.KCLResultList, er
 		return nil, err
 	}
 	// The directory after extracting the tar package is taken as the root directory of the package,
-	// and kclvm is called to compile the kcl program under the 'destDir'.
+	// and kcl is called to compile the kcl program under the 'destDir'.
 	// e.g.
 	// if the tar path is 'xxx/xxx/xxx/test.tar',
 	// the 'xxx/xxx/xxx/test' will be taken as the root path of the kcl package to compile.
