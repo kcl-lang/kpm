@@ -49,9 +49,9 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 				expectedTarContentFilepath := filepath.Join(testDataRoot, ts.Name, "expected_tar_content.txt")
 				exist, _ := utils.Exists(expectedTarContentFilepath)
 				gomega.Expect(exist).To(gomega.BeTrue(), "expected_tar_content.txt not found in test data")
-        expectedTarContentBytes, err := os.ReadFile(expectedTarContentFilepath)
-        gomega.Expect(err).ShouldNot(gomega.HaveOccurred(), "failed to read from expected_tar_content.txt")
-        expectedFiles := strings.Split(strings.TrimSpace(string(expectedTarContentBytes)), "\n")
+				expectedTarContentBytes, err := os.ReadFile(expectedTarContentFilepath)
+				gomega.Expect(err).ShouldNot(gomega.HaveOccurred(), "failed to read from expected_tar_content.txt")
+				expectedFiles := strings.Split(strings.TrimSpace(string(expectedTarContentBytes)), "\n")
 				sort.Strings(expectedFiles)
 
 				tarballPath := filepath.Join(workspace, ts.Name, "dist", fmt.Sprintf("%s_0.0.1.tar", ts.Name))

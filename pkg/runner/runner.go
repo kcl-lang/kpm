@@ -54,5 +54,5 @@ func (compiler *Compiler) Run() (*kcl.KCLResultList, error) {
 
 // GetKclVersion fetches the kcl version
 func GetKclVersion() string {
-	return string(scripts.KclvmVersionType_latest)
+	return string(scripts.KclVersionType_latest)
 }
