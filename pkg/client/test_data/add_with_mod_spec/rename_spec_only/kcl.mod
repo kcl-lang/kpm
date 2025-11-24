@@ -1,4 +1,4 @@
 [package]
 name = "rename"
-edition = "v0.12.0-rc.1"
+edition = "v0.11.2"
 version = "0.0.1"
