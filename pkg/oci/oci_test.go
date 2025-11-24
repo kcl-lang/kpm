@@ -40,7 +40,7 @@ func TestPull(t *testing.T) {
 	for _, tc := range testCases {
 		client, err := NewOciClient(tc.Registry, tc.Image, settings.GetSettings())
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatalf("%s", err.Error())
 		}
 
 		tmpPath := filepath.Join(getTestDir("test_pull"), tc.Tag)
@@ -50,7 +50,7 @@ func TestPull(t *testing.T) {
 
 		err = client.Pull(tmpPath, tc.Tag)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Errorf("%s", err.Error())
 		}
 	}
 }
