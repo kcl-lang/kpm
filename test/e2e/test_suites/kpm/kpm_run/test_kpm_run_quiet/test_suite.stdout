@@ -5,11 +5,11 @@ helloworld:
         image: nginx:v1
         command:
         - /bin/sh
-        - -c
+        - '-c'
         - echo hi
         args:
         - /bin/sh
-        - -c
+        - '-c'
         - echo hi
         env:
           env1: VALUE
