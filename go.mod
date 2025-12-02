@@ -15,7 +15,7 @@ require (
 	github.com/urfave/cli/v2 v2.27.7
 	golang.org/x/mod v0.30.0
 	gotest.tools/v3 v3.5.2
-	kcl-lang.io/kcl-go v0.12.0
+	kcl-lang.io/kcl-go v0.12.1
 )
 
 require (
@@ -67,7 +67,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
-	github.com/goccy/go-yaml v1.18.0 // indirect
+	github.com/goccy/go-yaml v1.19.0 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
@@ -146,7 +146,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
-	kcl-lang.io/lib v0.12.0 // indirect
+	kcl-lang.io/lib v0.12.1 // indirect
 )
 
 require (
