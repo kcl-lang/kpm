@@ -229,7 +229,7 @@ func TestMarshalOciUrl(t *testing.T) {
 	modfile := ModFile{
 		Pkg: Package{
 			Name:    "marshal_0",
-			Edition: "v0.12.1",
+			Edition: "v0.12.3",
 			Version: "0.0.1",
 		},
 		Dependencies: Dependencies{
@@ -367,7 +367,7 @@ func TestUnMarshalRename(t *testing.T) {
 	modfile.LoadModFile(filepath.Join(getTestDir("test_rename_pkg"), "kcl.mod"))
 	assert.Equal(t, modfile.Pkg.Name, "rename")
 	assert.Equal(t, modfile.Pkg.Version, "0.0.1")
-	assert.Equal(t, modfile.Pkg.Edition, "v0.12.1")
+	assert.Equal(t, modfile.Pkg.Edition, "v0.12.3")
 	assert.Equal(t, modfile.Dependencies.Deps.Len(), 1)
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Name, "newpkg")
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).FullName, "newpkg_0.0.1")
