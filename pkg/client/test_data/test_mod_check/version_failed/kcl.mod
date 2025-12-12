@@ -1,6 +1,6 @@
 [package]
 name = "version_failed"
-edition = "v0.12.1"
+edition = "v0.12.3"
 version = "invalid_version"
 
 [dependencies]
