@@ -173,7 +173,7 @@ require (
 	github.com/hashicorp/go-getter v1.8.3
 	github.com/hashicorp/go-version v1.7.0
 	github.com/jinzhu/copier v0.4.0
-	github.com/kubescape/go-git-url v0.0.30
+	github.com/kubescape/go-git-url v0.0.31
 	github.com/moby/term v0.5.2
 	github.com/onsi/ginkgo/v2 v2.27.3
 	github.com/onsi/gomega v1.38.3
