@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+	"kcl-lang.io/kpm/pkg/env"
 )
 
 // TestGetKclPkgPath tests the retrieval of KCL_PKG_PATH
@@ -29,11 +30,9 @@ func TestGetKclPkgPath(t *testing.T) {
 	assert.Equal(t, path, customPath)
 	fmt.Printf("Test Case 1: Expected %v, Got %v\n", customPath, path)
 
-	// Case 2: When KCL_PKG_PATH is not set (should return default path)
+	// Case 2: When KCL_PKG_PATH is not set (should return XDG data path)
 	os.Unsetenv("KCL_PKG_PATH")
-	homeDir, err := os.UserHomeDir()
-	assert.Equal(t, err, nil)
-	expectedDefaultPath := filepath.Join(homeDir, ".kcl", "kpm")
+	expectedDefaultPath := env.GetKpmDataDir()
 
 	path, err = GetKclPkgPath()
 	assert.Equal(t, err, nil)

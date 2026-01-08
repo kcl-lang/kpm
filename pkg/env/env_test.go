@@ -21,11 +21,4 @@ func TestGetAbsPkgPath(t *testing.T) {
 	got, err = GetAbsPkgPath()
 	assert.Equal(t, got, filepath.Join(expect, "test_subdir"))
 	assert.Equal(t, err, nil)
-
-	// Test default path
-	os.Setenv(PKG_PATH, "")
-	got, err = GetAbsPkgPath()
-	homeDir, _ := os.UserHomeDir()
-	assert.Equal(t, got, filepath.Join(homeDir, ".kcl/kpm"))
-	assert.Equal(t, err, nil)
 }

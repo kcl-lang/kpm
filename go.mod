@@ -16,6 +16,7 @@ require (
 	golang.org/x/mod v0.31.0
 	gotest.tools/v3 v3.5.2
 	kcl-lang.io/kcl-go v0.12.3
+	kcl-lang.io/lib v0.12.3
 )
 
 require (
@@ -160,7 +161,6 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
-	kcl-lang.io/lib v0.12.3 // indirect
 )
 
 require (

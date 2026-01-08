@@ -10,29 +10,39 @@ import (
 
 // env name
 const PKG_PATH = "KCL_PKG_PATH"
-const DEFAULT_PKG_PATH_IN_UER_HOME = ".kcl"
-const KPM_SUB_DIR = "kpm"
+const MODULES_SUB_DIR = "modules"
+const KCL_DATA_DIR = "kcl"
 
 // GetEnvPkgPath will return the env $KCL_PKG_PATH.
 func GetEnvPkgPath() string {
 	return os.Getenv(PKG_PATH)
 }
 
-// GetKpmSubDir will return the subdir for kpm ".kcl/kpm"
-func GetKpmSubDir() string {
-	return filepath.Join(DEFAULT_PKG_PATH_IN_UER_HOME, KPM_SUB_DIR)
+// GetKpmDataDir will return the data directory for kpm following XDG Base Directory Specification.
+// It returns $XDG_DATA_HOME/kcl/modules on Unix systems, or the platform-specific equivalent.
+func GetKpmDataDir() string {
+	dataDir, err := utils.DataDir()
+	if err != nil {
+		// Fallback to home directory if DataDir fails
+		homeDir, _ := os.UserHomeDir()
+		return filepath.Join(homeDir, ".kcl", MODULES_SUB_DIR)
+	}
+	return filepath.Join(dataDir, KCL_DATA_DIR, MODULES_SUB_DIR)
 }
 
 // GetAbsPkgPath will return the absolute path of $KCL_PKG_PATH,
-// or the absolute path of the current path if $KCL_PKG_PATH does not exist.
+// or the absolute path of the XDG data directory if $KCL_PKG_PATH does not exist.
 func GetAbsPkgPath() (string, error) {
 	kpmHome := GetEnvPkgPath()
 	if kpmHome == "" {
-		defaultHome, err := utils.CreateSubdirInUserHome(GetKpmSubDir())
-		if err != nil {
-			return "", reporter.NewErrorEvent(reporter.FailedAccessPkgPath, err, "could not access $KCL_PKG_PATH.")
+		kpmHome = GetKpmDataDir()
+		// Create the directory if it doesn't exist
+		if !utils.DirExists(kpmHome) {
+			err := os.MkdirAll(kpmHome, 0755)
+			if err != nil {
+				return "", reporter.NewErrorEvent(reporter.FailedAccessPkgPath, err, "could not create kpm data directory.")
+			}
 		}
-		kpmHome = defaultHome
 	}
 
 	kpmHome, err := filepath.Abs(kpmHome)
