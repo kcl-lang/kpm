@@ -30,6 +30,7 @@ import (
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/reporter"
+	"kcl-lang.io/lib/go/path"
 )
 
 // HashDir computes the checksum of a directory by concatenating all files and
@@ -425,6 +426,16 @@ func IsSymlinkValidAndExists(symlinkPath string) (bool, bool, error) {
 	}
 
 	return false, false, fmt.Errorf("%s exists but is not a symlink", symlinkPath)
+}
+
+// DataDir returns the XDG data directory for the current platform.
+// It follows the XDG Base Directory Specification:
+// - Returns $XDG_DATA_HOME if set
+// - Returns ~/.local/share on Unix systems if XDG_DATA_HOME is not set
+// - Returns ~/Library/Application Support on macOS
+// - Returns %LOCALAPPDATA% on Windows
+func DataDir() (string, error) {
+	return path.DataHomeWithError()
 }
 
 // DefaultKpmHome create the '.kpm' in the user home and return the path of ".kpm".

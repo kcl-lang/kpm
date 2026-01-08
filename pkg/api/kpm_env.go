@@ -6,7 +6,8 @@ import (
 
 // GetKclPkgPath will return the value of $KCL_PKG_PATH.
 //
-// If $KCL_PKG_PATH does not exist, it will return '$HOME/.kcl/kpm' by default.
+// If $KCL_PKG_PATH does not exist, it will return $XDG_DATA_HOME/kcl/modules on Unix systems
+// or the platform-specific equivalent.
 func GetKclPkgPath() (string, error) {
 	return env.GetAbsPkgPath()
 }

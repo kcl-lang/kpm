@@ -143,7 +143,7 @@ func (c *KpmClient) GetSettings() *settings.Settings {
 const PKG_NAME_PATTERN = "%s_%s"
 
 // Get the local store path for the dependency.
-// 1. in the KCL_PKG_PATH: default is $HOME/.kcl/kpm
+// 1. in the KCL_PKG_PATH: default is $XDG_DATA_HOME/kcl/modules on Unix systems
 // 2. in the vendor subdirectory of the current package.
 // 3. the dependency is from the local path.
 func (c *KpmClient) getDepStorePath(search_path string, d *pkg.Dependency, isVendor bool) string {
