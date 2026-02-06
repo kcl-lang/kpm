@@ -134,7 +134,12 @@ func TarDir(srcDir string, tarPath string, include []string, exclude []string) e
 	defer tw.Close()
 
 	// In case the tarPath is within the current working directory, exclude it from the tar itself.
-	ignores := append(defaultIgnores, filepath.Join(srcDir, filepath.Dir(tarPath)))
+	targetDir := filepath.Join(srcDir, filepath.Dir(tarPath))
+	ignores := defaultIgnores
+	// Only ignore the target directory if it is NOT the root source directory.
+	if filepath.Clean(targetDir) != filepath.Clean(srcDir) {
+		ignores = append(ignores, targetDir)
+	}
 
 	err = filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
