@@ -114,6 +114,18 @@ func (ociClient *OciClient) GetReference() string {
 	return ociClient.repo.Reference.String()
 }
 
+// newAuthCache returns a per-client cache when KPM_RELOAD_CREDS is enabled,
+// preventing stale Bearer tokens from being reused across OCI operations.
+// Otherwise it returns the global DefaultCache for backward compatibility.
+func newAuthCache(s *settings.Settings) remoteauth.Cache {
+	if s != nil {
+		if reloadCreds, ok := s.ForceReloadCredsPerUse(); ok && reloadCreds {
+			return remoteauth.NewCache()
+		}
+	}
+	return remoteauth.DefaultCache
+}
+
 // NewOciClientWithOpts will new an OciClient with options.
 func NewOciClientWithOpts(opts ...OciClientOption) (*OciClient, error) {
 	client := &OciClient{}
@@ -136,7 +148,7 @@ func NewOciClientWithOpts(opts ...OciClientOption) (*OciClient, error) {
 	ctx := context.Background()
 	client.repo.Client = &remoteauth.Client{
 		Client:     customClient,
-		Cache:      remoteauth.DefaultCache,
+		Cache:      newAuthCache(client.settings),
 		Credential: remoteauth.StaticCredential(client.repo.Reference.Host(), *client.cred),
 	}
 
