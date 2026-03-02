@@ -3,7 +3,7 @@ module kcl-lang.io/kpm
 go 1.24.0
 
 require (
-	github.com/BurntSushi/toml v1.5.0
+	github.com/BurntSushi/toml v1.6.0
 	github.com/containers/image/v5 v5.36.2
 	github.com/distribution/reference v0.6.0
 	github.com/dominikbraun/graph v0.23.0
