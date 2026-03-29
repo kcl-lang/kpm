@@ -35,8 +35,8 @@ type DownloadOptions struct {
 	Settings settings.Settings
 	// LogWriter is the writer to write the log.
 	LogWriter io.Writer
-	// credsClient is the client to get the credentials.
-	credsClient *CredClient
+	// credsStore is the store to get the credentials.
+	credsStore *CredStore
 	// InsecureSkipTLSverify is the flag to skip the verification of the certificate.
 	InsecureSkipTLSverify bool
 	// Offline is the flag to download the package offline.
@@ -69,9 +69,9 @@ func WithEnableCache(enableCache bool) Option {
 	}
 }
 
-func WithCredsClient(credsClient *CredClient) Option {
+func WithCredsStore(credsStore *CredStore) Option {
 	return func(do *DownloadOptions) {
-		do.credsClient = credsClient
+		do.credsStore = credsStore
 	}
 }
 
@@ -245,8 +245,8 @@ func (d *OciDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
 
 	var cred *remoteauth.Credential
 	var err error
-	if opts.credsClient != nil {
-		cred, err = opts.credsClient.Credential(ociSource.Reg)
+	if opts.credsStore != nil {
+		cred, err = opts.credsStore.Credential(ociSource.Reg)
 		if err != nil {
 			return "", err
 		}
@@ -393,8 +393,8 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 
 	var cred *remoteauth.Credential
 	var err error
-	if opts.credsClient != nil {
-		cred, err = opts.credsClient.Credential(ociSource.Reg)
+	if opts.credsStore != nil {
+		cred, err = opts.credsStore.Credential(ociSource.Reg)
 		if err != nil {
 			return err
 		}

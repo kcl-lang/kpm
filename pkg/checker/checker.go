@@ -247,12 +247,12 @@ func (sc *SumChecker) FetchOciManifestIntoJsonStr(opts opt.OciFetchOptions) (str
 
 // GetCredentials retrieves the OCI credentials for the given hostname.
 func (sc *SumChecker) GetCredentials(hostName string) (*remoteauth.Credential, error) {
-	credCli, err := downloader.LoadCredentialFile(sc.settings.CredentialsFile)
+	credStore, err := downloader.LoadCredentialFile(sc.settings.CredentialsFile)
 	if err != nil {
 		return nil, err
 	}
 
-	creds, err := credCli.Credential(hostName)
+	creds, err := credStore.Credential(hostName)
 	if err != nil {
 		return nil, err
 	}

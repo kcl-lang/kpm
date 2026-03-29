@@ -19,7 +19,6 @@ import (
 	"github.com/containers/image/v5/types"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/thoas/go-funk"
-	dockerauth "oras.land/oras-go/pkg/auth/docker"
 	remoteauth "oras.land/oras-go/v2/registry/remote/auth"
 
 	"kcl-lang.io/kpm/pkg/opt"
@@ -32,6 +31,7 @@ import (
 	"oras.land/oras-go/v2/content"
 	"oras.land/oras-go/v2/content/file"
 	"oras.land/oras-go/v2/registry/remote"
+	"oras.land/oras-go/v2/registry/remote/credentials"
 	"oras.land/oras-go/v2/registry/remote/errcode"
 )
 
@@ -365,20 +365,17 @@ func (ociClient *OciClient) FetchManifestIntoJsonStr(opts opt.OciFetchOptions) (
 }
 
 func loadCredential(hostName string, settings *settings.Settings) (*remoteauth.Credential, error) {
-	authClient, err := dockerauth.NewClientWithDockerFallback(settings.CredentialsFile)
-	if err != nil {
-		return nil, err
-	}
-	dockerClient, _ := authClient.(*dockerauth.Client)
-	username, password, err := dockerClient.Credential(hostName)
+	store, err := credentials.NewStore(settings.CredentialsFile, credentials.StoreOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	return &remoteauth.Credential{
-		Username: username,
-		Password: password,
-	}, nil
+	cred, err := store.Get(context.Background(), hostName)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cred, nil
 }
 
 // Pull will pull the oci artifacts from oci registry to local path.

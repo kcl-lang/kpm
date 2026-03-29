@@ -25,7 +25,7 @@ type KpmClient struct {
 	// The downloader of the dependencies.
 	DepDownloader *downloader.DepDownloader
 	// credential store
-	credsClient *downloader.CredClient
+	credsStore *downloader.CredStore
 	// The home path of kpm for global configuration file and kcl package storage path.
 	homePath string
 	// The settings of kpm loaded from the global configuration file.
@@ -75,31 +75,31 @@ func (c *KpmClient) SetNoSumCheck(noSumCheck bool) {
 	c.noSumCheck = noSumCheck
 }
 
-// GetCredsClient will return the credential client.
-func (c *KpmClient) GetCredsClient() (*downloader.CredClient, error) {
+// GetCredsClient will return the credential store.
+func (c *KpmClient) GetCredsClient() (*downloader.CredStore, error) {
 	reloadCreds, _ := c.settings.ForceReloadCredsPerUse()
 	if reloadCreds {
 		return downloader.LoadCredentialFile(c.settings.CredentialsFile)
 	}
 
-	if c.credsClient == nil {
-		credCli, err := downloader.LoadCredentialFile(c.settings.CredentialsFile)
+	if c.credsStore == nil {
+		credStore, err := downloader.LoadCredentialFile(c.settings.CredentialsFile)
 		if err != nil {
 			return nil, err
 		}
-		c.credsClient = credCli
+		c.credsStore = credStore
 	}
-	return c.credsClient, nil
+	return c.credsStore, nil
 }
 
 // GetCredentials will return the credentials of the host.
 func (c *KpmClient) GetCredentials(hostName string) (*remoteauth.Credential, error) {
-	credCli, err := c.GetCredsClient()
+	credStore, err := c.GetCredsClient()
 	if err != nil {
 		return nil, err
 	}
 
-	creds, err := credCli.Credential(hostName)
+	creds, err := credStore.Credential(hostName)
 	if err != nil {
 		return nil, err
 	}

@@ -652,7 +652,7 @@ func (c *KpmClient) downloadPkg(options ...downloader.Option) (*pkg.KclPkg, erro
 	// clean the temp dir.
 	defer os.RemoveAll(tmpDir)
 
-	credCli, err := c.GetCredsClient()
+	credStore, err := c.GetCredsClient()
 	if err != nil {
 		return nil, err
 	}
@@ -662,7 +662,7 @@ func (c *KpmClient) downloadPkg(options ...downloader.Option) (*pkg.KclPkg, erro
 		downloader.WithSource(opts.Source),
 		downloader.WithLogWriter(c.GetLogWriter()),
 		downloader.WithSettings(*c.GetSettings()),
-		downloader.WithCredsClient(credCli),
+		downloader.WithCredsStore(credStore),
 		downloader.WithInsecureSkipTLSverify(opts.InsecureSkipTLSverify),
 	))
 
@@ -775,7 +775,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			}
 		}
 
-		credCli, err := c.GetCredsClient()
+		credStore, err := c.GetCredsClient()
 		if err != nil {
 			return nil, err
 		}
@@ -784,7 +784,7 @@ func (c *KpmClient) Download(dep *pkg.Dependency, homePath, localPath string) (*
 			downloader.WithSource(dep.Source),
 			downloader.WithLogWriter(c.logWriter),
 			downloader.WithSettings(c.settings),
-			downloader.WithCredsClient(credCli),
+			downloader.WithCredsStore(credStore),
 			downloader.WithInsecureSkipTLSverify(c.insecureSkipTLSverify),
 		))
 		if err != nil {
