@@ -1,33 +1,51 @@
 package client
 
 import (
+	"context"
 	"fmt"
 
 	"kcl-lang.io/kpm/pkg/reporter"
-	"oras.land/oras-go/pkg/auth"
+	"oras.land/oras-go/v2/registry/remote"
+	"oras.land/oras-go/v2/registry/remote/auth"
+	"oras.land/oras-go/v2/registry/remote/credentials"
 )
 
 // LoginOci will login to the oci registry.
 func (c *KpmClient) LoginOci(hostname, username, password string) error {
-	credCli, err := c.GetCredsClient()
+	// Allow plaintext credentials for plain HTTP registries
+	defaultOciPlainHttp, forceOciPlainHttp := c.GetSettings().ForceOciPlainHttp()
+	allowPlaintext := false
+	if defaultOciPlainHttp || forceOciPlainHttp {
+		allowPlaintext = true
+	}
+
+	store, err := credentials.NewStore(c.GetSettings().CredentialsFile, credentials.StoreOptions{
+		AllowPlaintextPut: allowPlaintext,
+	})
 	if err != nil {
 		return err
 	}
 
-	opts := []auth.LoginOption{
-		auth.WithLoginHostname(hostname),
-		auth.WithLoginUsername(username),
-		auth.WithLoginSecret(password),
+	cred := auth.Credential{
+		Username: username,
+		Password: password,
 	}
 
-	defaultOciPlainHttp, forceOciPlainHttp := c.GetSettings().ForceOciPlainHttp()
+	registry, err := remote.NewRegistry(hostname)
+	if err != nil {
+		return err
+	}
 
+	// Handle plain HTTP setting
 	if defaultOciPlainHttp || forceOciPlainHttp {
-		opts = append(opts, auth.WithLoginInsecure())
+		registry.PlainHTTP = true
 	}
 
-	err = credCli.GetAuthClient().LoginWithOpts(
-		opts...,
+	err = credentials.Login(
+		context.Background(),
+		store,
+		registry,
+		cred,
 	)
 
 	if err != nil {

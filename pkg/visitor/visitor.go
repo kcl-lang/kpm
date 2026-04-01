@@ -157,7 +157,7 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 	}
 
 	// 1. Load the credential file.
-	credCli, err := downloader.LoadCredentialFile(rv.Settings.CredentialsFile)
+	credStore, err := downloader.LoadCredentialFile(rv.Settings.CredentialsFile)
 	if err != nil {
 		return err
 	}
@@ -170,7 +170,7 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 			downloader.WithSource(*s),
 			downloader.WithLogWriter(rv.LogWriter),
 			downloader.WithSettings(*rv.Settings),
-			downloader.WithCredsClient(credCli),
+			downloader.WithCredsStore(credStore),
 			downloader.WithInsecureSkipTLSverify(rv.InsecureSkipTLSverify),
 			downloader.WithCachePath(cacheFullPath),
 			downloader.WithEnableCache(rv.EnableCache),
@@ -236,7 +236,7 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		defer os.RemoveAll(tmpDir)
 	}
 
-	credCli, err = downloader.LoadCredentialFile(rv.Settings.CredentialsFile)
+	credStore, err = downloader.LoadCredentialFile(rv.Settings.CredentialsFile)
 	if err != nil {
 		return err
 	}
@@ -246,7 +246,7 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 		downloader.WithSource(*s),
 		downloader.WithLogWriter(rv.LogWriter),
 		downloader.WithSettings(*rv.Settings),
-		downloader.WithCredsClient(credCli),
+		downloader.WithCredsStore(credStore),
 		downloader.WithCachePath(cacheFullPath),
 		downloader.WithEnableCache(rv.EnableCache),
 		downloader.WithInsecureSkipTLSverify(rv.InsecureSkipTLSverify),
