@@ -8,6 +8,7 @@ import (
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"kcl-lang.io/kpm/pkg/checker"
 	"kcl-lang.io/kpm/pkg/constants"
+	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/features"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
@@ -140,12 +141,14 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 
 		selectedDep.LocalFullPath = dep.LocalFullPath
 		if selectedDep.Sum == "" {
-			sum, err := c.AcquireDepSum(*selectedDep)
-			if err != nil {
-				return err
-			}
-			if sum != "" {
-				selectedDep.Sum = sum
+			if !env.SkipChecksumCheck(selectedDep.Name) {
+				sum, err := c.AcquireDepSum(*selectedDep)
+				if err != nil {
+					return err
+				}
+				if sum != "" {
+					selectedDep.Sum = sum
+				}
 			}
 		}
 		kMod.Dependencies.Deps.Set(dep.Name, *selectedDep)

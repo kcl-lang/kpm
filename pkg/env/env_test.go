@@ -22,3 +22,27 @@ func TestGetAbsPkgPath(t *testing.T) {
 	assert.Equal(t, got, filepath.Join(expect, "test_subdir"))
 	assert.Equal(t, err, nil)
 }
+
+func TestSkipChecksumCheck(t *testing.T) {
+	defer os.Unsetenv(KPM_NO_SUM)
+
+	// Test exact matches
+	os.Setenv(KPM_NO_SUM, "crossplane,k8s")
+	assert.Equal(t, SkipChecksumCheck("crossplane"), true)
+	assert.Equal(t, SkipChecksumCheck("k8s"), true)
+	assert.Equal(t, SkipChecksumCheck("json_merge_patch"), false)
+
+	// Test wildcard
+	os.Setenv(KPM_NO_SUM, "*")
+	assert.Equal(t, SkipChecksumCheck("anything"), true)
+	assert.Equal(t, SkipChecksumCheck("crossplane"), true)
+
+	// Test prefix wildcard
+	os.Setenv(KPM_NO_SUM, "k8s-*")
+	assert.Equal(t, SkipChecksumCheck("k8s-utils"), true)
+	assert.Equal(t, SkipChecksumCheck("crossplane"), false)
+
+	// Test empty environment variable
+	os.Setenv(KPM_NO_SUM, "")
+	assert.Equal(t, SkipChecksumCheck("crossplane"), false)
+}
