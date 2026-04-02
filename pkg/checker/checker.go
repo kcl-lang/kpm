@@ -12,6 +12,7 @@ import (
 
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/downloader"
+	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/oci"
 	"kcl-lang.io/kpm/pkg/opt"
 	pkg "kcl-lang.io/kpm/pkg/package"
@@ -147,6 +148,11 @@ func (sc *SumChecker) Check(kclPkg pkg.KclPkg) error {
 
 	for _, key := range kclPkg.Dependencies.Deps.Keys() {
 		dep, _ := kclPkg.Dependencies.Deps.Get(key)
+
+		if env.SkipChecksumCheck(dep.Name) {
+			continue
+		}
+
 		trustedSum, err := sc.getTrustedSum(dep)
 		if err != nil {
 			return fmt.Errorf("failed to get checksum from trusted source: %w", err)

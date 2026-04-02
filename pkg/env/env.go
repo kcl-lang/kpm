@@ -2,7 +2,9 @@ package env
 
 import (
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/utils"
@@ -12,6 +14,7 @@ import (
 const PKG_PATH = "KCL_PKG_PATH"
 const MODULES_SUB_DIR = "modules"
 const KCL_DATA_DIR = "kcl"
+const KPM_NO_SUM = "KPM_NO_SUM"
 
 // GetEnvPkgPath will return the env $KCL_PKG_PATH.
 func GetEnvPkgPath() string {
@@ -51,4 +54,25 @@ func GetAbsPkgPath() (string, error) {
 	}
 
 	return kpmHome, nil
+}
+
+func SkipChecksumCheck(depName string) bool {
+	noSumEnv := os.Getenv(KPM_NO_SUM)
+	if noSumEnv == "" {
+		return false
+	}
+
+	patterns := strings.Split(noSumEnv, ",")
+	for _, pattern := range patterns {
+		pattern = strings.TrimSpace(pattern)
+		if pattern == "" {
+			continue
+		}
+
+		matched, err := path.Match(pattern, depName)
+		if err == nil && matched {
+			return true
+		}
+	}
+	return false
 }
