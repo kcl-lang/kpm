@@ -2,9 +2,20 @@ package client
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
+	"net/http"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
+	"time"
+
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+	"oras.land/oras-go/v2"
+	"oras.land/oras-go/v2/registry/remote"
+	"oras.land/oras-go/v2/registry/remote/auth"
+	"oras.land/oras-go/v2/registry/remote/retry"
 
 	"github.com/stretchr/testify/assert"
 	"kcl-lang.io/kpm/pkg/downloader"
@@ -29,11 +40,33 @@ func pushWithForce(kpmcli *KpmClient, pushedModPath string, force bool) error {
 	)
 }
 
+func waitForRegistry(t *testing.T, addr string) {
+	t.Helper()
+
+	client := &http.Client{Timeout: time.Second}
+	deadline := time.Now().Add(30 * time.Second)
+	for time.Now().Before(deadline) {
+		resp, err := client.Get("http://" + addr + "/v2/")
+		if err == nil {
+			_ = resp.Body.Close()
+			if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusUnauthorized {
+				return
+			}
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	t.Fatalf("registry %s did not become ready in time", addr)
+}
+
 func TestPush(t *testing.T) {
 	testFunc := func(t *testing.T, kpmcli *KpmClient) {
 		if runtime.GOOS == "windows" {
 			t.Skip("Skipping test on Windows")
 		}
+		assert.NoError(t, os.Setenv("OCI_REG_PLAIN_HTTP", "ON"))
+		defer os.Unsetenv("OCI_REG_PLAIN_HTTP")
+
 		err := mock.StartDockerRegistry()
 		if err != nil {
 			t.Errorf("Error starting docker registry: %v", err)
@@ -45,6 +78,10 @@ func TestPush(t *testing.T) {
 				t.Errorf("Error stopping docker registry: %v", err)
 			}
 		}()
+		waitForRegistry(t, "localhost:5002")
+
+		_, err = kpmcli.GetSettings().LoadSettingsFromEnv()
+		assert.NoError(t, err)
 
 		kpmcli.SetInsecureSkipTLSverify(true)
 		err = kpmcli.LoginOci("localhost:5002", "test", "1234")
@@ -69,6 +106,30 @@ func TestPush(t *testing.T) {
 		assert.Contains(t, buf.String(), "package 'push_0' will be pushed")
 		assert.Contains(t, buf.String(), "pushed [registry] localhost:5002/test/push_0")
 		assert.Contains(t, buf.String(), "digest: sha256:")
+
+		repo, err := remote.NewRepository("localhost:5002/test/push_0")
+		assert.NoError(t, err)
+		repo.PlainHTTP = true
+		repo.Client = &auth.Client{
+			Client: retry.DefaultClient,
+			Cache:  auth.DefaultCache,
+			Credential: auth.StaticCredential("localhost:5002", auth.Credential{
+				Username: "test",
+				Password: "1234",
+			}),
+		}
+
+		_, manifestContent, err := oras.FetchBytes(context.Background(), repo, "0.0.1", oras.DefaultFetchBytesOptions)
+		if assert.NoError(t, err) {
+			var manifest v1.Manifest
+			if assert.NoError(t, json.Unmarshal(manifestContent, &manifest)) {
+				assert.Equal(t, "application/vnd.oci.image.layer.v1.tar+gzip", manifest.ArtifactType)
+				if assert.Len(t, manifest.Layers, 1) {
+					assert.Equal(t, "application/vnd.oci.image.layer.v1.tar+gzip", manifest.Layers[0].MediaType)
+					assert.Equal(t, "push_0_0.0.1.tgz", manifest.Layers[0].Annotations["org.opencontainers.image.title"])
+				}
+			}
+		}
 
 		// Clean the buffer for the next test
 		buf.Reset()

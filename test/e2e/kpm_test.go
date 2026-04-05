@@ -339,6 +339,10 @@ var _ = ginkgo.Describe("Kpm CLI Testing", func() {
 				var manifest_expect v1.Manifest
 				err = json.Unmarshal(bytes, &manifest_expect)
 				gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
+				gomega.Expect(manifest_expect.ArtifactType).To(gomega.Equal(manifest_got.ArtifactType))
+				gomega.Expect(len(manifest_expect.Layers)).To(gomega.Equal(len(manifest_got.Layers)))
+				gomega.Expect(manifest_expect.Layers[0].MediaType).To(gomega.Equal(manifest_got.Layers[0].MediaType))
+				gomega.Expect(manifest_expect.Layers[0].Annotations["org.opencontainers.image.title"]).To(gomega.Equal(manifest_got.Layers[0].Annotations["org.opencontainers.image.title"]))
 				gomega.Expect(len(manifest_expect.Annotations)).To(gomega.Equal(len(manifest_got.Annotations)))
 				gomega.Expect(manifest_expect.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_NAME]).
 					To(gomega.Equal(manifest_got.Annotations[constants.DEFAULT_KCL_OCI_MANIFEST_NAME]))
