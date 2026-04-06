@@ -473,6 +473,13 @@ func (c *KpmClient) Compile(pkg *pkg.KclPkg, compiler *runner.Compiler) (*kcl.KC
 // AddDepWithOpts will add a dependency to the current kcl package.
 // Deperated: Use Add instead.
 func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pkg.KclPkg, error) {
+	if opt == nil {
+		return nil, fmt.Errorf("add options cannot be nil")
+	}
+	if kclPkg == nil {
+		return nil, fmt.Errorf("kcl package cannot be nil")
+	}
+
 	c.noSumCheck = opt.NoSumCheck
 	kclPkg.NoSumCheck = opt.NoSumCheck
 
