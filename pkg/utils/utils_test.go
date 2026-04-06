@@ -72,6 +72,22 @@ func TestHashDir(t *testing.T) {
 	assert.Equal(t, res, "n4bQgYhMfWWaL+qgxVrQFaO/TxsrC4Is0V1sFbDwCgg=")
 }
 
+func TestGetUsernamePasswordFromStdin(t *testing.T) {
+	runWithStdin(t, "secret\n", func() {
+		username, password, err := GetUsernamePassword("test-user", "", true)
+		assert.NoError(t, err)
+		assert.Equal(t, "test-user", username)
+		assert.Equal(t, "secret", password)
+	})
+}
+
+func TestGetUsernamePasswordFromEmptyStdin(t *testing.T) {
+	runWithStdin(t, "\n", func() {
+		_, _, err := GetUsernamePassword("test-user", "", true)
+		assert.EqualError(t, err, "password required")
+	})
+}
+
 func TestTarDir(t *testing.T) {
 	testDir := getTestDir("test_tar")
 	tarPath := filepath.Join(testDir, "test.tar")
@@ -148,6 +164,26 @@ func TestTarDir(t *testing.T) {
 	_, err = os.Stat(tarPath)
 	assert.Equal(t, err, nil)
 	os.Remove(tarPath)
+}
+
+func runWithStdin(t *testing.T, input string, fn func()) {
+	t.Helper()
+
+	oldStdin := os.Stdin
+	reader, writer, err := os.Pipe()
+	assert.NoError(t, err)
+
+	_, err = writer.WriteString(input)
+	assert.NoError(t, err)
+	assert.NoError(t, writer.Close())
+
+	os.Stdin = reader
+	defer func() {
+		os.Stdin = oldStdin
+		assert.NoError(t, reader.Close())
+	}()
+
+	fn()
 }
 
 func TestUnTarDir(t *testing.T) {

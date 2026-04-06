@@ -32,6 +32,10 @@ func NewLoginCmd(kpmcli *client.KpmClient) *cli.Command {
 				Aliases: []string{"p"},
 				Usage:   "registry password or identity token",
 			},
+			&cli.BoolFlag{
+				Name:  "password-stdin",
+				Usage: "take the registry password from stdin",
+			},
 		},
 		Action: func(c *cli.Context) error {
 			if c.NArg() == 0 {
@@ -40,10 +44,22 @@ func NewLoginCmd(kpmcli *client.KpmClient) *cli.Command {
 					fmt.Errorf("registry must be specified"),
 				)
 			}
+			if c.String("password") != "" && c.Bool("password-stdin") {
+				return reporter.NewErrorEvent(
+					reporter.InvalidCmd,
+					fmt.Errorf("password and password-stdin cannot be used together"),
+				)
+			}
 			if c.String("password") != "" && c.String("username") == "" {
 				return reporter.NewErrorEvent(
 					reporter.InvalidCmd,
 					fmt.Errorf("username must be specified when password is provided"),
+				)
+			}
+			if c.Bool("password-stdin") && c.String("username") == "" {
+				return reporter.NewErrorEvent(
+					reporter.InvalidCmd,
+					fmt.Errorf("username must be specified when password-stdin is used"),
 				)
 			}
 			registry := c.Args().First()
