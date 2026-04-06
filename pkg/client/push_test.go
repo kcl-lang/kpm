@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -64,8 +63,7 @@ func TestPush(t *testing.T) {
 		if runtime.GOOS == "windows" {
 			t.Skip("Skipping test on Windows")
 		}
-		assert.NoError(t, os.Setenv("OCI_REG_PLAIN_HTTP", "ON"))
-		defer os.Unsetenv("OCI_REG_PLAIN_HTTP")
+		enableLocalRegistryPlainHTTP(t, kpmcli)
 
 		err := mock.StartDockerRegistry()
 		if err != nil {
@@ -79,9 +77,6 @@ func TestPush(t *testing.T) {
 			}
 		}()
 		waitForRegistry(t, "localhost:5002")
-
-		_, err = kpmcli.GetSettings().LoadSettingsFromEnv()
-		assert.NoError(t, err)
 
 		kpmcli.SetInsecureSkipTLSverify(true)
 		err = kpmcli.LoginOci("localhost:5002", "test", "1234")
