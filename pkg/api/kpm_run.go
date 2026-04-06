@@ -1,7 +1,6 @@
 package api
 
 import (
-	goerrors "errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -116,7 +115,7 @@ func RunCurrentPkg(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 
 // RunTarPkg will compile the kcl package from a kcl package tar.
 func RunTarPkg(tarPath string, opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
-	absTarPath, err := utils.AbsTarPath(tarPath)
+	absTarPath, err := utils.AbsPkgArchivePath(tarPath)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +123,7 @@ func RunTarPkg(tarPath string, opts *opt.CompileOptions) (*kcl.KCLResultList, er
 	// e.g.
 	// 'xxx/xxx/xxx/test.tar' will be extracted to the directory 'xxx/xxx/xxx/test'.
 	destDir := strings.TrimSuffix(absTarPath, filepath.Ext(absTarPath))
-	err = utils.UnTarDir(absTarPath, destDir)
+	err = utils.ExtractPkgArchive(absTarPath, destDir)
 	if err != nil {
 		return nil, err
 	}
@@ -173,17 +172,13 @@ func RunOciPkg(ociRef, version string, opts *opt.CompileOptions) (*kcl.KCLResult
 		return nil, err
 	}
 
-	// 3. Resolve the downloaded package archive.
-	tarPath, err := utils.FindPkgArchive(localPath)
+	archivePath, err := utils.FindPkgArchive(localPath)
 	if err != nil {
-		if goerrors.Is(err, utils.PkgArchiveNotFound) {
-			return nil, errors.FailedPull
-		}
 		return nil, reporter.NewErrorEvent(reporter.FailedGetPkg, err, "failed to pull kcl package")
 	}
 
-	// 4. Extract the pulled archive.
-	absTarPath, err := filepath.Abs(tarPath)
+	// 4. Untar the tar file.
+	absTarPath, err := utils.AbsPkgArchivePath(archivePath)
 	if err != nil {
 		return nil, err
 	}
@@ -192,11 +187,7 @@ func RunOciPkg(ociRef, version string, opts *opt.CompileOptions) (*kcl.KCLResult
 	// e.g.
 	// 'xxx/xxx/xxx/test.tar' will be extracted to the directory 'xxx/xxx/xxx/test'.
 	destDir := strings.TrimSuffix(absTarPath, filepath.Ext(absTarPath))
-	if utils.IsTar(absTarPath) {
-		err = utils.UnTarDir(absTarPath, destDir)
-	} else {
-		err = utils.ExtractTarball(absTarPath, destDir)
-	}
+	err = utils.ExtractPkgArchive(absTarPath, destDir)
 	if err != nil {
 		return nil, err
 	}

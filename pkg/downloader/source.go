@@ -137,7 +137,7 @@ func (source *Source) IsRemote() bool {
 }
 
 func (source *Source) IsPackaged() bool {
-	return source.IsLocalTarPath() || source.Git != nil || source.Oci != nil || !source.ModSpec.IsNil()
+	return source.IsLocalTarPath() || source.IsLocalTgzPath() || source.Git != nil || source.Oci != nil || !source.ModSpec.IsNil()
 }
 
 // If the source is a local path, check if it is a real local package(a directory with kcl.mod file).
@@ -170,7 +170,7 @@ func (local *Local) IsLocalTarPath() bool {
 }
 
 func (local *Local) IsLocalTgzPath() bool {
-	return local != nil && filepath.Ext(local.Path) == constants.TarPathSuffix
+	return local != nil && filepath.Ext(local.Path) == constants.TgzPathSuffix
 }
 
 func (local *Local) IsLocalKPath() bool {

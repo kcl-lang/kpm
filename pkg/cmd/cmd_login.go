@@ -40,6 +40,12 @@ func NewLoginCmd(kpmcli *client.KpmClient) *cli.Command {
 					fmt.Errorf("registry must be specified"),
 				)
 			}
+			if c.String("password") != "" && c.String("username") == "" {
+				return reporter.NewErrorEvent(
+					reporter.InvalidCmd,
+					fmt.Errorf("username must be specified when password is provided"),
+				)
+			}
 			registry := c.Args().First()
 
 			username, password, err := utils.GetUsernamePassword(c.String("username"), c.String("password"), c.Bool("password-stdin"))

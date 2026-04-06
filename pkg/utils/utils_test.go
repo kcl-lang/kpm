@@ -2,6 +2,7 @@ package utils
 
 import (
 	"archive/tar"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"os"
@@ -237,6 +238,11 @@ func TestIsTar(t *testing.T) {
 	assert.Equal(t, IsTar("xxx.tar"), true)
 }
 
+func TestIsTgz(t *testing.T) {
+	assert.Equal(t, IsTgz("invalid tgz"), false)
+	assert.Equal(t, IsTgz("xxx.tgz"), true)
+}
+
 func TestIsKfile(t *testing.T) {
 	assert.Equal(t, IsKfile("invalid kfile"), false)
 	assert.Equal(t, IsKfile("xxx.k"), true)
@@ -257,6 +263,58 @@ func TestAbsTarPath(t *testing.T) {
 	abs, err = AbsTarPath(filepath.Join(pkgPath, "invalid_tar"))
 	assert.NotEqual(t, err, nil)
 	assert.Equal(t, abs, "")
+}
+
+func TestAbsPkgArchivePath(t *testing.T) {
+	testDir := t.TempDir()
+	tarPath := filepath.Join(testDir, "test.tar")
+	tgzPath := filepath.Join(testDir, "test.tgz")
+	assert.NoError(t, os.WriteFile(tarPath, []byte("tar"), 0644))
+	assert.NoError(t, os.WriteFile(tgzPath, []byte("tgz"), 0644))
+
+	abs, err := AbsPkgArchivePath(tarPath)
+	assert.NoError(t, err)
+	assert.Equal(t, abs, tarPath)
+
+	abs, err = AbsPkgArchivePath(tgzPath)
+	assert.NoError(t, err)
+	assert.Equal(t, abs, tgzPath)
+
+	abs, err = AbsPkgArchivePath(filepath.Join(testDir, "invalid.zip"))
+	assert.Error(t, err)
+	assert.Equal(t, abs, "")
+}
+
+func gzipTarFile(t *testing.T, srcPath, dstPath string) {
+	t.Helper()
+
+	src, err := os.Open(srcPath)
+	assert.NoError(t, err)
+	defer src.Close()
+
+	dst, err := os.Create(dstPath)
+	assert.NoError(t, err)
+	defer dst.Close()
+
+	gzipWriter := gzip.NewWriter(dst)
+	_, err = io.Copy(gzipWriter, src)
+	assert.NoError(t, err)
+	assert.NoError(t, gzipWriter.Close())
+}
+
+func TestExtractPkgArchive(t *testing.T) {
+	testDir := getTestDir("test_un_tar")
+	tarPath := filepath.Join(testDir, "test.tar")
+
+	tarDest := filepath.Join(t.TempDir(), "tar")
+	assert.NoError(t, ExtractPkgArchive(tarPath, tarDest))
+	assert.True(t, DirExists(tarDest))
+
+	tgzPath := filepath.Join(t.TempDir(), "test.tgz")
+	gzipTarFile(t, tarPath, tgzPath)
+	tgzDest := filepath.Join(t.TempDir(), "tgz")
+	assert.NoError(t, ExtractPkgArchive(tgzPath, tgzDest))
+	assert.True(t, DirExists(tgzDest))
 }
 
 func TestIsSymlinkExist(t *testing.T) {

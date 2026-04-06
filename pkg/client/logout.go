@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	remoteauth "oras.land/oras-go/v2/registry/remote/auth"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"oras.land/oras-go/v2/registry/remote/credentials"
 )
@@ -16,6 +17,15 @@ func (c *KpmClient) LogoutOci(hostname string) error {
 	}
 
 	store := credStore.GetAuthStore()
+	serverAddress := credentials.ServerAddressFromRegistry(hostname)
+	cred, err := store.Get(context.Background(), serverAddress)
+	if err != nil {
+		return err
+	}
+	if cred == remoteauth.EmptyCredential {
+		return reporter.NewErrorEvent(reporter.FailedLogout, fmt.Errorf("not logged in"), fmt.Sprintf("failed to logout '%s'", hostname))
+	}
+
 	err = credentials.Logout(context.Background(), store, hostname)
 
 	if err != nil {

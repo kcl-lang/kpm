@@ -1,1 +1,1 @@
-failed to login 'ghcr.io', please check registry, username and password is valid
+username must be specified when password is provided

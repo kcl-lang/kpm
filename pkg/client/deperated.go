@@ -1043,11 +1043,7 @@ func (c *KpmClient) PullFromOci(localPath, source, tag string) error {
 
 	// Untar the tar file.
 	storagePath := ociOpts.SanitizePathWithSuffix(localPath)
-	if utils.IsTar(tarPath) {
-		err = utils.UnTarDir(tarPath, storagePath)
-	} else {
-		err = utils.ExtractTarball(tarPath, storagePath)
-	}
+	err = utils.ExtractPkgArchive(tarPath, storagePath)
 	if err != nil {
 		return reporter.NewErrorEvent(
 			reporter.FailedUntarKclPkg,

@@ -1,7 +1,9 @@
 package api
 
 import (
+	"compress/gzip"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -154,6 +156,43 @@ func TestRunTarPkg(t *testing.T) {
 	if utils.DirExists(untarPath) {
 		os.RemoveAll(untarPath)
 	}
+}
+
+func gzipTestArchive(t *testing.T, srcPath, dstPath string) {
+	t.Helper()
+
+	src, err := os.Open(srcPath)
+	assert.NoError(t, err)
+	defer src.Close()
+
+	dst, err := os.Create(dstPath)
+	assert.NoError(t, err)
+	defer dst.Close()
+
+	gzipWriter := gzip.NewWriter(dst)
+	_, err = io.Copy(gzipWriter, src)
+	assert.NoError(t, err)
+	assert.NoError(t, gzipWriter.Close())
+}
+
+func TestRunTgzPkg(t *testing.T) {
+	pkgPath := getTestDir("test_run_tar_in_path")
+	tmpDir := t.TempDir()
+	tgzPath := filepath.Join(tmpDir, "test.tgz")
+	gzipTestArchive(t, filepath.Join(pkgPath, "test.tar"), tgzPath)
+	untarPath := strings.TrimSuffix(tgzPath, filepath.Ext(tgzPath))
+	expectPath := filepath.Join(pkgPath, "expected")
+	expectPathJson := filepath.Join(pkgPath, "expected.json")
+
+	expectedResult, _ := os.ReadFile(expectPath)
+	expectedResultJson, _ := os.ReadFile(expectPathJson)
+	opts := opt.DefaultCompileOptions()
+	opts.SetVendor(true)
+	gotResult, err := RunTarPkg(tgzPath, opts)
+	assert.NoError(t, err)
+	assert.Equal(t, utils.RmNewline(string(expectedResult)), utils.RmNewline(gotResult.GetRawYamlResult()))
+	assert.Equal(t, utils.RmNewline(string(expectedResultJson)), utils.RmNewline(gotResult.GetRawJsonResult()))
+	assert.True(t, utils.DirExists(untarPath))
 }
 
 func testRunWithNoSumCheck(t *testing.T) {
