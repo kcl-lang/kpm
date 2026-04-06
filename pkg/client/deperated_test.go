@@ -13,6 +13,7 @@ import (
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/opt"
+	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/utils"
 )
 
@@ -103,6 +104,17 @@ func testRunOciWithSettingsFile(t *testing.T, kpmcli *KpmClient) {
 	opts.SetHasSettingsYaml(true)
 	_, err := kpmcli.CompileOciPkg("oci://ghcr.io/kcl-lang/helloworld", "", opts)
 	assert.Equal(t, err, nil)
+}
+
+func TestAddDepWithOptsRejectsNilInputs(t *testing.T) {
+	kpmcli, err := NewKpmClient()
+	assert.NoError(t, err)
+
+	_, err = kpmcli.AddDepWithOpts(nil, &opt.AddOptions{})
+	assert.EqualError(t, err, "kcl package cannot be nil")
+
+	_, err = kpmcli.AddDepWithOpts(&pkg.KclPkg{}, nil)
+	assert.EqualError(t, err, "add options cannot be nil")
 }
 
 // TODO: failed because of https://github.com/kcl-lang/kcl/issues/1660, re-enable this test after the issue is fixed
