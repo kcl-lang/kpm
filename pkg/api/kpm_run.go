@@ -1,13 +1,13 @@
 package api
 
 import (
+	goerrors "errors"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/client"
-	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/oci"
@@ -173,26 +173,30 @@ func RunOciPkg(ociRef, version string, opts *opt.CompileOptions) (*kcl.KCLResult
 		return nil, err
 	}
 
-	// 3.Get the (*.tar) file path.
-	matches, err := filepath.Glob(filepath.Join(localPath, constants.KCL_PKG_TAR))
-	if err != nil || len(matches) != 1 {
-		if err != nil {
-			return nil, reporter.NewErrorEvent(reporter.FailedGetPkg, err, "failed to pull kcl package")
-		} else {
+	// 3. Resolve the downloaded package archive.
+	tarPath, err := utils.FindPkgArchive(localPath)
+	if err != nil {
+		if goerrors.Is(err, utils.PkgArchiveNotFound) {
 			return nil, errors.FailedPull
 		}
+		return nil, reporter.NewErrorEvent(reporter.FailedGetPkg, err, "failed to pull kcl package")
 	}
 
-	// 4. Untar the tar file.
-	absTarPath, err := utils.AbsTarPath(matches[0])
+	// 4. Extract the pulled archive.
+	absTarPath, err := filepath.Abs(tarPath)
 	if err != nil {
 		return nil, err
 	}
+
 	// Extract the tar package to a directory with the same name.
 	// e.g.
 	// 'xxx/xxx/xxx/test.tar' will be extracted to the directory 'xxx/xxx/xxx/test'.
 	destDir := strings.TrimSuffix(absTarPath, filepath.Ext(absTarPath))
-	err = utils.UnTarDir(absTarPath, destDir)
+	if utils.IsTar(absTarPath) {
+		err = utils.UnTarDir(absTarPath, destDir)
+	} else {
+		err = utils.ExtractTarball(absTarPath, destDir)
+	}
 	if err != nil {
 		return nil, err
 	}
