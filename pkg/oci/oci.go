@@ -1,6 +1,7 @@
 package oci
 
 import (
+	"compress/gzip"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -14,6 +15,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/containers/image/v5/docker"
 	"github.com/containers/image/v5/types"
@@ -36,7 +38,7 @@ import (
 )
 
 const OCI_SCHEME = "oci"
-const DEFAULT_OCI_ARTIFACT_TYPE = "application/vnd.oci.image.layer.v1.tar"
+const DEFAULT_OCI_ARTIFACT_TYPE = "application/vnd.oci.image.layer.v1.tar+gzip"
 const (
 	OciErrorCodeNameUnknown  = "NAME_UNKNOWN"
 	OciErrorCodeRepoNotFound = "NOT_FOUND"
@@ -296,6 +298,55 @@ func (ociClient *OciClient) ContainsTag(tag string) (bool, *reporter.KpmEvent) {
 	return exists, nil
 }
 
+// prepareArtifactLayer converts the local package tarball into the gzip-compressed
+// layer format expected by OCI consumers such as Flux.
+func prepareArtifactLayer(localPath string) (string, func(), error) {
+	if strings.HasSuffix(localPath, ".tgz") {
+		return localPath, func() {}, nil
+	}
+
+	layerPath := strings.TrimSuffix(localPath, filepath.Ext(localPath)) + ".tgz"
+	cleanup := func() {
+		_ = os.Remove(layerPath)
+	}
+
+	src, err := os.Open(localPath)
+	if err != nil {
+		return "", func() {}, err
+	}
+	defer src.Close()
+
+	dst, err := os.Create(layerPath)
+	if err != nil {
+		return "", func() {}, err
+	}
+
+	success := false
+	defer func() {
+		_ = dst.Close()
+		if !success {
+			cleanup()
+		}
+	}()
+
+	gzipWriter := gzip.NewWriter(dst)
+	gzipWriter.ModTime = time.Unix(0, 0)
+
+	if _, err := io.Copy(gzipWriter, src); err != nil {
+		_ = gzipWriter.Close()
+		return "", func() {}, err
+	}
+	if err := gzipWriter.Close(); err != nil {
+		return "", func() {}, err
+	}
+	if err := dst.Close(); err != nil {
+		return "", func() {}, err
+	}
+
+	success = true
+	return layerPath, cleanup, nil
+}
+
 // Push will push the oci artifacts to oci registry from local path
 func (ociClient *OciClient) Push(localPath, tag string) *reporter.KpmEvent {
 	return ociClient.PushWithOciManifest(localPath, tag, &opt.OciManifestOptions{})
@@ -303,8 +354,14 @@ func (ociClient *OciClient) Push(localPath, tag string) *reporter.KpmEvent {
 
 // PushWithManifest will push the oci artifacts to oci registry from local path
 func (ociClient *OciClient) PushWithOciManifest(localPath, tag string, opts *opt.OciManifestOptions) *reporter.KpmEvent {
+	layerPath, cleanupLayer, err := prepareArtifactLayer(localPath)
+	if err != nil {
+		return reporter.NewErrorEvent(reporter.FailedPush, err, fmt.Sprintf("Failed to prepare package '%s' for push", localPath))
+	}
+	defer cleanupLayer()
+
 	// 0. Create a file store
-	fs, err := file.New(filepath.Dir(localPath))
+	fs, err := file.New(filepath.Dir(layerPath))
 	if err != nil {
 		return reporter.NewErrorEvent(reporter.FailedPush, err, "Failed to load store path ", localPath)
 	}
@@ -312,7 +369,7 @@ func (ociClient *OciClient) PushWithOciManifest(localPath, tag string, opts *opt
 
 	// 1. Add files to a file store
 
-	fileNames := []string{localPath}
+	fileNames := []string{layerPath}
 	fileDescriptors := make([]v1.Descriptor, 0, len(fileNames))
 	for _, name := range fileNames {
 		// The file name of the pushed file cannot be a file path,
