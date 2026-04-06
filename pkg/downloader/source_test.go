@@ -27,3 +27,15 @@ func TestParseModSpecFromStr(t *testing.T) {
 		})
 	}
 }
+
+func TestLocalArchiveSourceDetection(t *testing.T) {
+	tarSource := &Source{Local: &Local{Path: "/tmp/test.tar"}}
+	assert.Equal(t, tarSource.IsLocalTarPath(), true)
+	assert.Equal(t, tarSource.IsLocalTgzPath(), false)
+	assert.Equal(t, tarSource.IsPackaged(), true)
+
+	tgzSource := &Source{Local: &Local{Path: "/tmp/test.tgz"}}
+	assert.Equal(t, tgzSource.IsLocalTarPath(), false)
+	assert.Equal(t, tgzSource.IsLocalTgzPath(), true)
+	assert.Equal(t, tgzSource.IsPackaged(), true)
+}

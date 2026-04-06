@@ -625,6 +625,16 @@ func IsTar(str string) bool {
 	return strings.HasSuffix(str, constants.TarPathSuffix)
 }
 
+// IsTgz will check whether the string 'str' is a tgz path.
+func IsTgz(str string) bool {
+	return strings.HasSuffix(str, constants.TgzPathSuffix)
+}
+
+// IsPkgArchive will check whether the string 'str' is a supported package archive path.
+func IsPkgArchive(str string) bool {
+	return IsTar(str) || IsTgz(str)
+}
+
 // IsKfile will check whether the string 'str' is a k file path.
 func IsKfile(str string) bool {
 	return strings.HasSuffix(str, constants.KFilePathSuffix)
@@ -661,6 +671,34 @@ func AbsTarPath(tarPath string) (string, error) {
 	}
 
 	return absTarPath, nil
+}
+
+// AbsPkgArchivePath checks whether path 'archivePath' exists and whether path 'archivePath'
+// ends with '.tar' or '.tgz'. And after checking, it returns the absolute path.
+func AbsPkgArchivePath(archivePath string) (string, error) {
+	absArchivePath, err := filepath.Abs(archivePath)
+	if err != nil {
+		return "", err
+	}
+
+	if !IsPkgArchive(absArchivePath) {
+		return "", errors.InvalidKclPacakgeTar
+	} else if !DirExists(absArchivePath) {
+		return "", errors.KclPacakgeTarNotFound
+	}
+
+	return absArchivePath, nil
+}
+
+// ExtractPkgArchive extracts a package archive in '.tar' or '.tgz' format to 'destDir'.
+func ExtractPkgArchive(archivePath string, destDir string) error {
+	if IsTar(archivePath) {
+		return UnTarDir(archivePath, destDir)
+	}
+	if IsTgz(archivePath) {
+		return ExtractTarball(archivePath, destDir)
+	}
+	return errors.InvalidKclPacakgeTar
 }
 
 // FindPackage finds the package with the package name 'targetPackage' under the 'root' directory kcl.mod file.

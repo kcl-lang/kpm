@@ -7,7 +7,6 @@ import (
 
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/client"
-	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/errors"
 	"kcl-lang.io/kpm/pkg/oci"
@@ -116,7 +115,7 @@ func RunCurrentPkg(opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
 
 // RunTarPkg will compile the kcl package from a kcl package tar.
 func RunTarPkg(tarPath string, opts *opt.CompileOptions) (*kcl.KCLResultList, error) {
-	absTarPath, err := utils.AbsTarPath(tarPath)
+	absTarPath, err := utils.AbsPkgArchivePath(tarPath)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +123,7 @@ func RunTarPkg(tarPath string, opts *opt.CompileOptions) (*kcl.KCLResultList, er
 	// e.g.
 	// 'xxx/xxx/xxx/test.tar' will be extracted to the directory 'xxx/xxx/xxx/test'.
 	destDir := strings.TrimSuffix(absTarPath, filepath.Ext(absTarPath))
-	err = utils.UnTarDir(absTarPath, destDir)
+	err = utils.ExtractPkgArchive(absTarPath, destDir)
 	if err != nil {
 		return nil, err
 	}
@@ -173,18 +172,13 @@ func RunOciPkg(ociRef, version string, opts *opt.CompileOptions) (*kcl.KCLResult
 		return nil, err
 	}
 
-	// 3.Get the (*.tar) file path.
-	matches, err := filepath.Glob(filepath.Join(localPath, constants.KCL_PKG_TAR))
-	if err != nil || len(matches) != 1 {
-		if err != nil {
-			return nil, reporter.NewErrorEvent(reporter.FailedGetPkg, err, "failed to pull kcl package")
-		} else {
-			return nil, errors.FailedPull
-		}
+	archivePath, err := utils.FindPkgArchive(localPath)
+	if err != nil {
+		return nil, reporter.NewErrorEvent(reporter.FailedGetPkg, err, "failed to pull kcl package")
 	}
 
 	// 4. Untar the tar file.
-	absTarPath, err := utils.AbsTarPath(matches[0])
+	absTarPath, err := utils.AbsPkgArchivePath(archivePath)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +186,7 @@ func RunOciPkg(ociRef, version string, opts *opt.CompileOptions) (*kcl.KCLResult
 	// e.g.
 	// 'xxx/xxx/xxx/test.tar' will be extracted to the directory 'xxx/xxx/xxx/test'.
 	destDir := strings.TrimSuffix(absTarPath, filepath.Ext(absTarPath))
-	err = utils.UnTarDir(absTarPath, destDir)
+	err = utils.ExtractPkgArchive(absTarPath, destDir)
 	if err != nil {
 		return nil, err
 	}

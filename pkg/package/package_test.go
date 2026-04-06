@@ -1,8 +1,11 @@
 package pkg
 
 import (
+	"compress/gzip"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -137,6 +140,37 @@ func TestLoadKclPkgFromTar(t *testing.T) {
 	assert.Equal(t, utils.DirExists(filepath.Join(testDir, "kcl1-v0.0.3")), true)
 	err = os.RemoveAll(filepath.Join(testDir, "kcl1-v0.0.3"))
 	assert.Equal(t, err, nil)
+}
+
+func gzipArchiveFile(t *testing.T, srcPath, dstPath string) {
+	t.Helper()
+
+	src, err := os.Open(srcPath)
+	assert.NoError(t, err)
+	defer src.Close()
+
+	dst, err := os.Create(dstPath)
+	assert.NoError(t, err)
+	defer dst.Close()
+
+	gzipWriter := gzip.NewWriter(dst)
+	_, err = io.Copy(gzipWriter, src)
+	assert.NoError(t, err)
+	assert.NoError(t, gzipWriter.Close())
+}
+
+func TestLoadKclPkgFromTgz(t *testing.T) {
+	testDir := getTestDir("load_kcl_tar")
+	tmpDir := t.TempDir()
+	tgzPath := filepath.Join(tmpDir, "kcl1-v0.0.3.tgz")
+	gzipArchiveFile(t, filepath.Join(testDir, "kcl1-v0.0.3.tar"), tgzPath)
+
+	kclPkg, err := LoadKclPkgFromTar(tgzPath)
+	assert.NoError(t, err)
+	assert.Equal(t, kclPkg.ModFile.Pkg.Name, "kcl1")
+	assert.Equal(t, kclPkg.ModFile.Pkg.Version, "0.0.3")
+
+	assert.NoError(t, os.RemoveAll(strings.TrimSuffix(tgzPath, filepath.Ext(tgzPath))))
 }
 
 // Test load package whose dependencies in kcl.mod and kcl.mod.lock is different
