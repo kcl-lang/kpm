@@ -305,12 +305,7 @@ func FindFirstKclPkgFrom(pkgpath string) (*KclPkg, error) {
 
 	tarPath := matches[0]
 	unTarPath := filepath.Dir(tarPath)
-	var err error
-	if utils.IsTar(tarPath) {
-		err = utils.UnTarDir(tarPath, unTarPath)
-	} else {
-		err = utils.ExtractTarball(tarPath, unTarPath)
-	}
+	err := utils.ExtractPkgArchive(tarPath, unTarPath)
 	if err != nil {
 		return nil, reporter.NewErrorEvent(
 			reporter.FailedUntarKclPkg,
@@ -346,8 +341,12 @@ func FindFirstKclPkgFrom(pkgpath string) (*KclPkg, error) {
 // LoadKclPkgFromTar loads a package *.tar file from the 'pkgTarPath'
 // The default oci registry in '$KCL_PKG_PATH/.kpm/config/kpm.json' will be used.
 func LoadKclPkgFromTar(pkgTarPath string) (*KclPkg, error) {
-	destDir := strings.TrimSuffix(pkgTarPath, filepath.Ext(pkgTarPath))
-	err := utils.UnTarDir(pkgTarPath, destDir)
+	absTarPath, err := utils.AbsPkgArchivePath(pkgTarPath)
+	if err != nil {
+		return nil, err
+	}
+	destDir := strings.TrimSuffix(absTarPath, filepath.Ext(absTarPath))
+	err = utils.ExtractPkgArchive(absTarPath, destDir)
 	if err != nil {
 		return nil, err
 	}
