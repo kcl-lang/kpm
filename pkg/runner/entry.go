@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/golang-collections/collections/set"
 	"kcl-lang.io/kpm/pkg/constants"
@@ -137,6 +138,12 @@ func FindRunEntryFrom(sources []string) (*Entry, *reporter.KpmEvent) {
 			modPathSet.Insert(source)
 			entry.SetPackageSource(source)
 			entry.SetKind(GetSourceKindFrom(source))
+		} else if looksLikeLocalPath(source) {
+			return nil, reporter.NewErrorEvent(
+				reporter.CompileFailed,
+				os.ErrNotExist,
+				fmt.Sprintf("failed to access path '%s'", source),
+			)
 		}
 	}
 
@@ -162,6 +169,23 @@ func FindRunEntryFrom(sources []string) (*Entry, *reporter.KpmEvent) {
 	}
 
 	return &entry, nil
+}
+
+func looksLikeLocalPath(source string) bool {
+	if source == "." || source == ".." || filepath.IsAbs(source) {
+		return true
+	}
+
+	if utils.IsKfile(source) {
+		return true
+	}
+
+	if strings.HasPrefix(source, "."+string(filepath.Separator)) ||
+		strings.HasPrefix(source, ".."+string(filepath.Separator)) {
+		return true
+	}
+
+	return strings.ContainsAny(source, `/\`)
 }
 
 // GetSourceKindFrom will return the kind of the source.

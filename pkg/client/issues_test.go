@@ -440,6 +440,8 @@ func TestKclIssue1768(t *testing.T) {
 		if runtime.GOOS == "windows" {
 			t.Skip("Skipping test on Windows")
 		}
+		enableLocalRegistryPlainHTTP(t, kpmcli)
+
 		err := mock.StartDockerRegistry()
 		if err != nil {
 			t.Errorf("Error starting docker registry: %v", err)
@@ -451,6 +453,7 @@ func TestKclIssue1768(t *testing.T) {
 				t.Errorf("Error stopping docker registry: %v", err)
 			}
 		}()
+		waitForRegistry(t, "localhost:5002")
 
 		kpmcli.SetInsecureSkipTLSverify(true)
 		err = kpmcli.LoginOci("localhost:5002", "test", "1234")

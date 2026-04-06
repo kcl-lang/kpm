@@ -182,6 +182,7 @@ func RunOciPkg(ociRef, version string, opts *opt.CompileOptions) (*kcl.KCLResult
 	if err != nil {
 		return nil, err
 	}
+
 	// Extract the tar package to a directory with the same name.
 	// e.g.
 	// 'xxx/xxx/xxx/test.tar' will be extracted to the directory 'xxx/xxx/xxx/test'.

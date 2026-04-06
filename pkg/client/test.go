@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"kcl-lang.io/kpm/pkg/reporter"
 )
 
 const testDataDir = "test_data"
@@ -61,5 +63,26 @@ func RunTestWithGlobalLockAndKpmCli(t *testing.T, testSuites []TestSuite) {
 		t.Run(testSuite.Name, func(t *testing.T) {
 			testSuite.TestFunc(t, kpmcli)
 		})
+	}
+}
+
+func enableLocalRegistryPlainHTTP(t *testing.T, kpmcli *KpmClient) {
+	t.Helper()
+
+	prev, hadPrev := os.LookupEnv("OCI_REG_PLAIN_HTTP")
+	if err := os.Setenv("OCI_REG_PLAIN_HTTP", "ON"); err != nil {
+		t.Fatalf("failed to set OCI_REG_PLAIN_HTTP: %v", err)
+	}
+	t.Cleanup(func() {
+		if hadPrev {
+			_ = os.Setenv("OCI_REG_PLAIN_HTTP", prev)
+			return
+		}
+		_ = os.Unsetenv("OCI_REG_PLAIN_HTTP")
+	})
+
+	_, evt := kpmcli.GetSettings().LoadSettingsFromEnv()
+	if evt != (*reporter.KpmEvent)(nil) {
+		t.Fatalf("failed to load settings from env: %v", evt)
 	}
 }
