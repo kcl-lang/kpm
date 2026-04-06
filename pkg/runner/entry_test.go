@@ -59,3 +59,12 @@ func TestFindRunEntryFrom(t *testing.T) {
 	assert.Equal(t, strings.Contains(err.Error(), "cannot compile multiple packages"), true)
 	assert.Equal(t, res, (*Entry)(nil))
 }
+
+func TestFindRunEntryFromMissingLocalPath(t *testing.T) {
+	res, err := FindRunEntryFrom([]string{"./does-not-exist.k"})
+	assert.Equal(t, res, (*Entry)(nil))
+	if assert.NotNil(t, err) {
+		assert.Equal(t, err.Type(), reporter.CompileFailed)
+		assert.Equal(t, strings.Contains(err.Error(), "failed to access path './does-not-exist.k'"), true)
+	}
+}
