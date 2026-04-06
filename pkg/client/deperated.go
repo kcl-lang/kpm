@@ -473,6 +473,13 @@ func (c *KpmClient) Compile(pkg *pkg.KclPkg, compiler *runner.Compiler) (*kcl.KC
 // AddDepWithOpts will add a dependency to the current kcl package.
 // Deperated: Use Add instead.
 func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pkg.KclPkg, error) {
+	if opt == nil {
+		return nil, fmt.Errorf("add options cannot be nil")
+	}
+	if kclPkg == nil {
+		return nil, fmt.Errorf("kcl package cannot be nil")
+	}
+
 	c.noSumCheck = opt.NoSumCheck
 	kclPkg.NoSumCheck = opt.NoSumCheck
 
@@ -1025,29 +1032,27 @@ func (c *KpmClient) PullFromOci(localPath, source, tag string) error {
 		return err
 	}
 
-	// Get the (*.tar) file path.
-	tarPath := filepath.Join(storepath, constants.KCL_PKG_TAR)
-	matches, err := filepath.Glob(tarPath)
-	if err != nil || len(matches) != 1 {
-		if err == nil {
-			err = errors.InvalidPkg
-		}
-
+	tarPath, err := utils.FindPkgArchive(storepath)
+	if err != nil {
 		return reporter.NewErrorEvent(
 			reporter.InvalidKclPkg,
-			err,
-			fmt.Sprintf("failed to find the kcl package tar from '%s'.", tarPath),
+			errors.InvalidPkg,
+			fmt.Sprintf("failed to find the kcl package tar from '%s'.", filepath.Join(storepath, constants.KCL_PKG_TAR)),
 		)
 	}
 
 	// Untar the tar file.
 	storagePath := ociOpts.SanitizePathWithSuffix(localPath)
-	err = utils.UnTarDir(matches[0], storagePath)
+	if utils.IsTar(tarPath) {
+		err = utils.UnTarDir(tarPath, storagePath)
+	} else {
+		err = utils.ExtractTarball(tarPath, storagePath)
+	}
 	if err != nil {
 		return reporter.NewErrorEvent(
 			reporter.FailedUntarKclPkg,
 			err,
-			fmt.Sprintf("failed to untar the kcl package tar from '%s' into '%s'.", matches[0], storagePath),
+			fmt.Sprintf("failed to untar the kcl package tar from '%s' into '%s'.", tarPath, storagePath),
 		)
 	}
 
