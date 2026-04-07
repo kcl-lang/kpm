@@ -1,10 +1,13 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(dirname "$(realpath "$0")")"
+AUTH_DIR="$SCRIPT_DIR/registry_auth"
+
 # create a directory to store user passwords
-mkdir -p ./scripts/registry_auth
+mkdir -p "$AUTH_DIR"
 
 # use htpasswd to create an encrypted file
-htpasswd -Bbn test 1234 > ./scripts/registry_auth/htpasswd
+htpasswd -Bbn test 1234 > "$AUTH_DIR/htpasswd"
 
 # check if there is a container named registry
 if [ "$(docker ps -aq -f name=kcl-registry)" ]; then
@@ -23,7 +26,7 @@ docker run -p 5002:5002 \
 --network kcl \
 --ip 172.88.0.8 \
 -v /var/lib/registry:/var/lib/registry \
--v $PWD/scripts/registry_auth/:/auth/ \
+-v "$AUTH_DIR":/auth/ \
 -e "REGISTRY_AUTH=htpasswd" \
 -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm" \
 -e "REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd" \
