@@ -170,7 +170,7 @@ require (
 	github.com/gofrs/flock v0.13.0
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/hashicorp/go-getter v1.8.3
-	github.com/hashicorp/go-version v1.8.0
+	github.com/hashicorp/go-version v1.9.0
 	github.com/jinzhu/copier v0.4.0
 	github.com/kubescape/go-git-url v0.0.31
 	github.com/moby/term v0.5.2
