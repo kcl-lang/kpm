@@ -491,6 +491,14 @@ func GetUsernamePassword(usernameOpt string, passwordOpt string, passwordFromStd
 	username := usernameOpt
 	password := passwordOpt
 
+	if passwordFromStdinOpt {
+		password, err = readPasswordFromStdin()
+		if err != nil {
+			return "", "", err
+		}
+		return username, password, nil
+	}
+
 	if password == "" {
 		if username == "" {
 			username, err = readLine("Username: ", false)
@@ -517,6 +525,21 @@ func GetUsernamePassword(usernameOpt string, passwordOpt string, passwordFromStd
 	}
 
 	return username, password, nil
+}
+
+func readPasswordFromStdin() (string, error) {
+	reader := bufio.NewReader(os.Stdin)
+	password, err := reader.ReadString('\n')
+	if err != nil && err != io.EOF {
+		return "", err
+	}
+
+	password = strings.TrimRight(password, "\r\n")
+	if password == "" {
+		return "", goerrors.New("password required")
+	}
+
+	return password, nil
 }
 
 // Copied/adapted from https://github.com/helm/helm
