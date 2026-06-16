@@ -177,7 +177,7 @@ require (
 	github.com/kubescape/go-git-url v0.0.32
 	github.com/moby/term v0.5.2
 	github.com/onsi/ginkgo/v2 v2.28.2
-	github.com/onsi/gomega v1.41.0
+	github.com/onsi/gomega v1.42.0
 	github.com/stretchr/testify v1.11.1
 	github.com/thoas/go-funk v0.9.3
 	oras.land/oras-go/v2 v2.5.0
