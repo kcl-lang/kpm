@@ -286,7 +286,18 @@ func (dep *Dependencies) MarshalLockTOML() (string, error) {
 		if !ok {
 			break
 		}
-		marshaledDeps[depKey] = dep
+		// For host-less OCI dependencies (registry resolved from KPM_REG at runtime),
+		// clear Reg before writing so that reg,omitempty omits it from the lock.
+		// This produces a single lock file valid across all registry accounts.
+		if dep.Source.Oci != nil && dep.Source.Oci.RegFromEnv {
+			depCopy := dep
+			ociCopy := *dep.Source.Oci
+			ociCopy.Reg = ""
+			depCopy.Source.Oci = &ociCopy
+			marshaledDeps[depKey] = depCopy
+		} else {
+			marshaledDeps[depKey] = dep
+		}
 	}
 
 	lockDepdenciesUI := DependenciesUI{
@@ -320,7 +331,13 @@ func (dep *Dependencies) UnmarshalLockTOML(data string) error {
 	sort.Strings(keys)
 
 	for _, k := range keys {
-		dep.Deps.Set(k, lockDepdenciesUI.Deps[k])
+		d := lockDepdenciesUI.Deps[k]
+		// Restore the RegFromEnv sentinel for host-less entries (no reg in the lock)
+		// so that subsequent marshal operations continue to emit them as host-less.
+		if d.Source.Oci != nil && d.Source.Oci.Reg == "" && d.Source.Oci.Repo != "" {
+			d.Source.Oci.RegFromEnv = true
+		}
+		dep.Deps.Set(k, d)
 	}
 
 	return nil

@@ -52,10 +52,8 @@ func (source *Source) MarshalTOML() string {
 
 		if source.Oci != nil {
 			tomlStr = source.Oci.MarshalTOML()
-			if len(tomlStr) != 0 {
-				if len(source.Oci.Reg) != 0 && len(source.Oci.Repo) != 0 {
-					tomlStr = fmt.Sprintf(SOURCE_PATTERN, tomlStr+pkgSpec)
-				}
+			if len(tomlStr) != 0 && len(source.Oci.Repo) != 0 {
+				tomlStr = fmt.Sprintf(SOURCE_PATTERN, tomlStr+pkgSpec)
 			}
 		}
 
@@ -113,10 +111,20 @@ func (git *Git) MarshalTOML() string {
 }
 
 const OCI_URL_PATTERN = "oci = \"%s\""
+const OCI_REPO_PATTERN = "repo = \"%s\""
 
 func (oci *Oci) MarshalTOML() string {
 	var sb strings.Builder
-	if len(oci.Reg) != 0 && len(oci.Repo) != 0 {
+	// Host-less dependency: registry resolved at runtime from KPM_REG / DefaultOciRegistry.
+	// This branch is checked first so that a temporarily-filled Reg (from the network call)
+	// does not get persisted when RegFromEnv is set.
+	if (oci.RegFromEnv || len(oci.Reg) == 0) && len(oci.Repo) != 0 {
+		sb.WriteString(fmt.Sprintf(OCI_REPO_PATTERN, oci.Repo))
+		if len(oci.Tag) != 0 {
+			sb.WriteString(SEPARATOR)
+			sb.WriteString(fmt.Sprintf(TAG_PATTERN, oci.Tag))
+		}
+	} else if len(oci.Reg) != 0 && len(oci.Repo) != 0 {
 		sb.WriteString(fmt.Sprintf(OCI_URL_PATTERN, oci.IntoOciUrl()))
 		if len(oci.Tag) != 0 {
 			sb.WriteString(SEPARATOR)
@@ -157,6 +165,14 @@ func (source *Source) UnmarshalModTOML(data interface{}) error {
 			}
 			source.Git = &git
 		} else if _, ok := meta["oci"]; ok {
+			oci := Oci{}
+			err := oci.UnmarshalModTOML(data)
+			if err != nil {
+				return err
+			}
+			source.Oci = &oci
+		} else if _, ok := meta[OCI_REPO_FLAG]; ok {
+			// Host-less OCI dependency: `repo = "org/path/pkg"` with no registry host.
 			oci := Oci{}
 			err := oci.UnmarshalModTOML(data)
 			if err != nil {
@@ -207,6 +223,8 @@ const TAG_FLAG = "tag"
 const GIT_COMMIT_FLAG = "commit"
 const GIT_BRANCH_FLAG = "branch"
 const GIT_PACKAGE_FLAG = "package"
+const OCI_REPO_FLAG = "repo"
+const OCI_REG_FLAG = "reg"
 
 func (git *Git) UnmarshalModTOML(data interface{}) error {
 	meta, ok := data.(map[string]interface{})
@@ -239,6 +257,7 @@ func (git *Git) UnmarshalModTOML(data interface{}) error {
 
 func (oci *Oci) UnmarshalModTOML(data interface{}) error {
 	if meta, ok := data.(map[string]interface{}); ok {
+		// Full-URL form: oci = "oci://host/repo"
 		if v, ok := meta[constants.OciScheme].(string); ok {
 			err := oci.FromString(v)
 			if err != nil {
@@ -246,8 +265,22 @@ func (oci *Oci) UnmarshalModTOML(data interface{}) error {
 			}
 		}
 
+		// Host-less form: repo = "org/path/pkg" (registry resolved from KPM_REG at runtime)
+		if v, ok := meta[OCI_REPO_FLAG].(string); ok {
+			oci.Repo = v
+		}
+		if v, ok := meta[OCI_REG_FLAG].(string); ok {
+			oci.Reg = v
+		}
+
 		if v, ok := meta[TAG_FLAG].(string); ok {
 			oci.Tag = v
+		}
+
+		// Mark as host-less if no registry was declared; the host will be
+		// resolved from KPM_REG / DefaultOciRegistry at runtime.
+		if oci.Reg == "" && oci.Repo != "" {
+			oci.RegFromEnv = true
 		}
 	}
 
