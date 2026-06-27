@@ -463,7 +463,11 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 				if utils.IsTar(cacheTarPath) {
 					err = utils.UnTarDir(cacheTarPath, localFullPath)
 				} else {
-					err = utils.ExtractTarball(cacheTarPath, localFullPath)
+					if err = utils.ExtractTarball(cacheTarPath, localFullPath); err == nil {
+						if derr := oci.DedupePulledFiles(localFullPath); derr != nil {
+							return derr
+						}
+					}
 				}
 				if err != nil {
 					return err
@@ -489,7 +493,12 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 			if utils.IsTar(tarPath) {
 				err = utils.UnTarDir(tarPath, localPath)
 			} else {
-				err = utils.ExtractTarball(tarPath, localPath)
+				// after extracting multiple packages, dedupe any same-named files
+				if err = utils.ExtractTarball(tarPath, localPath); err == nil {
+						if derr := oci.DedupePulledFiles(localPath); derr != nil {
+							return derr
+						}
+					}
 			}
 			if err != nil {
 				return fmt.Errorf("failed to untar the kcl package tar from '%s' into '%s'", tarPath, localPath)
@@ -503,39 +512,45 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 				}
 			}
 		}
-	} else if !opts.Offline {
-		reporter.ReportMsgTo(
-			fmt.Sprintf(
-				"downloading '%s:%s' from '%s/%s:%s'",
-				ociSource.Repo, ociSource.Tag, ociSource.Reg, ociSource.Repo, ociSource.Tag,
-			),
-			opts.LogWriter,
-		)
+		} else if !opts.Offline {
+			reporter.ReportMsgTo(
+				fmt.Sprintf(
+					"downloading '%s:%s' from '%s/%s:%s'",
+					ociSource.Repo, ociSource.Tag, ociSource.Reg, ociSource.Repo, ociSource.Tag,
+				),
+				opts.LogWriter,
+			)
 
-		err = ociCli.Pull(localPath, ociSource.Tag)
-		if err != nil {
-			return err
-		}
-		tarPath, err := utils.FindPkgArchive(localPath)
-		if err != nil {
-			return err
-		}
-		if utils.IsTar(tarPath) {
-			err = utils.UnTarDir(tarPath, localPath)
-		} else {
-			err = utils.ExtractTarball(tarPath, localPath)
-		}
-		if err != nil {
-			return fmt.Errorf("failed to untar the kcl package tar from '%s' into '%s'", tarPath, localPath)
-		}
-
-		// After untar the downloaded kcl package tar file, remove the tar file.
-		if utils.DirExists(tarPath) {
-			rmErr := os.Remove(tarPath)
-			if rmErr != nil {
-				return fmt.Errorf("failed to remove the downloaded kcl package tar file '%s'", tarPath)
+			// pull & extract
+			err = ociCli.Pull(localPath, ociSource.Tag)
+			if err != nil {
+				return err
 			}
-		}
+			tarPath, err := utils.FindPkgArchive(localPath)
+			if err != nil {
+				return err
+			}
+			if utils.IsTar(tarPath) {
+				err = utils.UnTarDir(tarPath, localPath)
+			} else {
+				// after extracting multiple packages, dedupe any same-named files
+				if err = utils.ExtractTarball(tarPath, localPath); err == nil {
+					if derr := oci.DedupePulledFiles(localPath); derr != nil {
+						return derr
+					}
+				}
+			}
+			if err != nil {
+				return fmt.Errorf("failed to untar the kcl package tar from '%s' into '%s'", tarPath, localPath)
+			}
+
+			// After untar the downloaded kcl package tar file, remove the tar file.
+			if utils.DirExists(tarPath) {
+				rmErr := os.Remove(tarPath)
+				if rmErr != nil {
+					return fmt.Errorf("failed to remove the downloaded kcl package tar file '%s'", tarPath)
+				}
+			}
 
 	}
 
