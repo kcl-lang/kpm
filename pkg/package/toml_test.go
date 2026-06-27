@@ -379,3 +379,169 @@ func TestUnMarshalRename(t *testing.T) {
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Oci.Repo, "kcl-lang/helloworld")
 	assert.Equal(t, modfile.Dependencies.Deps.GetOrDefault("newpkg", TestPkgDependency).Oci.Tag, "0.1.4")
 }
+
+// TestUnMarshalHostlessOciUrl verifies that a `repo = "..."` entry in kcl.mod
+// is parsed into an Oci with RegFromEnv=true, so that even after
+// fillDepsInfoWithSettings fills Reg with the default registry, the dep is still
+// marshaled back as host-less (`repo = "..."`).
+func TestUnMarshalHostlessOciUrl(t *testing.T) {
+	testDataDir := getTestDir("test_oci_url")
+
+	modfile, err := LoadModFile(filepath.Join(testDataDir, "unmarshal_hostless"))
+	assert.Equal(t, err, nil)
+	assert.Equal(t, modfile.Dependencies.Deps.Len(), 1)
+
+	dep := modfile.Dependencies.Deps.GetOrDefault("oci_pkg_name", TestPkgDependency)
+	assert.Equal(t, dep.Name, "oci_pkg_name")
+	assert.NotNil(t, dep.Source.Oci, "expected Oci source")
+	// RegFromEnv=true is preserved even after fillDepsInfoWithSettings fills Reg
+	// from the default registry.  The Reg value itself may be non-empty at this
+	// point; what matters is that RegFromEnv marks the dep as originally host-less.
+	assert.Equal(t, dep.Source.Oci.RegFromEnv, true)
+	assert.Equal(t, dep.Source.Oci.Repo, "myorg/kcl-templates/helloworld")
+	assert.Equal(t, dep.Source.Oci.Tag, "0.0.1")
+
+	// Even with Reg filled in by settings, marshaling must produce the host-less form.
+	marshaled := dep.Source.MarshalTOML()
+	assert.True(t, strings.Contains(marshaled, `repo = "myorg/kcl-templates/helloworld"`),
+		"marshal output should use repo key, got: %s", marshaled)
+	assert.False(t, strings.Contains(marshaled, "oci = "),
+		"marshal output must not contain full oci URL for host-less dep, got: %s", marshaled)
+}
+
+// TestMarshalHostlessOciUrl verifies that a host-less OCI dependency is written
+// back to kcl.mod using `repo = "..."` syntax and round-trips correctly.
+func TestMarshalHostlessOciUrl(t *testing.T) {
+	testDataDir := getTestDir("test_oci_url")
+
+	expectPkgPath := filepath.Join(testDataDir, "marshal_hostless", "kcl_mod_bk")
+	gotPkgPath := filepath.Join(testDataDir, "marshal_hostless", "kcl_mod_tmp")
+
+	expect, err := LoadModFile(expectPkgPath)
+	assert.Equal(t, err, nil)
+
+	err = os.MkdirAll(gotPkgPath, 0755)
+	assert.Equal(t, err, nil)
+	gotFile, _ := os.Create(filepath.Join(gotPkgPath, "kcl.mod"))
+
+	defer func() {
+		err = gotFile.Close()
+		assert.Equal(t, err, nil)
+		err = os.RemoveAll(gotPkgPath)
+		assert.Equal(t, err, nil)
+	}()
+
+	modfile := ModFile{
+		Pkg: Package{
+			Name:    "marshal_hostless",
+			Edition: "v0.12.3",
+			Version: "0.0.1",
+		},
+		Dependencies: Dependencies{
+			orderedmap.NewOrderedMap[string, Dependency](),
+		},
+	}
+
+	hostlessDep := Dependency{
+		Name:     "oci_pkg",
+		FullName: "oci_pkg_0.0.1",
+		Version:  "0.0.1",
+		Source: downloader.Source{
+			ModSpec: &downloader.ModSpec{
+				Name:    "oci_pkg",
+				Version: "0.0.1",
+			},
+			Oci: &downloader.Oci{
+				Repo:       "myorg/kcl-templates/oci_pkg",
+				Tag:        "0.0.1",
+				RegFromEnv: true,
+			},
+		},
+	}
+
+	modfile.Dependencies.Deps.Set("oci_pkg_0.0.1", hostlessDep)
+
+	got_data := modfile.MarshalTOML()
+	_, err = gotFile.WriteString(got_data)
+	assert.Equal(t, err, nil)
+
+	got := ModFile{}
+	err = got.LoadModFile(filepath.Join(gotPkgPath, "kcl.mod"))
+	assert.Equal(t, err, nil)
+
+	assert.Equal(t, expect.Pkg.Name, got.Pkg.Name)
+	assert.Equal(t, expect.Pkg.Edition, got.Pkg.Edition)
+	assert.Equal(t, expect.Pkg.Version, got.Pkg.Version)
+	assert.Equal(t, expect.Dependencies.Deps.Len(), got.Dependencies.Deps.Len())
+
+	gotDep := got.Dependencies.Deps.GetOrDefault("oci_pkg", TestPkgDependency)
+	assert.NotNil(t, gotDep.Source.Oci, "expected Oci source after round-trip")
+	// After LoadModFile → fillDepsInfoWithSettings, Reg may be non-empty.
+	// What must be preserved is RegFromEnv=true (dep was originally host-less).
+	assert.Equal(t, gotDep.Source.Oci.RegFromEnv, true)
+	assert.Equal(t, gotDep.Source.Oci.Repo, "myorg/kcl-templates/oci_pkg")
+	assert.Equal(t, gotDep.Source.Oci.Tag, "0.0.1")
+	// Re-marshal must be host-less.
+	assert.Equal(t, expect.Dependencies.Deps.GetOrDefault("oci_pkg", TestPkgDependency).Source.Oci.RegFromEnv,
+		gotDep.Source.Oci.RegFromEnv)
+}
+
+// TestMarshalLockTOMLHostless verifies that a host-less OCI dependency is written
+// to kcl.mod.lock without the `reg` key (omitted via omitempty), keeping a single
+// lock file valid across multiple registry accounts.
+func TestMarshalLockTOMLHostless(t *testing.T) {
+	hostlessDep := Dependency{
+		Name:     "MyHostlessOciKcl",
+		FullName: "MyHostlessOciKcl_0.0.1",
+		Version:  "0.0.1",
+		Sum:      "abc123",
+		Source: downloader.Source{
+			Oci: &downloader.Oci{
+				Repo:       "myorg/kcl-templates/utils",
+				Tag:        "0.0.1",
+				RegFromEnv: true,
+			},
+		},
+	}
+
+	// Simulate Reg temporarily filled by resolution (should not be persisted)
+	hostlessDep.Source.Oci.Reg = "672819064798.dkr.ecr.eu-west-1.amazonaws.com"
+
+	deps := Dependencies{
+		orderedmap.NewOrderedMap[string, Dependency](),
+	}
+	deps.Deps.Set(hostlessDep.Name, hostlessDep)
+
+	tomlStr, err := deps.MarshalLockTOML()
+	assert.Equal(t, err, nil)
+	assert.False(t, strings.Contains(tomlStr, "reg ="), "lock must not contain 'reg =' for a host-less dependency")
+	assert.True(t, strings.Contains(tomlStr, `repo = "myorg/kcl-templates/utils"`), "lock must contain repo")
+	assert.True(t, strings.Contains(tomlStr, `oci_tag = "0.0.1"`), "lock must contain oci_tag")
+	assert.True(t, strings.Contains(tomlStr, `sum = "abc123"`), "lock must contain sum")
+}
+
+// TestUnmarshalLockTOMLHostlessRestoresRegFromEnv verifies that loading a lock
+// entry without `reg` sets RegFromEnv=true so subsequent writes remain host-less.
+func TestUnmarshalLockTOMLHostlessRestoresRegFromEnv(t *testing.T) {
+	lockData := `[dependencies]
+  [dependencies.MyHostlessOciKcl]
+    name = "MyHostlessOciKcl"
+    full_name = "MyHostlessOciKcl_0.0.1"
+    version = "0.0.1"
+    sum = "abc123"
+    repo = "myorg/kcl-templates/utils"
+    oci_tag = "0.0.1"
+`
+	deps := Dependencies{
+		orderedmap.NewOrderedMap[string, Dependency](),
+	}
+	err := deps.UnmarshalLockTOML(lockData)
+	assert.Equal(t, err, nil)
+
+	dep := deps.Deps.GetOrDefault("MyHostlessOciKcl", TestPkgDependency)
+	assert.NotNil(t, dep.Source.Oci)
+	assert.Equal(t, dep.Source.Oci.Reg, "")
+	assert.Equal(t, dep.Source.Oci.RegFromEnv, true)
+	assert.Equal(t, dep.Source.Oci.Repo, "myorg/kcl-templates/utils")
+	assert.Equal(t, dep.Source.Oci.Tag, "0.0.1")
+}

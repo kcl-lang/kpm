@@ -52,6 +52,12 @@ type Oci struct {
 	Reg  string `toml:"reg,omitempty"`
 	Repo string `toml:"repo,omitempty"`
 	Tag  string `toml:"oci_tag,omitempty"`
+	// RegFromEnv is true when the registry host was absent in the source declaration
+	// (e.g. `repo = "org/path/pkg"` in kcl.mod).  The host is resolved at runtime
+	// from KPM_REG / DefaultOciRegistry and must NOT be persisted back to kcl.mod or
+	// kcl.mod.lock — this flag tells the marshal path to preserve the host-less form
+	// even after Reg has been temporarily filled for the network call.
+	RegFromEnv bool `toml:"-"`
 }
 
 // If the OCI source has no reference, return true.
@@ -502,6 +508,11 @@ func (oci *Oci) FromString(ociStr string) error {
 	oci.Reg = u.Host
 	oci.Repo = strings.TrimPrefix(u.Path, "/")
 	oci.Tag = u.Query().Get(constants.Tag)
+	// Mark host-less sources so the marshal path keeps them host-less after
+	// Reg has been temporarily filled from KPM_REG / DefaultOciRegistry.
+	if oci.Reg == "" {
+		oci.RegFromEnv = true
+	}
 
 	return nil
 }
