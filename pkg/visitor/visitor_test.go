@@ -101,6 +101,79 @@ func TestVisitPkgRemote(t *testing.T) {
 	}
 }
 
+// TestVisitPkgRemoteHostless verifies that a host-less OCI dependency
+// (`repo = "..."` in kcl.mod, no registry host) resolves the registry host
+// from KPM_REG at runtime instead of failing with "hostName is empty".
+func TestVisitPkgRemoteHostless(t *testing.T) {
+	oldReg := os.Getenv("KPM_REG")
+	err := os.Setenv("KPM_REG", "ghcr.io")
+	assert.NilError(t, err)
+	defer func() {
+		_ = os.Setenv("KPM_REG", oldReg)
+	}()
+
+	var buf bytes.Buffer
+	remotePkgVisitor := RemoteVisitor{
+		PkgVisitor: &PkgVisitor{
+			LogWriter: &buf,
+			Settings:  settings.GetSettings(),
+		},
+		Downloader: &downloader.DepDownloader{},
+	}
+
+	source, err := downloader.NewSourceFromStr("oci:///kcl-lang/helloworld?tag=0.1.2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, source.Oci.Reg, "")
+	assert.Equal(t, source.Oci.RegFromEnv, true)
+
+	err = remotePkgVisitor.Visit(source, func(pkg *pkg.KclPkg) error {
+		assert.Equal(t, pkg.GetPkgName(), "helloworld")
+		assert.Equal(t, pkg.GetPkgVersion(), "0.1.2")
+		return nil
+	})
+	assert.NilError(t, err)
+}
+
+// TestVisitPkgRemoteHostlessNoRegistryConfigured verifies that a host-less OCI
+// dependency (no host in the URI) legitimately fails when there is no KPM_REG
+// env var and no default registry configured, instead of silently resolving
+// to some unintended host.
+func TestVisitPkgRemoteHostlessNoRegistryConfigured(t *testing.T) {
+	oldReg := os.Getenv("KPM_REG")
+	err := os.Unsetenv("KPM_REG")
+	assert.NilError(t, err)
+	defer func() {
+		_ = os.Setenv("KPM_REG", oldReg)
+	}()
+
+	// Start from the real settings (valid CredentialsFile path) but with no
+	// default registry configured, simulating a fresh environment with no
+	// KPM_REG and no `kpm.json` default.
+	noRegSettings := *settings.GetSettings()
+	noRegSettings.Conf.DefaultOciRegistry = ""
+
+	var buf bytes.Buffer
+	remotePkgVisitor := RemoteVisitor{
+		PkgVisitor: &PkgVisitor{
+			LogWriter: &buf,
+			Settings:  &noRegSettings,
+		},
+		Downloader: &downloader.DepDownloader{},
+	}
+
+	source, err := downloader.NewSourceFromStr("oci:///kcl-lang/helloworld?tag=0.1.2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, source.Oci.Reg, "")
+	assert.Equal(t, source.Oci.RegFromEnv, true)
+
+	err = remotePkgVisitor.Visit(source, func(pkg *pkg.KclPkg) error { return nil })
+	assert.Error(t, err, "hostName is empty")
+}
+
 func TestVisitedSpace(t *testing.T) {
 	var buf bytes.Buffer
 	remotePkgVisitor := RemoteVisitor{

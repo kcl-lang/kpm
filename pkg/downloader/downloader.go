@@ -241,6 +241,12 @@ func (d *OciDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
 		return "", errors.New("oci source is nil")
 	}
 
+	// Host-less OCI dependency: resolve the registry host from
+	// KPM_REG / DefaultOciRegistry when it was not declared in the source.
+	if len(ociSource.Reg) == 0 {
+		ociSource.Reg = opts.Settings.DefaultOciRegistry()
+	}
+
 	repoPath := utils.JoinPath(ociSource.Reg, ociSource.Repo)
 
 	var cred *remoteauth.Credential
@@ -388,6 +394,12 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 	}
 
 	localPath := opts.LocalPath
+
+	// Host-less OCI dependency: resolve the registry host from
+	// KPM_REG / DefaultOciRegistry when it was not declared in the source.
+	if len(ociSource.Reg) == 0 {
+		ociSource.Reg = opts.Settings.DefaultOciRegistry()
+	}
 
 	repoPath := utils.JoinPath(ociSource.Reg, ociSource.Repo)
 
