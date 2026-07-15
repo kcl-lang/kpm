@@ -129,6 +129,10 @@ func (rv *RemoteVisitor) Visit(s *downloader.Source, v visitFunc) error {
 			Repo: utils.JoinPath(rv.Settings.DefaultOciRepo(), s.ModSpec.Name),
 			Tag:  s.ModSpec.Version,
 		}
+	} else if s.Oci != nil && len(s.Oci.Reg) == 0 {
+		// Host-less OCI dependency (e.g. `repo = "org/path/pkg"` in kcl.mod):
+		// resolve the registry host from KPM_REG / DefaultOciRegistry at runtime.
+		s.Oci.Reg = rv.Settings.DefaultOciRegistry()
 	}
 
 	var cacheFullPath string
