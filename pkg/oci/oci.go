@@ -427,7 +427,12 @@ func loadCredential(hostName string, settings *settings.Settings) (*remoteauth.C
 		return nil, err
 	}
 
-	cred, err := store.Get(context.Background(), hostName)
+	dockerStore, err := credentials.NewStoreFromDocker(credentials.StoreOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	cred, err := credentials.NewStoreWithFallbacks(store, dockerStore).Get(context.Background(), hostName)
 	if err != nil {
 		return nil, err
 	}
