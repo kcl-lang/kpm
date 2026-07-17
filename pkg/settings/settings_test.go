@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/gofrs/flock"
 	"github.com/stretchr/testify/assert"
 	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -87,8 +88,17 @@ func TestLoadOrCreateDefaultKpmJson(t *testing.T) {
 
 func TestPackageCacheLock(t *testing.T) {
 
-	settings := GetSettings()
-	assert.Equal(t, settings.ErrorEvent, (*reporter.KpmEvent)(nil))
+	// Each 'kpm' process builds its own '*flock.Flock' over the same lock file, so
+	// two independent instances pointing at the same path are used here to emulate
+	// two concurrent 'kpm' invocations contending for the file lock.
+	//
+	// Sharing a single '*flock.Flock' between the goroutines instead would be wrong:
+	// gofrs/flock tracks "locked" as a bool on the struct, so a second caller sharing
+	// that same struct short-circuits straight to 'true' while the first caller still
+	// holds the lock, instead of going through the OS-level 'flock' syscall again.
+	lockPath := filepath.Join(t.TempDir(), "package-cache")
+	settings1 := &Settings{PackageCacheLock: flock.New(lockPath)}
+	settings2 := &Settings{PackageCacheLock: flock.New(lockPath)}
 
 	// create the expected result of the test.
 	// 10 times of "goroutine 1: %d" at first, and then 10 times of "goroutine 2: %d"
@@ -124,13 +134,13 @@ func TestPackageCacheLock(t *testing.T) {
 	// goroutine 1: append "goroutine 1: %d" to the list
 	go func() {
 		defer wg.Done()
-		err := settings.AcquirePackageCacheLock(os.Stdout)
+		err := settings1.AcquirePackageCacheLock(os.Stdout)
 		fmt.Printf("1: locked.")
 		fmt.Printf("err: %v\n", err)
 		for i := 0; i < 10; i++ {
 			gotlist = append(gotlist, fmt.Sprintf("goroutine 1: %d", i))
 		}
-		err = settings.ReleasePackageCacheLock()
+		err = settings1.ReleasePackageCacheLock()
 		fmt.Printf("err: %v\n", err)
 		fmt.Printf("1: released.")
 	}()
@@ -138,13 +148,13 @@ func TestPackageCacheLock(t *testing.T) {
 	// goroutine 2: append "goroutine 2: %d" to the list
 	go func() {
 		defer wg.Done()
-		err := settings.AcquirePackageCacheLock(os.Stdout)
+		err := settings2.AcquirePackageCacheLock(os.Stdout)
 		fmt.Printf("2: locked.")
 		fmt.Printf("err: %v\n", err)
 		for i := 0; i < 10; i++ {
 			gotlist = append(gotlist, fmt.Sprintf("goroutine 2: %d", i))
 		}
-		err = settings.ReleasePackageCacheLock()
+		err = settings2.ReleasePackageCacheLock()
 		fmt.Printf("err: %v\n", err)
 		fmt.Printf("2: released.")
 	}()
