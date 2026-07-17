@@ -20,8 +20,13 @@ func LoadCredentialFile(filepath string) (*CredStore, error) {
 		return nil, err
 	}
 
+	dockerStore, err := credentials.NewStoreFromDocker(credentials.StoreOptions{})
+	if err != nil {
+		return nil, err
+	}
+
 	return &CredStore{
-		store: store,
+		store: credentials.NewStoreWithFallbacks(store, dockerStore),
 	}, nil
 }
 
