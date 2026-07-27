@@ -16,7 +16,7 @@ require (
 	golang.org/x/mod v0.38.0
 	gotest.tools/v3 v3.5.2
 	kcl-lang.io/kcl-go v0.12.3
-	kcl-lang.io/lib v0.12.3
+	kcl-lang.io/lib v0.12.4
 )
 
 require (
