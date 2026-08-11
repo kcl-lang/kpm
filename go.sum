@@ -465,5 +465,5 @@ kcl-lang.io/kcl-go v0.12.4 h1:B5ZIN8ZGnM2dS7DNWNlZ02HGrXZM6S67BpnQ9mYRSkA=
 kcl-lang.io/kcl-go v0.12.4/go.mod h1:IN98r5IyIwz0aek0/tp/52sFy7OCLU/v430ifg28fFU=
 kcl-lang.io/lib v0.12.4 h1:y6oa0KimtzZe+MaNd73p8b76hXcCLzD8lrZTf7gwGNc=
 kcl-lang.io/lib v0.12.4/go.mod h1:G2pPSIdu+cFb5OxiaxB0qBRIFFL598OZf1e5oiqWnns=
-oras.land/oras-go/v2 v2.5.0 h1:o8Me9kLY74Vp5uw07QXPiitjsw7qNXi8Twd+19Zf02c=
-oras.land/oras-go/v2 v2.5.0/go.mod h1:z4eisnLP530vwIOUOJeBIj0aGI0L1C3d53atvCBqZHg=
+oras.land/oras-go/v2 v2.6.2 h1:N04RXngAp1LJKTG6ifz3xHPipasEkWr+hFmInja5YKo=
+oras.land/oras-go/v2 v2.6.2/go.mod h1:PlTtg4JTDJkDe8yVHpM2wz7/YDc00GVas+i4jAW2TZ4=
