@@ -52,6 +52,13 @@ type Oci struct {
 	Reg  string `toml:"reg,omitempty"`
 	Repo string `toml:"repo,omitempty"`
 	Tag  string `toml:"oci_tag,omitempty"`
+	// Digest is the content-addressable identifier of the package
+	// (e.g. "sha256:abc123..."). When set, it takes precedence over
+	// Tag for the network call — a digest reference is immutable, so
+	// downstream operations like the KPM cache (#691) get guaranteed
+	// reproducibility. Mutually exclusive with Tag in practice:
+	// callers should set exactly one of the two.
+	Digest string `toml:"oci_digest,omitempty"`
 	// RegFromEnv is true when the registry host was absent in the source declaration
 	// (e.g. `repo = "org/path/pkg"` in kcl.mod).  The host is resolved at runtime
 	// from KPM_REG / DefaultOciRegistry and must NOT be persisted back to kcl.mod or
@@ -60,14 +67,70 @@ type Oci struct {
 	RegFromEnv bool `toml:"-"`
 }
 
-// If the OCI source has no reference, return true.
-// TODO: add digest support.
+// If the OCI source has no reference (neither a tag nor a digest),
+// return true. The latest-version resolver uses this to decide
+// whether to call TheLatestTag on the registry.
 func (o *Oci) NoRef() bool {
-	return o.Tag == ""
+	return o.Tag == "" && o.Digest == ""
 }
 
+// GetRef returns the user-supplied identifier for the OCI artifact.
+// It prefers Tag (mutable, semver-ish) over Digest (immutable
+// content address) so that callers that only want "the version
+// label" keep working. Callers that need the actual network
+// reference should use oci.ResolveReference() instead, which falls
+// back to Digest when Tag is empty.
 func (o *Oci) GetRef() string {
-	return o.Tag
+	if o.Tag != "" {
+		return o.Tag
+	}
+	return o.Digest
+}
+
+// ResolveReference returns the value to pass to oras-go as the
+// "tag" argument. It is just (Tag || Digest || "latest"). The
+// result is always non-empty.
+func (o *Oci) ResolveReference() string {
+	if o.Tag != "" {
+		return o.Tag
+	}
+	if o.Digest != "" {
+		return o.Digest
+	}
+	return constants.LATEST
+}
+
+// ValidateDigest returns an error when Digest is set but is not in
+// the form `algo:hex` with a recognised algorithm. It is called by
+// the parser so we reject malformed references up front rather
+// than waiting for the registry to refuse them.
+func (o *Oci) ValidateDigest() error {
+	if o.Digest == "" {
+		return nil
+	}
+	if !strings.HasPrefix(o.Digest, constants.OciDigestPrefix) {
+		return fmt.Errorf(
+			"unsupported OCI digest %q: must start with %q",
+			o.Digest, constants.OciDigestPrefix,
+		)
+	}
+	// sha256 hex digests are exactly 64 lowercase hex chars.
+	hexPart := strings.TrimPrefix(o.Digest, constants.OciDigestPrefix)
+	if len(hexPart) != 64 {
+		return fmt.Errorf(
+			"malformed OCI digest %q: expected 64 hex chars after %q, got %d",
+			o.Digest, constants.OciDigestPrefix, len(hexPart),
+		)
+	}
+	for _, r := range hexPart {
+		if !(r >= '0' && r <= '9') && !(r >= 'a' && r <= 'f') {
+			return fmt.Errorf(
+				"malformed OCI digest %q: non-hex char %q in payload",
+				o.Digest, string(r),
+			)
+		}
+	}
+	return nil
 }
 
 // Git is the package source from git registry.
@@ -398,6 +461,9 @@ func (oci *Oci) ToString() (string, error) {
 	if oci.Tag != "" {
 		q.Set(constants.Tag, oci.Tag)
 	}
+	if oci.Digest != "" {
+		q.Set(constants.Digest, oci.Digest)
+	}
 	ociUrl.RawQuery = q.Encode()
 
 	return ociUrl.String(), nil
@@ -508,10 +574,25 @@ func (oci *Oci) FromString(ociStr string) error {
 	oci.Reg = u.Host
 	oci.Repo = strings.TrimPrefix(u.Path, "/")
 	oci.Tag = u.Query().Get(constants.Tag)
+	oci.Digest = u.Query().Get(constants.Digest)
 	// Mark host-less sources so the marshal path keeps them host-less after
 	// Reg has been temporarily filled from KPM_REG / DefaultOciRegistry.
 	if oci.Reg == "" {
 		oci.RegFromEnv = true
+	}
+
+	// Both Tag and Digest populated is treated as a user error:
+	// they mean different things (mutable vs immutable) and silently
+	// picking one would hide a typo.
+	if oci.Tag != "" && oci.Digest != "" {
+		return fmt.Errorf(
+			"oci source %q sets both %q and %q; specify only one",
+			ociStr, constants.Tag, constants.Digest,
+		)
+	}
+
+	if err := oci.ValidateDigest(); err != nil {
+		return err
 	}
 
 	return nil
@@ -671,7 +752,14 @@ func (o *Oci) Hash() (string, error) {
 		return "", err
 	}
 
-	return filepath.Join(hash, filepath.Base(o.Repo), o.GetRef()), nil
+	// Digest references are immutable; using them in the hash path
+	// guarantees that two pins to the same digest collide on disk
+	// even when the user re-pastes the full URL.
+	ref := o.GetRef()
+	if ref == "" {
+		ref = o.Digest
+	}
+	return filepath.Join(hash, filepath.Base(o.Repo), ref), nil
 }
 
 func (l *Local) Hash() (string, error) {
@@ -687,6 +775,18 @@ func (s *Source) LocalPath(root string) string {
 	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && !ok {
 		if s.Oci != nil && len(s.Oci.Tag) != 0 {
 			path = fmt.Sprintf("%s_%s", filepath.Base(s.Oci.Repo), s.Oci.Tag)
+		}
+
+		// Digest references are immutable and usually long
+		// ("sha256:abc123..."); short-hash them so the on-disk
+		// directory name stays sane. Only used when no Tag is
+		// present (Tag has higher precedence).
+		if s.Oci != nil && len(s.Oci.Digest) != 0 && path == "" {
+			if short, derr := utils.ShortHash(s.Oci.Digest); derr == nil {
+				path = fmt.Sprintf("%s_%s", filepath.Base(s.Oci.Repo), short)
+			} else {
+				path = fmt.Sprintf("%s_%s", filepath.Base(s.Oci.Repo), s.Oci.Digest)
+			}
 		}
 
 		if s.Git != nil && len(s.Git.Tag) != 0 {

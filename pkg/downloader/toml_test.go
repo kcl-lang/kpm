@@ -2,6 +2,7 @@
 package downloader
 
 import (
+	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -144,4 +145,116 @@ func TestFromStringFullUrlDoesNotMarkRegFromEnv(t *testing.T) {
 	assert.Equal(t, oci.Reg, "ghcr.io")
 	assert.Equal(t, oci.Repo, "kcl-lang/helloworld")
 	assert.Equal(t, oci.RegFromEnv, false)
+}
+
+// TestOciDigestMarshal verifies that an Oci with a digest (instead of a tag)
+// is serialised with the `digest = "sha256:..."` key in both host-less and
+// full-URL forms.
+func TestOciDigestMarshal(t *testing.T) {
+	// Host-less + digest
+	oci := &Oci{
+		Repo:       "myorg/kcl-templates/utils",
+		Digest:     "sha256:" + strings.Repeat("a", 64),
+		RegFromEnv: true,
+	}
+	got := oci.MarshalTOML()
+	assert.Equal(t, got, `repo = "myorg/kcl-templates/utils", digest = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"`)
+
+	// Full URL + digest
+	ociFull := &Oci{
+		Reg:     "ghcr.io",
+		Repo:    "kcl-lang/helloworld",
+		Digest:  "sha256:" + strings.Repeat("b", 64),
+	}
+	got = ociFull.MarshalTOML()
+	assert.Equal(t, got, `oci = "oci://ghcr.io/kcl-lang/helloworld", digest = "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"`)
+
+	// Tag still works when digest is empty
+	ociTag := &Oci{
+		Repo:       "myorg/kcl-templates/utils",
+		Tag:        "0.4.0",
+		RegFromEnv: true,
+	}
+	got = ociTag.MarshalTOML()
+	assert.Equal(t, got, `repo = "myorg/kcl-templates/utils", tag = "0.4.0"`)
+}
+
+// TestOciDigestUnmarshal verifies that a `digest = "..."` field in kcl.mod is
+// parsed into Oci.Digest, and that setting both tag and digest is rejected.
+func TestOciDigestUnmarshal(t *testing.T) {
+	// Host-less + digest
+	data := map[string]interface{}{
+		"repo":   "myorg/kcl-templates/utils",
+		"digest": "sha256:" + strings.Repeat("c", 64),
+	}
+	oci := &Oci{}
+	err := oci.UnmarshalModTOML(data)
+	assert.NilError(t, err)
+	assert.Equal(t, oci.Repo, "myorg/kcl-templates/utils")
+	assert.Equal(t, oci.Digest, "sha256:"+strings.Repeat("c", 64))
+	assert.Equal(t, oci.Tag, "")
+	assert.Equal(t, oci.RegFromEnv, true)
+
+	// Full URL + digest
+	data2 := map[string]interface{}{
+		"oci":    "oci://ghcr.io/kcl-lang/helloworld",
+		"digest": "sha256:" + strings.Repeat("d", 64),
+	}
+	oci2 := &Oci{}
+	err = oci2.UnmarshalModTOML(data2)
+	assert.NilError(t, err)
+	assert.Equal(t, oci2.Reg, "ghcr.io")
+	assert.Equal(t, oci2.Repo, "kcl-lang/helloworld")
+	assert.Equal(t, oci2.Digest, "sha256:"+strings.Repeat("d", 64))
+
+	// Both tag and digest → error
+	dataBoth := map[string]interface{}{
+		"repo":   "myorg/kcl-templates/utils",
+		"tag":    "0.4.0",
+		"digest": "sha256:" + strings.Repeat("e", 64),
+	}
+	oci3 := &Oci{}
+	err = oci3.UnmarshalModTOML(dataBoth)
+	assert.Assert(t, err != nil, "expected error when both tag and digest are set")
+}
+
+// TestOciDigestRoundTrip verifies marshal→unmarshal symmetry for OCI digest
+// references in both host-less and full-URL forms.
+func TestOciDigestRoundTrip(t *testing.T) {
+	digest := "sha256:" + strings.Repeat("f", 64)
+
+	// Host-less form
+	src := &Source{
+		Oci: &Oci{
+			Repo:       "myorg/kcl-templates/utils",
+			Digest:     digest,
+			RegFromEnv: true,
+		},
+		ModSpec: &ModSpec{Version: "0.4.0"},
+	}
+	marshaled := src.MarshalTOML()
+	expected := `{ repo = "myorg/kcl-templates/utils", digest = "` + digest + `", version = "0.4.0" }`
+	assert.Equal(t, marshaled, expected)
+
+	// Round-trip
+	data := map[string]interface{}{
+		"repo":    "myorg/kcl-templates/utils",
+		"digest":  digest,
+		"version": "0.4.0",
+	}
+	src2 := &Source{}
+	err := src2.UnmarshalModTOML(data)
+	assert.NilError(t, err)
+	assert.Assert(t, src2.Oci != nil)
+	assert.Equal(t, src2.Oci.Repo, "myorg/kcl-templates/utils")
+	assert.Equal(t, src2.Oci.Digest, digest)
+	assert.Equal(t, src2.Oci.Tag, "")
+	assert.Equal(t, src2.Oci.Reg, "")
+	assert.Equal(t, src2.Oci.RegFromEnv, true)
+	assert.Assert(t, src2.ModSpec != nil)
+	assert.Equal(t, src2.ModSpec.Version, "0.4.0")
+
+	// Re-marshal should produce identical output
+	marshaled2 := src2.MarshalTOML()
+	assert.Equal(t, marshaled, marshaled2)
 }

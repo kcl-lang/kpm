@@ -22,8 +22,16 @@ const (
 	GitBranch = "branch"
 	GitCommit = "commit"
 
-	Tag = "tag"
-	Mod = "mod"
+	Tag    = "tag"
+	Digest = "digest"
+	Mod    = "mod"
+
+	// OciDigestPrefix is the algorithm prefix used by OCI content
+	// digests that KPM recognises when parsing user-supplied
+	// references like "oci://reg/repo@sha256:abc...". Any algorithm
+	// other than those listed here is rejected up front so we don't
+	// silently accept malformed references.
+	OciDigestPrefix = "sha256:"
 
 	KCL_MOD                              = "kcl.mod"
 	KCL_MOD_LOCK                         = "kcl.mod.lock"

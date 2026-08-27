@@ -427,7 +427,12 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 
 	ociCli.PullOciOptions.Platform = d.Platform
 
-	if len(ociSource.Tag) == 0 {
+	// The network reference is the digest when pinned and the tag
+	// otherwise. We never fall back to TheLatestTag when a digest is
+	// set — digest references are immutable and must be honoured.
+	ociRef := ociSource.ResolveReference()
+
+	if ociSource.NoRef() {
 		tagSelected, err := ociCli.TheLatestTag()
 		if err != nil {
 			return err
@@ -439,6 +444,7 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 		)
 
 		ociSource.Tag = tagSelected
+		ociRef = tagSelected
 	}
 
 	if ok, err := features.Enabled(features.SupportNewStorage); err == nil && ok {
@@ -455,12 +461,12 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 					reporter.ReportMsgTo(
 						fmt.Sprintf(
 							"downloading '%s:%s' from '%s/%s:%s'",
-							ociSource.Repo, ociSource.Tag, ociSource.Reg, ociSource.Repo, ociSource.Tag,
+							ociSource.Repo, ociRef, ociSource.Reg, ociSource.Repo, ociRef,
 						),
 						opts.LogWriter,
 					)
 
-					err = ociCli.Pull(cacheFullPath, ociSource.Tag)
+					err = ociCli.Pull(cacheFullPath, ociRef)
 					if err != nil {
 						return err
 					}
@@ -485,12 +491,12 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 			reporter.ReportMsgTo(
 				fmt.Sprintf(
 					"downloading '%s:%s' from '%s/%s:%s'",
-					ociSource.Repo, ociSource.Tag, ociSource.Reg, ociSource.Repo, ociSource.Tag,
+					ociSource.Repo, ociRef, ociSource.Reg, ociSource.Repo, ociRef,
 				),
 				opts.LogWriter,
 			)
 
-			err = ociCli.Pull(localPath, ociSource.Tag)
+			err = ociCli.Pull(localPath, ociRef)
 			if err != nil {
 				return err
 			}
@@ -519,12 +525,12 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 		reporter.ReportMsgTo(
 			fmt.Sprintf(
 				"downloading '%s:%s' from '%s/%s:%s'",
-				ociSource.Repo, ociSource.Tag, ociSource.Reg, ociSource.Repo, ociSource.Tag,
+				ociSource.Repo, ociRef, ociSource.Reg, ociSource.Repo, ociRef,
 			),
 			opts.LogWriter,
 		)
 
-		err = ociCli.Pull(localPath, ociSource.Tag)
+		err = ociCli.Pull(localPath, ociRef)
 		if err != nil {
 			return err
 		}
