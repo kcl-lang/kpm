@@ -15,10 +15,18 @@ const PKG_PATH = "KCL_PKG_PATH"
 const MODULES_SUB_DIR = "modules"
 const KCL_DATA_DIR = "kcl"
 const KPM_NO_SUM = "KPM_NO_SUM"
+const KPM_LOG_LEVEL = "KPM_LOG_LEVEL"
 
 // GetEnvPkgPath will return the env $KCL_PKG_PATH.
 func GetEnvPkgPath() string {
 	return os.Getenv(PKG_PATH)
+}
+
+// GetKpmLogLevel returns the value of $KPM_LOG_LEVEL, lower-cased.
+// Accepted values: "debug", "info" (default), "warn", "error".
+// Unknown values fall back to "info".
+func GetKpmLogLevel() string {
+	return strings.ToLower(strings.TrimSpace(os.Getenv(KPM_LOG_LEVEL)))
 }
 
 // GetKpmDataDir will return the data directory for kpm following XDG Base Directory Specification.
