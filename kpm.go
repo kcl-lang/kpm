@@ -21,6 +21,7 @@ func main() {
 	if err != nil {
 		reporter.Fatal(err)
 	}
+
 	app := cli.NewApp()
 	app.Name = "kpm"
 	app.Usage = "kpm is a kcl package manager"
@@ -48,10 +49,19 @@ func main() {
 			Name:  cmd.FLAG_QUIET,
 			Usage: "push in vendor mode",
 		},
+		&cli.BoolFlag{
+			Name:  "debug",
+			Usage: "enable debug mode; also activates on-disk logging when $KPM_DEBUG=1",
+		},
 	}
 	app.Before = func(c *cli.Context) error {
 		if c.Bool(cmd.FLAG_QUIET) {
 			kpmcli.SetLogWriter(nil)
+		}
+		// Wire up the debug writer if either --debug or $KPM_DEBUG is set.
+		// Debug-mode logging is appended to <homePath>/kpm.log.
+		if c.Bool("debug") || env.IsKpmDebug() {
+			kpmcli.SetLogWriter(reporter.NewDebugWriter(os.Stdout, kpmcli.GetHomePath()))
 		}
 		return nil
 	}
