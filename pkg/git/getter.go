@@ -4,6 +4,7 @@ package git
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/hashicorp/go-getter"
 	"kcl-lang.io/kpm/pkg/constants"
@@ -19,6 +20,116 @@ const GIT_PROTOCOL = "git::"
 
 func ForceProtocol(url, protocol string) string {
 	return protocol + url
+}
+
+// SplitSubdir parses a git URL that may carry a sub-directory selector
+// following the go-getter convention `...//subdir`. It returns the bare
+// repository URL (without the `//subdir` suffix) and the sub-directory.
+//
+// Examples:
+//
+//	SplitSubdir("https://github.com/org/repo.git//pkg/sub")
+//	  -> "https://github.com/org/repo.git", "pkg/sub", nil
+//	SplitSubdir("git::https://github.com/org/repo.git?ref=v1//pkg/sub")
+//	  -> "git::https://github.com/org/repo.git?ref=v1", "pkg/sub", nil
+//	SplitSubdir("https://github.com/org/repo.git")
+//	  -> "https://github.com/org/repo.git", "", nil
+//	SplitSubdir("https://github.com/org/repo.git//")
+//	  -> "https://github.com/org/repo.git//", "", nil  (no content after //)
+//
+// The split is intentionally conservative: we locate the scheme
+// delimiter (the first "//" in the URL, e.g. the "://" in "https://")
+// and only treat a SECOND "//" that follows it as the go-getter
+// sub-directory separator. Anything inside the path that follows the
+// scheme delimiter (such as the extra "/" in "file:///tmp/repo") is
+// never interpreted as a sub-dir marker, which keeps URLs that point
+// at local bare repositories intact.
+func SplitSubdir(repoURL string) (string, string, error) {
+	if repoURL == "" {
+		return "", "", nil
+	}
+
+	// Schemes like "git::" can confuse a naive split, so split off the
+	// leading scheme if present and re-attach after parsing.
+	schemePrefix := ""
+	body := repoURL
+	if idx := strings.Index(repoURL, "::"); idx >= 0 && idx < 16 {
+		candidate := repoURL[:idx]
+		if isLikelyScheme(candidate) {
+			schemePrefix = repoURL[:idx+2]
+			body = repoURL[idx+2:]
+		}
+	}
+
+	// Find the FIRST "//" occurrence — this is always the scheme
+	// delimiter (e.g. the "://" in "https://", "ssh://", or "file://").
+	// We must skip past it because the path that follows can itself
+	// contain "//" (e.g. "file:///tmp/foo" has a second "//" right after
+	// the scheme delimiter), and we don't want to mistake that for a
+	// sub-directory separator.
+	schemeIdx := strings.Index(body, "//")
+	if schemeIdx < 0 {
+		return repoURL, "", nil
+	}
+
+	// Now look for the NEXT "//" after the scheme delimiter. That, if it
+	// exists, is the sub-directory separator introduced by the go-getter
+	// `repo//subdir` convention.
+	idx := schemeIdx + 2 + strings.Index(body[schemeIdx+2:], "//")
+	if idx < schemeIdx+2 {
+		// No second "//" after the scheme — there is no sub-directory
+		// selector, so the URL is unchanged.
+		return repoURL, "", nil
+	}
+
+	rawSub := body[idx+2:]
+	if rawSub == "" {
+		// Trailing "//" with nothing after — there is no sub-directory to
+		// extract. Return the URL unchanged so the caller sees the
+		// original intent (e.g. preserves the trailing "//").
+		return repoURL, "", nil
+	}
+
+	base := strings.TrimRight(body[:idx], "/")
+	sub := strings.TrimLeft(rawSub, "/")
+
+	// The "sub" portion may itself contain a query string or fragment
+	// because users sometimes write "...//subdir?ref=v1". Split it off
+	// and append to base so go-getter sees a clean URL.
+	if qIdx := strings.Index(sub, "?"); qIdx >= 0 {
+		base = base + sub[qIdx:]
+		sub = sub[:qIdx]
+	}
+	if hIdx := strings.Index(sub, "#"); hIdx >= 0 {
+		base = base + sub[hIdx:]
+		sub = sub[:hIdx]
+	}
+
+	sub = strings.Trim(sub, "/")
+	if sub == "" {
+		// Subdir portion was purely query/fragment — treat as no subdir.
+		return repoURL, "", nil
+	}
+	return schemePrefix + base, sub, nil
+}
+
+// isLikelyScheme reports whether `s` looks like a go-getter scheme name
+// (letters, digits, underscores).
+func isLikelyScheme(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		switch {
+		case r >= 'a' && r <= 'z':
+		case r >= 'A' && r <= 'Z':
+		case r >= '0' && r <= '9':
+		case r == '_' || r == '-':
+		default:
+			return false
+		}
+	}
+	return true
 }
 
 // ForceGitUrl will add the branch, tag or commit to the git URL and force it to the git protocol
