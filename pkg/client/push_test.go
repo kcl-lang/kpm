@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -216,6 +217,96 @@ func TestPushForceOption(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, opts.Force, "Force option should be set to %v", tt.expected)
+		})
+	}
+}
+
+// TestValidatePushModFields covers the field validation added for #508.
+// The validator should reject kcl.mod files that are missing the minimum
+// identity fields needed to construct a meaningful OCI tag/repository path.
+func TestValidatePushModFields(t *testing.T) {
+	tests := []struct {
+		name        string
+		pkg         *pkg.KclPkg
+		wantErr     bool
+		wantSubstr  string
+	}{
+		{
+			name: "valid name and version",
+			pkg: &pkg.KclPkg{
+				ModFile: pkg.ModFile{
+					Pkg: pkg.Package{Name: "my-pkg", Version: "0.1.0"},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:       "nil kcl.mod",
+			pkg:        nil,
+			wantErr:    true,
+			wantSubstr: "kcl.mod is not loaded",
+		},
+		{
+			name: "missing name only",
+			pkg: &pkg.KclPkg{
+				ModFile: pkg.ModFile{Pkg: pkg.Package{Version: "0.1.0"}},
+			},
+			wantErr:    true,
+			wantSubstr: "[package].name",
+		},
+		{
+			name: "missing version only",
+			pkg: &pkg.KclPkg{
+				ModFile: pkg.ModFile{Pkg: pkg.Package{Name: "my-pkg"}},
+			},
+			wantErr:    true,
+			wantSubstr: "[package].version",
+		},
+		{
+			name: "missing both",
+			pkg: &pkg.KclPkg{
+				ModFile: pkg.ModFile{Pkg: pkg.Package{}},
+			},
+			wantErr:    true,
+			wantSubstr: "name",
+		},
+		{
+			name: "whitespace-only name is rejected",
+			pkg: &pkg.KclPkg{
+				ModFile: pkg.ModFile{Pkg: pkg.Package{Name: "   ", Version: "0.1.0"}},
+			},
+			wantErr:    true,
+			wantSubstr: "[package].name",
+		},
+		{
+			name: "whitespace-only version is rejected",
+			pkg: &pkg.KclPkg{
+				ModFile: pkg.ModFile{Pkg: pkg.Package{Name: "my-pkg", Version: "\t"}},
+			},
+			wantErr:    true,
+			wantSubstr: "[package].version",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validatePushModFields(tt.pkg)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error, got nil")
+				}
+				ev, ok := err.(*reporter.KpmEvent)
+				if !ok {
+					t.Fatalf("expected *reporter.KpmEvent, got %T", err)
+				}
+				if ev.Type() != reporter.InvalidKclPkg {
+					t.Errorf("expected event type InvalidKclPkg, got %v", ev.Type())
+				}
+				if tt.wantSubstr != "" && !strings.Contains(ev.Error(), tt.wantSubstr) {
+					t.Errorf("expected substring %q in error, got %q", tt.wantSubstr, ev.Error())
+				}
+			} else if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 		})
 	}
 }
