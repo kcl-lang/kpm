@@ -112,6 +112,7 @@ func (git *Git) MarshalTOML() string {
 
 const OCI_URL_PATTERN = "oci = \"%s\""
 const OCI_REPO_PATTERN = "repo = \"%s\""
+const DIGEST_PATTERN = "digest = \"%s\""
 
 func (oci *Oci) MarshalTOML() string {
 	var sb strings.Builder
@@ -123,12 +124,18 @@ func (oci *Oci) MarshalTOML() string {
 		if len(oci.Tag) != 0 {
 			sb.WriteString(SEPARATOR)
 			sb.WriteString(fmt.Sprintf(TAG_PATTERN, oci.Tag))
+		} else if len(oci.Digest) != 0 {
+			sb.WriteString(SEPARATOR)
+			sb.WriteString(fmt.Sprintf(DIGEST_PATTERN, oci.Digest))
 		}
 	} else if len(oci.Reg) != 0 && len(oci.Repo) != 0 {
 		sb.WriteString(fmt.Sprintf(OCI_URL_PATTERN, oci.IntoOciUrl()))
 		if len(oci.Tag) != 0 {
 			sb.WriteString(SEPARATOR)
 			sb.WriteString(fmt.Sprintf(TAG_PATTERN, oci.Tag))
+		} else if len(oci.Digest) != 0 {
+			sb.WriteString(SEPARATOR)
+			sb.WriteString(fmt.Sprintf(DIGEST_PATTERN, oci.Digest))
 		}
 	} else if len(oci.Reg) == 0 && len(oci.Repo) == 0 && len(oci.Tag) != 0 {
 		sb.WriteString(fmt.Sprintf(`"%s"`, oci.Tag))
@@ -225,6 +232,7 @@ const GIT_BRANCH_FLAG = "branch"
 const GIT_PACKAGE_FLAG = "package"
 const OCI_REPO_FLAG = "repo"
 const OCI_REG_FLAG = "reg"
+const DIGEST_FLAG = "digest"
 
 func (git *Git) UnmarshalModTOML(data interface{}) error {
 	meta, ok := data.(map[string]interface{})
@@ -275,6 +283,25 @@ func (oci *Oci) UnmarshalModTOML(data interface{}) error {
 
 		if v, ok := meta[TAG_FLAG].(string); ok {
 			oci.Tag = v
+		}
+
+		// Digest form: digest = "sha256:..." (mutually exclusive with Tag).
+		if v, ok := meta[DIGEST_FLAG].(string); ok {
+			oci.Digest = v
+		}
+
+		// Reject both Tag and Digest set at the same time — they
+		// mean different things and silently picking one would hide
+		// a typo in the user's kcl.mod.
+		if oci.Tag != "" && oci.Digest != "" {
+			return fmt.Errorf(
+				"oci source for repo %q sets both %q and %q; specify only one",
+				oci.Repo, TAG_FLAG, DIGEST_FLAG,
+			)
+		}
+
+		if err := oci.ValidateDigest(); err != nil {
+			return err
 		}
 
 		// Mark as host-less if no registry was declared; the host will be
