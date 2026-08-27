@@ -8,12 +8,15 @@ import (
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/cmd"
+	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/version"
 )
 
 func main() {
-	reporter.InitReporter()
+	// Initialise the reporter with a verbosity level read from $KPM_LOG_LEVEL.
+	// Supported values: "debug", "info" (default), "warn", "error".
+	reporter.InitReporterWithLevel(reporter.ParseLogLevel(env.GetKpmLogLevel()))
 	kpmcli, err := client.NewKpmClient()
 	if err != nil {
 		reporter.Fatal(err)

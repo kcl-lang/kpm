@@ -46,3 +46,20 @@ func TestSkipChecksumCheck(t *testing.T) {
 	os.Setenv(KPM_NO_SUM, "")
 	assert.Equal(t, SkipChecksumCheck("crossplane"), false)
 }
+
+func TestGetKpmLogLevel(t *testing.T) {
+	defer os.Unsetenv(KPM_LOG_LEVEL)
+
+	// Empty env → empty string (parsing/default handled in reporter.ParseLogLevel).
+	os.Unsetenv(KPM_LOG_LEVEL)
+	assert.Equal(t, GetKpmLogLevel(), "")
+
+	os.Setenv(KPM_LOG_LEVEL, "DEBUG")
+	assert.Equal(t, GetKpmLogLevel(), "debug")
+
+	os.Setenv(KPM_LOG_LEVEL, "  Info  ")
+	assert.Equal(t, GetKpmLogLevel(), "info")
+
+	os.Setenv(KPM_LOG_LEVEL, "error")
+	assert.Equal(t, GetKpmLogLevel(), "error")
+}
