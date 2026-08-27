@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/errors"
@@ -79,6 +80,47 @@ func (c *KpmClient) fillDefaultPushOptions(ociOpt *opt.OciOptions, kMod *pkg.Kcl
 	}
 }
 
+// validatePushModFields ensures that the kcl.mod being pushed has the
+// minimum fields required to construct a meaningful OCI tag and repository
+// path. Push requests with an empty `name` or `version` would otherwise
+// produce silently-broken artifacts (a missing tag, an ambiguous path).
+//
+// Refs: kpm-project issue #508.
+func validatePushModFields(kMod *pkg.KclPkg) error {
+	if kMod == nil {
+		return reporter.NewErrorEvent(
+			reporter.InvalidKclPkg,
+			nil,
+			"kcl.mod is not loaded; nothing to push.",
+		)
+	}
+
+	name := strings.TrimSpace(kMod.GetPkgName())
+	version := strings.TrimSpace(kMod.GetPkgTag())
+
+	switch {
+	case name == "" && version == "":
+		return reporter.NewErrorEvent(
+			reporter.InvalidKclPkg,
+			nil,
+			"kcl.mod is missing required fields `[package].name` and `[package].version`. Both must be set before pushing to an OCI registry.",
+		)
+	case name == "":
+		return reporter.NewErrorEvent(
+			reporter.InvalidKclPkg,
+			nil,
+			"kcl.mod is missing required field `[package].name`. Set it before pushing to an OCI registry.",
+		)
+	case version == "":
+		return reporter.NewErrorEvent(
+			reporter.InvalidKclPkg,
+			nil,
+			"kcl.mod is missing required field `[package].version`. Set it before pushing to an OCI registry.",
+		)
+	}
+	return nil
+}
+
 // Push will push a kcl package to a registry.
 func (c *KpmClient) Push(opts ...PushOption) error {
 	pushOpts := &PushOptions{}
@@ -94,6 +136,13 @@ func (c *KpmClient) Push(opts ...PushOption) error {
 	)
 
 	if err != nil {
+		return err
+	}
+
+	// Refs: issue #508. Reject kcl.mod files missing the minimum identity
+	// fields before any network I/O so the user sees a clear local error
+	// rather than a half-pushed artifact.
+	if err := validatePushModFields(kMod); err != nil {
 		return err
 	}
 
