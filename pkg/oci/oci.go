@@ -37,6 +37,19 @@ import (
 	"oras.land/oras-go/v2/registry/remote/errcode"
 )
 
+// baseTransport is the http.RoundTripper used as the seed for every OCI
+// client. We start from http.DefaultTransport so any future Go-side
+// defaults (HTTP/2, keepalive tweaks) are picked up, then layer
+// proxy + TLS settings on top.
+//
+// Note: http.DefaultTransport.Proxy is http.ProxyFromEnvironment by
+// default, but we replace it with utils.ProxyFunc to honour $KPM_PROXY.
+var baseTransport = func() *http.Transport {
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	t.Proxy = utils.ProxyFunc
+	return t
+}()
+
 const OCI_SCHEME = "oci"
 const DEFAULT_OCI_ARTIFACT_TYPE = "application/vnd.oci.image.layer.v1.tar+gzip"
 const (
@@ -138,8 +151,8 @@ func NewOciClientWithOpts(opts ...OciClientOption) (*OciClient, error) {
 		}
 	}
 
-	customTransport := http.DefaultTransport
-	customTransport.(*http.Transport).TLSClientConfig = &tls.Config{
+	customTransport := baseTransport.Clone()
+	customTransport.TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: client.insecureSkipTLSverify,
 	}
 
