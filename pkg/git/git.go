@@ -174,6 +174,17 @@ func (cloneOpts *CloneOptions) Clone() (*git.Repository, error) {
 		return nil, err
 	}
 
+	// Support `repo//subdir` syntax: route the package selection through
+	// go-getter's sub-directory separator so we don't clone the whole
+	// tree if the user only wants one KCL package from it.
+	baseURL, subdir, err := SplitSubdir(url)
+	if err != nil {
+		return nil, err
+	}
+	if subdir != "" {
+		url = baseURL + "//" + subdir
+	}
+
 	client := &getter.Client{
 		Src:       url,
 		Dst:       cloneOpts.LocalPath,
