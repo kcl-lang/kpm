@@ -16,6 +16,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/hashicorp/go-getter"
 	giturl "github.com/kubescape/go-git-url"
+
+	"kcl-lang.io/kpm/pkg/utils"
 )
 
 // CloneOptions is a struct for specifying options for cloning a git repository
@@ -254,7 +256,8 @@ func GetAllGithubReleases(url string) ([]string, error) {
 	apiURL := fmt.Sprintf("%s?per_page=100&page=1", apiBase)
 
 	client := http.Client{
-		Timeout: 10 * time.Second,
+		Timeout:   10 * time.Second,
+		Transport: &http.Transport{Proxy: utils.ProxyFunc},
 	}
 
 	var releaseTags []string
