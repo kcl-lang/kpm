@@ -85,6 +85,39 @@ func TestSplitSubdir(t *testing.T) {
 			wantBase: "https://example.com/repo",
 			wantSub:  "a/b/c/d",
 		},
+		{
+			// Regression: file:// URLs point at local bare repos and
+			// contain a "///" right after the scheme delimiter. The
+			// inner "//" must not be mistaken for a sub-dir marker,
+			// otherwise the local path gets routed to go-getter as a
+			// sub-directory of "file:" and the clone fails with
+			// "ssh: Could not resolve hostname file".
+			name:     "file scheme with absolute path is not split",
+			in:       "file:///tmp/local_bare_repo",
+			wantBase: "file:///tmp/local_bare_repo",
+			wantSub:  "",
+		},
+		{
+			name:     "file scheme with query is not split",
+			in:       "file:///tmp/local_bare_repo?ref=4e59d5852cd76542f9f0ec65e5773ca9f4e02462",
+			wantBase: "file:///tmp/local_bare_repo?ref=4e59d5852cd76542f9f0ec65e5773ca9f4e02462",
+			wantSub:  "",
+		},
+		{
+			name:     "git:: prefix on file scheme is not split",
+			in:       "git::file:///tmp/local_bare_repo?ref=4e59d5852cd76542f9f0ec65e5773ca9f4e02462",
+			wantBase: "git::file:///tmp/local_bare_repo?ref=4e59d5852cd76542f9f0ec65e5773ca9f4e02462",
+			wantSub:  "",
+		},
+		{
+			// Even with a file:// scheme, an explicit //subdir still
+			// works because the parser looks for the SECOND "//"
+			// after the scheme delimiter, not just any "//".
+			name:     "file scheme with subdir",
+			in:       "file:///tmp/repo//modules",
+			wantBase: "file:///tmp/repo",
+			wantSub:  "modules",
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

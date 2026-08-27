@@ -37,10 +37,13 @@ func ForceProtocol(url, protocol string) string {
 //	SplitSubdir("https://github.com/org/repo.git//")
 //	  -> "https://github.com/org/repo.git//", "", nil  (no content after //)
 //
-// The split is intentionally conservative: only the LAST `//` that is
-// not part of a scheme delimiter (i.e. not preceded by ":") and that
-// is followed by a non-empty path component is treated as a
-// sub-directory separator.
+// The split is intentionally conservative: we locate the scheme
+// delimiter (the first "//" in the URL, e.g. the "://" in "https://")
+// and only treat a SECOND "//" that follows it as the go-getter
+// sub-directory separator. Anything inside the path that follows the
+// scheme delimiter (such as the extra "/" in "file:///tmp/repo") is
+// never interpreted as a sub-dir marker, which keeps URLs that point
+// at local bare repositories intact.
 func SplitSubdir(repoURL string) (string, string, error) {
 	if repoURL == "" {
 		return "", "", nil
@@ -58,16 +61,24 @@ func SplitSubdir(repoURL string) (string, string, error) {
 		}
 	}
 
-	// Find the LAST "//" occurrence. Earlier occurrences (e.g. "https://")
-	// must be skipped.
-	idx := strings.LastIndex(body, "//")
-	if idx < 0 {
+	// Find the FIRST "//" occurrence — this is always the scheme
+	// delimiter (e.g. the "://" in "https://", "ssh://", or "file://").
+	// We must skip past it because the path that follows can itself
+	// contain "//" (e.g. "file:///tmp/foo" has a second "//" right after
+	// the scheme delimiter), and we don't want to mistake that for a
+	// sub-directory separator.
+	schemeIdx := strings.Index(body, "//")
+	if schemeIdx < 0 {
 		return repoURL, "", nil
 	}
 
-	// We only treat this as a sub-dir separator if it is NOT part of a
-	// scheme delimiter (i.e. not preceded by ":").
-	if idx > 0 && body[idx-1] == ':' {
+	// Now look for the NEXT "//" after the scheme delimiter. That, if it
+	// exists, is the sub-directory separator introduced by the go-getter
+	// `repo//subdir` convention.
+	idx := schemeIdx + 2 + strings.Index(body[schemeIdx+2:], "//")
+	if idx < schemeIdx+2 {
+		// No second "//" after the scheme — there is no sub-directory
+		// selector, so the URL is unchanged.
 		return repoURL, "", nil
 	}
 
