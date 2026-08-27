@@ -125,6 +125,11 @@ func (c *KpmClient) SetHomePath(homePath string) {
 	c.homePath = homePath
 }
 
+// GetHomePath returns the home path of kpm.
+func (c *KpmClient) GetHomePath() string {
+	return c.homePath
+}
+
 // AcquirePackageCacheLock will acquire the lock of the package cache.
 func (c *KpmClient) AcquirePackageCacheLock() error {
 	return c.settings.AcquirePackageCacheLock(c.logWriter)
