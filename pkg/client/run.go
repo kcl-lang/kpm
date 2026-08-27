@@ -73,15 +73,27 @@ import (
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/constants"
 	"kcl-lang.io/kpm/pkg/downloader"
+	"kcl-lang.io/kpm/pkg/env"
 	pkg "kcl-lang.io/kpm/pkg/package"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/utils"
+	"kcl-lang.io/kpm/pkg/visitor"
 )
 
 // RunOptions contains the options for running a kcl package.
 type RunOptions struct {
 	settingYamlFiles []string
 	vendor           bool
+	// cache controls whether remote primary packages referenced by
+	// `kcl run oci://...` / `kpm run oci://...` (and the git
+	// equivalents) are persisted in the KPM home cache between
+	// invocations. The unset/zero value (false) means "use the
+	// default behaviour", which — for backwards compatibility —
+	// is "no caching". Callers that want the new behaviour set this
+	// to true via WithRunCache / WithRunNoCache; Run() itself flips
+	// it to true automatically for remote sources unless the user
+	// explicitly opted out via KPM_RUN_NO_CACHE.
+	cache *bool
 	// Sources is the sources of the package.
 	// It can be a local *.k path, a local *.tar/*.tgz path, a local directory, a remote git/oci path,.
 	Sources []*downloader.Source
@@ -355,6 +367,57 @@ func WithVendor(vendor bool) RunOption {
 
 		return nil
 	}
+}
+
+// WithRunCache explicitly enables or disables persistent caching of
+// the primary remote package referenced by `kcl run oci://...` /
+// `kpm run oci://...` (and the git equivalents).
+//
+// When caching is enabled, the downloaded package is stored under
+// the KPM home directory (`$KCL_PKG_PATH` or the XDG data dir) and
+// reused on subsequent runs with zero network traffic, provided the
+// referenced tag/digest is unchanged. Caching only applies when the
+// main source is remote (oci/git); local paths are unaffected.
+//
+// Pass `false` to force a fresh download on every run — equivalent
+// to the `--no-cache` CLI flag or `KPM_RUN_NO_CACHE=1`.
+//
+// When this option is not supplied, the default behaviour is to
+// cache remote primary packages unless the global `KPM_RUN_NO_CACHE`
+// env var opts out.
+//
+// See https://github.com/kcl-lang/kpm/issues/691.
+func WithRunCache(enable bool) RunOption {
+	return func(ro *RunOptions) error {
+		ro.cache = &enable
+		return nil
+	}
+}
+
+// WithRunNoCache disables persistent caching of the primary remote
+// package, forcing a fresh download on every run. Equivalent to
+// `WithRunCache(false)` and the `--no-cache` CLI flag.
+func WithRunNoCache() RunOption {
+	return WithRunCache(false)
+}
+
+// runCacheEnabled resolves the effective cache setting for a Run()
+// invocation. The precedence is:
+//
+//  1. Explicit WithRunCache(true|false) on the RunOptions, if set.
+//  2. The KPM_RUN_NO_CACHE environment variable (true → off).
+//  3. Default: true (enable caching for remote sources).
+//
+// Note that the default flipped from false → true as part of #691.
+// Code paths that want the old behaviour must opt out explicitly.
+func (o *RunOptions) runCacheEnabled() bool {
+	if o.cache != nil {
+		return *o.cache
+	}
+	if env.IsRunNoCache() {
+		return false
+	}
+	return true
 }
 
 // applyCompileOptionsFromYaml applies the compile options from the kcl.yaml file.
@@ -636,9 +699,20 @@ func (c *KpmClient) Run(options ...RunOption) (*kcl.KCLResultList, error) {
 		return nil, err
 	}
 
+	// For remote primary sources, transparently reuse the KPM cache so
+	// that repeated `kcl run oci://...` invocations don't hammer the
+	// registry. The cache is opt-out (KPM_RUN_NO_CACHE / WithRunNoCache).
+	v := newVisitor(*pkgSource, c)
+	if pkgSource.IsRemote() && opts.runCacheEnabled() {
+		if rv, ok := v.(*visitor.RemoteVisitor); ok {
+			rv.EnableCache = true
+			rv.CachePath = c.homePath
+		}
+	}
+
 	// Visit the root package source.
 	var res *kcl.KCLResultList
-	err = newVisitor(*pkgSource, c).Visit(pkgSource, func(kclPkg *pkg.KclPkg) error {
+	err = v.Visit(pkgSource, func(kclPkg *pkg.KclPkg) error {
 		// Apply the compile options from cli, kcl.yaml or kcl.mod
 		err = opts.applyCompileOptions(*pkgSource, kclPkg, opts.WorkDir)
 		if err != nil {

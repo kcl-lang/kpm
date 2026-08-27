@@ -18,6 +18,14 @@ const KPM_NO_SUM = "KPM_NO_SUM"
 const KPM_LOG_LEVEL = "KPM_LOG_LEVEL"
 const KPM_DEBUG = "KPM_DEBUG"
 
+// KPM_RUN_NO_CACHE disables the persistent cache for the primary package
+// referenced by `kcl run oci://...` / `kpm run oci://...` (and the git
+// equivalents). When set to a truthy value, every run re-downloads the
+// referenced package instead of reusing the KPM cache.
+//
+// See https://github.com/kcl-lang/kpm/issues/691 for the motivation.
+const KPM_RUN_NO_CACHE = "KPM_RUN_NO_CACHE"
+
 // GetEnvPkgPath will return the env $KCL_PKG_PATH.
 func GetEnvPkgPath() string {
 	return os.Getenv(PKG_PATH)
@@ -35,6 +43,21 @@ func GetKpmLogLevel() string {
 // the empty string, returns false.
 func IsKpmDebug() bool {
 	switch strings.ToLower(strings.TrimSpace(os.Getenv(KPM_DEBUG))) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
+}
+
+// IsRunNoCache reports whether the user has opted out of caching the
+// primary remote package referenced by `kcl run` / `kpm run`.
+//
+// Recognised truthy values (case-insensitive, surrounding whitespace
+// ignored): "1", "true", "yes", "on". Anything else — including the
+// empty string — is treated as "cache enabled" (the default).
+func IsRunNoCache() bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(KPM_RUN_NO_CACHE))) {
 	case "1", "true", "yes", "on":
 		return true
 	default:
