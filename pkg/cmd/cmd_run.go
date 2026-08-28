@@ -12,6 +12,7 @@ import (
 	"kcl-lang.io/kcl-go/pkg/kcl"
 	"kcl-lang.io/kpm/pkg/api"
 	"kcl-lang.io/kpm/pkg/client"
+	"kcl-lang.io/kpm/pkg/env"
 	"kcl-lang.io/kpm/pkg/git"
 	"kcl-lang.io/kpm/pkg/opt"
 	"kcl-lang.io/kpm/pkg/reporter"
@@ -45,6 +46,17 @@ func NewRunCmd(kpmcli *client.KpmClient) *cli.Command {
 			&cli.BoolFlag{
 				Name:  FLAG_NO_SUM_CHECK,
 				Usage: "do not check the checksum of the package and update kcl.mod.lock",
+			},
+
+			// --no_cache forces a fresh download of the primary remote
+			// package referenced by `kpm run oci://...` / `kpm run
+			// git://...`. Without this flag, remote primary packages
+			// are persisted in the KPM home cache and reused on
+			// subsequent runs (zero network fetch when the tag/digest
+			// is unchanged).
+			&cli.BoolFlag{
+				Name:  FLAG_NO_CACHE,
+				Usage: "force re-download of the remote primary package (skip KPM cache)",
 			},
 
 			// KCL arg: --setting, -Y
@@ -102,6 +114,22 @@ func KpmRun(c *cli.Context, kpmcli *client.KpmClient) error {
 			err = releaseErr
 		}
 	}()
+
+	// Bridge --no-cache (the CLI flag) into the env-var-driven cache
+	// decision in client.Run. Using the env var avoids touching the
+	// signature of the deprecated Compile{Oci,Git}Pkg helpers below.
+	noCache := c.Bool(FLAG_NO_CACHE)
+	if noCache {
+		prev, hadPrev := os.LookupEnv(env.KPM_RUN_NO_CACHE)
+		_ = os.Setenv(env.KPM_RUN_NO_CACHE, "1")
+		defer func() {
+			if hadPrev {
+				_ = os.Setenv(env.KPM_RUN_NO_CACHE, prev)
+			} else {
+				_ = os.Unsetenv(env.KPM_RUN_NO_CACHE)
+			}
+		}()
+	}
 
 	kclOpts := CompileOptionFromCli(c)
 	kclOpts.SetNoSumCheck(c.Bool(FLAG_NO_SUM_CHECK))

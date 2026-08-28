@@ -2070,7 +2070,10 @@ func testRunRemoteWithArgs(t *testing.T, kpmcli *KpmClient) {
 	}
 
 	for i, tc := range testCases {
-		res, err := kpmcli.Run(WithRunSourceUrl(tc.sourceURL))
+		res, err := kpmcli.Run(
+			WithRunSourceUrl(tc.sourceURL),
+			WithRunNoCache(),
+		)
 		assert.Equal(t, err, nil, "%v-st", i)
 		assert.Equal(t, logbuf.String(), tc.expectedLog)
 

@@ -20,3 +20,12 @@ const FLAG_SORT_KEYS = "sort_keys"
 
 const FLAG_QUIET = "quiet"
 const FLAG_NO_SUM_CHECK = "no_sum_check"
+
+// FLAG_NO_CACHE disables the persistent cache for the primary
+// remote package referenced by `kpm run oci://...` (and the git
+// equivalent). When set, every invocation re-downloads the
+// referenced package instead of reusing the KPM cache.
+//
+// Equivalent to setting $KPM_RUN_NO_CACHE=1 or calling
+// `client.WithRunNoCache()` programmatically.
+const FLAG_NO_CACHE = "no_cache"
