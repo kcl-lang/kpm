@@ -629,6 +629,14 @@ func TestKpmIssue587(t *testing.T) {
 	RunTestWithGlobalLockAndKpmCli(t, []TestSuite{{Name: "test_download_with_git_dep", TestFunc: test_download_with_git_dep}})
 }
 
+// TestKpmIssue605 verifies that running a package twice reuses the
+// previously-downloaded OCI dependency from cache.
+//
+// NOTE: This test depends on the same third-party fixture image as
+// testRunWithOciDownloader (ghcr.io/zong-zhe/helloworld:0.0.3). See the note
+// on testRunWithOciDownloader for why oras-go v2.6.0+'s strict
+// Docker-Content-Digest verification may surface an error from the upstream
+// registry.
 func TestKpmIssue605(t *testing.T) {
 	testPath := "github.com/kcl-lang/kpm/issues/605"
 
