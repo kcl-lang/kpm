@@ -3,6 +3,7 @@ module kcl-lang.io/kpm
 go 1.26
 
 require (
+	cloud.google.com/go/compute/metadata v0.9.0
 	github.com/BurntSushi/toml v1.5.0
 	github.com/containers/image/v5 v5.36.2
 	github.com/distribution/reference v0.6.0
@@ -24,7 +25,6 @@ require (
 	cloud.google.com/go v0.123.0 // indirect
 	cloud.google.com/go/auth v0.18.2 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
-	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	cloud.google.com/go/iam v1.5.3 // indirect
 	cloud.google.com/go/monitoring v1.24.3 // indirect
 	cloud.google.com/go/storage v1.61.3 // indirect

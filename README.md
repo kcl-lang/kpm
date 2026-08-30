@@ -24,3 +24,9 @@ See [contribution guideline](https://kcl-lang.io/docs/community/contribute/).
 ## Learn More
 
 See [here](https://www.kcl-lang.io/docs/user_docs/guides/package-management/quick-start) for more documents.
+
+## Authentication
+
+`kpm login` supports username/password (`--provider=basic`, the default)
+and GCP Workload Identity (`--provider=gcp`) for passwordless login from
+GKE pods. See [docs/gcp-workload-identity.md](./docs/gcp-workload-identity.md).
