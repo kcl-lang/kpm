@@ -5,9 +5,11 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/urfave/cli/v2"
+	"kcl-lang.io/kpm/pkg/auth"
 	"kcl-lang.io/kpm/pkg/client"
 	"kcl-lang.io/kpm/pkg/reporter"
 	"kcl-lang.io/kpm/pkg/utils"
@@ -36,6 +38,11 @@ func NewLoginCmd(kpmcli *client.KpmClient) *cli.Command {
 				Name:  "password-stdin",
 				Usage: "take the registry password from stdin",
 			},
+			&cli.StringFlag{
+				Name:  "provider",
+				Usage: fmt.Sprintf("credential provider: %v (default \"basic\")", auth.KnownProviders()),
+				Value: "basic",
+			},
 		},
 		Action: func(c *cli.Context) error {
 			if c.NArg() == 0 {
@@ -44,29 +51,39 @@ func NewLoginCmd(kpmcli *client.KpmClient) *cli.Command {
 					fmt.Errorf("registry must be specified"),
 				)
 			}
-			if c.String("password") != "" && c.Bool("password-stdin") {
-				return reporter.NewErrorEvent(
-					reporter.InvalidCmd,
-					fmt.Errorf("password and password-stdin cannot be used together"),
-				)
-			}
-			if c.String("password") != "" && c.String("username") == "" {
-				return reporter.NewErrorEvent(
-					reporter.InvalidCmd,
-					fmt.Errorf("username must be specified when password is provided"),
-				)
-			}
-			if c.Bool("password-stdin") && c.String("username") == "" {
-				return reporter.NewErrorEvent(
-					reporter.InvalidCmd,
-					fmt.Errorf("username must be specified when password-stdin is used"),
-				)
-			}
+
 			registry := c.Args().First()
 
-			username, password, err := utils.GetUsernamePassword(c.String("username"), c.String("password"), c.Bool("password-stdin"))
+			providerName := c.String("provider")
+			if _, err := auth.ByName(providerName); err != nil {
+				return reporter.NewErrorEvent(
+					reporter.InvalidCmd,
+					fmt.Errorf("invalid --provider=%q: %w", providerName, err),
+				)
+			}
+
+			username, password, err := resolveCredentials(c, providerName)
 			if err != nil {
 				return err
+			}
+
+			// For non-basic providers the BasicProvider constructor
+			// needs the resolved username/password. For basic the
+			// caller already passed them in. For gcp the username/
+			// password args are ignored — we build a GCPProvider
+			// and call Credential() to mint a token.
+			if providerName == "gcp" {
+				gp := &auth.GCPProvider{}
+				cred, err := gp.Credential(context.Background(), registry)
+				if err != nil {
+					return reporter.NewErrorEvent(
+						reporter.FailedLogin,
+						err,
+						fmt.Sprintf("failed to obtain GCP credential for '%s'", registry),
+					)
+				}
+				username = cred.Username
+				password = cred.Password
 			}
 
 			err = kpmcli.LoginOci(registry, username, password)
@@ -77,4 +94,52 @@ func NewLoginCmd(kpmcli *client.KpmClient) *cli.Command {
 			return nil
 		},
 	}
+}
+
+// resolveCredentials resolves the (username, password) pair from CLI
+// flags and stdin. For --provider=basic this is the existing flow. For
+// --provider=gcp the username/password flags are ignored — we still
+// error if the user passed incompatible flags like --password-stdin so
+// we fail fast on misuse rather than silently ignoring them.
+func resolveCredentials(c *cli.Context, providerName string) (string, string, error) {
+	username := c.String("username")
+	password := c.String("password")
+	passwordStdin := c.Bool("password-stdin")
+
+	if providerName == "gcp" {
+		if passwordStdin {
+			return "", "", reporter.NewErrorEvent(
+				reporter.InvalidCmd,
+				fmt.Errorf("--password-stdin has no effect with --provider=gcp; credentials are minted from the GCE/GKE metadata server"),
+			)
+		}
+		if password != "" || username != "" {
+			reporter.ReportMsgTo(
+				"warning: --username and --password are ignored when --provider=gcp",
+				c.App.Writer,
+			)
+		}
+		return "", "", nil
+	}
+
+	if password != "" && passwordStdin {
+		return "", "", reporter.NewErrorEvent(
+			reporter.InvalidCmd,
+			fmt.Errorf("password and password-stdin cannot be used together"),
+		)
+	}
+	if password != "" && username == "" {
+		return "", "", reporter.NewErrorEvent(
+			reporter.InvalidCmd,
+			fmt.Errorf("username must be specified when password is provided"),
+		)
+	}
+	if passwordStdin && username == "" {
+		return "", "", reporter.NewErrorEvent(
+			reporter.InvalidCmd,
+			fmt.Errorf("username must be specified when password-stdin is used"),
+		)
+	}
+
+	return utils.GetUsernamePassword(username, password, passwordStdin)
 }
