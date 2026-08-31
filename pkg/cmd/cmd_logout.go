@@ -25,9 +25,26 @@ func NewLogoutCmd(kpmcli *client.KpmClient) *cli.Command {
 					fmt.Errorf("registry must be specified"),
 				)
 			}
-			err := kpmcli.LogoutOci(c.Args().First())
+			hostname := c.Args().First()
+			err := kpmcli.LogoutOci(hostname)
 			if err != nil {
 				return err
+			}
+			// Also drop any provider mapping for this host so future
+			// pulls don't keep minting credentials via the provider
+			// after the user logged out. This is a no-op when the
+			// host wasn't registered with a non-basic provider.
+			store, storeErr := openProviderStoreFor(kpmcli)
+			if storeErr == nil {
+				if delErr := store.Delete(hostname); delErr != nil {
+					// Surface but don't fail the whole logout — the
+					// ORAS credentials are already gone, which is
+					// what the user asked for.
+					reporter.ReportMsgTo(
+						fmt.Sprintf("warning: failed to clear provider mapping for '%s': %v", hostname, delErr),
+						kpmcli.GetLogWriter(),
+					)
+				}
 			}
 			reporter.ReportMsgTo("Logout Succeeded", kpmcli.GetLogWriter())
 			return nil

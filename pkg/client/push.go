@@ -195,13 +195,13 @@ func (c *KpmClient) Push(opts ...PushOption) error {
 // PushToOci will push a kcl package to oci registry.
 func (c *KpmClient) pushToOci(localPath string, ociOpts *opt.OciOptions, pushOpts *PushOptions) error {
 	repoPath := utils.JoinPath(ociOpts.Reg, ociOpts.Repo, ociOpts.Ref)
-	cred, err := c.GetCredentials(ociOpts.Reg)
+	credFunc, err := c.CredentialFunc()
 	if err != nil {
 		return err
 	}
 
 	ociCli, err := oci.NewOciClientWithOpts(
-		oci.WithCredential(cred),
+		oci.WithCredentialFunc(credFunc),
 		oci.WithRepoPath(repoPath),
 		oci.WithSettings(c.GetSettings()),
 		oci.WithInsecureSkipTLSverify(c.insecureSkipTLSverify),

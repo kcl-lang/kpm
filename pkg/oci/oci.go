@@ -66,6 +66,7 @@ type OciClient struct {
 	isPlainHttp           *bool
 	insecureSkipTLSverify bool
 	cred                  *remoteauth.Credential
+	credFunc              remoteauth.CredentialFunc
 	PullOciOptions        *PullOciOptions
 }
 
@@ -100,10 +101,27 @@ func WithRepoPath(repoPath string) OciClientOption {
 	}
 }
 
-// WithCredential sets the credential of the OciClient
+// WithCredential sets a static credential on the OciClient. It is
+// retained for backwards compatibility — callers that need per-host
+// resolution (e.g. to refresh short-lived GCP tokens) should use
+// WithCredentialFunc instead. If both are passed, WithCredentialFunc
+// wins.
 func WithCredential(credential *remoteauth.Credential) OciClientOption {
 	return func(c *OciClient) error {
 		c.cred = credential
+		return nil
+	}
+}
+
+// WithCredentialFunc sets a dynamic credential resolver. ORAS calls
+// this on every 401 retry, so providers like GCPProvider can mint a
+// fresh token each time the previous one expires (~1h for Workload
+// Identity federated tokens).
+//
+// When this option is supplied it takes precedence over WithCredential.
+func WithCredentialFunc(fn remoteauth.CredentialFunc) OciClientOption {
+	return func(c *OciClient) error {
+		c.credFunc = fn
 		return nil
 	}
 }
@@ -161,10 +179,16 @@ func NewOciClientWithOpts(opts ...OciClientOption) (*OciClient, error) {
 	}
 
 	ctx := context.Background()
+	credFunc := client.credFunc
+	if credFunc == nil && client.cred != nil {
+		// Backwards compatibility: callers using WithCredential still
+		// get a static credential for the configured host.
+		credFunc = remoteauth.StaticCredential(client.repo.Reference.Host(), *client.cred)
+	}
 	client.repo.Client = &remoteauth.Client{
 		Client:     customClient,
 		Cache:      newAuthCache(client.settings),
-		Credential: remoteauth.StaticCredential(client.repo.Reference.Host(), *client.cred),
+		Credential: credFunc,
 	}
 
 	// If the plain http is not specified

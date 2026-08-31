@@ -249,22 +249,17 @@ func (d *OciDownloader) LatestVersion(opts *DownloadOptions) (string, error) {
 
 	repoPath := utils.JoinPath(ociSource.Reg, ociSource.Repo)
 
-	var cred *remoteauth.Credential
-	var err error
-	if opts.credsStore != nil {
-		cred, err = opts.credsStore.Credential(ociSource.Reg)
-		if err != nil {
-			return "", err
-		}
-	} else {
-		cred = &remoteauth.Credential{}
+	credOpt, err := credentialOptionFor(opts.credsStore, ociSource.Reg)
+	if err != nil {
+		return "", err
 	}
 
 	ociCli, err := oci.NewOciClientWithOpts(
-		oci.WithCredential(cred),
-		oci.WithRepoPath(repoPath),
-		oci.WithSettings(&opts.Settings),
-		oci.WithInsecureSkipTLSverify(opts.InsecureSkipTLSverify),
+		append([]oci.OciClientOption{
+			oci.WithRepoPath(repoPath),
+			oci.WithSettings(&opts.Settings),
+			oci.WithInsecureSkipTLSverify(opts.InsecureSkipTLSverify),
+		}, credOpt)...,
 	)
 
 	if err != nil {
@@ -403,22 +398,17 @@ func (d *OciDownloader) Download(opts *DownloadOptions) error {
 
 	repoPath := utils.JoinPath(ociSource.Reg, ociSource.Repo)
 
-	var cred *remoteauth.Credential
-	var err error
-	if opts.credsStore != nil {
-		cred, err = opts.credsStore.Credential(ociSource.Reg)
-		if err != nil {
-			return err
-		}
-	} else {
-		cred = &remoteauth.Credential{}
+	credOpt, err := credentialOptionFor(opts.credsStore, ociSource.Reg)
+	if err != nil {
+		return err
 	}
 
 	ociCli, err := oci.NewOciClientWithOpts(
-		oci.WithCredential(cred),
-		oci.WithRepoPath(repoPath),
-		oci.WithSettings(&opts.Settings),
-		oci.WithInsecureSkipTLSverify(opts.InsecureSkipTLSverify),
+		append([]oci.OciClientOption{
+			oci.WithRepoPath(repoPath),
+			oci.WithSettings(&opts.Settings),
+			oci.WithInsecureSkipTLSverify(opts.InsecureSkipTLSverify),
+		}, credOpt)...,
 	)
 
 	if err != nil {
@@ -706,3 +696,23 @@ func (d *GitDownloader) Download(opts *DownloadOptions) error {
 }
 
 var ErrNotFoundAndOffline = errors.New("not found and offline")
+
+// credentialOptionFor picks the right oci.OciClientOption for a single
+// OCI client. When credsStore is nil we install an empty static
+// credential (anonymous access). When credsStore is set we install
+// the dynamic Resolver so provider-minted tokens can refresh on every
+// 401 — the mechanism behind GCP Workload Identity pull-side refresh.
+//
+// An empty hostName is reported as an error (matching the previous
+// behaviour of CredStore.Credential). Letting an empty host through
+// produces confusing DNS-level errors downstream.
+func credentialOptionFor(credsStore *CredStore, hostName string) (oci.OciClientOption, error) {
+	if hostName == "" {
+		return nil, fmt.Errorf("hostName is empty")
+	}
+	if credsStore == nil {
+		// ORAS treats an empty credential as anonymous access.
+		return oci.WithCredential(&remoteauth.Credential{}), nil
+	}
+	return oci.WithCredentialFunc(credsStore.Resolver()), nil
+}

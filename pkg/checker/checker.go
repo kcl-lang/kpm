@@ -230,13 +230,13 @@ func (sc *SumChecker) fetchOciManifest(dep pkg.Dependency) (ocispec.Manifest, er
 // FetchOciManifestIntoJsonStr fetches the OCI manifest and returns it as a JSON string.
 func (sc *SumChecker) FetchOciManifestIntoJsonStr(opts opt.OciFetchOptions) (string, error) {
 	repoPath := utils.JoinPath(opts.Reg, opts.Repo)
-	cred, err := sc.GetCredentials(opts.Reg)
+	credFunc, err := sc.GetCredentialFunc()
 	if err != nil {
 		return "", err
 	}
 
 	ociCli, err := oci.NewOciClientWithOpts(
-		oci.WithCredential(cred),
+		oci.WithCredentialFunc(credFunc),
 		oci.WithRepoPath(repoPath),
 		oci.WithSettings(&sc.settings),
 	)
@@ -264,6 +264,19 @@ func (sc *SumChecker) GetCredentials(hostName string) (*remoteauth.Credential, e
 	}
 
 	return creds, nil
+}
+
+// GetCredentialFunc returns a dynamic [remoteauth.CredentialFunc] that
+// consults the kpm provider sidecar first and falls back to the ORAS
+// credential store. Use this instead of GetCredentials when the OCI
+// client should refresh short-lived provider-minted tokens (e.g. GCP
+// Workload Identity) on every 401.
+func (sc *SumChecker) GetCredentialFunc() (remoteauth.CredentialFunc, error) {
+	credStore, err := downloader.LoadCredentialFile(sc.settings.CredentialsFile)
+	if err != nil {
+		return nil, err
+	}
+	return credStore.Resolver(), nil
 }
 
 // extractChecksumFromManifest extracts the checksum from the OCI manifest.

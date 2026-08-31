@@ -107,6 +107,19 @@ func (c *KpmClient) GetCredentials(hostName string) (*remoteauth.Credential, err
 	return creds, nil
 }
 
+// CredentialFunc returns a dynamic [remoteauth.CredentialFunc] that
+// consults the kpm provider sidecar first and falls back to the ORAS
+// credential store. Use this when building OCI clients that may need
+// to refresh short-lived provider-minted tokens (e.g. GCP Workload
+// Identity) on every 401.
+func (c *KpmClient) CredentialFunc() (remoteauth.CredentialFunc, error) {
+	credStore, err := c.GetCredsClient()
+	if err != nil {
+		return nil, err
+	}
+	return credStore.Resolver(), nil
+}
+
 // GetNoSumCheck will return the 'noSumCheck' flag.
 func (c *KpmClient) GetNoSumCheck() bool {
 	return c.noSumCheck
