@@ -7,6 +7,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/urfave/cli/v2"
 	"kcl-lang.io/kpm/pkg/auth"
@@ -90,10 +91,48 @@ func NewLoginCmd(kpmcli *client.KpmClient) *cli.Command {
 			if err != nil {
 				return err
 			}
+
+			// For non-basic providers, also record the host → provider
+			// mapping in the sidecar so subsequent pulls know to mint
+			// fresh credentials (the ORAS credential store only sees the
+			// first token, which expires after ~1h for GCP).
+			if providerName != "basic" && providerName != "" {
+				store, storeErr := openProviderStoreFor(kpmcli)
+				if storeErr != nil {
+					return reporter.NewErrorEvent(
+						reporter.FailedLogin,
+						storeErr,
+						fmt.Sprintf("failed to record provider mapping for '%s'", registry),
+					)
+				}
+				if setErr := store.Set(registry, providerName); setErr != nil {
+					return reporter.NewErrorEvent(
+						reporter.FailedLogin,
+						setErr,
+						fmt.Sprintf("failed to record provider mapping for '%s'", registry),
+					)
+				}
+			}
+
 			reporter.ReportMsgTo("Login Succeeded", kpmcli.GetLogWriter())
 			return nil
 		},
 	}
+}
+
+// openProviderStoreFor returns a ProviderStore rooted at the kpm
+// settings directory. Used by login (writer) and logout (reader).
+// We derive the path from settings so it always lives next to
+// config.json regardless of how the kpm client was constructed.
+func openProviderStoreFor(kpmcli *client.KpmClient) (*auth.ProviderStore, error) {
+	// Settings.CredentialsFile is "<home>/.kpm/config/config.json".
+	// The provider sidecar lives next to it as "providers.json".
+	credPath := kpmcli.GetSettings().CredentialsFile
+	if credPath == "" {
+		return nil, fmt.Errorf("kpm settings have no CredentialsFile; cannot locate provider sidecar")
+	}
+	sidecarPath := filepath.Join(filepath.Dir(credPath), "providers.json")
+	return auth.OpenProviderStore(sidecarPath), nil
 }
 
 // resolveCredentials resolves the (username, password) pair from CLI
