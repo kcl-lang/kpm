@@ -12,16 +12,9 @@ import (
 
 // LoginOci will login to the oci registry.
 func (c *KpmClient) LoginOci(hostname, username, password string) error {
-	// Allow plaintext credentials for plain HTTP registries
 	defaultOciPlainHttp, forceOciPlainHttp := c.GetSettings().ForceOciPlainHttp()
-	allowPlaintext := false
-	if defaultOciPlainHttp || forceOciPlainHttp {
-		allowPlaintext = true
-	}
 
-	store, err := credentials.NewStore(c.GetSettings().CredentialsFile, credentials.StoreOptions{
-		AllowPlaintextPut: allowPlaintext,
-	})
+	store, err := c.credentialStore()
 	if err != nil {
 		return err
 	}
@@ -57,4 +50,23 @@ func (c *KpmClient) LoginOci(hostname, username, password string) error {
 	}
 
 	return nil
+}
+
+// credentialStore returns the ORAS credential store that LoginOci
+// persists credentials through.
+//
+// AllowPlaintextPut is enabled unconditionally. In ORAS the plain-text
+// config file is only the last-resort backend: server-specific
+// credential helpers (credHelpers) and the credentials store (credsStore)
+// always take precedence, and the flag merely allows the fallback when no
+// helper is configured — the same behaviour as the Docker and ORAS CLIs.
+// Gating it on the plain-HTTP setting made `kpm registry login` fail
+// with "putting plaintext credentials is disabled" on headless CI
+// runners (no keyring) against HTTPS-only registries such as ghcr.io and
+// docker.io, because that flag also forces plain-HTTP transport.
+// See #769.
+func (c *KpmClient) credentialStore() (credentials.Store, error) {
+	return credentials.NewStore(c.GetSettings().CredentialsFile, credentials.StoreOptions{
+		AllowPlaintextPut: true,
+	})
 }
