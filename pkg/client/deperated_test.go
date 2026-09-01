@@ -58,6 +58,17 @@ func testRunWithGitPackage(t *testing.T, kpmcli *KpmClient) {
 	}()
 }
 
+// testRunWithOciDownloader downloads the public fixture image
+// ghcr.io/zong-zhe/helloworld:0.0.3 to verify the OCI downloader end-to-end.
+//
+// NOTE: This test depends on a third-party OCI artifact and may fail if the
+// registry returns blobs whose advertised Docker-Content-Digest header does
+// not match the computed digest. oras-go v2.6.0 introduced strict
+// Docker-Content-Digest verification in Repository.Blobs().Fetch()
+// (https://github.com/oras-project/oras-go/releases/tag/v2.6.0), which
+// surfaces such mismatches as errors. The fixture image has not been
+// re-published since the upstream change; this test should be migrated to a
+// fixture that the project controls, or to a local OCI registry.
 func testRunWithOciDownloader(t *testing.T, kpmCli *KpmClient) {
 	path := getTestDir("test_oci_downloader")
 	kpmCli.DepDownloader = downloader.NewOciDownloader("linux/amd64")
