@@ -12,7 +12,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/otiai10/copy v1.14.1
-	github.com/sirupsen/logrus v1.10.1
+	github.com/sirupsen/logrus v1.10.2
 	github.com/urfave/cli/v2 v2.27.7
 	golang.org/x/mod v0.39.0
 	gotest.tools/v3 v3.5.2
