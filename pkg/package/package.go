@@ -31,6 +31,9 @@ type KclPkg struct {
 	// The dependencies in the current kcl package are the dependencies of kcl.mod.lock,
 	// not the dependencies in kcl.mod.
 	Dependencies
+	// DevDependencies is the [dev_dependencies] section of kcl.mod.lock,
+	// mirroring the lock entries for dev-only deps declared in kcl.mod.
+	DevDependencies Dependencies `toml:"dev_dependencies,omitempty"`
 	// The flag 'NoSumCheck' is true if the checksum of the current kcl package is not checked.
 	NoSumCheck bool
 	// A snapshot of the dependencies in kcl.mod
@@ -87,6 +90,12 @@ func LoadKclPkgWithOpts(options ...LoadOption) (*KclPkg, error) {
 	// load the kcl.mod.lock file.
 	// Get dependencies from kcl.mod.lock.
 	deps, err := LoadLockDeps(pkgPath)
+	if err != nil {
+		return nil, fmt.Errorf("could not load 'kcl.mod' in '%s'\n%w", pkgPath, err)
+	}
+
+	// Load [dev_dependencies] entries from kcl.mod.lock, if any.
+	devDeps, err := LoadLockDevDeps(pkgPath)
 	if err != nil {
 		return nil, fmt.Errorf("could not load 'kcl.mod' in '%s'\n%w", pkgPath, err)
 	}
@@ -150,10 +159,11 @@ func LoadKclPkgWithOpts(options ...LoadOption) (*KclPkg, error) {
 	}
 
 	return &KclPkg{
-		ModFile:      *modFile,
-		HomePath:     pkgPath,
-		Dependencies: *deps,
-		depUI:        depsUI,
+		ModFile:         *modFile,
+		HomePath:        pkgPath,
+		Dependencies:    *deps,
+		DevDependencies: *devDeps,
+		depUI:           depsUI,
 	}, nil
 }
 
@@ -266,6 +276,15 @@ func (kclPkg *KclPkg) GenOciManifestFromPkg() (map[string]string, error) {
 
 func (p *KclPkg) GetDepsMetadata() (*DependenciesUI, error) {
 	return p.Dependencies.ToDepMetadata()
+}
+
+// GetDevDepsMetadata returns the metadata view of [dev_dependencies]-locked
+// entries. If dev deps were never declared in kcl.mod, this is a no-op.
+func (p *KclPkg) GetDevDepsMetadata() (*DependenciesUI, error) {
+	if p.DevDependencies.Deps == nil {
+		return &DependenciesUI{Deps: map[string]Dependency{}}, nil
+	}
+	return p.DevDependencies.ToDepMetadata()
 }
 
 func NewKclPkg(opts *opt.InitOptions) KclPkg {
@@ -432,9 +451,11 @@ func (kclPkg *KclPkg) UpdateModAndLockFile() error {
 }
 
 // LockDepsVersion locks the dependencies of the current kcl package into kcl.mod.lock.
+// Both `[dependencies]` and `[dev_dependencies]` tables are written so the
+// lock file is fully reproducible for both `kcl run` and `kcl test`.
 func (kclPkg *KclPkg) LockDepsVersion() error {
 	fullPath := filepath.Join(kclPkg.HomePath, MOD_LOCK_FILE)
-	lockToml, err := kclPkg.Dependencies.MarshalLockTOML()
+	lockToml, err := kclPkg.MarshalLockFile()
 	if err != nil {
 		return err
 	}
@@ -455,6 +476,24 @@ func (kclPkg *KclPkg) LockDepsVersion() error {
 
 	// Update the kcl.mod.lock file if there are changes
 	return utils.StoreToFile(fullPath, lockToml)
+}
+
+// MarshalLockFile renders the full kcl.mod.lock file (regular + dev deps).
+func (kclPkg *KclPkg) MarshalLockFile() (string, error) {
+	depsToml, err := kclPkg.Dependencies.MarshalLockDepsTOML()
+	if err != nil {
+		return "", err
+	}
+	var sb strings.Builder
+	sb.WriteString(depsToml)
+	if kclPkg.DevDependencies.Deps != nil && kclPkg.DevDependencies.Deps.Len() != 0 {
+		devToml, err := kclPkg.DevDependencies.MarshalLockDevDepsTOML()
+		if err != nil {
+			return "", err
+		}
+		sb.WriteString(devToml)
+	}
+	return sb.String(), nil
 }
 
 // CreateDefaultMain will create a default main.k file in the current kcl package.

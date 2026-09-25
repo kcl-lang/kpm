@@ -43,6 +43,11 @@ func (mod *ModFile) MarshalTOML() string {
 		sb.WriteString(NEWLINE)
 		sb.WriteString(dependencies)
 	}
+	devDependencies := mod.DevDependencies.MarshalTOMLWithSection(DEV_DEPS_PATTERN)
+	if devDependencies != "" {
+		sb.WriteString(NEWLINE)
+		sb.WriteString(devDependencies)
+	}
 	profiles := mod.Profiles.MarshalTOML()
 	if profiles != "" {
 		sb.WriteString(NEWLINE)
@@ -65,12 +70,23 @@ func (pkg *Package) MarshalTOML() string {
 	return sb.String()
 }
 
-const DEPS_PATTERN = "[dependencies]"
+const (
+	DEPS_PATTERN     = "[dependencies]"
+	DEV_DEPS_PATTERN = "[dev_dependencies]"
+)
 
 func (dep *Dependencies) MarshalTOML() string {
+	return dep.MarshalTOMLWithSection(DEPS_PATTERN)
+}
+
+// MarshalTOMLWithSection renders the dependency set under the given TOML
+// table header — use DEPS_PATTERN for `[dependencies]` and
+// DEV_DEPS_PATTERN for `[dev_dependencies]`. An empty dep map produces
+// an empty string so callers can leave optional sections out.
+func (dep *Dependencies) MarshalTOMLWithSection(section string) string {
 	var sb strings.Builder
 	if dep.Deps != nil && dep.Deps.Len() != 0 {
-		sb.WriteString(DEPS_PATTERN)
+		sb.WriteString(section)
 		for _, depKeys := range dep.Deps.Keys() {
 			dep, ok := dep.Deps.Get(depKeys)
 			if !ok {
@@ -119,6 +135,7 @@ func (p *Profile) MarshalTOML() string {
 const (
 	PACKAGE_FLAG  = "package"
 	DEPS_FLAG     = "dependencies"
+	DEV_DEPS_FLAG = "dev_dependencies"
 	PROFILES_FLAG = "profile"
 )
 
@@ -147,6 +164,17 @@ func (mod *ModFile) UnmarshalTOML(data interface{}) error {
 		}
 	}
 	mod.Dependencies = deps
+
+	devDeps := Dependencies{
+		Deps: orderedmap.NewOrderedMap[string, Dependency](),
+	}
+	if v, ok := meta[DEV_DEPS_FLAG]; ok {
+		err := devDeps.UnmarshalModTOML(v)
+		if err != nil {
+			return err
+		}
+	}
+	mod.DevDependencies = devDeps
 
 	if v, ok := meta[PROFILES_FLAG]; ok {
 		p := NewProfile()
@@ -275,14 +303,26 @@ func (dep *Dependency) UnmarshalModTOML(data interface{}) error {
 	return nil
 }
 
+// DependenciesUI mirrors the on-disk shape of kcl.mod.lock. Both regular and
+// dev dependencies live in their own top-level tables so that the lock file
+// stays self-describing and symmetrical with the two sections in kcl.mod.
+// JSON keys are kept stable for backward compatibility (public CLI consumers);
+// `omitempty` keeps the JSON shape unchanged for callers that never declared
+// a dev dep.
 type DependenciesUI struct {
-	Deps map[string]Dependency `json:"packages" toml:"dependencies,omitempty"`
+	Deps    map[string]Dependency `json:"packages" toml:"dependencies,omitempty"`
+	DevDeps map[string]Dependency `json:"dev_packages,omitempty" toml:"dev_dependencies,omitempty"`
 }
 
-func (dep *Dependencies) MarshalLockTOML() (string, error) {
-	marshaledDeps := make(map[string]Dependency)
-	for _, depKey := range dep.Deps.Keys() {
-		dep, ok := dep.Deps.Get(depKey)
+// marshalDepsInternal is a shared helper used by both MarshalLockTOML paths
+// to apply the host-less Reg stripping policy before encoding.
+func marshalDepsInternal(deps *orderedmap.OrderedMap[string, Dependency]) map[string]Dependency {
+	out := make(map[string]Dependency)
+	if deps == nil {
+		return out
+	}
+	for _, depKey := range deps.Keys() {
+		dep, ok := deps.Get(depKey)
 		if !ok {
 			break
 		}
@@ -294,51 +334,108 @@ func (dep *Dependencies) MarshalLockTOML() (string, error) {
 			ociCopy := *dep.Source.Oci
 			ociCopy.Reg = ""
 			depCopy.Source.Oci = &ociCopy
-			marshaledDeps[depKey] = depCopy
+			out[depKey] = depCopy
 		} else {
-			marshaledDeps[depKey] = dep
+			out[depKey] = dep
 		}
 	}
+	return out
+}
 
-	lockDepdenciesUI := DependenciesUI{
-		Deps: marshaledDeps,
+// MarshalLockDepsTOML renders the regular `[dependencies]` table of a
+// kcl.mod.lock file. MarshalLockDevDepsTOML does the same for the dev
+// section.
+func (dep *Dependencies) MarshalLockDepsTOML() (string, error) {
+	ui := DependenciesUI{
+		Deps: marshalDepsInternal(dep.Deps),
 	}
-
 	buf := new(bytes.Buffer)
-	if err := toml.NewEncoder(buf).Encode(&lockDepdenciesUI); err != nil {
+	if err := toml.NewEncoder(buf).Encode(&ui); err != nil {
 		return "", reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, "failed to lock dependencies version")
 	}
 	return buf.String(), nil
 }
 
-func (dep *Dependencies) UnmarshalLockTOML(data string) error {
-	if dep.Deps == nil {
-		dep.Deps = orderedmap.NewOrderedMap[string, Dependency]()
+// MarshalLockDevDepsTOML writes only the [dev_dependencies] table.
+func (dep *Dependencies) MarshalLockDevDepsTOML() (string, error) {
+	ui := DependenciesUI{
+		DevDeps: marshalDepsInternal(dep.Deps),
 	}
-
-	lockDepdenciesUI := DependenciesUI{
-		Deps: make(map[string]Dependency),
+	buf := new(bytes.Buffer)
+	if err := toml.NewEncoder(buf).Encode(&ui); err != nil {
+		return "", reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, "failed to lock dev dependencies version")
 	}
+	return buf.String(), nil
+}
 
-	if _, err := toml.NewDecoder(strings.NewReader(data)).Decode(&lockDepdenciesUI); err != nil {
-		return reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, "failed to load kcl.mod.lock")
-	}
+// MarshalLockTOML is kept as a thin wrapper for backward compatibility — only
+// renders the regular `[dependencies]` section.
+func (dep *Dependencies) MarshalLockTOML() (string, error) {
+	return dep.MarshalLockDepsTOML()
+}
 
-	var keys []string
-	for k := range lockDepdenciesUI.Deps {
+// unmarshalDepsInternal applies the RegFromEnv sentinel restoration and
+// inserts keys (sorted) into the supplied ordered map.
+func unmarshalDepsInternal(ui *DependenciesUI, depMap *orderedmap.OrderedMap[string, Dependency]) {
+	keys := make([]string, 0, len(ui.Deps))
+	for k := range ui.Deps {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-
 	for _, k := range keys {
-		d := lockDepdenciesUI.Deps[k]
+		d := ui.Deps[k]
 		// Restore the RegFromEnv sentinel for host-less entries (no reg in the lock)
 		// so that subsequent marshal operations continue to emit them as host-less.
 		if d.Source.Oci != nil && d.Source.Oci.Reg == "" && d.Source.Oci.Repo != "" {
 			d.Source.Oci.RegFromEnv = true
 		}
-		dep.Deps.Set(k, d)
+		depMap.Set(k, d)
 	}
+}
 
+// UnmarshalLockDepsTOML parses the regular `[dependencies]` table from a
+// kcl.mod.lock buffer and stores entries into dep.Deps.
+func (dep *Dependencies) UnmarshalLockDepsTOML(data string) error {
+	if dep.Deps == nil {
+		dep.Deps = orderedmap.NewOrderedMap[string, Dependency]()
+	}
+	ui := DependenciesUI{Deps: make(map[string]Dependency)}
+	if _, err := toml.NewDecoder(strings.NewReader(data)).Decode(&ui); err != nil {
+		return reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, "failed to load kcl.mod.lock")
+	}
+	unmarshalDepsInternal(&ui, dep.Deps)
 	return nil
+}
+
+// UnmarshalLockTOML parses both `[dependencies]` and `[dev_dependencies]`
+// tables from a kcl.mod.lock buffer. The `deps` argument receives regular
+// entries; pass a freshly-initialized Dependencies struct for `devDeps` if
+// the caller wants dev entries populated, or nil to skip them.
+func UnmarshalLockTOML(data string, deps, devDeps *Dependencies) error {
+	if deps != nil && deps.Deps == nil {
+		deps.Deps = orderedmap.NewOrderedMap[string, Dependency]()
+	}
+	if devDeps != nil && devDeps.Deps == nil {
+		devDeps.Deps = orderedmap.NewOrderedMap[string, Dependency]()
+	}
+	ui := DependenciesUI{
+		Deps:    make(map[string]Dependency),
+		DevDeps: make(map[string]Dependency),
+	}
+	if _, err := toml.NewDecoder(strings.NewReader(data)).Decode(&ui); err != nil {
+		return reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, "failed to load kcl.mod.lock")
+	}
+	if deps != nil {
+		unmarshalDepsInternal(&ui, deps.Deps)
+	}
+	if devDeps != nil {
+		unmarshalDepsInternal(&DependenciesUI{Deps: ui.DevDeps}, devDeps.Deps)
+	}
+	return nil
+}
+
+// UnmarshalLockTOML is kept as the single-section method for backward
+// compatibility — only populates dep.Deps from the `[dependencies]` table.
+func (dep *Dependencies) UnmarshalLockTOML(data string) error {
+	return dep.UnmarshalLockDepsTOML(data)
 }

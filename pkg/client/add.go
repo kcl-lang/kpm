@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	orderedmap "github.com/elliotchance/orderedmap/v2"
 	"kcl-lang.io/kpm/pkg/downloader"
 	"kcl-lang.io/kpm/pkg/features"
 	pkg "kcl-lang.io/kpm/pkg/package"
@@ -17,6 +18,11 @@ type AddOptions struct {
 	// Including git, oci, local.
 	Source *downloader.Source
 	KclPkg *pkg.KclPkg
+	// IsDevDep, when true, routes the new dependency into the
+	// `[dev_dependencies]` section of kcl.mod / kcl.mod.lock instead of the
+	// regular `[dependencies]` table. Dev deps are only used by `kcl test`
+	// and are excluded from `kcl run`.
+	IsDevDep bool
 }
 
 type AddOption func(*AddOptions) error
@@ -75,6 +81,16 @@ func WithAddSourceUrl(sourceUrl string) AddOption {
 func WithAddKclPkg(kclPkg *pkg.KclPkg) AddOption {
 	return func(opts *AddOptions) error {
 		opts.KclPkg = kclPkg
+		return nil
+	}
+}
+
+// WithIsDevDep marks the dependency being added as a dev-only dep. It will
+// be written under [dev_dependencies] in kcl.mod (and kcl.mod.lock) so that
+// it is only resolved by `kcl test`, not by `kcl run`.
+func WithIsDevDep(isDev bool) AddOption {
+	return func(opts *AddOptions) error {
+		opts.IsDevDep = isDev
 		return nil
 	}
 }
@@ -207,19 +223,29 @@ func (c *KpmClient) Add(options ...AddOption) error {
 			})
 		}
 
+		// Choose the right table in kcl.mod: [dev_dependencies] for dev-only
+		// deps (used by `kcl test`), [dependencies] for everything else.
+		targetDeps := &addedPkg.ModFile.Dependencies
+		if opts.IsDevDep {
+			if addedPkg.ModFile.DevDependencies.Deps == nil {
+				addedPkg.ModFile.DevDependencies.Deps = orderedmap.NewOrderedMap[string, pkg.Dependency]()
+			}
+			targetDeps = &addedPkg.ModFile.DevDependencies
+		}
+
 		if ok, err := features.Enabled(features.SupportMVS); err == nil && ok {
-			// Add the dependency to the kcl.mod file.
-			// and select the greater version of the dependency in dependencies graph.
-			if modExistDep, ok := addedPkg.ModFile.Dependencies.Deps.Get(dep.Name); ok {
+			// Add the dependency to the chosen section and select the greater
+			// version of the dependency in dependencies graph.
+			if modExistDep, ok := targetDeps.Deps.Get(dep.Name); ok {
 				if less, err := modExistDep.VersionLessThan(&dep); less && err == nil {
-					addedPkg.ModFile.Dependencies.Deps.Set(dep.Name, dep)
+					targetDeps.Deps.Set(dep.Name, dep)
 				}
 			} else {
-				addedPkg.ModFile.Dependencies.Deps.Set(dep.Name, dep)
+				targetDeps.Deps.Set(dep.Name, dep)
 			}
 		} else {
-			// Add the dependency to the kcl.mod file directly.
-			addedPkg.ModFile.Dependencies.Deps.Set(dep.Name, dep)
+			// Add the dependency to the chosen section directly.
+			targetDeps.Deps.Set(dep.Name, dep)
 		}
 		succeedMsgInfo = fmt.Sprintf("add dependency '%s:%s' successfully", depPkg.ModFile.Pkg.Name, depPkg.ModFile.Pkg.Version)
 		return nil

@@ -1065,7 +1065,11 @@ func TestGetReleasesFromSource(t *testing.T) {
 	assert.True(t, length >= 5)
 	releasesVersions, err = sortVersions(releases)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, releasesVersions[:5], []string{"1.14", "1.14.1", "1.15", "1.15.1", "1.16"})
+	// Live OCI registry (oci://ghcr.io/kcl-lang/k8s) now publishes a 1.14.2
+	// release, which slots between 1.14.1 and 1.15 and pushes the previously-
+	// assumed 1.16 out of the sorted top-5. Keep this aligned with whatever
+	// the registry reports today — see this test's CI failure for context.
+	assert.Equal(t, releasesVersions[:5], []string{"1.14", "1.14.1", "1.14.2", "1.15", "1.15.1"})
 }
 
 func testUpdateWithKclMod(t *testing.T, kpmcli *KpmClient) {
