@@ -93,6 +93,22 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 	if lockDeps == nil {
 		return nil, fmt.Errorf("kcl.mod.lock dependencies is nil")
 	}
+	devModDeps := kMod.ModFile.DevDependencies.Deps
+	devLockDeps := kMod.DevDependencies.Deps
+
+	// isDevDep reports whether `dep` was declared under [dev_dependencies]
+	// in parentPkg's kcl.mod. Used by the resolver to partition lock entries
+	// into the correct `[dependencies]` vs `[dev_dependencies]` table.
+	isDevDep := func(dep *pkg.Dependency, parentPkg *pkg.KclPkg) bool {
+		if dep == nil || parentPkg == nil {
+			return false
+		}
+		if parentPkg.ModFile.DevDependencies.Deps == nil {
+			return false
+		}
+		_, ok := parentPkg.ModFile.DevDependencies.Deps.Get(dep.Name)
+		return ok
+	}
 
 	// Create a new dependency resolver
 	depResolver := resolver.DepsResolver{
@@ -104,9 +120,27 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 	}
 	// ResolveFunc is the function for resolving each dependency when traversing the dependency graph.
 	resolverFunc := func(dep *pkg.Dependency, parentPkg *pkg.KclPkg) error {
+		// Partition: if `dep` was declared as a dev dependency in
+		// parentPkg's kcl.mod, route its lock entry into the
+		// [dev_dependencies] section of kcl.mod.lock.
+		devDep := isDevDep(dep, parentPkg)
+
+		targetModDeps := modDeps
+		targetLockDeps := lockDeps
+		targetModFile := &kMod.ModFile.Dependencies
+		if devDep {
+			targetModDeps = devModDeps
+			targetLockDeps = devLockDeps
+			targetModFile = &kMod.ModFile.DevDependencies
+		}
+		if targetModDeps == nil {
+			// Dev deps were never declared — nothing to do for this node.
+			return nil
+		}
+
 		selectedModDep := dep
 		// Check if the dependency exists in the mod file.
-		if existDep, exist := modDeps.Get(dep.Name); exist {
+		if existDep, exist := targetModDeps.Get(dep.Name); exist {
 			if ok, err := features.Enabled(features.SupportMVS); err == nil && ok {
 				// if the dependency exists in the mod file,
 				// check the version and select the greater one.
@@ -117,12 +151,12 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 			// if the dependency does not exist in the mod file,
 			// the dependency is a indirect dependency.
 			// it will be added to the kcl.mod.lock file not the kcl.mod file.
-			kMod.ModFile.Dependencies.Deps.Set(dep.Name, *selectedModDep)
+			targetModFile.Deps.Set(dep.Name, *selectedModDep)
 		}
 
 		selectedDep := dep
 		// Check if the dependency exists in the lock file.
-		if existDep, exist := lockDeps.Get(dep.Name); exist {
+		if existDep, exist := targetLockDeps.Get(dep.Name); exist {
 			if ok, err := features.Enabled(features.SupportMVS); err == nil && ok {
 				// If the dependency exists in the lock file,
 				// check the version and select the greater one.
@@ -133,7 +167,7 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 		}
 
 		// Check if the checksum of the dependency exists in the lock file.
-		if existDep, exist := lockDeps.Get(dep.Name); exist {
+		if existDep, exist := targetLockDeps.Get(dep.Name); exist {
 			if equal, err := existDep.VersionEqual(selectedDep); equal && err == nil {
 				selectedDep.Sum = existDep.Sum
 			}
@@ -151,7 +185,7 @@ func (c *KpmClient) Update(options ...UpdateOption) (*pkg.KclPkg, error) {
 				}
 			}
 		}
-		kMod.Dependencies.Deps.Set(dep.Name, *selectedDep)
+		targetLockDeps.Set(dep.Name, *selectedDep)
 
 		return nil
 	}

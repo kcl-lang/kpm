@@ -175,6 +175,10 @@ type AddOptions struct {
 	NewPkgName   string
 	RegistryOpts RegistryOptions
 	NoSumCheck   bool
+	// IsDevDep, when true, marks the dep as dev-only and routes it into
+	// kcl.mod's `[dev_dependencies]` section. It is surfaced only by
+	// `kcl test`, not `kcl run`.
+	IsDevDep bool
 }
 
 func (opts *AddOptions) Validate() error {

@@ -49,6 +49,10 @@ func NewAddCmd(kpmcli *client.KpmClient) *cli.Command {
 				Name:  "package",
 				Usage: "package name to use in case of git",
 			},
+			&cli.BoolFlag{
+				Name:  "dev",
+				Usage: "add the dependency under [dev_dependencies] in kcl.mod; only resolved by `kcl test`",
+			},
 		},
 
 		Action: func(c *cli.Context) error {
@@ -139,6 +143,7 @@ func onlyOnceOption(c *cli.Context, name string) (string, *reporter.KpmEvent) {
 func parseAddOptions(c *cli.Context, kpmcli *client.KpmClient, localPath string) (*opt.AddOptions, error) {
 	noSumCheck := c.Bool(FLAG_NO_SUM_CHECK)
 	newPkgName := c.String("rename")
+	isDevDep := c.Bool("dev")
 	// parse from 'kpm add -git https://xxx/xxx.git -tag v0.0.1'.
 	if c.NArg() == 0 {
 		gitOpts, err := parseGitRegistryOptions(c)
@@ -153,6 +158,7 @@ func parseAddOptions(c *cli.Context, kpmcli *client.KpmClient, localPath string)
 			NewPkgName:   newPkgName,
 			RegistryOpts: *gitOpts,
 			NoSumCheck:   noSumCheck,
+			IsDevDep:     isDevDep,
 		}, nil
 	} else {
 		regOpt, err := opt.NewRegistryOptionsFrom(c.Args().First(), kpmcli.GetSettings())
@@ -178,6 +184,7 @@ func parseAddOptions(c *cli.Context, kpmcli *client.KpmClient, localPath string)
 			NewPkgName:   newPkgName,
 			RegistryOpts: *regOpt,
 			NoSumCheck:   noSumCheck,
+			IsDevDep:     isDevDep,
 		}, nil
 	}
 }

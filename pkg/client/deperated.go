@@ -483,6 +483,33 @@ func (c *KpmClient) AddDepWithOpts(kclPkg *pkg.KclPkg, opt *opt.AddOptions) (*pk
 	c.noSumCheck = opt.NoSumCheck
 	kclPkg.NoSumCheck = opt.NoSumCheck
 
+	// Forward to the new Add API so IsDevDep is respected uniformly. The
+	// legacy path below is still used for Non-MVS / custom NewPkgName flows.
+	if opt.IsDevDep {
+		d, err := pkg.ParseOpt(&opt.RegistryOpts)
+		if err != nil {
+			return nil, err
+		}
+		err = c.Add(
+			WithAddSource(&downloader.Source{
+				ModSpec: &downloader.ModSpec{
+					Name:    d.Name,
+					Version: d.Version,
+				},
+			}),
+			WithAddModSpec(&downloader.ModSpec{
+				Name:    d.Name,
+				Version: d.Version,
+			}),
+			WithAddKclPkg(kclPkg),
+			WithIsDevDep(true),
+		)
+		if err != nil {
+			return nil, err
+		}
+		return kclPkg, nil
+	}
+
 	// 1. get the name and version of the repository/package from the input arguments.
 	d, err := pkg.ParseOpt(&opt.RegistryOpts)
 	if err != nil {

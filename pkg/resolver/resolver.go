@@ -129,13 +129,17 @@ func (dr *DepsResolver) Resolve(options ...ResolveOption) error {
 		return fmt.Errorf("kcl module is nil")
 	}
 
-	modDeps := kMod.ModFile.Dependencies.Deps
-	if modDeps == nil {
+	// Walk both `[dependencies]` and `[dev_dependencies]` seed sets in
+	// `kcl.mod` so that dev-only entries are resolved and locked alongside
+	// their regular counterparts. We never re-resolve a dep that's already
+	// enqueued under either section — AllDeps keeps regular wins.
+	allDeps := kMod.ModFile.AllDeps()
+	if allDeps == nil {
 		return fmt.Errorf("kcl.mod dependencies is nil")
 	}
 
-	for _, depName := range modDeps.Keys() {
-		dep, ok := modDeps.Get(depName)
+	for _, depName := range allDeps.Keys() {
+		dep, ok := allDeps.Get(depName)
 		if !ok {
 			return fmt.Errorf("failed to get dependency %s", depName)
 		}
