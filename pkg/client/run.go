@@ -97,6 +97,12 @@ type RunOptions struct {
 	// Sources is the sources of the package.
 	// It can be a local *.k path, a local *.tar/*.tgz path, a local directory, a remote git/oci path,.
 	Sources []*downloader.Source
+	// errorFormat is the diagnostic output format requested by the caller,
+	// one of "pretty", "short", "arcanist" or "sarif". It is applied
+	// directly to the final merged ExecProgramArgs in applyCompileOptions
+	// so that it survives regardless of how kcl-go's Option.Merge handles
+	// the ErrorFormat field.
+	errorFormat string
 	*kcl.Option
 }
 
@@ -327,6 +333,17 @@ func WithShowHidden(showHidden bool) RunOption {
 	}
 }
 
+// WithErrorFormat sets the diagnostic output format for running the kcl
+// package, one of "pretty" (default), "short", "arcanist" or "sarif". When
+// set to a non-default value, the runtime mirrors compile/eval errors to
+// stderr in the chosen machine-readable format.
+func WithErrorFormat(format string) RunOption {
+	return func(ro *RunOptions) error {
+		ro.errorFormat = format
+		return nil
+	}
+}
+
 // WithStrictRange sets the strict range mode for running the kcl package.
 func WithStrictRange(strictRange bool) RunOption {
 	return func(ro *RunOptions) error {
@@ -542,6 +559,12 @@ func (o *RunOptions) applyCompileOptions(source downloader.Source, kclPkg *pkg.K
 	// The options from kcl.yaml will override the options from kcl.mod
 	o.Option = kcl.NewOption()
 	o.Merge(*modOpts).Merge(*yamlOpts).Merge(*cliOpts)
+	// Apply the diagnostic output format after the merge chain: older
+	// kcl-go versions do not propagate ErrorFormat in Option.Merge, so
+	// setting it here guarantees it reaches the runtime.
+	if o.errorFormat != "" {
+		o.ExecProgramArgs.ErrorFormat = o.errorFormat
+	}
 	if len(modOpts.KFilenameList) != 0 {
 		o.KFilenameList = modOpts.KFilenameList
 	}
