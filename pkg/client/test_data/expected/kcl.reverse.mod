@@ -1,6 +1,6 @@
 [package]
 name = "test_add_deps"
-edition = "v0.12.3"
+edition = "v0.13.0"
 version = "0.0.1"
 
 [dependencies]

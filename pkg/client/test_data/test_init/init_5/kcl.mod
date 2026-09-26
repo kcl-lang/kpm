@@ -1,6 +1,6 @@
 [package]
 name = "init_5_exist"
-edition = "v0.12.3"
+edition = "v0.13.0"
 version = "0.1.1"
 
 [dependencies]
