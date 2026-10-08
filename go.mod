@@ -167,7 +167,7 @@ require (
 	github.com/jinzhu/copier v0.4.0
 	github.com/kubescape/go-git-url v0.0.33
 	github.com/moby/term v0.5.2
-	github.com/onsi/ginkgo/v2 v2.32.1
+	github.com/onsi/ginkgo/v2 v2.33.0
 	github.com/onsi/gomega v1.42.1
 	github.com/stretchr/testify v1.12.1
 	github.com/thoas/go-funk v0.9.3
