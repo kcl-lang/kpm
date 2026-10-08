@@ -54,7 +54,40 @@ type ModFile struct {
 	// in the current package directory.
 	VendorMode bool     `toml:"-"`
 	Profiles   *Profile `toml:"profile"`
+	// Dependencies is the embedded [dependencies] section.
 	Dependencies
+	// DevDependencies is the [dev_dependencies] section — packages that
+	// are only needed by `kcl test` (i.e. unit-test files matching
+	// `*_test.k`), and are NOT used by the module under test itself.
+	// These are added with `kcl mod add --dev <pkg>` (or `kpm add --dev`)
+	// and are excluded from `kcl run`.
+	DevDependencies Dependencies `toml:"dev_dependencies,omitempty"`
+}
+
+// AllDeps returns the union of regular and dev dependencies, keyed by
+// alias name. Dev-only deps with the same alias as a regular dep are
+// skipped (the regular dep wins). The returned OrderedMap is a shallow
+// copy; mutating it does not affect the ModFile.
+func (modFile *ModFile) AllDeps() *orderedmap.OrderedMap[string, Dependency] {
+	merged := orderedmap.NewOrderedMap[string, Dependency]()
+	if modFile.Dependencies.Deps != nil {
+		for _, k := range modFile.Dependencies.Deps.Keys() {
+			if d, ok := modFile.Dependencies.Deps.Get(k); ok {
+				merged.Set(k, d)
+			}
+		}
+	}
+	if modFile.DevDependencies.Deps != nil {
+		for _, k := range modFile.DevDependencies.Deps.Keys() {
+			if _, exists := merged.Get(k); exists {
+				continue // regular dep wins on conflict.
+			}
+			if d, ok := modFile.DevDependencies.Deps.Get(k); ok {
+				merged.Set(k, d)
+			}
+		}
+	}
+	return merged
 }
 
 // Profile is the profile section of 'kcl.mod'.
@@ -390,6 +423,26 @@ func LoadLockDeps(homePath string) (*Dependencies, error) {
 	return deps, nil
 }
 
+// LoadLockDevDeps loads the `[dev_dependencies]` table from kcl.mod.lock.
+// If the file is missing or has no dev_dependencies section, it returns an
+// empty Dependencies with a nil-safe map.
+func LoadLockDevDeps(homePath string) (*Dependencies, error) {
+	deps := new(Dependencies)
+	deps.Deps = orderedmap.NewOrderedMap[string, Dependency]()
+	lockPath := filepath.Join(homePath, MOD_LOCK_FILE)
+	data, err := os.ReadFile(lockPath)
+	if os.IsNotExist(err) {
+		return deps, nil
+	}
+	if err != nil {
+		return nil, reporter.NewErrorEvent(reporter.FailedLoadKclModLock, err, fmt.Sprintf("failed to load '%s'", lockPath))
+	}
+	if err := UnmarshalLockTOML(string(data), nil, deps); err != nil {
+		return nil, err
+	}
+	return deps, nil
+}
+
 // Write the contents of 'ModFile' to 'kcl.mod' file
 func (mfile *ModFile) StoreModFile() error {
 	fullPath := filepath.Join(mfile.HomePath, MOD_FILE)
@@ -434,6 +487,9 @@ func NewModFile(opts *opt.InitOptions) *ModFile {
 			Edition: defaultEdition,
 		},
 		Dependencies: Dependencies{
+			Deps: orderedmap.NewOrderedMap[string, Dependency](),
+		},
+		DevDependencies: Dependencies{
 			Deps: orderedmap.NewOrderedMap[string, Dependency](),
 		},
 	}

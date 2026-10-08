@@ -783,7 +783,21 @@ func (c *KpmClient) Run(options ...RunOption) (*kcl.KCLResultList, error) {
 }
 
 // ResolveDepsIntoMap will calculate the map of kcl package name and local storage path of the external packages.
+// Only regular `[dependencies]` are returned. Use ResolveAllDepsIntoMap to also
+// include `[dev_dependencies]` for `kcl test`.
 func (c *KpmClient) ResolveDepsIntoMap(kclPkg *pkg.KclPkg) (map[string]string, error) {
+	return c.ResolveAllDepsIntoMap(kclPkg, false)
+}
+
+// ResolveAllDepsIntoMap is like ResolveDepsIntoMap but optionally also pulls in
+// the entries under `[dev_dependencies]` of kcl.mod.lock — used by `kcl test`
+// so that unit tests can `import` packages that the module under test itself
+// does not need.
+//
+// Regular deps always win on alias-name conflict. If a dev dep is declared in
+// kcl.mod but missing from the lockfile, it is reported with an actionable
+// error rather than silently dropped.
+func (c *KpmClient) ResolveAllDepsIntoMap(kclPkg *pkg.KclPkg, includeDevDeps bool) (map[string]string, error) {
 	err := c.ResolvePkgDepsMetadata(kclPkg, true)
 	if err != nil {
 		return nil, err
@@ -793,9 +807,26 @@ func (c *KpmClient) ResolveDepsIntoMap(kclPkg *pkg.KclPkg) (map[string]string, e
 	if err != nil {
 		return nil, err
 	}
-	var pkgMap map[string]string = make(map[string]string)
+	pkgMap := make(map[string]string)
 	for _, d := range depMetadatas.Deps {
 		pkgMap[d.GetAliasName()] = d.GetLocalFullPath(kclPkg.HomePath)
+	}
+
+	if includeDevDeps {
+		// Resolve dev-only metadata so we have the local path for each.
+		// Dev-dep lock entries live alongside regular ones, but they may also
+		// need their own download pass if the lockfile hasn't been built yet.
+		devMetadatas, terr := kclPkg.GetDevDepsMetadata()
+		if terr != nil {
+			return nil, terr
+		}
+		for alias, d := range devMetadatas.Deps {
+			if _, ok := pkgMap[alias]; ok {
+				// Regular dep already present — it wins.
+				continue
+			}
+			pkgMap[alias] = d.GetLocalFullPath(kclPkg.HomePath)
+		}
 	}
 
 	return pkgMap, nil

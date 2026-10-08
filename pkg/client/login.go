@@ -12,16 +12,7 @@ import (
 
 // LoginOci will login to the oci registry.
 func (c *KpmClient) LoginOci(hostname, username, password string) error {
-	// Allow plaintext credentials for plain HTTP registries
-	defaultOciPlainHttp, forceOciPlainHttp := c.GetSettings().ForceOciPlainHttp()
-	allowPlaintext := false
-	if defaultOciPlainHttp || forceOciPlainHttp {
-		allowPlaintext = true
-	}
-
-	store, err := credentials.NewStore(c.GetSettings().CredentialsFile, credentials.StoreOptions{
-		AllowPlaintextPut: allowPlaintext,
-	})
+	store, err := c.credentialStore()
 	if err != nil {
 		return err
 	}
@@ -36,7 +27,8 @@ func (c *KpmClient) LoginOci(hostname, username, password string) error {
 		return err
 	}
 
-	// Handle plain HTTP setting
+	// The plain HTTP setting only controls the transport.
+	defaultOciPlainHttp, forceOciPlainHttp := c.GetSettings().ForceOciPlainHttp()
 	if defaultOciPlainHttp || forceOciPlainHttp {
 		registry.PlainHTTP = true
 	}
@@ -57,4 +49,23 @@ func (c *KpmClient) LoginOci(hostname, username, password string) error {
 	}
 
 	return nil
+}
+
+// credentialStore returns the store used to persist registry credentials.
+//
+// Plaintext storage is always allowed: when the config file configures a
+// credential helper (credsStore/credHelpers), oras-go delegates to it and
+// plaintext is never touched; when no helper is available — the usual case
+// on headless CI runners — the config file is the only backend, and
+// refusing it makes `login` fail against every HTTPS registry with
+// "putting plaintext credentials is disabled". This matches `docker login`,
+// which writes a plaintext `auths` entry when no credsStore is set.
+//
+// Transport security is independent of the storage policy and remains
+// governed by the plain HTTP settings.
+// See https://github.com/kcl-lang/kpm/issues/769.
+func (c *KpmClient) credentialStore() (*credentials.DynamicStore, error) {
+	return credentials.NewStore(c.GetSettings().CredentialsFile, credentials.StoreOptions{
+		AllowPlaintextPut: true,
+	})
 }
