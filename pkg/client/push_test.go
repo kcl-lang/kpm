@@ -226,10 +226,10 @@ func TestPushForceOption(t *testing.T) {
 // identity fields needed to construct a meaningful OCI tag/repository path.
 func TestValidatePushModFields(t *testing.T) {
 	tests := []struct {
-		name        string
-		pkg         *pkg.KclPkg
-		wantErr     bool
-		wantSubstr  string
+		name       string
+		pkg        *pkg.KclPkg
+		wantErr    bool
+		wantSubstr string
 	}{
 		{
 			name: "valid name and version",
