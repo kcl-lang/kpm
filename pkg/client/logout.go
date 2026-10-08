@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	remoteauth "oras.land/oras-go/v2/registry/remote/auth"
 	"kcl-lang.io/kpm/pkg/reporter"
+	remoteauth "oras.land/oras-go/v2/registry/remote/auth"
 	"oras.land/oras-go/v2/registry/remote/credentials"
 )
 

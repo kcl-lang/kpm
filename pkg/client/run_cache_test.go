@@ -28,7 +28,7 @@ func TestRunOptions_RunCacheEnabled_Precedence(t *testing.T) {
 
 	cases := []struct {
 		name    string
-		envVar  string // "" = unset
+		envVar  string           // "" = unset
 		optFunc func() RunOption // nil = no explicit option
 		want    bool
 	}{
