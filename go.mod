@@ -3,7 +3,7 @@ module kcl-lang.io/kpm
 go 1.26.0
 
 require (
-	cloud.google.com/go/compute/metadata v0.9.0
+	cloud.google.com/go/compute/metadata v0.10.0
 	github.com/BurntSushi/toml v1.5.0
 	github.com/containers/image/v5 v5.36.2
 	github.com/distribution/reference v0.6.0
