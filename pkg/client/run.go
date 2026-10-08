@@ -344,6 +344,22 @@ func WithErrorFormat(format string) RunOption {
 	}
 }
 
+// WithSourcemapOutput requests a Source Map v3 document mapping the
+// generated YAML back to the originating KCL source locations. The KCL
+// runtime writes the document to the given path.
+func WithSourcemapOutput(path string) RunOption {
+	return func(ro *RunOptions) error {
+		if ro.Option == nil {
+			ro.Option = kcl.NewOption()
+		}
+		if path != "" {
+			ro.Merge(kcl.WithSourcemapOutput(path))
+		}
+
+		return nil
+	}
+}
+
 // WithStrictRange sets the strict range mode for running the kcl package.
 func WithStrictRange(strictRange bool) RunOption {
 	return func(ro *RunOptions) error {
