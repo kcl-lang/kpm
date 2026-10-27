@@ -170,5 +170,5 @@ require (
 	github.com/onsi/gomega v1.44.0
 	github.com/stretchr/testify v1.12.1
 	github.com/thoas/go-funk v0.9.3
-	oras.land/oras-go/v2 v2.5.0
+	oras.land/oras-go/v2 v2.7.0
 )
