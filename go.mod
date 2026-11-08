@@ -164,7 +164,7 @@ require (
 	github.com/hashicorp/go-getter v1.8.10
 	github.com/hashicorp/go-version v1.9.0
 	github.com/jinzhu/copier v0.4.0
-	github.com/kubescape/go-git-url v0.0.33
+	github.com/kubescape/go-git-url v0.0.34
 	github.com/moby/term v0.5.2
 	github.com/onsi/ginkgo/v2 v2.34.0
 	github.com/onsi/gomega v1.44.0
