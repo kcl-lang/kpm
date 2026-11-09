@@ -17,10 +17,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/containers/image/v5/docker"
-	"github.com/containers/image/v5/types"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/thoas/go-funk"
+	"go.podman.io/image/v5/docker"
+	"go.podman.io/image/v5/types"
 	remoteauth "oras.land/oras-go/v2/registry/remote/auth"
 
 	"kcl-lang.io/kpm/pkg/opt"
