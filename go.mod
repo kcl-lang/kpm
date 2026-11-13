@@ -13,7 +13,7 @@ require (
 	github.com/otiai10/copy v1.14.1
 	github.com/sirupsen/logrus v1.10.2
 	github.com/urfave/cli/v2 v2.27.7
-	golang.org/x/mod v0.42.0
+	golang.org/x/mod v0.43.0
 	gotest.tools/v3 v3.5.2
 	kcl-lang.io/kcl-go v0.13.2
 	kcl-lang.io/lib v0.13.2
